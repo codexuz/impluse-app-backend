@@ -13,7 +13,7 @@ export class SpeechifyService {
     });
   }
 
-  async streamTexttoSpeech(text: string, voice: string = 'lisa'): Promise<Buffer> {
+  async streamTexttoSpeech(text: string, voice: string = 'lisa'): Promise<string> {
     try {
       const stream = await this.client.tts.audio.stream({
         accept: "audio/mpeg",
@@ -45,6 +45,7 @@ export class SpeechifyService {
         }
     }  
 }
+
 
 
 
