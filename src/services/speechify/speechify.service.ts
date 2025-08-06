@@ -27,7 +27,7 @@ export class SpeechifyService {
       }
 
       const audioBuffer = Buffer.concat(chunks);
-      return audioBuffer; // 👈 Return raw audio buffer
+      return audioBuffer.toString('base64'); // 👈 Return raw audio buffer
     } catch (error) {
       throw new Error(`Failed to convert text to speech: ${error.message}`);
     }
@@ -44,4 +44,5 @@ export class SpeechifyService {
         }
     }  
 }
+
 
