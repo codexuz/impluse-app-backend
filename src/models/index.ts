@@ -28,7 +28,6 @@ import { StudentProfile } from "../student_profiles/entities/student_profile.ent
 import { Notifications } from "../notifications/entities/notification.entity.js";
 import { LessonProgress } from "./../lesson_progress/entities/lesson_progress.entity.js";
 import { Attendance } from "../attendance/entities/attendance.entity.js";
-import { AttendanceStatus } from "./../attendance_status/entities/attendance_status.entity.js";
 
 import { Writing } from "../writing/entities/writing.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
@@ -87,7 +86,6 @@ export const Models = [
   Group,
   GroupStudent,
   Attendance,
-  AttendanceStatus,
   VocabularySet,
   VocabularyItem,
   UnitVocabularySet,
@@ -346,9 +344,9 @@ export function initializeAssociations() {
 
   // Attendance Associations
   Group.hasMany(Attendance, { foreignKey: "group_id", as: "group_attendance" });
-  Lesson.hasMany(Attendance, {
-    foreignKey: "lesson_id",
-    as: "lesson_attendance",
+  User.hasMany(Attendance, {
+    foreignKey: "student_id",
+    as: "student_attendance",
   });
   User.hasMany(Attendance, {
     foreignKey: "teacher_id",
@@ -356,23 +354,8 @@ export function initializeAssociations() {
   });
 
   Attendance.belongsTo(Group, { foreignKey: "group_id", as: "group" });
-  Attendance.belongsTo(Lesson, { foreignKey: "lesson_id", as: "lesson" });
+  Attendance.belongsTo(User, { foreignKey: "student_id", as: "student" });
   Attendance.belongsTo(User, { foreignKey: "teacher_id", as: "teacher" });
-
-  //AttendanceStatus Associations
-  Attendance.hasMany(AttendanceStatus, {
-    foreignKey: "attendance_id",
-    as: "attendance_status",
-  });
-  User.hasMany(AttendanceStatus, {
-    foreignKey: "student_id",
-    as: "student_attendance",
-  });
-  AttendanceStatus.belongsTo(Attendance, {
-    foreignKey: "attendance_id",
-    as: "attendance",
-  });
-  AttendanceStatus.belongsTo(User, { foreignKey: "student_id", as: "student" });
 
   //VocabularySet Associations
   Course.hasMany(VocabularySet, {
