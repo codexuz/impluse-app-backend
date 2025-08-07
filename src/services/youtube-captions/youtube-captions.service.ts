@@ -1,9 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { getSubtitles, getVideoDetails } from "youtube-caption-extractor";
 import { HttpService } from "@nestjs/axios";
+import { ConfigService } from "@nestjs/config";
+
 @Injectable()
 export class YoutubeCaptionsService {
-  constructor(private readonly httpService: HttpService) {}
+  private readonly youtubeAPIKey: string;
+  constructor(private readonly httpService: HttpService, private configService: ConfigService) {
+    this.youtubeAPIKey = this.configService.get<string>("youtubeAPIKey");
+  }
 
   async getCaptions(videoId: string): Promise<any> {
     try {
@@ -77,7 +82,7 @@ export class YoutubeCaptionsService {
           params: {
             part: 'snippet,contentDetails,statistics',
             id: videoId,
-            key: 'AIzaSyC1U_sebKpptz3q_uIhmO9UjLmD8nbl4LY',
+            key: this.youtubeAPIKey,
           },
         }
       );

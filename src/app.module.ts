@@ -32,7 +32,6 @@ import { StudentProfileModule } from './student_profiles/student-profile.module.
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { LessonProgressModule } from './lesson_progress/lesson_progress.module.js';
 import { AttendanceModule } from './attendance/attendance.module.js';
-import { AttendanceStatusModule } from './attendance_status/attendance_status.module.js';
 import { GroupStudentsModule } from './group-students/group-students.module.js';
 
 import { RoleScenariosModule } from './role-scenarios/role-scenarios.module.js';
@@ -137,7 +136,6 @@ AdminJS.registerAdapter({
     NotificationsModule,
     LessonProgressModule,
     AttendanceModule,
-    AttendanceStatusModule,
     GroupStudentsModule,
     RoleScenariosModule,
     SpeakingModule,

@@ -9,10 +9,12 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { StudentProfileService } from './student-profile.service.js';
 import { CreateStudentProfileDto } from './dto/create-student-profile.dto.js';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto.js';
+import { LeaderboardItemDto, UserRankingResponseDto } from './dto/leaderboard-response.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -24,6 +26,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Student Profiles')
@@ -97,7 +100,7 @@ export class StudentProfileController {
   }
 
   @Patch(':id/points/add/:amount')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Add points to student profile' })
   @ApiParam({ name: 'id', description: 'Student Profile ID' })
   @ApiParam({ name: 'amount', description: 'Amount of points to add' })
@@ -107,7 +110,7 @@ export class StudentProfileController {
   }
 
   @Patch(':id/coins/add/:amount')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Add coins to student profile' })
   @ApiParam({ name: 'id', description: 'Student Profile ID' })
   @ApiParam({ name: 'amount', description: 'Amount of coins to add' })
@@ -117,7 +120,7 @@ export class StudentProfileController {
   }
 
   @Patch(':id/streak/increment')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Increment student streak' })
   @ApiParam({ name: 'id', description: 'Student Profile ID' })
   @ApiResponse({ status: 200, description: 'Streak incremented successfully' })
@@ -126,11 +129,83 @@ export class StudentProfileController {
   }
 
   @Patch(':id/streak/reset')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Reset student streak' })
   @ApiParam({ name: 'id', description: 'Student Profile ID' })
   @ApiResponse({ status: 200, description: 'Streak reset successfully' })
   resetStreak(@Param('id') id: string) {
     return this.studentProfileService.resetStreak(id);
+  }
+
+  // Leaderboard endpoints
+  @Get('leaderboard/coins')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get leaderboard ranked by coins' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of results to return (default: 10)' })
+  @ApiResponse({ status: 200, description: 'Return leaderboard by coins', type: [LeaderboardItemDto] })
+  getLeaderboardByCoins(@Query('limit') limit?: string) {
+    const numericLimit = limit ? parseInt(limit, 10) : undefined;
+    const validLimit = numericLimit && !isNaN(numericLimit) && numericLimit > 0 ? numericLimit : undefined;
+    return this.studentProfileService.getLeaderboardByCoins(validLimit);
+  }
+
+  @Get('leaderboard/points')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get leaderboard ranked by points' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of results to return (default: 10)' })
+  @ApiResponse({ status: 200, description: 'Return leaderboard by points', type: [LeaderboardItemDto] })
+  getLeaderboardByPoints(@Query('limit') limit?: string) {
+    const numericLimit = limit ? parseInt(limit, 10) : undefined;
+    const validLimit = numericLimit && !isNaN(numericLimit) && numericLimit > 0 ? numericLimit : undefined;
+    return this.studentProfileService.getLeaderboardByPoints(validLimit);
+  }
+
+  @Get('leaderboard/streaks')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get leaderboard ranked by streaks' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of results to return (default: 10)' })
+  @ApiResponse({ status: 200, description: 'Return leaderboard by streaks', type: [LeaderboardItemDto] })
+  getLeaderboardByStreaks(@Query('limit') limit?: string) {
+    const numericLimit = limit ? parseInt(limit, 10) : undefined;
+    const validLimit = numericLimit && !isNaN(numericLimit) && numericLimit > 0 ? numericLimit : undefined;
+    return this.studentProfileService.getLeaderboardByStreaks(validLimit);
+  }
+
+  @Get('leaderboard/overall')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get overall leaderboard' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of results to return (default: 10)' })
+  @ApiResponse({ status: 200, description: 'Return overall leaderboard', type: [LeaderboardItemDto] })
+  getOverallLeaderboard(@Query('limit') limit?: string) {
+    const numericLimit = limit ? parseInt(limit, 10) : undefined;
+    const validLimit = numericLimit && !isNaN(numericLimit) && numericLimit > 0 ? numericLimit : undefined;
+    return this.studentProfileService.getOverallLeaderboard(validLimit);
+  }
+
+  @Get('ranking/coins/:userId')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get user ranking by coins' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Return user ranking by coins', type: UserRankingResponseDto })
+  getUserRankingByCoins(@Param('userId') userId: string) {
+    return this.studentProfileService.getUserRankingByCoins(userId);
+  }
+
+  @Get('ranking/points/:userId')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get user ranking by points' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Return user ranking by points', type: UserRankingResponseDto })
+  getUserRankingByPoints(@Param('userId') userId: string) {
+    return this.studentProfileService.getUserRankingByPoints(userId);
+  }
+
+  @Get('ranking/streaks/:userId')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get user ranking by streaks' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Return user ranking by streaks', type: UserRankingResponseDto })
+  getUserRankingByStreaks(@Param('userId') userId: string) {
+    return this.studentProfileService.getUserRankingByStreaks(userId);
   }
 }

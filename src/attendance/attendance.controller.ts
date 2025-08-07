@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery }
 import { AttendanceService } from './attendance.service.js';
 import { CreateAttendanceDto } from './dto/create-attendance.dto.js';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto.js';
+import { AttendanceResponseDto, AttendanceStatsDto } from './dto/attendance-response.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -19,10 +20,11 @@ export class AttendanceController {
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new attendance record' })
-  @ApiResponse({ status: 201, description: 'Attendance record created successfully.' })
+  @ApiResponse({ status: 201, description: 'Attendance record created successfully.', type: AttendanceResponseDto })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid input data.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions.' })
+  @ApiResponse({ status: 409, description: 'Conflict - Attendance record already exists.' })
   async create(@Body() createAttendanceDto: CreateAttendanceDto) {
     return await this.attendanceService.create(createAttendanceDto);
   }
@@ -30,7 +32,7 @@ export class AttendanceController {
   @Get()
   @Roles(Role.ADMIN )
   @ApiOperation({ summary: 'Get all attendance records' })
-  @ApiResponse({ status: 200, description: 'Returns all attendance records.' })
+  @ApiResponse({ status: 200, description: 'Returns all attendance records.', type: [AttendanceResponseDto] })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin access required.' })
   async findAll() {
@@ -48,6 +50,17 @@ export class AttendanceController {
     return await this.attendanceService.findByGroupId(groupId);
   }
 
+  @Get('student/:studentId')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get attendance records by student ID' })
+  @ApiParam({ name: 'studentId', description: 'Student ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Returns attendance records for the specified student.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Student not found.' })
+  async findByStudent(@Param('studentId') studentId: string) {
+    return await this.attendanceService.findByStudentId(studentId);
+  }
+
   @Get('teacher/:teacherId')
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Get attendance records by teacher ID' })
@@ -57,6 +70,16 @@ export class AttendanceController {
   @ApiResponse({ status: 404, description: 'Teacher not found.' })
   async findByTeacher(@Param('teacherId') teacherId: string) {
     return await this.attendanceService.findByTeacherId(teacherId);
+  }
+
+  @Get('status/:status')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: 'Get attendance records by status' })
+  @ApiParam({ name: 'status', description: 'Attendance status (present, absent, late)', enum: ['present', 'absent', 'late'] })
+  @ApiResponse({ status: 200, description: 'Returns attendance records with the specified status.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async findByStatus(@Param('status') status: string) {
+    return await this.attendanceService.findByStatus(status);
   }
 
   @Get('daterange')
@@ -92,11 +115,47 @@ export class AttendanceController {
     return await this.attendanceService.findByGroupAndDateRange(groupId, startDate, endDate);
   }
 
+  @Get('student/:studentId/daterange')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get attendance records by student ID and date range' })
+  @ApiParam({ name: 'studentId', description: 'Student ID', type: 'string' })
+  @ApiQuery({ name: 'startDate', description: 'Start date (YYYY-MM-DD)', type: 'string' })
+  @ApiQuery({ name: 'endDate', description: 'End date (YYYY-MM-DD)', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Returns attendance records for the specified student within the date range.' })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid date format or student ID.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Student not found.' })
+  async findByStudentAndDateRange(
+    @Param('studentId') studentId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return await this.attendanceService.findByStudentAndDateRange(studentId, startDate, endDate);
+  }
+
+  @Get('stats/summary')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: 'Get attendance statistics' })
+  @ApiQuery({ name: 'groupId', description: 'Group ID (optional)', type: 'string', required: false })
+  @ApiQuery({ name: 'studentId', description: 'Student ID (optional)', type: 'string', required: false })
+  @ApiQuery({ name: 'startDate', description: 'Start date (YYYY-MM-DD) (optional)', type: 'string', required: false })
+  @ApiQuery({ name: 'endDate', description: 'End date (YYYY-MM-DD) (optional)', type: 'string', required: false })
+  @ApiResponse({ status: 200, description: 'Returns attendance statistics.', type: AttendanceStatsDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async getAttendanceStats(
+    @Query('groupId') groupId?: string,
+    @Query('studentId') studentId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return await this.attendanceService.getAttendanceStats(groupId, studentId, startDate, endDate);
+  }
+
   @Get(':id')
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Get attendance record by ID' })
   @ApiParam({ name: 'id', description: 'Attendance record ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Returns the attendance record.' })
+  @ApiResponse({ status: 200, description: 'Returns the attendance record.', type: AttendanceResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Attendance record not found.' })
   async findOne(@Param('id') id: string) {
@@ -108,10 +167,11 @@ export class AttendanceController {
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Update attendance record' })
   @ApiParam({ name: 'id', description: 'Attendance record ID', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Attendance record updated successfully.' })
+  @ApiResponse({ status: 200, description: 'Attendance record updated successfully.', type: AttendanceResponseDto })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid input data.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Attendance record not found.' })
+  @ApiResponse({ status: 409, description: 'Conflict - Attendance record already exists.' })
   async update(
     @Param('id') id: string,
     @Body() updateAttendanceDto: UpdateAttendanceDto,

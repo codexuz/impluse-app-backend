@@ -1,5 +1,11 @@
-import { IsString, IsNotEmpty, IsUUID, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsDateString, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+export enum AttendanceStatus {
+  PRESENT = 'present',
+  ABSENT = 'absent',
+  LATE = 'late'
+}
 
 export class CreateAttendanceDto {
   @ApiProperty({
@@ -12,13 +18,13 @@ export class CreateAttendanceDto {
   group_id: string;
 
   @ApiProperty({
-    description: 'The ID of the lesson for this attendance record',
+    description: 'The ID of the student for this attendance record',
     example: '987fcdeb-51a2-43d1-9b23-456789012345',
     format: 'uuid'
   })
   @IsUUID()
   @IsNotEmpty()
-  lesson_id: string;
+  student_id: string;
 
   @ApiProperty({
     description: 'The ID of the teacher taking attendance',
@@ -30,9 +36,27 @@ export class CreateAttendanceDto {
   teacher_id: string;
 
   @ApiProperty({
-    description: 'The date of the attendance record',
-    example: '2024-01-15T10:30:00.000Z',
-    format: 'date-time'
+    description: 'The attendance status of the student',
+    example: 'present',
+    enum: AttendanceStatus
+  })
+  @IsEnum(AttendanceStatus)
+  @IsNotEmpty()
+  status: AttendanceStatus;
+
+  @ApiProperty({
+    description: 'Additional notes about the attendance',
+    example: 'Student arrived 10 minutes late due to traffic',
+    required: false
+  })
+  @IsString()
+  @IsOptional()
+  note?: string;
+
+  @ApiProperty({
+    description: 'The date of the attendance record (YYYY-MM-DD format)',
+    example: '2024-01-15',
+    format: 'date'
   })
   @IsDateString()
   @IsNotEmpty()

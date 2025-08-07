@@ -24,10 +24,19 @@ export class Attendance extends Model {
   group_id: string;
 
   @Column({ type: DataType.UUID, allowNull: false })
-  lesson_id: string;
+  student_id: string;
 
   @Column({ type: DataType.UUID, allowNull: false })
   teacher_id: string;
+
+  @Column({
+    type: DataType.ENUM("present", "absent", "late"),
+    allowNull: false,
+  })
+  status: string;
+
+  @Column({ type: DataType.STRING, allowNull: false })
+  note: string;
 
   @Column({ type: DataType.DATEONLY, allowNull: false })
   date: string;

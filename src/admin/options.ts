@@ -26,7 +26,6 @@ import { StudentProfile } from "../student_profiles/entities/student_profile.ent
 import { Notifications } from "../notifications/entities/notification.entity.js";
 import { LessonProgress } from "./../lesson_progress/entities/lesson_progress.entity.js";
 import { Attendance } from "../attendance/entities/attendance.entity.js";
-import { AttendanceStatus } from "./../attendance_status/entities/attendance_status.entity.js";
 
 import { Writing } from "../writing/entities/writing.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
@@ -93,11 +92,6 @@ const options: AdminJSOptions = {
   {
     resource: Attendance,
     options: { name: 'Attendance', navigation: 'Progress Tracking' },
-    features: [importExportFeature({ componentLoader })],
-  },
-  {
-    resource: AttendanceStatus,
-    options: { name: 'Attendance Status', navigation: 'Progress Tracking' },
     features: [importExportFeature({ componentLoader })],
   },
   {

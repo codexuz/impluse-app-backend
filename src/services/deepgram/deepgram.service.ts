@@ -19,7 +19,7 @@ export class DeepgramService {
         {
           smart_format: true,
           filler_words: true,
-          model: "nova3",
+          model: "nova-3",
         }
       );
     if (error) throw error;
@@ -31,9 +31,27 @@ export class DeepgramService {
       await this.deepgram.listen.prerecorded.transcribeFile(audioFile, {
         smart_format: true,
         filler_words: true,
-        model: "nova3",
+        model: "nova-3",
       });
     if (error) throw error;
     return result;
+  }
+
+  async transcribeBuffer(audioBuffer: Buffer, mimetype: string = 'audio/mpeg'): Promise<any> {
+    try {
+      const { result, error } = await this.deepgram.listen.prerecorded.transcribeFile(
+        audioBuffer,
+        {
+          smart_format: true,
+          filler_words: true,
+          model: "nova-3",
+          mimetype: mimetype,
+        }
+      );
+      if (error) throw error;
+      return result;
+    } catch (error) {
+      throw new Error(`Failed to transcribe audio buffer: ${error.message}`);
+    }
   }
 }

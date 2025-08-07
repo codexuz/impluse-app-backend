@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { StudentProfile } from './entities/student_profile.entity.js';
 import { CreateStudentProfileDto } from './dto/create-student-profile.dto.js';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto.js';
@@ -71,5 +72,116 @@ export class StudentProfileService {
     profile.streaks = 0;
     await profile.save();
     return profile;
+  }
+
+  async getLeaderboardByCoins(limit?: number): Promise<StudentProfile[]> {
+    const validLimit = limit && limit > 0 ? limit : 10;
+    return this.studentProfileModel.findAll({
+      order: [['coins', 'DESC']],
+      limit: validLimit,
+      include: [
+        {
+          association: 'user',
+          attributes: ['user_id', 'first_name', 'last_name', 'username']
+        }
+      ]
+    });
+  }
+
+  async getLeaderboardByPoints(limit?: number): Promise<StudentProfile[]> {
+    const validLimit = limit && limit > 0 ? limit : 10;
+    return this.studentProfileModel.findAll({
+      order: [['points', 'DESC']],
+      limit: validLimit,
+      include: [
+        {
+          association: 'user',
+          attributes: ['user_id', 'first_name', 'last_name', 'username']
+        }
+      ]
+    });
+  }
+
+  async getLeaderboardByStreaks(limit?: number): Promise<StudentProfile[]> {
+    const validLimit = limit && limit > 0 ? limit : 10;
+    return this.studentProfileModel.findAll({
+      order: [['streaks', 'DESC']],
+      limit: validLimit,
+      include: [
+        {
+          association: 'user',
+          attributes: ['user_id', 'first_name', 'last_name', 'username']
+        }
+      ]
+    });
+  }
+
+  async getOverallLeaderboard(limit?: number): Promise<StudentProfile[]> {
+    const validLimit = limit && limit > 0 ? limit : 10;
+    return this.studentProfileModel.findAll({
+      order: [
+        ['points', 'DESC'],
+        ['coins', 'DESC'],
+        ['streaks', 'DESC']
+      ],
+      limit: validLimit,
+      include: [
+        {
+          association: 'user',
+          attributes: ['user_id', 'first_name', 'last_name', 'username']
+        }
+      ]
+    });
+  }
+
+  async getUserRankingByCoins(userId: string): Promise<{ rank: number; profile: StudentProfile }> {
+    const profile = await this.findByUserId(userId);
+    
+    const higherRanked = await this.studentProfileModel.count({
+      where: {
+        coins: {
+          [Op.gt]: profile.coins
+        }
+      }
+    });
+    
+    return {
+      rank: higherRanked + 1,
+      profile
+    };
+  }
+
+  async getUserRankingByPoints(userId: string): Promise<{ rank: number; profile: StudentProfile }> {
+    const profile = await this.findByUserId(userId);
+    
+    const higherRanked = await this.studentProfileModel.count({
+      where: {
+        points: {
+          [Op.gt]: profile.points
+        }
+      }
+    });
+    
+    return {
+      rank: higherRanked + 1,
+      profile
+    };
+  }
+
+  async getUserRankingByStreaks(userId: string): Promise<{ rank: number; profile: StudentProfile }> {
+    const profile = await this.findByUserId(userId);
+    
+    const higherRanked = await this.studentProfileModel.count({
+      where: {
+        streaks: {
+          [Op.gt]: profile.streaks
+        }
+      }
+    });
+    
+    return {
+      rank: higherRanked + 1,
+      profile
+    };
   }
 }
