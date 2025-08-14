@@ -91,7 +91,7 @@ AdminJS.registerAdapter({
       username: 'impulse_app',
       password: 'impulse_app',
       database: 'impulse_app',
-      sync: { alter: true },
+      sync: { alter: false },
       models: [...Models],
       autoLoadModels: true,
       logging: true,

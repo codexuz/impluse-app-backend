@@ -1,0 +1,44 @@
+import { Response } from 'express';
+import { VideosService } from './videos.service.js';
+import { CreateVideoDto } from './dto/create-video.dto.js';
+import { UpdateVideoDto } from './dto/update-video.dto.js';
+export declare class VideosController {
+    private readonly videosService;
+    constructor(videosService: VideosService);
+    create(createVideoDto: CreateVideoDto): Promise<import("./entities/video.entity.js").Video>;
+    findAll(): Promise<import("./entities/video.entity.js").Video[]>;
+    findOne(id: string): Promise<import("./entities/video.entity.js").Video>;
+    getVideoWithYouTubeId(id: string): Promise<any>;
+    findOneWithCaptions(id: string): Promise<{
+        youtubeId: any;
+        subtitles: string;
+        id: string;
+        title: string;
+        description: string;
+        url: string;
+        level: string;
+        subtitle: string;
+        thumbnail: string;
+        views: number;
+        source: string;
+        created_at: Date;
+        updated_at: Date;
+        deleted_at: Date;
+        createdAt?: Date | any;
+        updatedAt?: Date | any;
+        deletedAt?: Date | any;
+        version?: number | any;
+        _attributes: import("./entities/video.entity.js").Video;
+        dataValues: import("./entities/video.entity.js").Video;
+        _creationAttributes: import("./entities/video.entity.js").Video;
+        isNewRecord: boolean;
+        sequelize: import("sequelize").Sequelize;
+        _model: import("sequelize").Model<import("./entities/video.entity.js").Video, import("./entities/video.entity.js").Video>;
+    }>;
+    getWebVTTCaptions(id: string): Promise<string>;
+    downloadWebVTTCaptions(id: string, response: Response): Promise<Response<any, Record<string, any>>>;
+    refreshCaptions(id: string): Promise<import("./entities/video.entity.js").Video>;
+    update(id: string, updateVideoDto: UpdateVideoDto): Promise<import("./entities/video.entity.js").Video>;
+    incrementViews(id: string): Promise<import("./entities/video.entity.js").Video>;
+    remove(id: string): Promise<void>;
+}
