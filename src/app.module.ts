@@ -86,8 +86,8 @@ AdminJS.registerAdapter({
     ScheduleModule.forRoot(),
     SequelizeModule.forRoot({
       dialect: 'mysql',
-      host: '89.39.94.77',
-      port: 3030,
+      host: 'impulse_mysql',
+      port: 3306,
       username: 'impulse_app',
       password: 'impulse_app',
       database: 'impulse_app',
