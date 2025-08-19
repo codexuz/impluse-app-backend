@@ -17,8 +17,8 @@ export class DeepseekService {
         return await this.openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages,
-            max_tokens: 1000,
             temperature: 0.7,
         });
     }
 }
+
