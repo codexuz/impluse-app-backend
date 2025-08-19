@@ -13,7 +13,7 @@ export class SpeechifyService {
     });
   }
 
-  async streamTexttoSpeech(text: string, voice: string = 'lisa'): Promise<Buffer> {
+  async streamTexttoSpeech(text: string, voice: string): Promise<string> {
     try {
       const stream = await this.client.tts.audio.stream({
         accept: "audio/mpeg",
@@ -27,13 +27,17 @@ export class SpeechifyService {
       }
 
       const audioBuffer = Buffer.concat(chunks);
-      return audioBuffer; // 👈 Return raw audio buffer
+     
+      // 🔥 Convert buffer to Base64 string
+      const base64Audio = audioBuffer.toString("base64");
+      
+      return base64Audio; // 👈 Return raw audio buffer
     } catch (error) {
       throw new Error(`Failed to convert text to speech: ${error.message}`);
     }
   }
 
-  async generateTexttoSpeech(text: string, voice: string = 'lisa'): Promise<any> {
+  async generateTexttoSpeech(text: string, voice: string): Promise<any> {
         try {
             return await this.client.tts.audio.speech({
                 input: text,
@@ -44,4 +48,5 @@ export class SpeechifyService {
         }
     }  
 }
+
 
