@@ -29,7 +29,7 @@ export class SpeechifyService {
       const audioBuffer = Buffer.concat(chunks);
      
       // 🔥 Convert buffer to Base64 string
-      const base64Audio = audioBuffer.toString("base64");
+      const base64Audio =  `data:audio/mpeg;base64,${audioBuffer.toString("base64")}`;
       
       return base64Audio; // 👈 Return raw audio buffer
     } catch (error) {
@@ -48,5 +48,6 @@ export class SpeechifyService {
         }
     }  
 }
+
 
 
