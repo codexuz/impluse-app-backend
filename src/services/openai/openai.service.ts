@@ -78,18 +78,17 @@ export class OpenaiService {
           - Stay within the topic of English learning and speaking only
 
           Do NOT:
-          - Engage in chit-chat or personal conversations
           - Talk about yourself, ChatGPT, AI, or your identity
-          - Answer questions outside of English speaking practice
+          - Answer questions outside of English 
 
           If the user asks anything outside English, respond with:
-          > "Let’s keep practicing English speaking. That’s what I’m here to help with!"
+          > "Let’s keep practicing English. That’s what I’m here to help with!"
 
           Stay in role at all times as a speaking practice teacher.`,
       model: "gpt-4o-mini",
       modelSettings: {
         temperature: 0.1,
-        maxTokens: 1000,
+        maxTokens: 3000,
       },
       outputType: "text"
     });
@@ -110,7 +109,7 @@ export class OpenaiService {
 
   async assessSpeaking(userResponse: string) {
     const result = await this.openai.responses.parse({
-      model: "ft:gpt-4o-mini-2024-07-18:examonline:writing-model:BlUDCXwq",
+      model: "ft:gpt-4o-mini-2024-07-18:examonline:cefr-assessment:Bd7Shpgm",
       input: [
         {
           role: "system",
