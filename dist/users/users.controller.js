@@ -110,7 +110,7 @@ __decorate([
 ], UsersController.prototype, "findOne", null);
 __decorate([
     Patch(':id'),
-    Roles(Role.ADMIN),
+    Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT),
     __param(0, Param('id')),
     __param(1, Body()),
     __metadata("design:type", Function),
