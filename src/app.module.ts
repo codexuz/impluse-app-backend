@@ -86,7 +86,7 @@ AdminJS.registerAdapter({
     ScheduleModule.forRoot(),
     SequelizeModule.forRoot({
       dialect: 'mysql',
-      uri: "mysql://mysql:OimqRbawPbD52Qx3BkyZnGyaU5zXxnWwxu480IX8SXmeVFWxHkZrXh85m939kj3L@89.39.94.77:54321/default",
+      uri: "mysql://mysql:OimqRbawPbD52Qx3BkyZnGyaU5zXxnWwxu480IX8SXmeVFWxHkZrXh85m939kj3L@ugkgoowk0cg4wcccs8c4gs8w:3306/default",
       sync: { alter: false },
       models: [...Models],
       autoLoadModels: true,
