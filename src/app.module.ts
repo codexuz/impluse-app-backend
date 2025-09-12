@@ -86,11 +86,7 @@ AdminJS.registerAdapter({
     ScheduleModule.forRoot(),
     SequelizeModule.forRoot({
       dialect: 'mysql',
-      host: 'host.docker.internal',
-      port: 3306,
-      username: 'mysql',
-      password: 'Nei2gAUapA4dA1akSuJzQKl7L8jZee05pg9hyVzaJr1IWv0xXJKj4i0i15gnFTF0',
-      database: 'default',
+      uri: 'mysql://mysql:OimqRbawPbD52Qx3BkyZnGyaU5zXxnWwxu480IX8SXmeVFWxHkZrXh85m939kj3L@ugkgoowk0cg4wcccs8c4gs8w:3306/default'.
       sync: { alter: false },
       models: [...Models],
       autoLoadModels: true,
