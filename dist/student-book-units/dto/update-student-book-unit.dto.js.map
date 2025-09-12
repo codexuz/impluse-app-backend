@@ -1,1 +1,0 @@
-{"version":3,"file":"update-student-book-unit.dto.js","sourceRoot":"","sources":["../../../src/student-book-units/dto/update-student-book-unit.dto.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,WAAW,EAAE,MAAM,sBAAsB,CAAC;AACnD,OAAO,EAAE,wBAAwB,EAAE,MAAM,mCAAmC,CAAC;AAE7E,MAAM,OAAO,wBAAyB,SAAQ,WAAW,CAAC,wBAAwB,CAAC;CAAG"}
