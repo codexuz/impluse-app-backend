@@ -62,6 +62,8 @@ import { GroupChat } from "../group-chat/entities/group-chat.entity.js";
 import { Messages } from "../group-chat/entities/messages.js";
 import { GroupChatMembers } from "../group-chat/entities/chat_group_members.js";
 import { SentenceBuild } from "../exercise/entities/sentence_build.js";
+import { LessonSchedule } from "../lesson-schedules/entities/lesson-schedule.entity.js";
+
 // Export the models array for Sequelize registration
 export const Models = [
   User,
@@ -119,6 +121,7 @@ export const Models = [
   Messages,
   GroupChat,
   GroupChatMembers,
+  LessonSchedule,
 ];
 
 // Define associations after all models are loaded
@@ -235,51 +238,49 @@ export function initializeAssociations() {
     as: "question",
   });
 
-
   // Typing associations
   Questions.hasMany(TypingExercise, {
     foreignKey: "question_id",
-    as: "typing_exercise"
-  })
+    as: "typing_exercise",
+  });
 
   TypingExercise.belongsTo(Questions, {
     foreignKey: "question_id",
-    as: "question"
-  })
-
+    as: "question",
+  });
 
   // Matching associations
   Questions.hasMany(MatchingExercise, {
     foreignKey: "question_id",
-    as: "matching_pairs"
-  })
+    as: "matching_pairs",
+  });
 
   MatchingExercise.belongsTo(Questions, {
     foreignKey: "question_id",
-    as: "question"
-  })
+    as: "question",
+  });
 
   //GapFilling associations
   Questions.hasMany(GapFilling, {
     foreignKey: "question_id",
-    as: "gap_filling"
-  })
+    as: "gap_filling",
+  });
 
   GapFilling.belongsTo(Questions, {
     foreignKey: "question_id",
-    as: "question"
-  })
+    as: "question",
+  });
 
-  // SentenceBuild associations 
+  // SentenceBuild associations
   Questions.hasMany(SentenceBuild, {
     foreignKey: "question_id",
-    as: "sentence_build"
-  })
+    as: "sentence_build",
+  });
 
   SentenceBuild.belongsTo(Questions, {
     foreignKey: "question_id",
-    as: "question"
-  })
+    as: "question",
+  });
 
   // UserCourse associations
   UserCourse.belongsTo(User, { foreignKey: "userId", as: "user" });
@@ -513,12 +514,11 @@ export function initializeAssociations() {
     foreignKey: "notification_id",
   });
 
-
   Notifications.hasMany(UserNotification, {
     foreignKey: "notification_id",
     as: "user_notifications",
   });
-  
+
   UserNotification.belongsTo(Notifications, {
     foreignKey: "notification_id",
     as: "notification",
@@ -637,12 +637,12 @@ export function initializeAssociations() {
 
   LeadTrialLesson.belongsTo(Lead, {
     foreignKey: "lead_id",
-    as: "lead",
+    as: "leadData",
   });
 
   LeadTrialLesson.belongsTo(User, {
     foreignKey: "teacher_id",
-    as: "teacher",
+    as: "teacherData",
   });
 
   // chatHistory associations
@@ -768,5 +768,15 @@ export function initializeAssociations() {
   Messages.belongsTo(User, {
     foreignKey: "sender_id",
     as: "sender",
+  });
+
+  // LessonSchedule associations
+  Group.hasMany(LessonSchedule, {
+    foreignKey: "group_id",
+    as: "lesson_schedules",
+  });
+  LessonSchedule.belongsTo(Group, {
+    foreignKey: "group_id",
+    as: "group",
   });
 }

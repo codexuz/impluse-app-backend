@@ -1,45 +1,55 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { CreateLeadTrialLessonDto } from './dto/create-lead-trial-lesson.dto.js';
-import { UpdateLeadTrialLessonDto } from './dto/update-lead-trial-lesson.dto.js';
-import { LeadTrialLesson } from './entities/lead-trial-lesson.entity.js';
-import { User } from '../users/entities/user.entity.js';
-import { Lead } from '../leads/entities/lead.entity.js';
-import { Op } from 'sequelize';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectModel } from "@nestjs/sequelize";
+import { CreateLeadTrialLessonDto } from "./dto/create-lead-trial-lesson.dto.js";
+import { UpdateLeadTrialLessonDto } from "./dto/update-lead-trial-lesson.dto.js";
+import { LeadTrialLesson } from "./entities/lead-trial-lesson.entity.js";
+import { User } from "../users/entities/user.entity.js";
+import { Lead } from "../leads/entities/lead.entity.js";
+import { Op } from "sequelize";
 
 @Injectable()
 export class LeadTrialLessonsService {
   constructor(
     @InjectModel(LeadTrialLesson)
-    private trialLessonModel: typeof LeadTrialLesson,
+    private trialLessonModel: typeof LeadTrialLesson
   ) {}
 
   private getIncludeOptions() {
     return [
       {
         model: User,
-        as: 'teacher',
-        attributes: ['id', 'first_name', 'last_name', 'username', 'phone'],
-        required: false
+        as: "teacherInfo",
+        attributes: ["user_id", "first_name", "last_name", "username", "phone"],
+        required: false,
       },
       {
         model: Lead,
-        as: 'lead',
-        attributes: ['id', 'first_name', 'last_name', 'phone', 'status'],
-        required: false
-      }
+        as: "leadInfo",
+        attributes: ["id", "first_name", "last_name", "phone", "status"],
+        required: false,
+      },
     ];
   }
 
-  async create(createLeadTrialLessonDto: CreateLeadTrialLessonDto): Promise<LeadTrialLesson> {
+  async create(
+    createLeadTrialLessonDto: CreateLeadTrialLessonDto
+  ): Promise<LeadTrialLesson> {
     try {
-      return await this.trialLessonModel.create({ ...createLeadTrialLessonDto });
+      return await this.trialLessonModel.create({
+        ...createLeadTrialLessonDto,
+      });
     } catch (error) {
       throw error;
     }
   }
 
-  async findAll(page = 1, limit = 10, search?: string, status?: string, teacherId?: string): Promise<{
+  async findAll(
+    page = 1,
+    limit = 10,
+    search?: string,
+    status?: string,
+    teacherId?: string
+  ): Promise<{
     trialLessons: LeadTrialLesson[];
     total: number;
     totalPages: number;
@@ -52,12 +62,12 @@ export class LeadTrialLessonsService {
     if (search) {
       whereClause[Op.or] = [
         { notes: { [Op.iLike]: `%${search}%` } },
-        { '$teacher.first_name$': { [Op.iLike]: `%${search}%` } },
-        { '$teacher.last_name$': { [Op.iLike]: `%${search}%` } },
-        { '$teacher.username$': { [Op.iLike]: `%${search}%` } },
-        { '$lead.first_name$': { [Op.iLike]: `%${search}%` } },
-        { '$lead.last_name$': { [Op.iLike]: `%${search}%` } },
-        { '$lead.phone$': { [Op.iLike]: `%${search}%` } }
+        { "$teacherInfo.first_name$": { [Op.iLike]: `%${search}%` } },
+        { "$teacherInfo.last_name$": { [Op.iLike]: `%${search}%` } },
+        { "$teacherInfo.username$": { [Op.iLike]: `%${search}%` } },
+        { "$leadInfo.first_name$": { [Op.iLike]: `%${search}%` } },
+        { "$leadInfo.last_name$": { [Op.iLike]: `%${search}%` } },
+        { "$leadInfo.phone$": { [Op.iLike]: `%${search}%` } },
       ];
     }
 
@@ -73,9 +83,9 @@ export class LeadTrialLessonsService {
       where: whereClause,
       limit,
       offset,
-      order: [['scheduledAt', 'DESC']],
+      order: [["scheduledAt", "DESC"]],
       include: includeOptions,
-      distinct: true
+      distinct: true,
     });
 
     return {
@@ -88,7 +98,7 @@ export class LeadTrialLessonsService {
 
   async findOne(id: string): Promise<LeadTrialLesson> {
     const trialLesson = await this.trialLessonModel.findByPk(id, {
-      include: this.getIncludeOptions()
+      include: this.getIncludeOptions(),
     });
     if (!trialLesson) {
       throw new NotFoundException(`Trial lesson with ID ${id} not found`);
@@ -99,24 +109,25 @@ export class LeadTrialLessonsService {
   async findByStatus(status: string): Promise<LeadTrialLesson[]> {
     return await this.trialLessonModel.findAll({
       where: { status },
-      order: [['scheduledAt', 'DESC']],
-      include: this.getIncludeOptions()
+      order: [["scheduledAt", "DESC"]],
+      include: this.getIncludeOptions(),
     });
   }
 
   async findByTeacher(teacherId: string): Promise<LeadTrialLesson[]> {
     return await this.trialLessonModel.findAll({
       where: { teacher_id: teacherId },
-      order: [['scheduledAt', 'DESC']],
-      include: this.getIncludeOptions()
+      order: [["scheduledAt", "DESC"]],
+      include: this.getIncludeOptions(),
     });
   }
 
   async findByLead(leadId: string): Promise<LeadTrialLesson[]> {
+    // Use our custom model query that uses the correct aliases
     return await this.trialLessonModel.findAll({
       where: { lead_id: leadId },
-      order: [['scheduledAt', 'DESC']],
-      include: this.getIncludeOptions()
+      order: [["scheduledAt", "DESC"]],
+      include: this.getIncludeOptions(),
     });
   }
 
@@ -124,17 +135,20 @@ export class LeadTrialLessonsService {
     return await this.trialLessonModel.findAll({
       where: {
         scheduledAt: {
-          [Op.gte]: new Date()
+          [Op.gte]: new Date(),
         },
-        status: 'belgilangan'
+        status: "belgilangan",
       },
       limit,
-      order: [['scheduledAt', 'ASC']],
-      include: this.getIncludeOptions()
+      order: [["scheduledAt", "ASC"]],
+      include: this.getIncludeOptions(),
     });
   }
 
-  async update(id: string, updateLeadTrialLessonDto: UpdateLeadTrialLessonDto): Promise<LeadTrialLesson> {
+  async update(
+    id: string,
+    updateLeadTrialLessonDto: UpdateLeadTrialLessonDto
+  ): Promise<LeadTrialLesson> {
     const trialLesson = await this.findOne(id);
     return await trialLesson.update(updateLeadTrialLessonDto);
   }
@@ -147,43 +161,63 @@ export class LeadTrialLessonsService {
   async getTrialLessonStats(): Promise<{
     totalTrialLessons: number;
     trialLessonsByStatus: { [key: string]: number };
-    trialLessonsByTeacher: { [key: string]: { count: number; teacherName: string } };
+    trialLessonsByTeacher: {
+      [key: string]: { count: number; teacherName: string };
+    };
     upcomingTrialLessons: number;
   }> {
     const totalTrialLessons = await this.trialLessonModel.count();
-    
+
     const statusStats = await this.trialLessonModel.findAll({
       attributes: [
-        'status',
-        [this.trialLessonModel.sequelize.fn('COUNT', this.trialLessonModel.sequelize.col('status')), 'count']
+        "status",
+        [
+          this.trialLessonModel.sequelize.fn(
+            "COUNT",
+            this.trialLessonModel.sequelize.col("status")
+          ),
+          "count",
+        ],
       ],
-      group: ['status'],
-      raw: true
+      group: ["status"],
+      raw: true,
     });
 
     const teacherStats = await this.trialLessonModel.findAll({
       attributes: [
-        'teacher_id',
-        [this.trialLessonModel.sequelize.fn('COUNT', this.trialLessonModel.sequelize.col('teacher_id')), 'count']
+        "teacher_id",
+        [
+          this.trialLessonModel.sequelize.fn(
+            "COUNT",
+            this.trialLessonModel.sequelize.col("teacher_id")
+          ),
+          "count",
+        ],
       ],
       include: [
         {
           model: User,
-          as: 'teacher',
-          attributes: ['first_name', 'last_name', 'username']
-        }
+          as: "teacherInfo",
+          attributes: ["first_name", "last_name", "username"],
+        },
       ],
-      group: ['teacher_id', 'teacher.id', 'teacher.first_name', 'teacher.last_name', 'teacher.username'],
-      raw: false
+      group: [
+        "teacher_id",
+        "teacherInfo.user_id",
+        "teacherInfo.first_name",
+        "teacherInfo.last_name",
+        "teacherInfo.username",
+      ],
+      raw: false,
     });
 
     const upcomingTrialLessons = await this.trialLessonModel.count({
       where: {
         scheduledAt: {
-          [Op.gte]: new Date()
+          [Op.gte]: new Date(),
         },
-        status: 'belgilangan'
-      }
+        status: "belgilangan",
+      },
     });
 
     const trialLessonsByStatus = statusStats.reduce((acc: any, stat: any) => {
@@ -192,12 +226,12 @@ export class LeadTrialLessonsService {
     }, {});
 
     const trialLessonsByTeacher = teacherStats.reduce((acc: any, stat: any) => {
-      const teacherName = stat.teacher ? 
-        `${stat.teacher.first_name} ${stat.teacher.last_name} (${stat.teacher.username})` : 
-        'Unknown Teacher';
+      const teacherName = stat.teacherInfo
+        ? `${stat.teacherInfo.first_name} ${stat.teacherInfo.last_name} (${stat.teacherInfo.username})`
+        : "Unknown Teacher";
       acc[stat.teacher_id] = {
-        count: parseInt(stat.get('count') as string),
-        teacherName: teacherName
+        count: parseInt(stat.get("count") as string),
+        teacherName: teacherName,
       };
       return acc;
     }, {});
@@ -206,7 +240,7 @@ export class LeadTrialLessonsService {
       totalTrialLessons,
       trialLessonsByStatus,
       trialLessonsByTeacher,
-      upcomingTrialLessons
+      upcomingTrialLessons,
     };
   }
 }

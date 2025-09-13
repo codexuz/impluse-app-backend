@@ -10,21 +10,9 @@ import {
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
+import { PaymentStatus, PaymentMethod } from "./create-student-payment.dto.js";
 
-export enum PaymentStatus {
-  PENDING = "pending",
-  COMPLETED = "completed",
-  FAILED = "failed",
-}
-
-export enum PaymentMethod {
-  CASH = "Naqd",
-  CARD = "Karta",
-  CLICK = "Click",
-  PAYME = "Payme",
-}
-
-export class CreateStudentPaymentDto {
+export class CreateStudentPaymentRequestDto {
   @ApiProperty({
     description: "The ID of the student",
     example: "550e8400-e29b-41d4-a716-446655440000",
@@ -32,14 +20,6 @@ export class CreateStudentPaymentDto {
   @IsUUID()
   @IsNotEmpty()
   student_id: string;
-
-  @ApiProperty({
-    description: "The ID of the manager",
-    example: "550e8400-e29b-41d4-a716-446655440001",
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  manager_id: string;
 
   @ApiProperty({
     description: "The amount of the payment",

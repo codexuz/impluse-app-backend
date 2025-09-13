@@ -20,12 +20,6 @@
     "node": "22.x"
   },
   "dependencies": {
-    "@adminjs/express": "^6.1.0",
-    "@adminjs/import-export": "^3.0.0",
-    "@adminjs/nestjs": "^6.1.0",
-    "@adminjs/passwords": "^4.0.0",
-    "@adminjs/sequelize": "^4.1.1",
-    "@adminjs/upload": "^4.0.2",
     "@deepgram/sdk": "^4.9.1",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^10.0.0",
@@ -45,7 +39,6 @@
     "@openai/agents": "^0.0.14",
     "@speechify/api": "^1.0.0",
     "@treeee/youtube-caption-extractor": "^1.5.5",
-    "adminjs": "^7.7.2",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
@@ -112,7 +105,7 @@
     "tslib": "^2.5.0",
     "typescript": "^5.8.3"
   },
-  "name": "admin-js",
+  "name": "impulse-app-backend",
   "jest": {
     "moduleFileExtensions": [
       "js",

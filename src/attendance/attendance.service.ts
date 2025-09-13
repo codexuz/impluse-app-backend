@@ -1,8 +1,12 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { CreateAttendanceDto } from './dto/create-attendance.dto.js';
-import { UpdateAttendanceDto } from './dto/update-attendance.dto.js';
-import { Attendance } from './entities/attendance.entity.js';
-import { Op } from 'sequelize';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { CreateAttendanceDto } from "./dto/create-attendance.dto.js";
+import { UpdateAttendanceDto } from "./dto/update-attendance.dto.js";
+import { Attendance } from "./entities/attendance.entity.js";
+import { Op } from "sequelize";
 
 @Injectable()
 export class AttendanceService {
@@ -12,28 +16,80 @@ export class AttendanceService {
       where: {
         group_id: createAttendanceDto.group_id,
         student_id: createAttendanceDto.student_id,
-        date: createAttendanceDto.date
-      }
+        date: createAttendanceDto.date,
+      },
     });
 
     if (existingAttendance) {
-      throw new ConflictException('Attendance record already exists for this student, group, and date');
+      throw new ConflictException(
+        "Attendance record already exists for this student, group, and date"
+      );
     }
 
     return await Attendance.create({
       ...createAttendanceDto,
-      note: createAttendanceDto.note || ''
+      note: createAttendanceDto.note || "",
     } as any);
   }
 
   async findAll() {
     return await Attendance.findAll({
-      order: [['date', 'DESC'], ['createdAt', 'DESC']]
+      order: [
+        ["date", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          association: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { association: "group" },
+      ],
     });
   }
 
   async findOne(id: string) {
-    const attendance = await Attendance.findByPk(id);
+    const attendance = await Attendance.findByPk(id, {
+      include: [
+        {
+          association: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { association: "group" },
+      ],
+    });
     if (!attendance) {
       throw new NotFoundException(`Attendance record with ID ${id} not found`);
     }
@@ -42,22 +98,28 @@ export class AttendanceService {
 
   async update(id: string, updateAttendanceDto: UpdateAttendanceDto) {
     const attendance = await this.findOne(id);
-    
+
     // If updating student, group, or date, check for conflicts
-    if (updateAttendanceDto.student_id || updateAttendanceDto.group_id || updateAttendanceDto.date) {
+    if (
+      updateAttendanceDto.student_id ||
+      updateAttendanceDto.group_id ||
+      updateAttendanceDto.date
+    ) {
       const conflictWhere: any = {
         id: { [Op.ne]: id },
         student_id: updateAttendanceDto.student_id || attendance.student_id,
         group_id: updateAttendanceDto.group_id || attendance.group_id,
-        date: updateAttendanceDto.date || attendance.date
+        date: updateAttendanceDto.date || attendance.date,
       };
 
       const existingAttendance = await Attendance.findOne({
-        where: conflictWhere
+        where: conflictWhere,
       });
 
       if (existingAttendance) {
-        throw new ConflictException('Attendance record already exists for this student, group, and date');
+        throw new ConflictException(
+          "Attendance record already exists for this student, group, and date"
+        );
       }
     }
 
@@ -74,21 +136,99 @@ export class AttendanceService {
   async findByGroupId(group_id: string) {
     return await Attendance.findAll({
       where: { group_id },
-      order: [['date', 'DESC'], ['createdAt', 'DESC']]
+      order: [
+        ["date", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          association: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { association: "group" },
+      ],
     });
   }
 
   async findByStudentId(student_id: string) {
     return await Attendance.findAll({
       where: { student_id },
-      order: [['date', 'DESC'], ['createdAt', 'DESC']]
+      order: [
+        ["date", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          association: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { association: "group" },
+      ],
     });
   }
 
   async findByTeacherId(teacher_id: string) {
     return await Attendance.findAll({
       where: { teacher_id },
-      order: [['date', 'DESC'], ['createdAt', 'DESC']]
+      order: [
+        ["date", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          association: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { association: "group" },
+      ],
     });
   }
 
@@ -96,64 +236,181 @@ export class AttendanceService {
     return await Attendance.findAll({
       where: {
         date: {
-          [Op.between]: [startDate, endDate]
-        }
+          [Op.between]: [startDate, endDate],
+        },
       },
-      order: [['date', 'DESC'], ['createdAt', 'DESC']]
+      order: [
+        ["date", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          association: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { association: "group" },
+      ],
     });
   }
 
-  async findByGroupAndDateRange(group_id: string, startDate: string, endDate: string) {
+  async findByGroupAndDateRange(
+    group_id: string,
+    startDate: string,
+    endDate: string
+  ) {
     return await Attendance.findAll({
       where: {
         group_id,
         date: {
-          [Op.between]: [startDate, endDate]
-        }
+          [Op.between]: [startDate, endDate],
+        },
       },
-      order: [['date', 'DESC'], ['createdAt', 'DESC']]
+      order: [
+        ["date", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          association: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { association: "group" },
+      ],
     });
   }
 
-  async findByStudentAndDateRange(student_id: string, startDate: string, endDate: string) {
+  async findByStudentAndDateRange(
+    student_id: string,
+    startDate: string,
+    endDate: string
+  ) {
     return await Attendance.findAll({
       where: {
         student_id,
         date: {
-          [Op.between]: [startDate, endDate]
-        }
+          [Op.between]: [startDate, endDate],
+        },
       },
-      order: [['date', 'DESC'], ['createdAt', 'DESC']]
+      order: [
+        ["date", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          association: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { association: "group" },
+      ],
     });
   }
 
   async findByStatus(status: string) {
     return await Attendance.findAll({
       where: { status },
-      order: [['date', 'DESC'], ['createdAt', 'DESC']]
+      order: [
+        ["date", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          association: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { association: "group" },
+      ],
     });
   }
 
-  async getAttendanceStats(group_id?: string, student_id?: string, startDate?: string, endDate?: string) {
+  async getAttendanceStats(
+    group_id?: string,
+    student_id?: string,
+    startDate?: string,
+    endDate?: string
+  ) {
     const whereClause: any = {};
-    
+
     if (group_id) whereClause.group_id = group_id;
     if (student_id) whereClause.student_id = student_id;
     if (startDate && endDate) {
       whereClause.date = {
-        [Op.between]: [startDate, endDate]
+        [Op.between]: [startDate, endDate],
       };
     }
 
     const totalRecords = await Attendance.count({ where: whereClause });
-    const presentCount = await Attendance.count({ 
-      where: { ...whereClause, status: 'present' } 
+    const presentCount = await Attendance.count({
+      where: { ...whereClause, status: "present" },
     });
-    const absentCount = await Attendance.count({ 
-      where: { ...whereClause, status: 'absent' } 
+    const absentCount = await Attendance.count({
+      where: { ...whereClause, status: "absent" },
     });
-    const lateCount = await Attendance.count({ 
-      where: { ...whereClause, status: 'late' } 
+    const lateCount = await Attendance.count({
+      where: { ...whereClause, status: "late" },
     });
 
     return {
@@ -161,7 +418,10 @@ export class AttendanceService {
       present: presentCount,
       absent: absentCount,
       late: lateCount,
-      attendanceRate: totalRecords > 0 ? ((presentCount + lateCount) / totalRecords * 100).toFixed(2) : '0.00'
+      attendanceRate:
+        totalRecords > 0
+          ? (((presentCount + lateCount) / totalRecords) * 100).toFixed(2)
+          : "0.00",
     };
   }
 }

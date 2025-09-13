@@ -26,7 +26,7 @@ export class StudentPayment extends Model {
   manager_id!: string;
 
   @Column({
-    type: DataType.DECIMAL(10, 2),
+    type: DataType.INTEGER,
   })
   amount!: number;
 
@@ -49,6 +49,11 @@ export class StudentPayment extends Model {
     type: DataType.DATEONLY,
   })
   next_payment_date!: Date;
+
+  @Column({
+    type: DataType.TEXT,
+  })
+  notes!: string;
 
   @CreatedAt
   createdAt!: Date;
