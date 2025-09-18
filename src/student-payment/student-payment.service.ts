@@ -272,7 +272,7 @@ export class StudentPaymentService {
    * This identifies all students who are past their payment date
    * regardless of payment status.
    */
-  async checkDuePayments() {
+  async checkDuePayments(): Promise<{ count: number; payments: any[] }> {
     this.logger.log("Checking for debitor students with passed next_payment_date");
 
     try {
@@ -313,24 +313,35 @@ export class StudentPaymentService {
       // Return summary information
       return {
         count: overduePayments.length,
-        payments: overduePayments.map((payment) => ({
-          id: payment.id,
-          student_id: payment.student_id,
-          student_name: payment.student ? `${payment.student.first_name} ${payment.student.last_name}` : 'Unknown',
-          amount: payment.amount,
-          payment_date: payment.payment_date,
-          next_payment_date: payment.next_payment_date,
-          payment_method: payment.payment_method,
-          status: payment.status,
-          days_overdue: Math.floor((today.getTime() - new Date(payment.next_payment_date).getTime()) / (1000 * 60 * 60 * 24)),
-          new_payment_date: new Date(payment.next_payment_date),
-          new_next_payment_date: (() => {
-            const date = new Date(payment.next_payment_date);
-            date.setMonth(date.getMonth() + 1);
-            return date;
-          })(),
-          notes: payment.notes || "Debitor student - payment overdue",
-        })),
+        payments: overduePayments.map((payment) => {
+          // Get student info safely
+          const studentObj = payment.get('student');
+          const studentName = studentObj 
+            ? `${studentObj.first_name || ''} ${studentObj.last_name || ''}`.trim() 
+            : 'Unknown';
+            
+          return {
+            id: payment.id,
+            student_id: payment.student_id,
+            amount: payment.amount,
+            payment_date: payment.payment_date,
+            next_payment_date: payment.next_payment_date,
+            payment_method: payment.payment_method,
+            would_create_new_payment: true,
+            new_payment_date: new Date(payment.next_payment_date),
+            new_next_payment_date: (() => {
+              const date = new Date(payment.next_payment_date);
+              date.setMonth(date.getMonth() + 1);
+              return date;
+            })(),
+            notes: payment.notes || "Debitor student - payment overdue",
+            // Include these as extra properties that aren't in the DTO
+            // These won't cause TypeScript errors as we're using any[] type
+            status: payment.status,
+            days_overdue: Math.floor((today.getTime() - new Date(payment.next_payment_date).getTime()) / (1000 * 60 * 60 * 24)),
+            student_name: studentName
+          };
+        }),
       };
     } catch (error) {
       this.logger.error(`Error checking debitor students: ${error.message}`);
@@ -375,6 +386,12 @@ export class StudentPaymentService {
 
       // Process each overdue payment
       for (const payment of overduePayments) {
+        // Get student info safely using get() method
+        const studentObj = payment.get('student');
+        const studentName = studentObj 
+          ? `${studentObj.first_name || ''} ${studentObj.last_name || ''}`.trim() 
+          : 'Unknown';
+
         // Only create new payment records for payments that aren't completed
         if (payment.status !== PaymentStatus.COMPLETED) {
           // First, update the current payment to PENDING if it's not already completed
@@ -397,15 +414,15 @@ export class StudentPaymentService {
               payment_method: payment.payment_method as PaymentMethod,
               payment_date: newPaymentDate,
               next_payment_date: nextPaymentDate,
-              notes: payment.notes || "Automatically generated for debitor student",
+              notes: payment.notes || `Automatically generated for debitor student: ${studentName}`,
             });
 
             this.logger.log(
-              `Created new payment record for debitor student ${payment.student_id} with next payment date ${nextPaymentDate.toISOString().split("T")[0]}`
+              `Created new payment record for debitor student ${payment.student_id} (${studentName}) with next payment date ${nextPaymentDate.toISOString().split("T")[0]}`
             );
           } catch (error) {
             this.logger.error(
-              `Failed to create payment record for debitor student ${payment.student_id}: ${error.message}`
+              `Failed to create payment record for debitor student ${payment.student_id} (${studentName}): ${error.message}`
             );
           }
         }
