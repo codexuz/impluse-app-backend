@@ -268,21 +268,22 @@ export class StudentPaymentService {
    * for students whose next_payment_date has passed
    */
   /**
-   * Check which payments would be processed by the automatic payment creation job
-   * without actually creating new payments. Useful for testing and monitoring.
+   * Check for debitor students (students with passed next_payment_date)
+   * This identifies all students who are past their payment date
+   * regardless of payment status.
    */
   async checkDuePayments() {
-    this.logger.log("Checking for payments with passed next_payment_date");
+    this.logger.log("Checking for debitor students with passed next_payment_date");
 
     try {
       // Set today's date without time for accurate date comparisons
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Find all pending payments with next_payment_date in the past
+      // Find all payments with next_payment_date in the past
+      // We don't filter by status since we want to identify all debitors
       const overduePayments = await this.studentPaymentModel.findAll({
         where: {
-          status: PaymentStatus.PENDING,
           next_payment_date: {
             [Op.lt]: today,
           },
@@ -301,45 +302,55 @@ export class StudentPaymentService {
         ],
       });
 
+      // Update status to PENDING for all overdue payments that aren't already handled
+      for (const payment of overduePayments) {
+        if (payment.status !== PaymentStatus.COMPLETED) {
+          await payment.update({ status: PaymentStatus.PENDING });
+          this.logger.log(`Updated payment ${payment.id} status to PENDING for debitor student ${payment.student_id}`);
+        }
+      }
+
       // Return summary information
       return {
         count: overduePayments.length,
         payments: overduePayments.map((payment) => ({
           id: payment.id,
           student_id: payment.student_id,
+          student_name: payment.student ? `${payment.student.first_name} ${payment.student.last_name}` : 'Unknown',
           amount: payment.amount,
           payment_date: payment.payment_date,
           next_payment_date: payment.next_payment_date,
           payment_method: payment.payment_method,
-          would_create_new_payment: true,
+          status: payment.status,
+          days_overdue: Math.floor((today.getTime() - new Date(payment.next_payment_date).getTime()) / (1000 * 60 * 60 * 24)),
           new_payment_date: new Date(payment.next_payment_date),
           new_next_payment_date: (() => {
             const date = new Date(payment.next_payment_date);
             date.setMonth(date.getMonth() + 1);
             return date;
           })(),
-          notes: payment.notes || "Automatically detected due payment",
+          notes: payment.notes || "Debitor student - payment overdue",
         })),
       };
     } catch (error) {
-      this.logger.error(`Error checking due payments: ${error.message}`);
+      this.logger.error(`Error checking debitor students: ${error.message}`);
       throw error;
     }
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleAutomaticPaymentCreation() {
-    this.logger.log("Running automatic payment creation job");
+    this.logger.log("Running automatic payment creation job for debitor students");
 
     try {
       // Set today's date without time for accurate date comparisons
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Find all pending payments with next_payment_date in the past
+      // Find all payments with next_payment_date in the past
+      // We want to identify all debitors, regardless of current status
       const overduePayments = await this.studentPaymentModel.findAll({
         where: {
-          status: PaymentStatus.PENDING,
           next_payment_date: {
             [Op.lt]: today,
           },
@@ -359,42 +370,48 @@ export class StudentPaymentService {
       });
 
       this.logger.log(
-        `Found ${overduePayments.length} payment records with passed next_payment_date`
+        `Found ${overduePayments.length} students with passed payment dates (debitors)`
       );
 
       // Process each overdue payment
       for (const payment of overduePayments) {
-        // Create a new pending payment record for the next payment cycle
-        const newPaymentDate = new Date(payment.next_payment_date);
+        // Only create new payment records for payments that aren't completed
+        if (payment.status !== PaymentStatus.COMPLETED) {
+          // First, update the current payment to PENDING if it's not already completed
+          await payment.update({ status: PaymentStatus.PENDING });
+          
+          // Create a new pending payment record for the next payment cycle
+          const newPaymentDate = new Date(payment.next_payment_date);
 
-        // Set the next payment date to one month after the current next_payment_date
-        const nextPaymentDate = new Date(payment.next_payment_date);
-        nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+          // Set the next payment date to one month after the current next_payment_date
+          const nextPaymentDate = new Date(payment.next_payment_date);
+          nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
 
-        try {
-          // Create the new payment record
-          await this.create({
-            student_id: payment.student_id,
-            manager_id: payment.manager_id,
-            amount: payment.amount,
-            status: PaymentStatus.PENDING,
-            payment_method: payment.payment_method as PaymentMethod,
-            payment_date: newPaymentDate,
-            next_payment_date: nextPaymentDate,
-            notes: payment.notes || "Automatically generated renewal payment",
-          });
+          try {
+            // Create the new payment record
+            await this.create({
+              student_id: payment.student_id,
+              manager_id: payment.manager_id,
+              amount: payment.amount,
+              status: PaymentStatus.PENDING,
+              payment_method: payment.payment_method as PaymentMethod,
+              payment_date: newPaymentDate,
+              next_payment_date: nextPaymentDate,
+              notes: payment.notes || "Automatically generated for debitor student",
+            });
 
-          this.logger.log(
-            `Created new payment record for student ${payment.student_id} with next payment date ${nextPaymentDate.toISOString().split("T")[0]}`
-          );
-        } catch (error) {
-          this.logger.error(
-            `Failed to create payment record for student ${payment.student_id}: ${error.message}`
-          );
+            this.logger.log(
+              `Created new payment record for debitor student ${payment.student_id} with next payment date ${nextPaymentDate.toISOString().split("T")[0]}`
+            );
+          } catch (error) {
+            this.logger.error(
+              `Failed to create payment record for debitor student ${payment.student_id}: ${error.message}`
+            );
+          }
         }
       }
 
-      this.logger.log("Automatic payment creation job completed");
+      this.logger.log("Automatic payment processing for debitor students completed");
     } catch (error) {
       this.logger.error(
         `Error in automatic payment creation job: ${error.message}`

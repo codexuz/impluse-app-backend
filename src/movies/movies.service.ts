@@ -42,7 +42,7 @@ export class MoviesService {
     return await this.movieModel.findAll({
       where: {
         title: {
-          [Op.iLike]: `%${searchTerm}%`,
+          [Op.like]: `%${searchTerm}%`,
         },
       },
       order: [['title', 'ASC']],

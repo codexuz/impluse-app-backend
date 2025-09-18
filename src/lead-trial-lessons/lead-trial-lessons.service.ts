@@ -61,13 +61,13 @@ export class LeadTrialLessonsService {
 
     if (search) {
       whereClause[Op.or] = [
-        { notes: { [Op.iLike]: `%${search}%` } },
-        { "$teacherInfo.first_name$": { [Op.iLike]: `%${search}%` } },
-        { "$teacherInfo.last_name$": { [Op.iLike]: `%${search}%` } },
-        { "$teacherInfo.username$": { [Op.iLike]: `%${search}%` } },
-        { "$leadInfo.first_name$": { [Op.iLike]: `%${search}%` } },
-        { "$leadInfo.last_name$": { [Op.iLike]: `%${search}%` } },
-        { "$leadInfo.phone$": { [Op.iLike]: `%${search}%` } },
+        { notes: { [Op.like]: `%${search}%` } },
+        { "$teacherInfo.first_name$": { [Op.like]: `%${search}%` } },
+        { "$teacherInfo.last_name$": { [Op.like]: `%${search}%` } },
+        { "$teacherInfo.username$": { [Op.like]: `%${search}%` } },
+        { "$leadInfo.first_name$": { [Op.like]: `%${search}%` } },
+        { "$leadInfo.last_name$": { [Op.like]: `%${search}%` } },
+        { "$leadInfo.phone$": { [Op.like]: `%${search}%` } },
       ];
     }
 

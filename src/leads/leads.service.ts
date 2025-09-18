@@ -31,10 +31,10 @@ export class LeadsService {
 
     if (search) {
       whereClause[Op.or] = [
-        { first_name: { [Op.iLike]: `%${search}%` } },
-        { last_name: { [Op.iLike]: `%${search}%` } },
-        { phone: { [Op.iLike]: `%${search}%` } },
-        { question: { [Op.iLike]: `%${search}%` } }
+        { first_name: { [Op.like]: `%${search}%` } },
+        { last_name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+        { question: { [Op.like]: `%${search}%` } }
       ];
     }
 
@@ -189,7 +189,7 @@ export class LeadsService {
     // Weekly trends
     const weeklyTrends = await this.leadModel.findAll({
       attributes: [
-        [sequelize.fn('DATE_TRUNC', 'week', sequelize.col('createdAt')), 'week'],
+        [sequelize.fn('DATE_FORMAT', sequelize.col('createdAt'), '%Y-%u'), 'week'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'count']
       ],
       where: {
@@ -197,15 +197,15 @@ export class LeadsService {
           [Op.gte]: new Date(new Date().setDate(new Date().getDate() - 90))
         }
       },
-      group: [sequelize.fn('DATE_TRUNC', 'week', sequelize.col('createdAt'))],
-      order: [[sequelize.fn('DATE_TRUNC', 'week', sequelize.col('createdAt')), 'ASC']],
+      group: [sequelize.fn('DATE_FORMAT', sequelize.col('createdAt'), '%Y-%u')],
+      order: [[sequelize.fn('DATE_FORMAT', sequelize.col('createdAt'), '%Y-%u'), 'ASC']],
       raw: true
     });
 
     // Monthly trends
     const monthlyTrends = await this.leadModel.findAll({
       attributes: [
-        [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('createdAt')), 'month'],
+        [sequelize.fn('DATE_FORMAT', sequelize.col('createdAt'), '%Y-%m-01'), 'month'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'count']
       ],
       where: {
@@ -213,8 +213,8 @@ export class LeadsService {
           [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 12))
         }
       },
-      group: [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('createdAt'))],
-      order: [[sequelize.fn('DATE_TRUNC', 'month', sequelize.col('createdAt')), 'ASC']],
+      group: [sequelize.fn('DATE_FORMAT', sequelize.col('createdAt'), '%Y-%m')],
+      order: [[sequelize.fn('DATE_FORMAT', sequelize.col('createdAt'), '%Y-%m'), 'ASC']],
       raw: true
     });
 
