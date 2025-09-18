@@ -192,7 +192,7 @@ export class StudentPaymentController {
     return { message: "Payment creation job triggered successfully" };
   }
 
-  @Get("check-due-payments")
+  @Get("due-payments/check")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({
     summary:
@@ -205,7 +205,40 @@ export class StudentPaymentController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 403, description: "Forbidden." })
+  @ApiResponse({ status: 400, description: "Bad Request." })
   async checkDuePayments(): Promise<DuePaymentsResponseDto> {
-    return this.studentPaymentService.checkDuePayments();
+    try {
+      return await this.studentPaymentService.checkDuePayments();
+    } catch (error) {
+      throw new BadRequestException(
+        `Error checking due payments: ${error.message}`
+      );
+    }
+  }
+
+  // Keep backward compatibility with the original endpoint
+  @Get("check-due-payments")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({
+    summary:
+      "Legacy endpoint - Check which payments would be processed by the automatic payment job",
+    deprecated: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: "List of payments that would be processed",
+    type: DuePaymentsResponseDto,
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  @ApiResponse({ status: 400, description: "Bad Request." })
+  async checkDuePaymentsLegacy(): Promise<DuePaymentsResponseDto> {
+    try {
+      return await this.studentPaymentService.checkDuePayments();
+    } catch (error) {
+      throw new BadRequestException(
+        `Error checking due payments: ${error.message}`
+      );
+    }
   }
 }
