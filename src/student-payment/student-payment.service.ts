@@ -314,10 +314,11 @@ export class StudentPaymentService {
       return {
         count: overduePayments.length,
         payments: overduePayments.map((payment) => {
-          // Get student info safely
-          const studentObj = payment.get('student');
-          const studentName = studentObj 
-            ? `${studentObj.first_name || ''} ${studentObj.last_name || ''}`.trim() 
+          // Get student info safely using toJSON to convert to plain object
+          const studentInfo = payment.get({ plain: true });
+          const student = studentInfo.student as any;
+          const studentName = student 
+            ? `${student.first_name || ''} ${student.last_name || ''}`.trim() 
             : 'Unknown';
             
           return {
@@ -386,10 +387,11 @@ export class StudentPaymentService {
 
       // Process each overdue payment
       for (const payment of overduePayments) {
-        // Get student info safely using get() method
-        const studentObj = payment.get('student');
-        const studentName = studentObj 
-          ? `${studentObj.first_name || ''} ${studentObj.last_name || ''}`.trim() 
+        // Get student info safely using toJSON to convert to plain object
+        const studentInfo = payment.get({ plain: true });
+        const student = studentInfo.student as any;
+        const studentName = student 
+          ? `${student.first_name || ''} ${student.last_name || ''}`.trim() 
           : 'Unknown';
 
         // Only create new payment records for payments that aren't completed
