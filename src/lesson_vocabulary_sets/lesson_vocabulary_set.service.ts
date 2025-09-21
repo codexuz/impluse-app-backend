@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { LessonVocabularySet } from './entities/lesson_vocabulary_set.entity.js';
 import { CreateLessonVocabularySetDto } from './dto/create-lesson-vocabulary-set.dto.js';
 import { UpdateLessonVocabularySetDto } from './dto/update-lesson-vocabulary-set.dto.js';
+import { VocabularyItem } from '../vocabulary_items/entities/vocabulary_item.entity.js';
 
 @Injectable()
 export class LessonVocabularySetService {
@@ -37,7 +38,13 @@ export class LessonVocabularySetService {
 
   async findByLessonId(lesson_id: string): Promise<LessonVocabularySet[]> {
     return await this.lessonVocabularySetModel.findAll({
-      where: { lesson_id }
+      where: { lesson_id },
+      include: [
+        {
+          model: VocabularyItem,
+          as: 'vocabulary_set',
+        }
+      ]
     });
   }
 
