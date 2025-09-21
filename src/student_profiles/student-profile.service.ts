@@ -103,14 +103,35 @@ export class StudentProfileService {
       include: [
         {
           association: "user",
-          attributes: ["user_id", "first_name", "last_name", "username"],
+          attributes: ["user_id", "first_name", "last_name", "username", "level_id"],
+          where: {
+            level_id: {
+              [Op.ne]: null, // Only include users that have a level_id
+            },
+          },
         },
       ],
     });
   }
 
-  async getLeaderboardByLevel(limit?: number): Promise<StudentProfile[]> {
+  async getLeaderboardByLevel(userId: string, limit?: number): Promise<StudentProfile[]> {
     const validLimit = limit && limit > 0 ? limit : 10;
+    
+    // First, get the current user's level_id
+    const profile = await this.findByUserId(userId);
+    
+    // Get the user to access their level_id
+    const userRecord = await this.studentProfileModel.sequelize.models.User.findOne({
+      where: { user_id: profile.user_id },
+      attributes: ["level_id"],
+    });
+    
+    if (!userRecord || !userRecord.get("level_id")) {
+      return []; // Return empty array if user has no level
+    }
+    
+    const levelId = userRecord.get("level_id");
+    
     return this.studentProfileModel.findAll({
       include: [
         {
@@ -123,19 +144,12 @@ export class StudentProfileService {
             "level_id",
           ],
           where: {
-            level_id: {
-              [Op.ne]: null, // Only include users that have a level_id
-            },
+            level_id: levelId, // Only include users with the same level as the current user
           },
         },
       ],
       order: [
-        [
-          { model: this.studentProfileModel.sequelize.models.User, as: "user" },
-          "level_id",
-          "DESC",
-        ],
-        ["points", "DESC"], // Secondary sort by points for users with same level
+        ["points", "DESC"], // Sort by points since all users have the same level
       ],
       limit: validLimit,
     });

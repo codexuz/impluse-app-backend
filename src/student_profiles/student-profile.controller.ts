@@ -166,7 +166,7 @@ export class StudentProfileController {
 
   @Get("leaderboard/points")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get leaderboard ranked by points" })
+  @ApiOperation({ summary: "Get leaderboard ranked by points for users with level" })
   @ApiQuery({
     name: "limit",
     required: false,
@@ -175,7 +175,7 @@ export class StudentProfileController {
   })
   @ApiResponse({
     status: 200,
-    description: "Return leaderboard by points",
+    description: "Return leaderboard by points for users with level",
     type: [LeaderboardItemDto],
   })
   getLeaderboardByPoints(@Query("limit") limit?: string) {
@@ -189,25 +189,37 @@ export class StudentProfileController {
 
   @Get("leaderboard/level")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get leaderboard ranked by level" })
+  @ApiOperation({ summary: "Get leaderboard for students with same level as current user" })
   @ApiQuery({
     name: "limit",
     required: false,
     type: Number,
     description: "Number of results to return (default: 10)",
   })
+  @ApiQuery({
+    name: "userId",
+    required: true,
+    type: String,
+    description: "User ID to determine the level for filtering",
+  })
   @ApiResponse({
     status: 200,
     description: "Return leaderboard by level",
     type: [LeaderboardItemDto],
   })
-  getLeaderboardByLevel(@Query("limit") limit?: string) {
+  getLeaderboardByLevel(
+    @Query("limit") limit?: string,
+    @Query("userId") userId?: string
+  ) {
+    if (!userId) {
+      throw new Error("User ID is required for level-based leaderboard");
+    }
     const numericLimit = limit ? parseInt(limit, 10) : undefined;
     const validLimit =
       numericLimit && !isNaN(numericLimit) && numericLimit > 0
         ? numericLimit
         : undefined;
-    return this.studentProfileService.getLeaderboardByLevel(validLimit);
+    return this.studentProfileService.getLeaderboardByLevel(userId, validLimit);
   }
 
   @Get("leaderboard/streaks")
