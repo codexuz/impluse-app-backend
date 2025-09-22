@@ -63,7 +63,7 @@ import { Messages } from "../group-chat/entities/messages.js";
 import { GroupChatMembers } from "../group-chat/entities/chat_group_members.js";
 import { SentenceBuild } from "../exercise/entities/sentence_build.js";
 import { LessonSchedule } from "../lesson-schedules/entities/lesson-schedule.entity.js";
-
+import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 // Export the models array for Sequelize registration
 export const Models = [
   User,
@@ -122,6 +122,7 @@ export const Models = [
   GroupChat,
   GroupChatMembers,
   LessonSchedule,
+  NotificationToken,
 ];
 
 // Define associations after all models are loaded
@@ -778,5 +779,15 @@ export function initializeAssociations() {
   LessonSchedule.belongsTo(Group, {
     foreignKey: "group_id",
     as: "group",
+  });
+
+  // NotificationToken associations
+  User.hasMany(NotificationToken, {
+    foreignKey: "user_id",
+    as: "notification_tokens",
+  });
+  NotificationToken.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
   });
 }

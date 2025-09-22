@@ -61,7 +61,6 @@ import { UploadModule } from "./upload/upload.module.js";
 import { SupportSchedulesModule } from "./support-schedules/support-schedules.module.js";
 import { SupportBookingsModule } from "./support-bookings/support-bookings.module.js";
 import { GroupChatModule } from "./group-chat/group-chat.module.js";
-import { OnesignalModule } from "./onesignal/onesignal.module.js";
 import { StoriesModule } from "./stories/stories.module.js";
 import { SpeechifyModule } from "./services/speechify/speechify.module.js";
 import { OpenaiModule } from "./services/openai/openai.module.js";
@@ -130,7 +129,6 @@ import { LessonSchedulesModule } from "./lesson-schedules/lesson-schedules.modul
     SupportSchedulesModule,
     SupportBookingsModule,
     GroupChatModule,
-    OnesignalModule,
     StoriesModule,
     SpeechifyModule,
     OpenaiModule,

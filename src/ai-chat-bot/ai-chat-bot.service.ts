@@ -25,18 +25,11 @@ export class AiChatBotService {
   }
 
   async create(userId: string, createAiChatBotDto: CreateAiChatBotDto) {
-    // Store user's message
-    await this.chatHistoryModel.create({
+    // Store user's message first
+    const userMessage = await this.chatHistoryModel.create({
       userId,
       role: 'user',
       content: createAiChatBotDto.message,
-    });
-
-    // Create and store thinking status message
-    const thinkingMessage = await this.chatHistoryModel.create({
-      userId,
-      role: 'assistant',
-      content: '...',  // Three dots indicating thinking status
     });
 
     try {
@@ -77,16 +70,20 @@ export class AiChatBotService {
         aiResponse = this.convertMarkdownToText(aiResponse);
       }
 
-      // Update the thinking message with actual response
-      await thinkingMessage.update({
-        content: aiResponse
+      // Create and store bot response after successful generation
+      const botMessage = await this.chatHistoryModel.create({
+        userId,
+        role: 'assistant',
+        content: aiResponse,
       });
 
-      return thinkingMessage;
+      return botMessage;
     } catch (error) {
-      // If there's an error, update the message to show the error
-      await thinkingMessage.update({
-        content: 'Sorry, I encountered an error while processing your request.'
+      // If there's an error, create an error message
+      const errorMessage = await this.chatHistoryModel.create({
+        userId,
+        role: 'assistant',
+        content: 'Sorry, I encountered an error while processing your request.',
       });
       throw error;
     }
@@ -95,7 +92,7 @@ export class AiChatBotService {
   async findAll(userId: string) {
     return this.chatHistoryModel.findAll({
       where: { userId },
-      order: [['created_at', 'ASC']],
+      order: [['created_at', 'ASC']], // Simple chronological order for natural user-bot alternation
     });
   }
 
@@ -139,9 +136,6 @@ export class AiChatBotService {
     });
 
     if (nextAssistantMessage) {
-      // Mark as thinking again
-      await nextAssistantMessage.update({ content: '...' });
-
       try {
         // Regenerate response with the selected model or default
         
@@ -149,7 +143,7 @@ export class AiChatBotService {
         const conversationHistory = await this.chatHistoryModel.findAll({
           where: { userId },
           order: [['created_at', 'ASC']],
-          limit: 10, // Limit to last 10 messages for context
+          limit: 3, // Limit to last 3 messages for context
         });
         
         // Format conversation history for the AI

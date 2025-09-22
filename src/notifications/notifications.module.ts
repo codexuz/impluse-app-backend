@@ -1,12 +1,13 @@
-import { Module } from '@nestjs/common';
-import { NotificationsService } from './notifications.service.js';
-import { NotificationsController } from './notifications.controller.js';
-import { OnesignalModule } from '../onesignal/onesignal.module.js';
-import { OnesignalService } from '../onesignal/onesignal.service.js';
+import { Module } from "@nestjs/common";
+import { NotificationsService } from "./notifications.service.js";
+import { NotificationsController } from "./notifications.controller.js";
+import { ConfigModule } from "@nestjs/config";
+import { FirebaseServiceService } from './firebase-service.service.js';
 
 @Module({
   controllers: [NotificationsController],
-  providers: [NotificationsService, OnesignalService],
-  imports: [OnesignalModule],
+  providers: [NotificationsService, FirebaseServiceService],
+  imports: [ConfigModule],
+  exports: [NotificationsService, FirebaseServiceService],
 })
 export class NotificationsModule {}
