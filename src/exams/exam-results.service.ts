@@ -36,14 +36,14 @@ export class ExamResultsService {
 
   async findAll(): Promise<ExamResult[]> {
     return this.examResultModel.findAll({
-      include: [{ model: Exam }]
+      include: [{ model: Exam, as: "exam" }]
     });
   }
 
   async findOne(id: string): Promise<ExamResult> {
     const result = await this.examResultModel.findOne({
       where: { id },
-      include: [{ model: Exam }]
+      include: [{ model: Exam, as: "exam" }]
     });
 
     if (!result) {
@@ -56,14 +56,14 @@ export class ExamResultsService {
   async findByExam(examId: string): Promise<ExamResult[]> {
     return this.examResultModel.findAll({
       where: { exam_id: examId },
-      include: [{ model: Exam }]
+      include: [{ model: Exam, as: "exam" }]
     });
   }
 
   async findByStudent(studentId: string): Promise<ExamResult[]> {
     return this.examResultModel.findAll({
       where: { student_id: studentId },
-      include: [{ model: Exam }]
+      include: [{ model: Exam, as: "exam" }]
     });
   }
 
@@ -73,7 +73,7 @@ export class ExamResultsService {
         exam_id: examId,
         student_id: studentId
       },
-      include: [{ model: Exam }]
+      include: [{ model: Exam, as: "exam" }]
     });
 
     if (!result) {
