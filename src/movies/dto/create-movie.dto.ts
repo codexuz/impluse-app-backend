@@ -15,9 +15,12 @@ export enum MovieType {
 }
 
 export enum MovieLevel {
-    BEGINNER = 'beginner',
-    INTERMEDIATE = 'intermediate',
-    ADVANCED = 'advanced'
+    A1 = 'A1',
+    A2 = 'A2',
+    B1 = 'B1',
+    B2 = 'B2',
+    C1 = 'C1',
+    C2 = 'C2'
 }
 
 export class CreateMovieDto {
@@ -40,5 +43,5 @@ export class CreateMovieDto {
 
     @IsEnum(MovieLevel)
     @IsOptional()
-    level?: MovieLevel = MovieLevel.BEGINNER;
+    level?: MovieLevel = MovieLevel.A1;
 }
