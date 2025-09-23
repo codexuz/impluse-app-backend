@@ -35,6 +35,14 @@ export class CreateGroupHomeworkDto {
     title?: string;
 
     @ApiProperty({
+        description: 'The start date for the homework (YYYY-MM-DD)',
+        example: '2025-07-15'
+    })
+    @IsDateString()
+    @IsOptional()
+    start_date?: Date;
+
+    @ApiProperty({
         description: 'The deadline for the homework (YYYY-MM-DD)',
         example: '2025-08-01'
     })

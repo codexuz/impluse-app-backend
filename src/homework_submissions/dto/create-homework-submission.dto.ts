@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsUUID, IsOptional, IsNumber, IsEnum, IsString, IsUrl, Min, Max } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsOptional, IsNumber, IsEnum, IsString, Min, Max } from 'class-validator';
 
 export class CreateHomeworkSubmissionDto {
     @ApiProperty({
@@ -37,7 +37,7 @@ export class CreateHomeworkSubmissionDto {
     exercise_id?: string;
 
     @ApiProperty({
-        description: 'Completion percentage of homework',
+        description: 'Score achieved in this section (0-100)',
         example: 85.5,
         required: false,
         minimum: 0,
@@ -50,16 +50,6 @@ export class CreateHomeworkSubmissionDto {
     percentage?: number;
 
     @ApiProperty({
-        description: 'Status of homework submission',
-        enum: ['passed', 'failed', 'incomplete'],
-        example: 'passed',
-        required: false
-    })
-    @IsEnum(['passed', 'failed', 'incomplete'])
-    @IsOptional()
-    status?: string;
-
-    @ApiProperty({
         description: 'Section of the homework',
         enum: ['reading', 'listening', 'grammar', 'writing', 'speaking'],
         example: 'writing'
@@ -69,13 +59,12 @@ export class CreateHomeworkSubmissionDto {
     section: string;
 
     @ApiProperty({
-        description: 'URL of the submitted file',
-        example: 'https://storage.example.com/submissions/homework1.pdf',
+        description: 'Student answers for the homework section',
+        example: { 'question1': 'answer1', 'question2': 'answer2' },
         required: false
     })
-    @IsUrl()
     @IsOptional()
-    file_url?: string;
+    answers?: { [key: string]: any };
 
     @ApiProperty({
         description: 'Teacher feedback on the submission',

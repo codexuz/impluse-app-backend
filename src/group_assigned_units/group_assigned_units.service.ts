@@ -5,6 +5,7 @@ import { UpdateGroupAssignedUnitDto } from './dto/update-group_assigned_unit.dto
 import { GroupAssignedUnit } from './entities/group_assigned_unit.entity.js';
 import { LessonService } from '../lesson/lesson.service.js';
 import { GroupAssignedLessonsService } from '../group_assigned_lessons/group_assigned_lessons.service.js';
+import { GroupHomeworksService } from '../group_homeworks/group_homeworks.service.js';
 
 @Injectable()
 export class GroupAssignedUnitsService {
@@ -12,7 +13,8 @@ export class GroupAssignedUnitsService {
         @InjectModel(GroupAssignedUnit)
         private groupAssignedUnitModel: typeof GroupAssignedUnit,
         private lessonService: LessonService,
-        private groupAssignedLessonsService: GroupAssignedLessonsService
+        private groupAssignedLessonsService: GroupAssignedLessonsService,
+        private groupHomeworksService: GroupHomeworksService
     ) {}
 
     async create(createDto: CreateGroupAssignedUnitDto): Promise<GroupAssignedUnit> {
@@ -49,10 +51,30 @@ export class GroupAssignedUnitsService {
                 
                 // Wait for all lesson assignments to be created
                 await Promise.all(lessonPromises);
+                
+                // Create homeworks for each lesson
+                const homeworkPromises = lessons.map((lesson) => {
+                    // Calculate homework deadline (e.g., 3 days before lesson end date)
+                    const homeworkDeadline = new Date(endDate);
+                    homeworkDeadline.setDate(homeworkDeadline.getDate() - 3); // 3 days before end date
+                    
+                    // Create homework for each lesson
+                    return this.groupHomeworksService.create({
+                        lesson_id: lesson.id,
+                        group_id: createDto.group_id,
+                        teacher_id: createDto.teacher_id,
+                        title: `${lesson.title} - Homework`, // Auto-generate title based on lesson
+                        start_date: startDate,
+                        deadline: homeworkDeadline > startDate ? homeworkDeadline : endDate // Ensure deadline is not before start date
+                    });
+                });
+                
+                // Wait for all homework assignments to be created
+                await Promise.all(homeworkPromises);
             }
         } catch (error) {
-            console.error('Failed to assign lessons to group:', error);
-            // Note: We're not deleting the unit assignment if lesson assignment fails
+            console.error('Failed to assign lessons and homeworks to group:', error);
+            // Note: We're not deleting the unit assignment if lesson/homework assignment fails
             // This is a design choice - consider if you want to make this atomic
         }
         

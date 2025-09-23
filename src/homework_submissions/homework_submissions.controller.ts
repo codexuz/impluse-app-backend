@@ -4,6 +4,12 @@ import { HomeworkSubmissionsService } from './homework_submissions.service.js';
 import { CreateHomeworkSubmissionDto } from './dto/create-homework-submission.dto.js';
 import { UpdateHomeworkSubmissionDto } from './dto/update-homework-submission.dto.js';
 import { HomeworkSubmission } from './entities/homework_submission.entity.js';
+import { HomeworkSection } from './entities/homework_sections.entity.js';
+import { 
+    HomeworkSubmissionResponseDto, 
+    HomeworkSectionResponseDto, 
+    HomeworkSubmissionWithSectionResponseDto 
+} from './dto/homework-submission-response.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -19,27 +25,27 @@ export class HomeworkSubmissionsController {
     @Post()
     @Roles(Role.STUDENT)
     @ApiOperation({ summary: 'Create a new homework submission' })
-    @ApiResponse({ status: 201, description: 'The homework submission has been successfully created.', type: HomeworkSubmission })
+    @ApiResponse({ status: 201, description: 'The homework submission has been successfully created.', type: HomeworkSubmissionWithSectionResponseDto })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     @ApiResponse({ status: 403, description: 'Forbidden.' })
-    async create(@Body() createHomeworkSubmissionDto: CreateHomeworkSubmissionDto): Promise<HomeworkSubmission> {
+    async create(@Body() createHomeworkSubmissionDto: CreateHomeworkSubmissionDto): Promise<HomeworkSubmissionWithSectionResponseDto> {
         return await this.homeworkSubmissionsService.create(createHomeworkSubmissionDto);
     }
 
     @Post('section')
     @Roles(Role.STUDENT)
     @ApiOperation({ summary: 'Save homework submission by section (creates new or updates existing)' })
-    @ApiResponse({ status: 201, description: 'The homework submission has been successfully saved.', type: HomeworkSubmission })
+    @ApiResponse({ status: 201, description: 'The homework submission has been successfully saved.', type: HomeworkSubmissionWithSectionResponseDto })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     @ApiResponse({ status: 403, description: 'Forbidden.' })
-    async saveBySection(@Body() createHomeworkSubmissionDto: CreateHomeworkSubmissionDto): Promise<HomeworkSubmission> {
+    async saveBySection(@Body() createHomeworkSubmissionDto: CreateHomeworkSubmissionDto): Promise<HomeworkSubmissionWithSectionResponseDto> {
         return await this.homeworkSubmissionsService.saveBySection(createHomeworkSubmissionDto);
     }
 
     @Get()
     @Roles(Role.ADMIN, Role.TEACHER)
     @ApiOperation({ summary: 'Get all homework submissions' })
-    @ApiResponse({ status: 200, description: 'Return all homework submissions.', type: [HomeworkSubmission] })
+    @ApiResponse({ status: 200, description: 'Return all homework submissions.', type: [HomeworkSubmissionResponseDto] })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     async findAll(): Promise<HomeworkSubmission[]> {
         return await this.homeworkSubmissionsService.findAll();
@@ -79,47 +85,47 @@ export class HomeworkSubmissionsController {
     @Get('section/:section')
     @Roles(Role.ADMIN, Role.TEACHER)
     @ApiOperation({ summary: 'Get all submissions by section' })
-    @ApiResponse({ status: 200, description: 'Return all submissions for the specified section.', type: [HomeworkSubmission] })
+    @ApiResponse({ status: 200, description: 'Return all submissions for the specified section.', type: [HomeworkSectionResponseDto] })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
-    async findBySection(@Param('section') section: string): Promise<HomeworkSubmission[]> {
+    async findBySection(@Param('section') section: string): Promise<HomeworkSection[]> {
         return await this.homeworkSubmissionsService.findBySection(section);
     }
 
     @Get('student/:studentId/section/:section')
     @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
     @ApiOperation({ summary: 'Get all submissions by student and section' })
-    @ApiResponse({ status: 200, description: 'Return all submissions by the student for the specified section.', type: [HomeworkSubmission] })
+    @ApiResponse({ status: 200, description: 'Return all submissions by the student for the specified section.', type: [HomeworkSectionResponseDto] })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     async findByStudentAndSection(
         @Param('studentId') studentId: string,
         @Param('section') section: string
-    ): Promise<HomeworkSubmission[]> {
+    ): Promise<HomeworkSection[]> {
         return await this.homeworkSubmissionsService.findByStudentAndSection(studentId, section);
     }
 
     @Get('homework/:homeworkId/section/:section')
     @Roles(Role.ADMIN, Role.TEACHER)
     @ApiOperation({ summary: 'Get all submissions by homework and section' })
-    @ApiResponse({ status: 200, description: 'Return all submissions for the homework and section.', type: [HomeworkSubmission] })
+    @ApiResponse({ status: 200, description: 'Return all submissions for the homework and section.', type: [HomeworkSectionResponseDto] })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     async findByHomeworkAndSection(
         @Param('homeworkId') homeworkId: string,
         @Param('section') section: string
-    ): Promise<HomeworkSubmission[]> {
+    ): Promise<HomeworkSection[]> {
         return await this.homeworkSubmissionsService.findByHomeworkAndSection(homeworkId, section);
     }
 
     @Get('student/:studentId/homework/:homeworkId/section/:section')
     @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
     @ApiOperation({ summary: 'Get specific submission by student, homework, and section' })
-    @ApiResponse({ status: 200, description: 'Return the submission.', type: HomeworkSubmission })
+    @ApiResponse({ status: 200, description: 'Return the submission.', type: HomeworkSectionResponseDto })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     @ApiResponse({ status: 404, description: 'Submission not found.' })
     async findByStudentHomeworkAndSection(
         @Param('studentId') studentId: string,
         @Param('homeworkId') homeworkId: string,
         @Param('section') section: string
-    ): Promise<HomeworkSubmission> {
+    ): Promise<HomeworkSection> {
         return await this.homeworkSubmissionsService.findByStudentHomeworkAndSection(studentId, homeworkId, section);
     }
 

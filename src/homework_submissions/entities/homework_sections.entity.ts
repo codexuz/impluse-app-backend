@@ -8,10 +8,10 @@ import {
 } from "sequelize-typescript";
 
 @Table({
-  tableName: "homework_submission",
+  tableName: "homework_sections",
   timestamps: true,
 })
-export class HomeworkSubmission extends Model {
+export class HomeworkSection extends Model {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,
@@ -23,19 +23,37 @@ export class HomeworkSubmission extends Model {
     type: DataType.UUID,
     allowNull: false,
   })
-  homework_id: string;
+  submission_id: string;
 
   @Column({
     type: DataType.UUID,
     allowNull: true,
   })
-  student_id: string;
+  exercise_id: string;
 
   @Column({
-    type: DataType.UUID,
+    type: DataType.FLOAT, // Calculate tasks and get score
     allowNull: true,
   })
-  lesson_id: string;
+  score: number;
+
+  @Column({
+    type: DataType.ENUM(
+      "reading",
+      "listening",
+      "grammar",
+      "writing",
+      "speaking"
+    ),
+    allowNull: true,
+  })
+  section: string;
+
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  answers: { [key: string]: any };
 
   @CreatedAt
   createdAt: Date;
