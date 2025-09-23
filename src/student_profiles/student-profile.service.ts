@@ -231,13 +231,32 @@ export class StudentProfileService {
   ): Promise<{ rank: number; profile: StudentProfile }> {
     const profile = await this.findByUserId(userId);
 
+    // Only count students with points > 0 for ranking
     const higherRanked = await this.studentProfileModel.count({
       where: {
         points: {
           [Op.gt]: profile.points,
         },
       },
+      include: [
+        {
+          association: "user",
+          where: {
+            level_id: {
+              [Op.ne]: null, // Only include users that have a level_id
+            },
+          },
+        },
+      ],
     });
+
+    // If current user has 0 or negative points, they don't have a valid rank
+    if (profile.points <= 0) {
+      return {
+        rank: 0, // No rank for users with 0 or negative points
+        profile,
+      };
+    }
 
     return {
       rank: higherRanked + 1,
