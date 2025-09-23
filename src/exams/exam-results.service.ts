@@ -4,6 +4,7 @@ import { ExamResult } from './entities/exam_result.entity.js';
 import { CreateExamResultDto } from './dto/create-exam-result.dto.js';
 import { UpdateExamResultDto } from './dto/update-exam-result.dto.js';
 import { Exam } from './entities/exam.entity.js';
+import { User } from '../users/entities/user.entity.js';
 
 @Injectable()
 export class ExamResultsService {
@@ -36,14 +37,20 @@ export class ExamResultsService {
 
   async findAll(): Promise<ExamResult[]> {
     return this.examResultModel.findAll({
-      include: [{ model: Exam, as: "exam" }]
+      include: [
+        { model: Exam, as: "exam" },
+        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
+      ]
     });
   }
 
   async findOne(id: string): Promise<ExamResult> {
     const result = await this.examResultModel.findOne({
       where: { id },
-      include: [{ model: Exam, as: "exam" }]
+      include: [
+        { model: Exam, as: "exam" },
+        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
+      ]
     });
 
     if (!result) {
@@ -56,14 +63,20 @@ export class ExamResultsService {
   async findByExam(examId: string): Promise<ExamResult[]> {
     return this.examResultModel.findAll({
       where: { exam_id: examId },
-      include: [{ model: Exam, as: "exam" }]
+      include: [
+        { model: Exam, as: "exam" },
+        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
+      ]
     });
   }
 
   async findByStudent(studentId: string): Promise<ExamResult[]> {
     return this.examResultModel.findAll({
       where: { student_id: studentId },
-      include: [{ model: Exam, as: "exam" }]
+      include: [
+        { model: Exam, as: "exam" },
+        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
+      ]
     });
   }
 
@@ -73,7 +86,10 @@ export class ExamResultsService {
         exam_id: examId,
         student_id: studentId
       },
-      include: [{ model: Exam, as: "exam" }]
+      include: [
+        { model: Exam, as: "exam" },
+        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
+      ]
     });
 
     if (!result) {
