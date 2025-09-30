@@ -13,6 +13,7 @@ import {
 import { ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { UsersService } from "./users.service.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
+import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { UpdatePasswordDto } from "./dto/update-password.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
@@ -32,8 +33,8 @@ export class UsersController {
   @ApiResponse({ status: 201, description: "Teacher created successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
   @ApiResponse({ status: 409, description: "User already exists" })
-  createTeacher(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.createTeacher(createUserDto);
+  createTeacher(@Body() createTeacherDto: CreateTeacherDto) {
+    return this.usersService.createTeacher(createTeacherDto);
   }
 
   @Get("teachers")
