@@ -9,6 +9,7 @@ import { Op } from "sequelize";
 import * as bcrypt from "bcrypt";
 import { User } from "./entities/user.entity.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
+import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { Role } from "./entities/role.model.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
@@ -46,16 +47,19 @@ export class UsersService {
     return bcrypt.hash(password, saltRounds);
   }
 
-  async createTeacher(createUserDto: CreateUserDto): Promise<User> {
+  async createTeacher(createTeacherDto: CreateTeacherDto): Promise<User> {
     // Check if user already exists
-    await this.checkExistingUser(createUserDto.username, createUserDto.phone);
+    await this.checkExistingUser(
+      createTeacherDto.username,
+      createTeacherDto.phone
+    );
 
     // Hash password
-    const hashedPassword = await this.hashPassword(createUserDto.password);
+    const hashedPassword = await this.hashPassword(createTeacherDto.password);
 
     // Create user
     const user = await this.userModel.create({
-      ...createUserDto,
+      ...createTeacherDto,
       password_hash: hashedPassword,
       is_active: true,
     });
