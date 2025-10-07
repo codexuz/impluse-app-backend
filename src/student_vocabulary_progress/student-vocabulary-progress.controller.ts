@@ -106,7 +106,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Patch('vocabulary/:vocabularyItemId/status/:status')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Update status for all progress records of a vocabulary item' })
   @ApiParam({ name: 'vocabularyItemId', description: 'Vocabulary Item ID' })
   @ApiParam({ name: 'status', enum: VocabularyProgressStatus })
@@ -134,7 +134,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get('stats/vocabulary/:vocabularyItemId')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get vocabulary item statistics' })
   @ApiParam({ name: 'vocabularyItemId', description: 'Vocabulary Item ID' })
   getVocabularyItemStats(@Param('vocabularyItemId') vocabularyItemId: string) {
@@ -204,3 +204,4 @@ export class StudentVocabularyProgressController {
     return this.progressService.remove(id);
   }
 }
+
