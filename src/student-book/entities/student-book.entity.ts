@@ -30,7 +30,7 @@ export class StudentBook extends Model {
     @Column({
     type: DataType.TEXT,
   })
-  image_url!: string;
+  url!: string;
 
   @CreatedAt
   createdAt!: Date;
@@ -38,3 +38,4 @@ export class StudentBook extends Model {
   @UpdatedAt
   updatedAt!: Date;
 }
+
