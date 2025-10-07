@@ -74,6 +74,25 @@ export class StudentVocabularyProgressService {
     await progress.update({ status });
     return progress;
   }
+
+  /**
+   * Update status by vocabulary item ID
+   * @param vocabularyItemId The ID of the vocabulary item
+   * @param status The new status to set
+   * @returns Updated StudentVocabularyProgress record
+   */
+  async updateStatusByVocabularyItemId(vocabularyItemId: string, status: VocabularyProgressStatus): Promise<StudentVocabularyProgress[]> {
+    const progressRecords = await this.findByVocabularyItem(vocabularyItemId);
+    
+    if (progressRecords.length === 0) {
+      throw new NotFoundException(`No progress records found for vocabulary item ${vocabularyItemId}`);
+    }
+
+    const updatePromises = progressRecords.map(progress => progress.update({ status }));
+    await Promise.all(updatePromises);
+    
+    return progressRecords;
+  }
   
   /**
    * Increment attempts count for a vocabulary progress record
