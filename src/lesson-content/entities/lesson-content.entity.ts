@@ -25,7 +25,7 @@ export class LessonContent extends Model {
   content: string;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT,
     allowNull: true,
   })
   mediaUrl: string;
@@ -53,5 +53,6 @@ export class LessonContent extends Model {
 
   @UpdatedAt
   updatedAt: Date;
+
 
 }
