@@ -105,6 +105,18 @@ export class StudentVocabularyProgressController {
     return this.progressService.updateStatus(id, status);
   }
 
+  @Patch('vocabulary/:vocabularyItemId/status/:status')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: 'Update status for all progress records of a vocabulary item' })
+  @ApiParam({ name: 'vocabularyItemId', description: 'Vocabulary Item ID' })
+  @ApiParam({ name: 'status', enum: VocabularyProgressStatus })
+  updateStatusByVocabularyItemId(
+    @Param('vocabularyItemId') vocabularyItemId: string,
+    @Param('status') status: VocabularyProgressStatus,
+  ) {
+    return this.progressService.updateStatusByVocabularyItemId(vocabularyItemId, status);
+  }
+
   @Get('stats/student/:studentId')
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get basic vocabulary progress statistics for a student' })
