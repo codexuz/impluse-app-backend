@@ -78,7 +78,7 @@ export class GroupAssignedLessonsController {
     }
 
     @Delete(':id')
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.TEACHER)
     @ApiOperation({ summary: 'Delete an assigned lesson' })
     @ApiResponse({ status: 200, description: 'The assigned lesson has been successfully deleted.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -88,3 +88,4 @@ export class GroupAssignedLessonsController {
         return await this.groupAssignedLessonsService.remove(id);
     }
 }
+
