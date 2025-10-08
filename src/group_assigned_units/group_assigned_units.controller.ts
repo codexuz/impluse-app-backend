@@ -69,7 +69,7 @@ export class GroupAssignedUnitsController {
     }
 
     @Delete(':id')
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.TEACHER)
     @ApiOperation({ summary: 'Delete an assigned unit' })
     @ApiResponse({ status: 200, description: 'The assigned unit has been successfully deleted.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -79,3 +79,4 @@ export class GroupAssignedUnitsController {
         return await this.groupAssignedUnitsService.remove(id);
     }
 }
+
