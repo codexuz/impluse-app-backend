@@ -89,7 +89,7 @@ export class GroupHomeworksController {
     }
 
     @Delete(':id')
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.TEACHER)
     @ApiOperation({ summary: 'Delete a homework assignment' })
     @ApiResponse({ status: 200, description: 'The homework has been successfully deleted.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -177,3 +177,4 @@ export class GroupHomeworksController {
         return await this.groupHomeworksService.getOverallHomeworkStats(groupId);
     }
 }
+
