@@ -66,6 +66,8 @@ import { SpeechifyModule } from "./services/speechify/speechify.module.js";
 import { OpenaiModule } from "./services/openai/openai.module.js";
 import { VoiceChatBotModule } from "./services/voice-chat-bot/voice-chat-bot.module.js";
 import { LessonSchedulesModule } from "./lesson-schedules/lesson-schedules.module.js";
+import { CdIeltsModule } from './cd-ielts/cd-ielts.module.js';
+import { FormsModule } from './forms/forms.module.js';
 
 @Module({
   imports: [
@@ -134,6 +136,8 @@ import { LessonSchedulesModule } from "./lesson-schedules/lesson-schedules.modul
     OpenaiModule,
     VoiceChatBotModule,
     LessonSchedulesModule,
+    CdIeltsModule,
+    FormsModule,
   ],
   controllers: [AppController],
   providers: [

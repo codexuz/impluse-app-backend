@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { HomeworkSubmission } from './entities/homework_submission.entity.js';
 import { HomeworkSection } from './entities/homework_sections.entity.js';
 import { CreateHomeworkSubmissionDto } from './dto/create-homework-submission.dto.js';
@@ -131,7 +132,8 @@ export class HomeworkSubmissionsService {
             where: {
                 student_id: createHomeworkSubmissionDto.student_id,
                 homework_id: createHomeworkSubmissionDto.homework_id,
-            }
+            },
+            attributes: ['id', 'homework_id', 'student_id', 'lesson_id', 'createdAt', 'updatedAt'] // Explicitly specify the columns to select
         });
 
         if (!submission) {
@@ -143,23 +145,28 @@ export class HomeworkSubmissionsService {
             });
         }
 
-        // Check if a section already exists for this submission and section type
-        let section = await this.homeworkSectionModel.findOne({
-            where: {
-                submission_id: submission.id,
-                section: createHomeworkSubmissionDto.section
-            }
-        });
+        // Check if a section already exists for this submission, section type AND exercise_id
+        let section = null;
+        
+        if (createHomeworkSubmissionDto.exercise_id) {
+            // If exercise_id is provided, look for a section with this specific exercise_id
+            section = await this.homeworkSectionModel.findOne({
+                where: {
+                    submission_id: submission.id,
+                    section: createHomeworkSubmissionDto.section,
+                    exercise_id: createHomeworkSubmissionDto.exercise_id
+                }
+            });
+        }
 
         if (section) {
-            // Update existing section
+            // Update existing section with the same exercise_id
             await section.update({
-                exercise_id: createHomeworkSubmissionDto.exercise_id,
                 score: createHomeworkSubmissionDto.percentage,
                 answers: createHomeworkSubmissionDto.answers || {}
             });
         } else {
-            // Create new section
+            // Create new section (either because no section exists for this exercise_id or exercise_id is not provided)
             section = await this.homeworkSectionModel.create({
                 submission_id: submission.id,
                 exercise_id: createHomeworkSubmissionDto.exercise_id,
@@ -169,14 +176,18 @@ export class HomeworkSubmissionsService {
             });
         }
 
-        // Update lesson progress if submission section score indicates passing
-        if (section.score && section.score >= 60 && submission.student_id && submission.homework_id) {
+        // Only proceed if we have a passing score, a student ID, lesson ID and homework ID
+        if (section.score && section.score >= 60 && submission.student_id && submission.lesson_id && submission.homework_id) {
             try {
+                // Step 1: Update the specific section progress first
                 await this.lessonProgressService.updateProgressFromHomeworkSubmission(
                     submission.student_id,
                     submission.homework_id,
                     section.section
                 );
+                
+                // Step 2: Check if all sections for this lesson have been completed
+                await this.checkAndUpdateAllSectionsCompleted(submission);
             } catch (error) {
                 console.warn('Failed to update lesson progress:', error);
                 // Don't fail the homework submission if lesson progress update fails
@@ -184,6 +195,72 @@ export class HomeworkSubmissionsService {
         }
 
         return { submission, section };
+    }
+    
+    /**
+     * Check if all required exercises and speaking sections for a lesson have been submitted
+     * and update the lesson progress accordingly
+     */
+    private async checkAndUpdateAllSectionsCompleted(submission: HomeworkSubmission): Promise<void> {
+        if (!submission.lesson_id || !submission.student_id) {
+            return;
+        }
+
+        try {
+            // First get all submissions for this student and lesson
+            const submissions = await this.homeworkSubmissionModel.findAll({
+                where: {
+                    student_id: submission.student_id,
+                    lesson_id: submission.lesson_id
+                },
+                attributes: ['id', 'student_id', 'lesson_id', 'homework_id']
+            });
+
+            // Get all submission IDs
+            const submissionIds = submissions.map(sub => sub.id);
+
+            // Now get sections for these submissions
+            const sections = await this.homeworkSectionModel.findAll({
+                where: {
+                    submission_id: { [Op.in]: submissionIds },
+                    score: { [Op.gte]: 60 } // Only count sections with passing scores
+                }
+            });
+
+            // Group completed sections by type
+            const completedSectionTypes = new Set(sections.map(s => s.section));
+            
+            // Get the current lesson progress
+            const progress = await this.lessonProgressService.findByStudentAndLesson(
+                submission.student_id,
+                submission.lesson_id
+            );
+            
+            if (!progress) {
+                return;
+            }
+            
+            // Update each section based on submissions
+            const sectionTypes = ['reading', 'listening', 'grammar', 'writing', 'speaking'];
+            const updateData: any = {};
+            
+            for (const section of sectionTypes) {
+                if (completedSectionTypes.has(section)) {
+                    const sectionField = `${section}_completed` as keyof typeof updateData;
+                    updateData[sectionField] = true;
+                }
+            }
+            
+            // Update the progress with all completed sections
+            await progress.update(updateData);
+            
+            // Recalculate the overall progress
+            await this.lessonProgressService.recalculateProgress(progress);
+            
+            console.log(`Updated lesson progress for student ${submission.student_id}, lesson ${submission.lesson_id}`);
+        } catch (error) {
+            console.error('Error checking all sections completed:', error);
+        }
     }
 
     async findBySection(section: string): Promise<HomeworkSection[]> {

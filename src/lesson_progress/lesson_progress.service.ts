@@ -111,14 +111,13 @@ export class LessonProgressService {
   }
 
   async updateProgressFromHomeworkSubmission(studentId: string, homeworkId: string, section: string): Promise<LessonProgress | null> {
-    // Check if the submission is passed and get its data
+    // First, find the submission for this student and homework
     const submission = await this.homeworkSubmissionModel.findOne({
       where: {
         student_id: studentId,
-        homework_id: homeworkId,
-        section: section,
-        status: 'passed'
-      }
+        homework_id: homeworkId
+      },
+      attributes: ['id', 'homework_id', 'student_id', 'lesson_id'] // Explicitly specify columns to avoid the error
     });
     
     if (!submission) {

@@ -64,6 +64,10 @@ import { GroupChatMembers } from "../group-chat/entities/chat_group_members.js";
 import { SentenceBuild } from "../exercise/entities/sentence_build.js";
 import { LessonSchedule } from "../lesson-schedules/entities/lesson-schedule.entity.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
+import { CdIelts } from '../cd-ielts/entities/cd-ielt.entity.js';
+import { CdRegister } from '../cd-ielts/entities/cd-register.entity.js';
+import { Form } from "../forms/entities/form.entity.js";
+import { Response as FormResponse } from "../forms/entities/response.entity.js";
 // Export the models array for Sequelize registration
 export const Models = [
   User,
@@ -123,6 +127,10 @@ export const Models = [
   GroupChatMembers,
   LessonSchedule,
   NotificationToken,
+  CdIelts,
+  CdRegister,
+  Form,
+  FormResponse
 ];
 
 // Define associations after all models are loaded
@@ -789,5 +797,36 @@ export function initializeAssociations() {
   NotificationToken.belongsTo(User, {
     foreignKey: "user_id",
     as: "user",
+  });
+
+
+  // CdIelts associations
+  CdIelts.hasMany(CdRegister, {
+    foreignKey: "cd_test_id",
+    as: "registrations",
+  });
+  CdRegister.belongsTo(CdIelts, {
+    foreignKey: "cd_test_id",
+    as: "cd_test",
+  });
+
+  User.hasMany(CdRegister, {
+    foreignKey: "student_id",
+    as: "cd_registrations",
+  });
+  CdRegister.belongsTo(User, {
+    foreignKey: "student_id",
+    as: "student",
+  });
+
+
+  // Form associations  
+  Form.hasMany(FormResponse, {
+    foreignKey: "form_id",
+    as: "responses",
+  });
+  FormResponse.belongsTo(Form, {
+    foreignKey: "form_id",
+    as: "form",
   });
 }
