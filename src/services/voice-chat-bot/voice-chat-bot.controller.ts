@@ -28,8 +28,8 @@ export class VoiceChatBotController {
 
   @Post('chat')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Process voice chat - returns both text and audio response' })
-  @ApiResponse({ status: 200, description: 'Voice chat response with text and audio' })
+  @ApiOperation({ summary: 'Process chat - returns text response' })
+  @ApiResponse({ status: 200, description: 'Chat response with text' })
   async voiceChat(@Body() voiceChatDto: VoiceChatDto) {
     const result = await this.voiceChatBotService.processVoiceChat(
       voiceChatDto.text,

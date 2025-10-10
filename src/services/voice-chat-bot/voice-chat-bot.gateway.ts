@@ -11,17 +11,17 @@ import { Server, Socket } from 'socket.io';
 import { Injectable, Logger } from '@nestjs/common';
 import { VoiceChatBotService } from './voice-chat-bot.service.js';
 
-interface VoiceChatMessage {
+interface ChatMessage {
   text: string;
   voice?: string;
   userId?: string;
-  sessionId?: string;
+  preferVoice: boolean; // User preference for receiving voice responses
 }
 
 interface AudioUploadMessage {
   audioData: string | Buffer; // Base64 string or Buffer
   userId?: string;
-  sessionId?: string;
+  preferVoice: boolean;
   mimeType?: string;
 }
 
@@ -30,7 +30,7 @@ interface AudioUploadMessage {
   cors: {
     origin: '*',
   },
-  namespace: '/voice-chat',
+  namespace: '/chat-bot',
 })
 export class VoiceChatBotGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -48,7 +48,7 @@ export class VoiceChatBotGateway implements OnGatewayConnection, OnGatewayDiscon
     this.connectedClients.set(client.id, client);
     
     client.emit('connected', {
-      message: 'Connected to Voice Chat Bot',
+      message: 'Connected to Chat Bot',
       clientId: client.id,
       timestamp: new Date().toISOString(),
     });
@@ -59,176 +59,52 @@ export class VoiceChatBotGateway implements OnGatewayConnection, OnGatewayDiscon
     this.connectedClients.delete(client.id);
   }
 
-  @SubscribeMessage('text-chat')
-  async handleTextChat(
-    @MessageBody() data: VoiceChatMessage,
+  @SubscribeMessage('send-message')
+  async handleMessage(
+    @MessageBody() data: ChatMessage,
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      this.logger.log(`Text chat from ${client.id}: ${data.text}`);
+      this.logger.log(`Message from ${client.id}: ${data.text}`);
       
-      // Get AI response through voice chat bot service
-      const result = await this.voiceChatBotService.processVoiceChat(data.text);
-      
-      // Send text response immediately
-      client.emit('text-response', {
-        textResponse: result.textResponse,
-        timestamp: new Date().toISOString(),
-        clientId: client.id,
-      });
-
-      return { success: true, message: 'Text response sent' };
-    } catch (error) {
-      this.logger.error(`Text chat error: ${error.message}`);
-      client.emit('error', {
-        message: error.message,
-        type: 'text-chat-error',
-        timestamp: new Date().toISOString(),
-      });
-      return { success: false, error: error.message };
-    }
-  }
-
-  @SubscribeMessage('voice-chat')
-  async handleVoiceChat(
-    @MessageBody() data: VoiceChatMessage,
-    @ConnectedSocket() client: Socket,
-  ) {
-    try {
-      this.logger.log(`Voice chat from ${client.id}: ${data.text}`);
-      
-      // Process voice chat (get AI response and convert to audio)
+      // Get AI response
       const result = await this.voiceChatBotService.processVoiceChat(
         data.text,
         data.voice || 'lauren'
       );
-
-      console.log(result)
-      // Send text response first
-      client.emit('text-response', {
-        textResponse: result.textResponse,
-        timestamp: new Date().toISOString(),
-        clientId: client.id,
-      });
-
-      // Convert the audio stream to binary and send it
-      if (result.audioStream) {
-    
-          
-          // Send binary audio data through WebSocket
-          client.emit('audio-response', {
-            hasAudio: true,
-            audioData: result.audioStream,
-            message: 'Audio stream ready',
-            timestamp: new Date().toISOString(),
-            clientId: client.id,
-          });
-
-
-      } else {
-        // No audio stream available, just send notification
-        client.emit('audio-response', {
-          hasAudio: false,
-          message: 'Audio generation failed',
-          timestamp: new Date().toISOString(),
-          clientId: client.id,
-        });
-      }
-
-      return { success: true, message: 'Voice response processed' };
-    } catch (error) {
-      this.logger.error(`Voice chat error: ${error.message}`);
-      client.emit('error', {
-        message: error.message,
-        type: 'voice-chat-error',
-        timestamp: new Date().toISOString(),
-      });
-      return { success: false, error: error.message };
-    }
-  }
-
-  @SubscribeMessage('text-to-voice')
-  async handleTextToVoice(
-    @MessageBody() data: { text: string; voice?: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    try {
-      this.logger.log(`Text to voice from ${client.id}: ${data.text}`);
       
-      const audioStream = await this.voiceChatBotService.textToVoice(
-        data.text,
-        data.voice || 'lauren'
-      );
+      // Always send text response
+      client.emit('message-response', {
+        text: result.textResponse,
+        timestamp: new Date().toISOString(),
+      });
 
-      if (audioStream) {
-        const audioChunks: Buffer[] = [];
-        
-        audioStream.on('data', (chunk: Buffer) => {
-          audioChunks.push(chunk);
-        });
-
-        audioStream.on('end', () => {
-          const audioBuffer = Buffer.concat(audioChunks);
-          
-          // Send binary audio data through WebSocket
-          client.emit('voice-ready', {
-            success: true,
-            hasAudio: true,
-            audioData: audioBuffer,
-            message: 'Voice conversion completed',
-            timestamp: new Date().toISOString(),
-          });
-        });
-
-        audioStream.on('error', (error) => {
-          this.logger.error(`TTS stream error: ${error.message}`);
-          client.emit('error', {
-            message: `TTS stream error: ${error.message}`,
-            type: 'tts-stream-error',
-            timestamp: new Date().toISOString(),
-          });
-        });
-      } else {
-        client.emit('voice-ready', {
-          success: false,
-          hasAudio: false,
-          message: 'Voice conversion failed',
+      // Send audio only if user prefers voice responses
+      if (data.preferVoice && result.audioStream) {
+        client.emit('voice-response', {
+          audioData: result.audioStream,
           timestamp: new Date().toISOString(),
         });
       }
 
-      return { success: true, message: 'Text converted to voice' };
+      return { success: true };
     } catch (error) {
-      this.logger.error(`Text to voice error: ${error.message}`);
+      this.logger.error(`Chat error: ${error.message}`);
       client.emit('error', {
         message: error.message,
-        type: 'text-to-voice-error',
         timestamp: new Date().toISOString(),
       });
       return { success: false, error: error.message };
     }
   }
 
-  // Utility method to send message to specific client
-  sendToClient(clientId: string, event: string, data: any) {
-    const client = this.connectedClients.get(clientId);
-    if (client) {
-      client.emit(event, data);
-    }
-  }
-
-  // Utility method to broadcast to all clients
-  broadcast(event: string, data: any) {
-    this.server.emit(event, data);
-  }
-
-  @SubscribeMessage('speech-to-text')
-  async handleSpeechToText(
+  @SubscribeMessage('send-voice')
+  async handleVoiceMessage(
     @MessageBody() data: AudioUploadMessage,
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      this.logger.log(`Speech to text request from ${client.id}`);
+      this.logger.log(`Voice message from ${client.id}`);
       
       let audioBuffer: Buffer;
       
@@ -241,44 +117,42 @@ export class VoiceChatBotGateway implements OnGatewayConnection, OnGatewayDiscon
         throw new Error('Invalid audio data format');
       }
       
-      // Show processing status
-      client.emit('stt-processing', {
-        message: 'Processing speech to text...',
-        timestamp: new Date().toISOString(),
-      });
-      
-      // Convert speech to text using Deepgram
+      // Convert speech to text
       const transcribedText = await this.voiceChatBotService.speechToText(
         audioBuffer,
         data.mimeType || 'audio/mpeg'
       );
       
-      // Send the transcribed text back to the client
-      client.emit('stt-result', {
-        success: true,
-        text: transcribedText,
-        timestamp: new Date().toISOString(),
-      });
-
-      // If the text is not empty, also process it as a voice chat request
-      if (transcribedText.trim()) {
-        // Process as a voice chat with the transcribed text
-        this.handleVoiceChat(
-          {
-            text: transcribedText,
-            userId: data.userId,
-            sessionId: data.sessionId,
-          },
-          client
-        );
+      if (!transcribedText.trim()) {
+        throw new Error('Could not transcribe audio message');
       }
       
-      return { success: true, message: 'Speech processed' };
+      // Process the transcribed text as a regular message
+      const result = await this.voiceChatBotService.processVoiceChat(
+        transcribedText,
+        'lauren'
+      );
+      
+      // Send text response
+      client.emit('message-response', {
+        text: result.textResponse,
+        originalVoiceText: transcribedText,
+        timestamp: new Date().toISOString(),
+      });
+      
+      // Send audio response if user prefers voice
+      if (data.preferVoice && result.audioStream) {
+        client.emit('voice-response', {
+          audioData: result.audioStream,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      
+      return { success: true };
     } catch (error) {
-      this.logger.error(`Speech to text error: ${error.message}`);
+      this.logger.error(`Voice message error: ${error.message}`);
       client.emit('error', {
         message: error.message,
-        type: 'speech-to-text-error',
         timestamp: new Date().toISOString(),
       });
       return { success: false, error: error.message };
