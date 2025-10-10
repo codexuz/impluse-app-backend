@@ -98,18 +98,23 @@ export class UsersController {
     return this.usersService.activate(id);
   }
 
-  @Patch("update-password")
+  @Patch(":id/update-password")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
-  @ApiOperation({ summary: "Update user password" })
+  @ApiOperation({ 
+    summary: "Update user password",
+    description: "Updates a user's password by their ID. Admins can update any user's password, while regular users can only update their own."
+  })
   @ApiResponse({ status: 200, description: "Password updated successfully" })
+  @ApiResponse({ status: 400, description: "Invalid input" })
   @ApiResponse({ status: 401, description: "Current password is incorrect" })
+  @ApiResponse({ status: 403, description: "Forbidden - insufficient permissions" })
   @ApiResponse({ status: 404, description: "User not found" })
   async updatePassword(
-    @Body() updatePasswordDto: UpdatePasswordDto,
-    @CurrentUser() user: any
+    @Param("id") id: string,
+    @Body() updatePasswordDto: UpdatePasswordDto
   ) {
     return this.usersService.updatePassword(
-      user.userId,
+      id,
       updatePasswordDto.currentPassword,
       updatePasswordDto.newPassword
     );
