@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
 
 export class CreatePronunciationExerciseDto {
   @ApiProperty({
@@ -23,6 +23,6 @@ export class CreatePronunciationExerciseDto {
     example: 'https://storage.example.com/audio/pronunciation.mp3'
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   audio_url: string;
 }

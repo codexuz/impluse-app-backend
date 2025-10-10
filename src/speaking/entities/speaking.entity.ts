@@ -31,7 +31,7 @@ export class Speaking extends Model {
   level: string;
 
   @Column({
-    type: DataType.ENUM("pronunciation", "role-scenario", "part_1", "part_2", "part_3"),
+    type: DataType.ENUM("pronunciation", "ielts", "cefr"),
     allowNull: false,
   })
   type: string;

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUUID, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID, IsOptional, IsUrl } from 'class-validator';
 
 export class CreateIeltspart1QuestionDto {
     @ApiProperty({
@@ -19,11 +19,27 @@ export class CreateIeltspart1QuestionDto {
     question: string;
 
     @ApiProperty({
+        description: 'The type of the question',
+        example: 'part_1.1'
+    })
+    @IsString()
+    @IsOptional()
+    type: string;
+
+    @ApiProperty({
+        description: 'URL of the image for the question',
+        example: 'https://storage.example.com/images/question1.jpg'
+    })
+    @IsString()
+    @IsOptional()
+    image_url: string;
+
+    @ApiProperty({
         description: 'URL of the audio file for the question',
         example: 'https://storage.example.com/audio/question1.mp3'
     })
     @IsUrl()
-    @IsNotEmpty()
+    @IsOptional()
     audio_url: string;
 
     @ApiProperty({
@@ -31,6 +47,6 @@ export class CreateIeltspart1QuestionDto {
         example: 'I really enjoy eating various types of Asian cuisine, particularly Japanese food...'
     })
     @IsString()
-    @IsNotEmpty()
+    @IsOptional()
     sample_answer: string;
 }

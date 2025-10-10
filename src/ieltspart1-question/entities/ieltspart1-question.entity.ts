@@ -23,13 +23,25 @@ export class Ieltspart1Question extends Model {
 
   @Column({
     type: DataType.TEXT,
-    allowNull: false,
+    allowNull: true,
+  })
+  image_url: string;
+
+  @Column({
+    type: DataType.ENUM("part_1.1", "part_1.2"),
+    allowNull: true,
+  })
+  type: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
   })
   audio_url: string;
 
   @Column({
     type: DataType.TEXT,
-    allowNull: false,
+    allowNull: true,
   })
   sample_answer: string;
 }

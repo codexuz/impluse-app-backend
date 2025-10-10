@@ -28,7 +28,7 @@ export class PronunciationExercise extends Model {
 
    @Column({
     type: DataType.TEXT,
-    allowNull: false,
+    allowNull: true,
   })
   audio_url: string;
 
