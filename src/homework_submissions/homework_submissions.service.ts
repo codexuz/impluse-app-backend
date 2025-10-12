@@ -335,9 +335,14 @@ export class HomeworkSubmissionsService {
      * Get exercises with their scores from homework sections by student_id and homework_id
      * @param studentId The student's ID
      * @param homeworkId The homework's ID
+     * @param section Optional section type to filter by (reading, listening, grammar, writing, speaking)
      * @returns Array of exercises with scores and completion status
      */
-    async getExercisesWithScoresByStudentAndHomework(studentId: string, homeworkId: string): Promise<any[]> {
+    async getExercisesWithScoresByStudentAndHomework(
+        studentId: string, 
+        homeworkId: string, 
+        section?: string
+    ): Promise<any[]> {
         // Find the submission for this student and homework
         const submission = await this.homeworkSubmissionModel.findOne({
             where: {
@@ -351,11 +356,19 @@ export class HomeworkSubmissionsService {
             return []; // Return empty array if no submission exists
         }
 
+        // Prepare where clause for sections
+        const whereClause: any = {
+            submission_id: submission.id
+        };
+        
+        // Add section filter if provided
+        if (section) {
+            whereClause.section = section;
+        }
+
         // Get all sections with their associated exercises
         const sections = await this.homeworkSectionModel.findAll({
-            where: {
-                submission_id: submission.id
-            },
+            where: whereClause,
             include: [
                 {
                     model: this.homeworkSubmissionModel.sequelize.models.Exercise,
