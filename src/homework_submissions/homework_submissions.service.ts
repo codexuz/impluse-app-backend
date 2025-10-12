@@ -330,4 +330,69 @@ export class HomeworkSubmissionsService {
         const submission = await this.findOne(id);
         await submission.destroy();
     }
+
+    /**
+     * Get exercises with their scores from homework sections by student_id and homework_id
+     * @param studentId The student's ID
+     * @param homeworkId The homework's ID
+     * @returns Array of exercises with scores and completion status
+     */
+    async getExercisesWithScoresByStudentAndHomework(studentId: string, homeworkId: string): Promise<any[]> {
+        // Find the submission for this student and homework
+        const submission = await this.homeworkSubmissionModel.findOne({
+            where: {
+                student_id: studentId,
+                homework_id: homeworkId
+            },
+            attributes: ['id']
+        });
+
+        if (!submission) {
+            return []; // Return empty array if no submission exists
+        }
+
+        // Get all sections with their associated exercises
+        const sections = await this.homeworkSectionModel.findAll({
+            where: {
+                submission_id: submission.id
+            },
+            include: [
+                {
+                    model: this.homeworkSubmissionModel.sequelize.models.Exercise,
+                    as: 'exercise',
+                    attributes: [
+                        'id',
+                        'title',
+                        'exercise_type',
+                        'lesson_id'
+                    ]
+                }
+            ],
+            attributes: [
+                'id',
+                'exercise_id',
+                'score',
+                'section',
+                'answers'
+            ]
+        });
+
+        // Transform the data to include the completed status
+        return sections.map(section => {
+            const data = section.toJSON();
+            
+            // Add a completed status based on the score
+            const isCompleted = section.score >= 60;
+            
+            return {
+                ...data,
+                completed: isCompleted,
+                exercise: data.exercise ? {
+                    ...data.exercise,
+                    completed: isCompleted, // Adding completion status to exercise object too
+                    score: section.score
+                } : null
+            };
+        });
+    }
 }

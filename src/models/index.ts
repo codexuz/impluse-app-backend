@@ -23,6 +23,7 @@ import { LessonVocabularySet } from "../lesson_vocabulary_sets/entities/lesson_v
 import { StudentVocabularyProgress } from "../student_vocabulary_progress/entities/student_vocabulary_progress.entity.js";
 import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
 import { HomeworkSubmission } from "../homework_submissions/entities/homework_submission.entity.js";
+import { HomeworkSection } from "../homework_submissions/entities/homework_sections.entity.js";
 import { GroupAssignedUnit } from "../group_assigned_units/entities/group_assigned_unit.entity.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
 import { Notifications } from "../notifications/entities/notification.entity.js";
@@ -100,6 +101,7 @@ export const Models = [
   StudentVocabularyProgress,
   GroupHomework,
   HomeworkSubmission,
+  HomeworkSection,
   GroupAssignedUnit,
   StudentProfile,
   Notifications,
@@ -483,14 +485,28 @@ export function initializeAssociations() {
     as: "lesson",
   });
 
-  Exercise.hasMany(HomeworkSubmission, {
-    foreignKey: "exercise_id",
-    as: "homework_submissions",
+  
+
+  // HomeworkSection Associations
+  HomeworkSubmission.hasMany(HomeworkSection, {
+    foreignKey: "submission_id",
+    as: "sections",
   });
-  HomeworkSubmission.belongsTo(Exercise, {
+  HomeworkSection.belongsTo(HomeworkSubmission, {
+    foreignKey: "submission_id",
+    as: "submission",
+  });
+
+
+  Exercise.hasMany(HomeworkSection, {
+    foreignKey: "exercise_id",
+    as: "homework_sections",
+  });
+  HomeworkSection.belongsTo(Exercise, {
     foreignKey: "exercise_id",
     as: "exercise",
   });
+
 
   //GroupAssignedUnit Associations
   Group.hasMany(GroupAssignedUnit, {

@@ -191,4 +191,17 @@ export class HomeworkSubmissionsController {
     async remove(@Param('id') id: string): Promise<void> {
         return await this.homeworkSubmissionsService.remove(id);
     }
+
+    @Get('student/:studentId/homework/:homeworkId/exercises')
+    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @ApiOperation({ summary: 'Get exercises with scores by student ID and homework ID' })
+    @ApiResponse({ status: 200, description: 'Return exercises with scores and completion status.' })
+    @ApiResponse({ status: 401, description: 'Unauthorized.' })
+    @ApiResponse({ status: 403, description: 'Forbidden.' })
+    async getExercisesWithScores(
+        @Param('studentId') studentId: string,
+        @Param('homeworkId') homeworkId: string
+    ): Promise<any[]> {
+        return await this.homeworkSubmissionsService.getExercisesWithScoresByStudentAndHomework(studentId, homeworkId);
+    }
 }
