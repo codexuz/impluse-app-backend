@@ -395,4 +395,134 @@ export class HomeworkSubmissionsService {
             };
         });
     }
+
+    /**
+     * Get student's homework statistics average by section type over time
+     * @param studentId The student's ID
+     * @param startDate Optional start date to filter statistics (format: YYYY-MM-DD)
+     * @param endDate Optional end date to filter statistics (format: YYYY-MM-DD)
+     * @returns Object with section types as keys and average scores as values
+     * @description If startDate and endDate are not provided, defaults to the last month of data
+     */
+    async getStudentHomeworkStatsBySection(
+        studentId: string, 
+        startDate?: string, 
+        endDate?: string
+    ): Promise<{ 
+        overall: number;
+        sections: { 
+            [key: string]: { 
+                average: number; 
+                submissions: number;
+                trend: number[];
+            } 
+        } 
+    }> {
+        // Find all submissions for this student
+        const submissions = await this.homeworkSubmissionModel.findAll({
+            where: {
+                student_id: studentId
+            },
+            attributes: ['id'],
+            order: [['createdAt', 'ASC']]
+        });
+
+        if (!submissions || submissions.length === 0) {
+            return { 
+                overall: 0,
+                sections: {} 
+            };
+        }
+
+        const submissionIds = submissions.map(sub => sub.id);
+        
+        // Prepare date filter with default one-month interval if not provided
+        const dateFilter = {};
+        
+        // If neither startDate nor endDate is provided, set default one-month interval
+        if (!startDate && !endDate) {
+            const today = new Date();
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            
+            dateFilter['createdAt'] = {
+                [Op.gte]: oneMonthAgo,
+                [Op.lte]: today
+            };
+        } else {
+            // Handle provided dates
+            if (startDate) {
+                dateFilter['createdAt'] = {
+                    [Op.gte]: new Date(startDate)
+                };
+            }
+            if (endDate) {
+                dateFilter['createdAt'] = {
+                    ...dateFilter['createdAt'],
+                    [Op.lte]: new Date(endDate)
+                };
+            }
+        }
+        
+        // Get all sections for these submissions
+        const sections = await this.homeworkSectionModel.findAll({
+            where: {
+                submission_id: { [Op.in]: submissionIds },
+                ...dateFilter
+            },
+            order: [['createdAt', 'ASC']],
+            attributes: ['section', 'score', 'createdAt']
+        });
+        
+        // Initialize the result structure with section types
+        const sectionTypes = ['reading', 'listening', 'grammar', 'writing', 'speaking'];
+        const result = {
+            overall: 0,
+            sections: {}
+        };
+        
+        sectionTypes.forEach(sectionType => {
+            result.sections[sectionType] = {
+                average: 0,
+                submissions: 0,
+                trend: []
+            };
+        });
+        
+        // Process each section to calculate averages and collect trend data
+        let totalScore = 0;
+        let totalSubmissions = 0;
+        
+        sections.forEach(section => {
+            if (section.section && sectionTypes.includes(section.section)) {
+                // Only include valid sections and scores
+                if (section.score !== null && section.score !== undefined) {
+                    // Add to specific section stats
+                    result.sections[section.section].submissions += 1;
+                    result.sections[section.section].average += section.score;
+                    result.sections[section.section].trend.push(section.score);
+                    
+                    // Add to overall stats
+                    totalScore += section.score;
+                    totalSubmissions += 1;
+                }
+            }
+        });
+        
+        // Calculate the averages
+        if (totalSubmissions > 0) {
+            result.overall = parseFloat((totalScore / totalSubmissions).toFixed(2));
+            
+            // Calculate averages for each section
+            sectionTypes.forEach(sectionType => {
+                if (result.sections[sectionType].submissions > 0) {
+                    result.sections[sectionType].average = parseFloat(
+                        (result.sections[sectionType].average / result.sections[sectionType].submissions).toFixed(2)
+                    );
+                }
+            });
+        }
+        
+        return result;
+    }
 }
