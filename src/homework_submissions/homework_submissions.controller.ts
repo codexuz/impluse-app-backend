@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { HomeworkSubmissionsService } from './homework_submissions.service.js';
 import { CreateHomeworkSubmissionDto } from './dto/create-homework-submission.dto.js';
@@ -203,5 +203,22 @@ export class HomeworkSubmissionsController {
         @Param('homeworkId') homeworkId: string
     ): Promise<any[]> {
         return await this.homeworkSubmissionsService.getExercisesWithScoresByStudentAndHomework(studentId, homeworkId);
+    }
+
+    @Get('student/:studentId/stats')
+    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @ApiOperation({ 
+        summary: 'Get student\'s homework statistics average by section type over time',
+        description: 'If startDate and endDate query parameters are not provided, defaults to the last month of data'
+    })
+    @ApiResponse({ status: 200, description: 'Return homework statistics with averages by section.' })
+    @ApiResponse({ status: 401, description: 'Unauthorized.' })
+    @ApiResponse({ status: 403, description: 'Forbidden.' })
+    async getStudentHomeworkStats(
+        @Param('studentId') studentId: string,
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string
+    ): Promise<any> {
+        return await this.homeworkSubmissionsService.getStudentHomeworkStatsBySection(studentId, startDate, endDate);
     }
 }
