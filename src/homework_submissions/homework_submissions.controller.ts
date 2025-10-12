@@ -194,15 +194,19 @@ export class HomeworkSubmissionsController {
 
     @Get('student/:studentId/homework/:homeworkId/exercises')
     @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-    @ApiOperation({ summary: 'Get exercises with scores by student ID and homework ID' })
+    @ApiOperation({ 
+        summary: 'Get exercises with scores by student ID and homework ID',
+        description: 'Optional "section" query parameter can be used to filter by section type (reading, listening, grammar, writing, speaking)'
+    })
     @ApiResponse({ status: 200, description: 'Return exercises with scores and completion status.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     @ApiResponse({ status: 403, description: 'Forbidden.' })
     async getExercisesWithScores(
         @Param('studentId') studentId: string,
-        @Param('homeworkId') homeworkId: string
+        @Param('homeworkId') homeworkId: string,
+        @Query('section') section?: string
     ): Promise<any[]> {
-        return await this.homeworkSubmissionsService.getExercisesWithScoresByStudentAndHomework(studentId, homeworkId);
+        return await this.homeworkSubmissionsService.getExercisesWithScoresByStudentAndHomework(studentId, homeworkId, section);
     }
 
     @Get('student/:studentId/stats')
