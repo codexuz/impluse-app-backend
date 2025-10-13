@@ -20,7 +20,7 @@ export class SpeechifyService {
   private cleanText(text: string): string {
     if (!text) return '';
     return text
-      .replace(/\r\n/g, '\n')     // normalize CRLF to LF
+      .replace(/\r\n/g, ' ')     // normalize CRLF to LF
       .replace(/\n+/g, ' ')       // convert one or many line breaks to single space
       .replace(/\s+/g, ' ')       // collapse multiple spaces
       .trim();
@@ -77,3 +77,4 @@ export class SpeechifyService {
     }
   }  
 }
+
