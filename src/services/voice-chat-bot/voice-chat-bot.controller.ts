@@ -10,16 +10,7 @@ import {
 import { Response } from 'express';
 import { VoiceChatBotService } from './voice-chat-bot.service.js';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-
-class VoiceChatDto {
-  text: string;
-  voice?: string;
-}
-
-class TextToVoiceDto {
-  text: string;
-  voice?: string;
-}
+import { VoiceChatDto, TextToVoiceDto } from './dto/index.js';
 
 @ApiTags('Voice Chat Bot')
 @Controller('voice-chat-bot')
@@ -44,12 +35,11 @@ export class VoiceChatBotController {
   }
 
   @Post('chat-stream')
-  @Header('Content-Type', 'audio/mpeg')
-  @ApiOperation({ summary: 'Get voice chat response as audio stream' })
-  @ApiResponse({ status: 200, description: 'Audio stream response' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get voice chat response as base64 audio' })
+  @ApiResponse({ status: 200, description: 'Base64 encoded audio data with text response' })
   async voiceChatStream(
-    @Body() voiceChatDto: VoiceChatDto,
-    @Res() res: Response
+    @Body() voiceChatDto: VoiceChatDto
   ) {
     try {
       const result = await this.voiceChatBotService.processVoiceChat(
@@ -57,17 +47,16 @@ export class VoiceChatBotController {
         voiceChatDto.voice
       );
       
-      // Set headers for audio streaming
-      res.set({
-        'Content-Type': 'audio/mpeg',
-        'Content-Disposition': 'inline; filename="response.mp3"',
-        'Cache-Control': 'no-cache',
-      });
-      
-      // Stream the audio response
-      result.audioStream.pipe(res);
+      return {
+        success: true,
+        textResponse: result.textResponse,
+        audioData: result.audioStream
+      };
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
@@ -83,30 +72,28 @@ export class VoiceChatBotController {
   }
 
   @Post('text-to-voice')
-  @Header('Content-Type', 'audio/mpeg')
-  @ApiOperation({ summary: 'Convert any text to voice (no AI processing)' })
-  @ApiResponse({ status: 200, description: 'Audio stream of the input text' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Convert any text to voice (returns base64 audio data)' })
+  @ApiResponse({ status: 200, description: 'Base64 encoded audio data' })
   async textToVoice(
-    @Body() textToVoiceDto: TextToVoiceDto,
-    @Res() res: Response
+    @Body() textToVoiceDto: TextToVoiceDto
   ) {
     try {
-      const audioStream = await this.voiceChatBotService.textToVoice(
+      console.log(`Converting text to voice: "${textToVoiceDto.text}" with voice: "${textToVoiceDto.voice}"`);
+      const base64Audio = await this.voiceChatBotService.textToVoice(
         textToVoiceDto.text,
         textToVoiceDto.voice
       );
       
-      // Set headers for audio streaming
-      res.set({
-        'Content-Type': 'audio/mpeg',
-        'Content-Disposition': 'inline; filename="text-to-speech.mp3"',
-        'Cache-Control': 'no-cache',
-      });
-      
-      // Stream the audio
-      audioStream.pipe(res);
+      return {
+        success: true,
+        audioData: base64Audio
+      };
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 }

@@ -17,11 +17,11 @@ export class VoiceChatBotService {
      * Process a text message and optionally convert response to speech
      * @param text The user's text input
      * @param voice The voice ID to use (if audio response is needed)
-     * @returns Object containing text response and optional audio stream
+     * @returns Object containing text response and base64 audio data
      */
     async processVoiceChat(text: string, voice: string = 'lauren'): Promise<{
         textResponse: string;
-        audioStream: any;
+        audioStream: string; // base64 encoded audio data
     }> {
         try {
             // Get AI response from OpenAI
@@ -72,9 +72,10 @@ export class VoiceChatBotService {
      * Convert text to voice without AI processing
      * @param text The text to convert to speech
      * @param voice The voice to use
-     * @returns Audio stream
+     * @returns Base64 encoded audio data
      */
-    async textToVoice(text: string, voice: string = 'lauren'): Promise<any> {
+    async textToVoice(text: string, voice: string = 'lauren'): Promise<string> {
+        console.log(`Converting text to voice: "${text}" with voice: "${voice}"`);
         try {
             return await this.speechifyService.streamTexttoSpeech(text, voice);
         } catch (error) {
