@@ -7,6 +7,7 @@ import {
   Get,
   Delete,
   Param,
+  Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -14,6 +15,7 @@ import { extname } from 'path';
 import { ApiConsumes, ApiBody, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UploadService } from './upload.service.js';
 import { FileUploadDto } from './dto/file-upload.dto.js';
+import { Base64UploadDto } from './dto/base64-upload.dto.js';
 
 @ApiTags('Upload')
 @Controller('upload')
@@ -80,5 +82,24 @@ export class UploadController {
   @ApiResponse({ status: 404, description: 'File not found' })
   async deleteFile(@Param('filename') filename: string) {
     return this.uploadService.deleteFile(filename);
+  }
+  
+  @Post('base64')
+  @ApiOperation({ summary: 'Upload a base64 encoded file' })
+  @ApiBody({ type: Base64UploadDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Base64 file saved successfully',
+    type: FileUploadDto
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid base64 format or processing error',
+  })
+  async uploadBase64File(@Body() base64UploadDto: Base64UploadDto) {
+    return this.uploadService.saveBase64File(
+      base64UploadDto.base64Data, 
+      base64UploadDto.filename
+    );
   }
 }
