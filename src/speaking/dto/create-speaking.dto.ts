@@ -8,20 +8,21 @@ import { CreateIeltspart2QuestionDto } from '../../ieltspart2-question/dto/creat
 import { CreateIeltspart3QuestionDto } from '../../ieltspart3-question/dto/create-ieltspart3-question.dto.js';
 
 export class CreateSpeakingDto {
-  @ApiProperty()
+  @ApiProperty({
+    description: 'UUID of the lesson this speaking exercise belongs to',
+    example: '123e4567-e89b-12d3-a456-426614174000'
+  })
   @IsUUID()
   @IsNotEmpty()
   lessonId: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Title of the speaking exercise',
+    example: 'Travel and Tourism Discussion'
+  })
   @IsString()
   @IsNotEmpty()
-  topic: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  content: string;
+  title: string;
 
   @ApiProperty({ type: [CreateRoleScenarioDto], required: false })
   @IsOptional()
@@ -58,18 +59,12 @@ export class CreateSpeakingDto {
   @Type(() => CreateIeltspart3QuestionDto)
   ieltspart3Questions?: CreateIeltspart3QuestionDto[];
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  instruction: string;
-
-  @ApiProperty({ enum: ['A1', 'A2', 'B1', 'B2', 'C1'] })
-  @IsEnum(['A1', 'A2', 'B1', 'B2', 'C1'])
-  @IsNotEmpty()
-  level: string;
-
-  @ApiProperty({ enum: ['pronunciation', 'role-scenario', 'part_1', 'part_2', 'part_3'] })
-  @IsEnum(['pronunciation', 'role-scenario', 'part_1', 'part_2', 'part_3'])
+  @ApiProperty({ 
+    enum: ['pronunciation', 'speaking'],
+    description: 'Type of speaking exercise',
+    example: 'speaking'
+  })
+  @IsEnum(['pronunciation', 'speaking'])
   @IsNotEmpty()
   type: string;
 }

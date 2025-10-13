@@ -35,6 +35,15 @@ export class CreateHomeworkSubmissionDto {
     @IsUUID()
     @IsOptional()
     exercise_id?: string;
+    
+    @ApiProperty({
+        description: 'UUID of the speaking exercise (for speaking sections)',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+        required: false
+    })
+    @IsUUID()
+    @IsOptional()
+    speaking_id?: string;
 
     @ApiProperty({
         description: 'Score achieved in this section (0-100)',

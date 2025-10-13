@@ -16,22 +16,10 @@ export class Speaking extends Model {
   lessonId!: string;
 
   @Column(DataType.TEXT)
-  topic!: string;
-
-  @Column(DataType.TEXT)
-  content!: string;
-
-  @Column(DataType.TEXT)
-  instruction!: string;
+  title!: string;
 
   @Column({
-    type: DataType.ENUM("A1", "A2", "B1", "B2", "C1"),
-    allowNull: false,
-  })
-  level: string;
-
-  @Column({
-    type: DataType.ENUM("pronunciation", "ielts", "cefr"),
+    type: DataType.ENUM("pronunciation", "speaking"),
     allowNull: false,
   })
   type: string;

@@ -32,6 +32,7 @@ export class HomeworkSubmissionsService {
         const section = await this.homeworkSectionModel.create({
             submission_id: submission.id,
             exercise_id: createHomeworkSubmissionDto.exercise_id,
+            speaking_id: createHomeworkSubmissionDto.speaking_id,
             score: createHomeworkSubmissionDto.percentage,
             section: createHomeworkSubmissionDto.section,
             answers: createHomeworkSubmissionDto.answers || {},
@@ -163,6 +164,7 @@ export class HomeworkSubmissionsService {
             // Update existing section with the same exercise_id
             await section.update({
                 score: createHomeworkSubmissionDto.percentage,
+                speaking_id: createHomeworkSubmissionDto.speaking_id,
                 answers: createHomeworkSubmissionDto.answers || {}
             });
         } else {
@@ -170,6 +172,7 @@ export class HomeworkSubmissionsService {
             section = await this.homeworkSectionModel.create({
                 submission_id: submission.id,
                 exercise_id: createHomeworkSubmissionDto.exercise_id,
+                speaking_id: createHomeworkSubmissionDto.speaking_id,
                 score: createHomeworkSubmissionDto.percentage,
                 section: createHomeworkSubmissionDto.section,
                 answers: createHomeworkSubmissionDto.answers || {}
@@ -537,5 +540,60 @@ export class HomeworkSubmissionsService {
         }
         
         return result;
+    }
+
+    /**
+     * Get homework sections by speaking_id with their answers and score
+     * @param speakingId The speaking exercise ID
+     * @param studentId Optional student ID to filter submissions by student
+     * @returns Array of homework sections with answers related to the speaking exercise
+     */
+    async getHomeworkSectionsBySpeakingId(speakingId: string, studentId?: string): Promise<any[]> {
+        // Prepare query conditions
+        const whereClause: any = {
+            speaking_id: speakingId
+        };
+
+        const includeOptions: any = [
+            {
+                model: this.homeworkSubmissionModel,
+                as: 'submission',
+                attributes: ['id', 'student_id', 'homework_id', 'lesson_id', 'createdAt']
+            }
+        ];
+
+        // Add student filter if provided
+        if (studentId) {
+            includeOptions[0].where = { student_id: studentId };
+        }
+
+        // Get all sections for this speaking exercise
+        const sections = await this.homeworkSectionModel.findAll({
+            where: whereClause,
+            include: includeOptions,
+            order: [['createdAt', 'DESC']],
+            attributes: [
+                'id',
+                'score',
+                'section',
+                'answers',
+                'speaking_id',
+                'createdAt',
+                'updatedAt'
+            ]
+        });
+
+        // Transform the data to include completion status
+        return sections.map(section => {
+            const data = section.toJSON();
+            
+            // Add a completed status based on the score
+            const isCompleted = section.score >= 60;
+            
+            return {
+                ...data,
+                completed: isCompleted
+            };
+        });
     }
 }

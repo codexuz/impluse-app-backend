@@ -508,6 +508,15 @@ export function initializeAssociations() {
   });
 
 
+  Speaking.hasMany(HomeworkSection, {
+    foreignKey: "speaking_id",
+    as: "homework_sections",
+  });
+  HomeworkSection.belongsTo(Speaking, {
+    foreignKey: "speaking_id",
+    as: "speaking",
+  });
+
   //GroupAssignedUnit Associations
   Group.hasMany(GroupAssignedUnit, {
     foreignKey: "group_id",

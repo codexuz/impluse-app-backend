@@ -31,6 +31,12 @@ export class HomeworkSection extends Model {
   })
   exercise_id: string;
 
+    @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  speaking_id: string;
+
   @Column({
     type: DataType.FLOAT, // Calculate tasks and get score
     allowNull: true,

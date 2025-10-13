@@ -225,4 +225,20 @@ export class HomeworkSubmissionsController {
     ): Promise<any> {
         return await this.homeworkSubmissionsService.getStudentHomeworkStatsBySection(studentId, startDate, endDate);
     }
+
+    @Get('speaking/:speakingId')
+    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @ApiOperation({ 
+        summary: 'Get homework sections by speaking exercise ID', 
+        description: 'Returns homework sections with answers for a specific speaking exercise'
+    })
+    @ApiResponse({ status: 200, description: 'Return speaking answers and submissions.' })
+    @ApiResponse({ status: 401, description: 'Unauthorized.' })
+    @ApiResponse({ status: 403, description: 'Forbidden.' })
+    async getHomeworkSectionsBySpeaking(
+        @Param('speakingId') speakingId: string,
+        @Query('studentId') studentId?: string
+    ): Promise<any[]> {
+        return await this.homeworkSubmissionsService.getHomeworkSectionsBySpeakingId(speakingId, studentId);
+    }
 }
