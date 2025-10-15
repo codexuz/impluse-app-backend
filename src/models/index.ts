@@ -69,6 +69,7 @@ import { CdIelts } from '../cd-ielts/entities/cd-ielt.entity.js';
 import { CdRegister } from '../cd-ielts/entities/cd-register.entity.js';
 import { Form } from "../forms/entities/form.entity.js";
 import { Response as FormResponse } from "../forms/entities/response.entity.js";
+import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
 // Export the models array for Sequelize registration
 export const Models = [
   User,
@@ -853,5 +854,24 @@ export function initializeAssociations() {
   FormResponse.belongsTo(Form, {
     foreignKey: "form_id",
     as: "form",
+  });
+
+  // SpeakingResponse associations
+  Speaking.hasMany(SpeakingResponse, {
+    foreignKey: "speaking_id",
+    as: "responses",
+  });
+  SpeakingResponse.belongsTo(Speaking, {
+    foreignKey: "speaking_id",
+    as: "speaking",
+  });
+
+  User.hasMany(SpeakingResponse, {
+    foreignKey: "student_id",
+    as: "speaking_responses",
+  });
+  SpeakingResponse.belongsTo(User, {
+    foreignKey: "student_id",
+    as: "student",
   });
 }

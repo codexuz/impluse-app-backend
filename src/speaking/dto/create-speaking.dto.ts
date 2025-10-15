@@ -24,42 +24,7 @@ export class CreateSpeakingDto {
   @IsNotEmpty()
   title: string;
 
-  @ApiProperty({ type: [CreateRoleScenarioDto], required: false })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateRoleScenarioDto)
-  roleScenarios?: CreateRoleScenarioDto[];
-
-  @ApiProperty({ type: [CreatePronunciationExerciseDto], required: false })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreatePronunciationExerciseDto)
-  pronunciationExercises?: CreatePronunciationExerciseDto[];
-
-  @ApiProperty({ type: [CreateIeltspart1QuestionDto], required: false })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateIeltspart1QuestionDto)
-  ieltspart1Questions?: CreateIeltspart1QuestionDto[];
-
-  @ApiProperty({ type: [CreateIeltspart2QuestionDto], required: false })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateIeltspart2QuestionDto)
-  ieltspart2Questions?: CreateIeltspart2QuestionDto[];
-
-  @ApiProperty({ type: [CreateIeltspart3QuestionDto], required: false })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateIeltspart3QuestionDto)
-  ieltspart3Questions?: CreateIeltspart3QuestionDto[];
-
-  @ApiProperty({ 
+  @ApiProperty({
     enum: ['pronunciation', 'speaking'],
     description: 'Type of speaking exercise',
     example: 'speaking'

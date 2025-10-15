@@ -68,6 +68,7 @@ import { VoiceChatBotModule } from "./services/voice-chat-bot/voice-chat-bot.mod
 import { LessonSchedulesModule } from "./lesson-schedules/lesson-schedules.module.js";
 import { CdIeltsModule } from './cd-ielts/cd-ielts.module.js';
 import { FormsModule } from './forms/forms.module.js';
+import { SpeakingResponseModule } from './speaking-response/speaking-response.module.js';
 
 @Module({
   imports: [
@@ -138,6 +139,7 @@ import { FormsModule } from './forms/forms.module.js';
     LessonSchedulesModule,
     CdIeltsModule,
     FormsModule,
+    SpeakingResponseModule,
   ],
   controllers: [AppController],
   providers: [
