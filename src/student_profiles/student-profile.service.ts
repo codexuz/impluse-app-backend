@@ -285,21 +285,7 @@ export class StudentProfileService {
 
     const levelId = userRecord.get("level_id");
 
-    // Count users with higher level
-    const higherRanked = await this.studentProfileModel.count({
-      include: [
-        {
-          association: "user",
-          where: {
-            level_id: {
-              [Op.gt]: levelId,
-            },
-          },
-        },
-      ],
-    });
-
-    // Count users with same level but higher points
+    // Count users with same level but higher points only
     const sameRankedHigherPoints = await this.studentProfileModel.count({
       where: {
         points: {
@@ -317,7 +303,7 @@ export class StudentProfileService {
     });
 
     return {
-      rank: higherRanked + sameRankedHigherPoints + 1,
+      rank: sameRankedHigherPoints + 1,
       profile,
     };
   }
