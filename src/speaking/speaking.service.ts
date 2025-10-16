@@ -83,20 +83,52 @@ export class SpeakingService {
         },
         {
           model: this.ieltspart1Model,
-          as: 'part1Questions',
+          as: 'part1_questions',
           required: false
         },
         {
           model: this.ieltspart2Model,
-          as: 'part2Questions',
+          as: 'part2_questions',
           required: false
         },
         {
           model: this.ieltspart3Model,
-          as: 'part3Questions',
+          as: 'part3_questions',
           required: false
         }
       ]
+    });
+
+    return speakingExercises;
+  }
+
+  async getByType(type: 'speaking' | 'pronunciation'): Promise<any[]> {
+    // Get all speaking exercises by type with eager loading of related entities
+    const speakingExercises = await this.speakingModel.findAll({
+      where: { type },
+      include: [
+        {
+          model: this.pronunciationModel,
+          as: 'pronunciationExercises',
+          required: false
+        },
+        {
+          model: this.ieltspart1Model,
+          as: 'part1_questions',
+          required: false
+        },
+        {
+          model: this.ieltspart2Model,
+          as: 'part2_questions',
+          required: false
+        },
+        {
+          model: this.ieltspart3Model,
+          as: 'part3_questions',
+          required: false
+        }
+      ],
+      order: [['createdAt', 'DESC']]
     });
 
     return speakingExercises;
