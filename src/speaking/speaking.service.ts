@@ -43,22 +43,22 @@ export class SpeakingService {
       include: [
         {
           model: this.pronunciationModel,
-          as: 'pronunciationExercises',
+          as: 'pronunciationExercise',  // Changed from 'pronunciationExercises' to 'pronunciationExercise'
           required: false
         },
         {
           model: this.ieltspart1Model,
-          as: 'part1Questions',
+          as: 'part1_questions',
           required: false
         },
         {
           model: this.ieltspart2Model,
-          as: 'part2Questions',
+          as: 'part2_questions',
           required: false
         },
         {
           model: this.ieltspart3Model,
-          as: 'part3Questions',
+          as: 'part3_questions',
           required: false
         }
       ]
@@ -78,7 +78,7 @@ export class SpeakingService {
       include: [
         {
           model: this.pronunciationModel,
-          as: 'pronunciationExercises',
+          as: 'pronunciationExercise',  // Changed from 'pronunciationExercises' to 'pronunciationExercise'
           required: false
         },
         {
@@ -109,7 +109,7 @@ export class SpeakingService {
       include: [
         {
           model: this.pronunciationModel,
-          as: 'pronunciationExercises',
+          as: 'pronunciationExercise',  // Changed from 'pronunciationExercises' to 'pronunciationExercise'
           required: false
         },
         {
@@ -144,7 +144,7 @@ export class SpeakingService {
       include: [
         {
           model: this.pronunciationModel,
-          as: 'pronunciationExercises',
+          as: 'pronunciationExercise',  // Changed from 'pronunciationExercises' to 'pronunciationExercise'
           required: false
         },
         {
