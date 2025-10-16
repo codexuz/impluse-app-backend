@@ -573,7 +573,7 @@ export function initializeAssociations() {
   // Speaking associations
   Speaking.hasMany(PronunciationExercise, {
     foreignKey: "speaking_id",
-    as: "pronunciationExercise",
+    as: "pronunciationExercises",
   });
   PronunciationExercise.belongsTo(Exercise, {
     foreignKey: "speaking_id",
