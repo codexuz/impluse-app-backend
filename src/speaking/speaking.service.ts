@@ -133,6 +133,41 @@ export class SpeakingService {
 
     return speakingExercises;
   }
+  
+  async findByLessonAndType(lessonId: string, type: 'speaking' | 'pronunciation'): Promise<any[]> {
+    // Get all speaking exercises filtered by both lesson ID and type
+    const speakingExercises = await this.speakingModel.findAll({
+      where: { 
+        lessonId, 
+        type 
+      },
+      include: [
+        {
+          model: this.pronunciationModel,
+          as: 'pronunciationExercises',
+          required: false
+        },
+        {
+          model: this.ieltspart1Model,
+          as: 'part1_questions',
+          required: false
+        },
+        {
+          model: this.ieltspart2Model,
+          as: 'part2_questions',
+          required: false
+        },
+        {
+          model: this.ieltspart3Model,
+          as: 'part3_questions',
+          required: false
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    return speakingExercises;
+  }
 
   async update(id: string, updateSpeakingDto: UpdateSpeakingDto): Promise<Speaking> {
     const speaking = await this.speakingModel.findByPk(id);
