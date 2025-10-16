@@ -35,6 +35,13 @@ export class SpeakingController {
   findByLesson(@Param('lessonId') lessonId: string) {
     return this.speakingService.findByLesson(lessonId);
   }
+  
+  @Get('type/:type')
+  @ApiOperation({ summary: 'Get speaking exercises by type (speaking or pronunciation)' })
+  @ApiResponse({ status: 200, description: 'Return all speaking exercises of the specified type with related pronunciation exercises and IELTS questions.' })
+  getByType(@Param('type') type: 'speaking' | 'pronunciation') {
+    return this.speakingService.getByType(type);
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get speaking exercise by id' })
