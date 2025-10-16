@@ -104,4 +104,23 @@ export class VoiceChatBotService {
             throw new Error(`Speech to text error: ${error.message}`);
         }
     }
+    
+    /**
+     * Converts base64 encoded audio to text using speech recognition
+     * @param base64Audio Base64 encoded audio string (without data URI prefix)
+     * @param mimeType MIME type of the audio data
+     * @returns Transcribed text from the audio
+     */
+    async speechToTextFromBase64(base64Audio: string, mimeType: string = 'audio/mpeg'): Promise<string> {
+        try {
+            // Convert base64 to buffer
+            const audioBuffer = Buffer.from(base64Audio, 'base64');
+            
+            // Use the existing method to process the buffer
+            return await this.speechToText(audioBuffer, mimeType);
+        } catch (error) {
+            this.logger.error(`Base64 speech to text error: ${error.message}`);
+            throw new Error(`Base64 speech to text error: ${error.message}`);
+        }
+    }
 }

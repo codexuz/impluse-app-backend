@@ -10,7 +10,7 @@ import {
 import { Response } from 'express';
 import { VoiceChatBotService } from './voice-chat-bot.service.js';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { VoiceChatDto, TextToVoiceDto } from './dto/index.js';
+import { VoiceChatDto, TextToVoiceDto, SpeechToTextDto } from './dto/index.js';
 
 @ApiTags('Voice Chat Bot')
 @Controller('voice-chat-bot')
@@ -88,6 +88,31 @@ export class VoiceChatBotController {
       return {
         success: true,
         audioData: base64Audio
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  @Post('speech-to-text')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Convert speech audio to text (transcription)' })
+  @ApiResponse({ status: 200, description: 'Transcribed text from the audio' })
+  async speechToText(
+    @Body() speechToTextDto: SpeechToTextDto
+  ) {
+    try {
+      const transcribedText = await this.voiceChatBotService.speechToTextFromBase64(
+        speechToTextDto.base64Audio,
+        speechToTextDto.mimeType
+      );
+      
+      return {
+        success: true,
+        text: transcribedText
       };
     } catch (error) {
       return {
