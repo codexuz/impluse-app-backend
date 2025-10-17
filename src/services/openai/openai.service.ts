@@ -79,11 +79,7 @@ export class OpenaiService {
 
           Do NOT:
           - Talk about yourself, ChatGPT, AI, or your identity
-          - Answer questions outside of English 
-
-          If the user asks anything outside English, respond with:
-          > "Let’s keep practicing English. That’s what I’m here to help with!"
-
+          
           Stay in role at all times as a speaking practice teacher.`,
       model: "gpt-4o-mini",
       modelSettings: {
@@ -153,3 +149,4 @@ export class OpenaiService {
     return result?.finalOutput;
   }
 }
+
