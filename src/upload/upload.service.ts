@@ -34,7 +34,7 @@ export class UploadService {
   
   /**
    * Save base64 data as a file
-   * @param base64Data Base64 encoded file with mime type (data:[mimetype];base64,[data])
+   * @param base64Data Base64 encoded file content
    * @param customFilename Optional custom filename
    * @returns File details including URL
    */
@@ -45,34 +45,28 @@ export class UploadService {
         await mkdir(this.uploadDir, { recursive: true });
       }
       
-      // Parse the base64 string to get the mime type and raw data
-      const matches = base64Data.match(/^data:([A-Za-z\-+\/]+);base64,(.+)$/);
-      
-      if (!matches || matches.length !== 3) {
-        throw new BadRequestException('Invalid base64 format');
-      }
-      
-      // Extract the mime type and data
-      const mimeType = matches[1];
-      const base64Content = matches[2];
-      
       // Decode the base64 data
-      const buffer = Buffer.from(base64Content, 'base64');
+      const buffer = Buffer.from(base64Data, 'base64');
       
-      // Determine file extension from MIME type
-      const extension = this.getExtensionFromMimeType(mimeType);
+      let filename: string;
+      let filepath: string;
       
-      // Generate filename
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const filename = customFilename || `file-${uniqueSuffix}${extension}`;
-      const filepath = join(this.uploadDir, filename);
+      if (customFilename) {
+        // Use the provided filename as-is
+        filename = customFilename;
+        filepath = join(this.uploadDir, filename);
+      } else {
+        // Generate filename with unique suffix and default extension
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        filename = `file-${uniqueSuffix}.bin`;
+        filepath = join(this.uploadDir, filename);
+      }
       
       // Write the file to disk
       await writeFile(filepath, buffer);
       
       // Return file information
       return {
-        originalMimeType: mimeType,
         filename: filename,
         path: filepath,
         url: this.getFileUrl(filename)
