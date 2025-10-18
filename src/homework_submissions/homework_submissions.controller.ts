@@ -226,6 +226,21 @@ export class HomeworkSubmissionsController {
         return await this.homeworkSubmissionsService.getStudentHomeworkStatsBySection(studentId, startDate, endDate);
     }
 
+    @Get('student/:studentId/average-speaking-score')
+    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @ApiOperation({ 
+        summary: 'Get student\'s average speaking score across all speaking tasks',
+        description: 'Calculates the average pronunciation score from all speaking responses submitted by the student'
+    })
+    @ApiResponse({ status: 200, description: 'Return the average speaking score.', type: Number })
+    @ApiResponse({ status: 401, description: 'Unauthorized.' })
+    @ApiResponse({ status: 403, description: 'Forbidden.' })
+    async getStudentAverageSpeakingScore(
+        @Param('studentId') studentId: string
+    ): Promise<number> {
+        return await this.homeworkSubmissionsService.getStudentAverageSpeakingScore(studentId);
+    }
+
     @Get('speaking/:speakingId')
     @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
     @ApiOperation({ 

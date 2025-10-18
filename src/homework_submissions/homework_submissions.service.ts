@@ -6,6 +6,7 @@ import { HomeworkSection } from './entities/homework_sections.entity.js';
 import { CreateHomeworkSubmissionDto } from './dto/create-homework-submission.dto.js';
 import { UpdateHomeworkSubmissionDto } from './dto/update-homework-submission.dto.js';
 import { LessonProgressService } from '../lesson_progress/lesson_progress.service.js';
+import { SpeakingResponse } from '../speaking-response/entities/speaking-response.entity.js';
 
 @Injectable()
 export class HomeworkSubmissionsService {
@@ -14,6 +15,8 @@ export class HomeworkSubmissionsService {
         private homeworkSubmissionModel: typeof HomeworkSubmission,
         @InjectModel(HomeworkSection)
         private homeworkSectionModel: typeof HomeworkSection,
+        @InjectModel(SpeakingResponse)
+        private speakingResponseModel: typeof SpeakingResponse,
         private lessonProgressService: LessonProgressService,
     ) {}
 
@@ -443,7 +446,18 @@ export class HomeworkSubmissionsService {
             order: [['createdAt', 'ASC']]
         });
 
-        if (!submissions || submissions.length === 0) {
+        // Get speaking responses for this student
+        const speakingResponses = await this.speakingResponseModel.findAll({
+            where: {
+                student_id: studentId,
+                pronunciation_score: {
+                    [Op.not]: null
+                }
+            },
+            attributes: ['pronunciation_score', 'createdAt']
+        });
+
+        if ((!submissions || submissions.length === 0) && speakingResponses.length === 0) {
             return { 
                 overall: 0,
                 sections: {} 
@@ -480,19 +494,44 @@ export class HomeworkSubmissionsService {
             }
         }
         
+        // Apply date filter to speaking responses
+        let filteredSpeakingResponses = speakingResponses;
+        if (dateFilter['createdAt']) {
+            const { [Op.gte]: startDateFilter, [Op.lte]: endDateFilter } = dateFilter['createdAt'];
+            filteredSpeakingResponses = speakingResponses.filter(response => {
+                const responseDate = new Date(response.get('createdAt') as string);
+                return (
+                    (!startDateFilter || responseDate >= startDateFilter) &&
+                    (!endDateFilter || responseDate <= endDateFilter)
+                );
+            });
+        }
+        
         // Get all sections for these submissions
-        const sections = await this.homeworkSectionModel.findAll({
-            where: {
-                submission_id: { [Op.in]: submissionIds },
-                ...dateFilter
-            },
-            order: [['createdAt', 'ASC']],
-            attributes: ['section', 'score', 'createdAt']
-        });
+        let sections = [];
+        if (submissionIds.length > 0) {
+            sections = await this.homeworkSectionModel.findAll({
+                where: {
+                    submission_id: { [Op.in]: submissionIds },
+                    ...dateFilter
+                },
+                order: [['createdAt', 'ASC']],
+                attributes: ['section', 'score', 'createdAt']
+            });
+        }
         
         // Initialize the result structure with section types
         const sectionTypes = ['reading', 'listening', 'grammar', 'writing', 'speaking'];
-        const result = {
+        const result: { 
+            overall: number;
+            sections: { 
+                [key: string]: { 
+                    average: number; 
+                    submissions: number;
+                    trend: number[];
+                } 
+            } 
+        } = {
             overall: 0,
             sections: {}
         };
@@ -505,12 +544,12 @@ export class HomeworkSubmissionsService {
             };
         });
         
-        // Process each section to calculate averages and collect trend data
+        // Process homework sections (excluding speaking as we'll handle those separately)
         let totalScore = 0;
         let totalSubmissions = 0;
         
         sections.forEach(section => {
-            if (section.section && sectionTypes.includes(section.section)) {
+            if (section.section && section.section !== 'speaking' && sectionTypes.includes(section.section)) {
                 // Only include valid sections and scores
                 if (section.score !== null && section.score !== undefined) {
                     // Add to specific section stats
@@ -522,6 +561,21 @@ export class HomeworkSubmissionsService {
                     totalScore += section.score;
                     totalSubmissions += 1;
                 }
+            }
+        });
+        
+        // Process speaking responses and add them to the speaking section
+        filteredSpeakingResponses.forEach(response => {
+            const score = response.pronunciation_score;
+            if (score !== null && score !== undefined) {
+                // Add to speaking section stats
+                result.sections.speaking.submissions += 1;
+                result.sections.speaking.average += score;
+                result.sections.speaking.trend.push(score);
+                
+                // Add to overall stats
+                totalScore += score;
+                totalSubmissions += 1;
             }
         });
         
@@ -595,5 +649,36 @@ export class HomeworkSubmissionsService {
                 completed: isCompleted
             };
         });
+    }
+
+    /**
+     * Get student's average speaking score across all speaking tasks
+     * @param studentId The student's ID
+     * @returns The average speaking score or 0 if no speaking responses exist
+     */
+    async getStudentAverageSpeakingScore(studentId: string): Promise<number> {
+        // Find all speaking responses for this student
+        const speakingResponses = await this.speakingResponseModel.findAll({
+            where: {
+                student_id: studentId,
+                pronunciation_score: {
+                    [Op.not]: null
+                }
+            },
+            attributes: ['pronunciation_score']
+        });
+
+        // If no speaking responses with scores exist, return 0
+        if (speakingResponses.length === 0) {
+            return 0;
+        }
+
+        // Calculate the average score
+        const totalScore = speakingResponses.reduce((sum, response) => {
+            return sum + (response.pronunciation_score || 0);
+        }, 0);
+
+        // Return the average rounded to 2 decimal places
+        return parseFloat((totalScore / speakingResponses.length).toFixed(2));
     }
 }
