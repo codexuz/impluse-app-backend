@@ -110,7 +110,7 @@ export class OpenaiService {
         {
           role: "system",
           content:
-            "You are an IELTS examiner scoring a response and giving feedback, including a randomized CEFR score within the national mapping limits for Uzbekistan and the corresponding CEFR level.",
+            "You are an IELTS examiner scoring a response and giving feedback, score 0-100 percent",
         },
         {
           role: "user",
@@ -149,4 +149,5 @@ export class OpenaiService {
     return result?.finalOutput;
   }
 }
+
 
