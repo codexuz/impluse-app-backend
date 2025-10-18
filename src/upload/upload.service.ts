@@ -48,19 +48,19 @@ export class UploadService {
       // Decode the base64 data
       const buffer = Buffer.from(base64Data, 'base64');
       
-      let filename: string;
-      let filepath: string;
-      
+      // Extract extension from custom filename if provided, otherwise use default
+      let extension = '.mp3';
       if (customFilename) {
-        // Use the provided filename as-is
-        filename = customFilename;
-        filepath = join(this.uploadDir, filename);
-      } else {
-        // Generate filename with unique suffix and default extension
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        filename = `file-${uniqueSuffix}.bin`;
-        filepath = join(this.uploadDir, filename);
+        const lastDotIndex = customFilename.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+          extension = customFilename.substring(lastDotIndex);
+        }
       }
+      
+      // Always generate a random filename
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const filename = `file-${uniqueSuffix}${extension}`;
+      const filepath = join(this.uploadDir, filename);
       
       // Write the file to disk
       await writeFile(filepath, buffer);
