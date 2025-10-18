@@ -46,7 +46,7 @@ export class UploadService {
       }
       
       // Parse the base64 string to get the mime type and raw data
-      const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      const matches = base64Data.match(/^data:([A-Za-z\-+\/]+);base64,(.+)$/);
       
       if (!matches || matches.length !== 3) {
         throw new BadRequestException('Invalid base64 format');
