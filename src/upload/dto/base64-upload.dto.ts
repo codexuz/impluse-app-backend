@@ -8,6 +8,9 @@ export class Base64UploadDto {
   })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^data:([A-Za-z-+\/]+);base64,(.+)$/, { 
+    message: 'Invalid base64 format. Must be in format data:[mimetype];base64,[data]'
+  })
   base64Data: string;
 
   @ApiProperty({
@@ -17,5 +20,4 @@ export class Base64UploadDto {
   })
   @IsString()
   filename?: string;
-
 }
