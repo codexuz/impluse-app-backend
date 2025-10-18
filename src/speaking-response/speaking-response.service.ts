@@ -4,6 +4,7 @@ import { CreateSpeakingResponseDto } from './dto/create-speaking-response.dto.js
 import { UpdateSpeakingResponseDto } from './dto/update-speaking-response.dto.js';
 import { SpeakingResponse } from './entities/speaking-response.entity.js';
 import { Speaking } from '../speaking/entities/speaking.entity.js';
+import { OpenaiService } from '../services/openai/openai.service.js';
 
 // Define the interface for the exercise details we'll return
 export interface ExerciseDetail {
@@ -24,11 +25,26 @@ export class SpeakingResponseService {
     private speakingResponseModel: typeof SpeakingResponse,
     @InjectModel(Speaking)
     private speakingModel: typeof Speaking,
+    private readonly openaiService: OpenaiService,
   ) {}
 
   async create(createSpeakingResponseDto: CreateSpeakingResponseDto): Promise<SpeakingResponse> {
+    let assessmentResult = null;
+    
+    // Check if response_type is not "pronunciation" and transcription exists
+    if (createSpeakingResponseDto.response_type !== 'pronunciation' && createSpeakingResponseDto.transcription) {
+      try {
+        // Use OpenAI service to assess the speaking response
+        assessmentResult = await this.openaiService.assessSpeaking(createSpeakingResponseDto.transcription);
+      } catch (error) {
+        console.error('Error assessing speaking response:', error);
+        // Continue with creation even if assessment fails
+      }
+    }
+
     return this.speakingResponseModel.create({
       ...createSpeakingResponseDto,
+      result: assessmentResult || null,
     });
   }
 
