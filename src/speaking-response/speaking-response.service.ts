@@ -5,6 +5,18 @@ import { UpdateSpeakingResponseDto } from './dto/update-speaking-response.dto.js
 import { SpeakingResponse } from './entities/speaking-response.entity.js';
 import { Speaking } from '../speaking/entities/speaking.entity.js';
 
+// Define the interface for the exercise details we'll return
+export interface ExerciseDetail {
+  id: string;
+  speaking_id: string;
+  completed: boolean;
+  response_type: string;
+  pronunciation_score: number;
+  feedback: string;
+  result: any;
+  transcription: string;
+}
+
 @Injectable()
 export class SpeakingResponseService {
   constructor(
@@ -59,7 +71,7 @@ export class SpeakingResponseService {
     });
   }
 
-  async checkSubmission(lessonId: string, studentId: string): Promise<boolean> {
+  async checkSubmission(lessonId: string, studentId: string): Promise<ExerciseDetail[]> {
     // First, find all speaking exercises for the given lesson
     const speakingExercises = await this.speakingModel.findAll({
       where: {
@@ -68,25 +80,45 @@ export class SpeakingResponseService {
       attributes: ['id'],
     });
 
-    // If no speaking exercises found for this lesson, return false
+    // If no speaking exercises found for this lesson, return empty array
     if (speakingExercises.length === 0) {
-      return false;
+      return [];
     }
 
     // Extract speaking exercise IDs
     const speakingIds = speakingExercises.map(exercise => exercise.id);
 
-    // Check if any speaking responses exist for these speaking exercises and the student
+    // Find all speaking responses for these speaking exercises and the student
     const responses = await this.speakingResponseModel.findAll({
       where: {
         speaking_id: speakingIds,
         student_id: studentId,
       },
-      limit: 1, // We only need to know if at least one exists
     });
 
-    // Return true if at least one response was found, false otherwise
-    return responses.length > 0;
+    // Create a map of responses by speaking_id for quick lookup
+    const responseMap = new Map<string, SpeakingResponse>();
+    responses.forEach(response => {
+      responseMap.set(response.speaking_id, response);
+    });
+
+    // Build the result array with exercise details
+    const exerciseDetails: ExerciseDetail[] = speakingExercises.map(exercise => {
+      const response = responseMap.get(exercise.id);
+      
+      return {
+        id: response?.id || null,
+        speaking_id: exercise.id,
+        completed: !!response,
+        response_type: response?.response_type || null,
+        pronunciation_score: response?.pronunciation_score || null,
+        feedback: response?.feedback || null,
+        result: response?.result || null,
+        transcription: response?.transcription || null,
+      };
+    });
+
+    return exerciseDetails;
   }
 
   async update(id: string, updateSpeakingResponseDto: UpdateSpeakingResponseDto): Promise<SpeakingResponse> {

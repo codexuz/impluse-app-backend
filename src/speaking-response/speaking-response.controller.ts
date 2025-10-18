@@ -77,19 +77,19 @@ export class SpeakingResponseController {
   }
 
   @Get('check-submission')
-  @ApiOperation({ summary: 'Check if a student has submitted a speaking response for a lesson' })
+  @ApiOperation({ summary: 'Get exercise details with completion status for a lesson' })
   @ApiQuery({ name: 'lessonId', description: 'The lesson ID to check', required: true })
   @ApiQuery({ name: 'studentId', description: 'The student ID to check', required: true })
   @ApiResponse({
     status: 200,
-    description: 'Returns true if the student has submitted a response for the lesson, false otherwise',
-    type: Boolean
+    description: 'Returns exercise details with completion status for the lesson',
+    type: Array<any>
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async checkSubmission(
     @Query('lessonId') lessonId: string,
     @Query('studentId') studentId: string
-  ): Promise<boolean> {
+  ): Promise<any[]> {
     return this.speakingResponseService.checkSubmission(lessonId, studentId);
   }
 
