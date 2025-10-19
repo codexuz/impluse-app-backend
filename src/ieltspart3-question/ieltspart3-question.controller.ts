@@ -69,7 +69,7 @@ export class Ieltspart3QuestionController {
     }
 
     @Delete(':id')
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.TEACHER)
     @ApiOperation({ summary: 'Delete an IELTS Part 3 question' })
     @ApiResponse({ status: 200, description: 'The question has been successfully deleted.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -79,3 +79,4 @@ export class Ieltspart3QuestionController {
         return await this.ieltspart3QuestionService.remove(id);
     }
 }
+
