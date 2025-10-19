@@ -79,7 +79,7 @@ export class PronunciationExerciseController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Delete a pronunciation exercise' })
   @ApiResponse({ status: 200, description: 'The pronunciation exercise has been successfully deleted.' })
   @ApiResponse({ status: 404, description: 'Exercise not found' })
@@ -87,3 +87,4 @@ export class PronunciationExerciseController {
     return this.pronunciationExerciseService.remove(id);
   }
 }
+
