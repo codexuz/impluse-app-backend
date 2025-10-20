@@ -15,6 +15,9 @@ async function bootstrap() {
     prefix: "/uploads/", // so /uploads/filename.jpg works
   });
 
+  app.useBodyParser("json", { limit: "50mb" });
+  app.useBodyParser("urlencoded", { limit: "50mb", extended: true });
+
   // 2. ✅ Serve Vue static files from 'public'
   // app.useStaticAssets(join(__dirname, '..', 'public'));
 
