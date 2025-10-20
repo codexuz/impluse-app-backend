@@ -7,6 +7,7 @@ import { CreateHomeworkSubmissionDto } from './dto/create-homework-submission.dt
 import { UpdateHomeworkSubmissionDto } from './dto/update-homework-submission.dto.js';
 import { LessonProgressService } from '../lesson_progress/lesson_progress.service.js';
 import { SpeakingResponse } from '../speaking-response/entities/speaking-response.entity.js';
+import { GroupStudentsService } from '../group-students/group-students.service.js';
 
 @Injectable()
 export class HomeworkSubmissionsService {
@@ -18,6 +19,7 @@ export class HomeworkSubmissionsService {
         @InjectModel(SpeakingResponse)
         private speakingResponseModel: typeof SpeakingResponse,
         private lessonProgressService: LessonProgressService,
+        private groupStudentsService: GroupStudentsService,
     ) {}
 
     async create(createHomeworkSubmissionDto: CreateHomeworkSubmissionDto): Promise<{
@@ -681,4 +683,40 @@ export class HomeworkSubmissionsService {
         // Return the average rounded to 2 decimal places
         return parseFloat((totalScore / speakingResponses.length).toFixed(2));
     }
+    /**
+     * Fetch homework submissions for all (active) students in a group
+     * @param groupId The group ID
+     */
+    async findHomeworksByGroupId(groupId: string): Promise<HomeworkSubmission[]> {
+        // Get active students in the group using GroupStudentsService
+        const groupStudents = await this.groupStudentsService.findActiveByGroupId(groupId);
+
+        if (!groupStudents || groupStudents.length === 0) {
+            return [];
+        }
+
+        const studentIds = groupStudents.map((gs) => gs.student_id);
+
+        // Find submissions for these students and include sections and basic student info
+        const submissions = await this.homeworkSubmissionModel.findAll({
+            where: {
+                student_id: studentIds,
+            },
+            include: [
+                {
+                    model: this.homeworkSectionModel,
+                    as: 'sections',
+                },
+                {
+                    model: this.homeworkSubmissionModel.sequelize.models.User,
+                    as: 'student',
+                    attributes: ['user_id', 'username', 'first_name', 'last_name', 'avatar_url'],
+                },
+            ],
+            order: [['createdAt', 'DESC']],
+        });
+
+        return submissions;
+    }
+
 }
