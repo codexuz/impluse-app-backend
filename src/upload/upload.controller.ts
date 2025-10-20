@@ -56,7 +56,7 @@ export class UploadController {
           callback(null, filename);
         },
       }),
-      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+      limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File) {
@@ -103,3 +103,4 @@ export class UploadController {
     );
   }
 }
+
