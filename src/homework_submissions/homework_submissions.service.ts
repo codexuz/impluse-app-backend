@@ -435,6 +435,80 @@ export class HomeworkSubmissionsService {
   }
 
   /**
+   * Update a homework section by ID. If the updated score is passing (>=60),
+   * update lesson progress for the related student/homework/section and then
+   * re-evaluate all sections completed for the submission.
+   *
+   * @param sectionId The homework section ID
+   * @param updateData Partial data to update (score?, answers?, speaking_id?)
+   */
+  async updateSection(
+    sectionId: string,
+    updateData: { score?: number; answers?: any; speaking_id?: string }
+  ): Promise<HomeworkSection> {
+    // Find the section
+    const section = await this.homeworkSectionModel.findOne({
+      where: { id: sectionId },
+    });
+
+    if (!section) {
+      throw new NotFoundException(
+        `Homework section with ID ${sectionId} not found`
+      );
+    }
+
+    // Update the section fields
+    await section.update({
+      ...(updateData.score !== undefined ? { score: updateData.score } : {}),
+      ...(updateData.answers !== undefined
+        ? { answers: updateData.answers }
+        : {}),
+      ...(updateData.speaking_id !== undefined
+        ? { speaking_id: updateData.speaking_id }
+        : {}),
+    });
+
+    // Load the parent submission to access student_id and homework_id
+    const submission = await this.homeworkSubmissionModel.findOne({
+      where: { id: section.submission_id },
+    });
+
+    // If section has a passing score, update lesson progress for that section
+    try {
+      if (
+        section.score !== null &&
+        section.score !== undefined &&
+        section.score >= 60 &&
+        submission &&
+        submission.student_id &&
+        submission.homework_id
+      ) {
+        await this.lessonProgressService.updateProgressFromHomeworkSubmission(
+          submission.student_id,
+          submission.homework_id,
+          section.section
+        );
+      }
+    } catch (error) {
+      console.warn(
+        "Failed to update lesson progress after section update:",
+        error
+      );
+    }
+
+    // Re-check all sections for this submission and update lesson progress flags if necessary
+    if (submission) {
+      try {
+        await this.checkAndUpdateAllSectionsCompleted(submission);
+      } catch (error) {
+        console.warn("Failed to re-evaluate sections after update:", error);
+      }
+    }
+
+    return section;
+  }
+
+  /**
    * Get exercises with their scores from homework sections by student_id and homework_id
    * @param studentId The student's ID
    * @param homeworkId The homework's ID
