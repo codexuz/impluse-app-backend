@@ -18,6 +18,7 @@ import {
 import { HomeworkSubmissionsService } from "./homework_submissions.service.js";
 import { CreateHomeworkSubmissionDto } from "./dto/create-homework-submission.dto.js";
 import { UpdateHomeworkSubmissionDto } from "./dto/update-homework-submission.dto.js";
+import { UpdateHomeworkSectionDto } from "./dto/update-homework-section.dto.js";
 import { HomeworkSubmission } from "./entities/homework_submission.entity.js";
 import { HomeworkSection } from "./entities/homework_sections.entity.js";
 import {
@@ -122,7 +123,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({
     summary: "Get all submissions by students in a specific group",
   })
@@ -256,7 +257,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Patch(":id")
-  @Roles(Role.STUDENT, Role.TEACHER)
+  @Roles(Role.STUDENT)
   @ApiOperation({ summary: "Update a homework submission" })
   @ApiResponse({
     status: 200,
@@ -312,8 +313,33 @@ export class HomeworkSubmissionsController {
     return await this.homeworkSubmissionsService.updateStatus(id, status);
   }
 
+  @Patch("sections/:sectionId")
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({
+    summary: "Update a homework section",
+    description:
+      "Update section score, answers, or speaking_id. Automatically updates lesson progress if passing score (>=60).",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "The section has been successfully updated.",
+    type: HomeworkSectionResponseDto,
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  @ApiResponse({ status: 404, description: "Section not found." })
+  async updateSection(
+    @Param("sectionId") sectionId: string,
+    @Body() updateData: UpdateHomeworkSectionDto
+  ): Promise<HomeworkSection> {
+    return await this.homeworkSubmissionsService.updateSection(
+      sectionId,
+      updateData
+    );
+  }
+
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Delete a homework submission" })
   @ApiResponse({
     status: 200,
@@ -422,4 +448,3 @@ export class HomeworkSubmissionsController {
     );
   }
 }
-

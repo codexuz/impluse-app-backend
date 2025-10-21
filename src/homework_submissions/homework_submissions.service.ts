@@ -5,6 +5,7 @@ import { HomeworkSubmission } from "./entities/homework_submission.entity.js";
 import { HomeworkSection } from "./entities/homework_sections.entity.js";
 import { CreateHomeworkSubmissionDto } from "./dto/create-homework-submission.dto.js";
 import { UpdateHomeworkSubmissionDto } from "./dto/update-homework-submission.dto.js";
+import { UpdateHomeworkSectionDto } from "./dto/update-homework-section.dto.js";
 import { LessonProgressService } from "../lesson_progress/lesson_progress.service.js";
 import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
 import { GroupStudentsService } from "../group-students/group-students.service.js";
@@ -440,11 +441,11 @@ export class HomeworkSubmissionsService {
    * re-evaluate all sections completed for the submission.
    *
    * @param sectionId The homework section ID
-   * @param updateData Partial data to update (score?, answers?, speaking_id?)
+   * @param updateData DTO containing the data to update (score?, answers?, speaking_id?)
    */
   async updateSection(
     sectionId: string,
-    updateData: { score?: number; answers?: any; speaking_id?: string }
+    updateData: UpdateHomeworkSectionDto
   ): Promise<HomeworkSection> {
     // Find the section
     const section = await this.homeworkSectionModel.findOne({
@@ -459,12 +460,18 @@ export class HomeworkSubmissionsService {
 
     // Update the section fields
     await section.update({
-      ...(updateData.score !== undefined ? { score: updateData.score } : {}),
-      ...(updateData.answers !== undefined
-        ? { answers: updateData.answers }
+      ...(updateData.exercise_id !== undefined
+        ? { exercise_id: updateData.exercise_id }
         : {}),
       ...(updateData.speaking_id !== undefined
         ? { speaking_id: updateData.speaking_id }
+        : {}),
+      ...(updateData.score !== undefined ? { score: updateData.score } : {}),
+      ...(updateData.section !== undefined
+        ? { section: updateData.section }
+        : {}),
+      ...(updateData.answers !== undefined
+        ? { answers: updateData.answers }
         : {}),
     });
 
