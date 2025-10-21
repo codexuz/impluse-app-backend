@@ -122,7 +122,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get all submissions by students in a specific group",
   })
@@ -256,7 +256,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Patch(":id")
-  @Roles(Role.STUDENT)
+  @Roles(Role.STUDENT, Role.TEACHER)
   @ApiOperation({ summary: "Update a homework submission" })
   @ApiResponse({
     status: 200,
@@ -313,7 +313,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Delete a homework submission" })
   @ApiResponse({
     status: 200,
@@ -422,3 +422,4 @@ export class HomeworkSubmissionsController {
     );
   }
 }
+
