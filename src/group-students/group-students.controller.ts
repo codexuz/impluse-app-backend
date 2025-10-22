@@ -193,7 +193,7 @@ export class GroupStudentsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Delete a group student entry" })
   @ApiResponse({
     status: 200,
@@ -208,3 +208,4 @@ export class GroupStudentsController {
     return await this.groupStudentsService.remove(id);
   }
 }
+
