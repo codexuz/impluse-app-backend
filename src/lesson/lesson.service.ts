@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Lesson } from './entities/lesson.entity.js';
 import { Exercise } from '../exercise/entities/exercise.entity.js';
 import { LessonContent } from '../lesson-content/entities/lesson-content.entity.js';
+import { Speaking } from '../speaking/entities/speaking.entity.js';
 import { CreateLessonDto } from './dto/create-lesson.dto.js';
 import { UpdateLessonDto } from './dto/update-lesson.dto.js';
 import { LessonVocabularySet } from '../lesson_vocabulary_sets/entities/lesson_vocabulary_set.entity.js';
@@ -131,6 +132,46 @@ export class LessonService {
           as: 'exercises',
         }
       ],
+    });
+
+    if (!lesson) {
+      throw new NotFoundException(`Lesson with ID ${id} not found`);
+    }
+
+    return lesson;
+  }
+
+  /**
+   * Return a lesson with its theory content, exercises, speaking items and
+   * lesson vocabulary. Uses the association aliases defined in src/models/index.ts
+   */
+  async findOneFull(id: string): Promise<Lesson> {
+    const lesson = await this.lessonModel.findOne({
+      where: {
+        id,
+        isActive: true,
+      },
+      include: [
+        {
+          model: LessonContent,
+          as: 'theory',
+        },
+        {
+          model: Exercise,
+          as: 'exercises',
+          attributes: ["id", "exercise_type", "lessonId"],
+        },
+        {
+          model: Speaking,
+          as: 'speaking',
+          attributes: ["id", "lessonId"],
+        },
+        {
+          model: LessonVocabularySet,
+          as: 'lesson_vocabulary',
+          attributes: ["id", "lesson_id"]
+        }
+      ]
     });
 
     if (!lesson) {
