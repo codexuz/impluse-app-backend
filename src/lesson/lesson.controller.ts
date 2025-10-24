@@ -105,6 +105,19 @@ export class LessonController {
     return this.lessonService.findOneWithExercises(id);
   }
 
+  @Get(':id/full')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get a lesson with content, exercises, speaking and vocabulary' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Returns the lesson with content, exercises, speaking and vocabulary',
+    type: Lesson
+  })
+  @ApiResponse({ status: 404, description: 'Lesson not found' })
+  findFull(@Param('id') id: string) {
+    return this.lessonService.findOneFull(id);
+  }
+
   @Patch(':id')
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Update a lesson' })
