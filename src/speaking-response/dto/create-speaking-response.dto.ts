@@ -25,13 +25,15 @@ export class CreateSpeakingResponseDto {
   response_type: 'part1' | 'part2' | 'part3' | 'pronunciation';
 
   @ApiProperty({
-    description: 'URL to the audio recording',
-    example: 'https://storage.example.com/audio/recording-123.mp3',
-    required: false
+    description: 'URLs to the audio recordings',
+    example: ['https://storage.example.com/audio/recording-123.mp3'],
+    required: false,
+    isArray: true,
+    type: [String]
   })
-  @IsString()
+  @IsString({ each: true })
   @IsOptional()
-  audio_url?: string;
+  audio_url?: string[];
 
   @ApiProperty({
     description: 'Transcription of the audio recording',

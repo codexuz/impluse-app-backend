@@ -14,7 +14,10 @@ export class SpeakingResponseController {
   constructor(private readonly speakingResponseService: SpeakingResponseService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new speaking response' })
+  @ApiOperation({ 
+    summary: 'Create a new speaking response',
+    description: 'Create a new speaking response with one or more audio URLs'
+  })
   @ApiResponse({ 
     status: 201, 
     description: 'The speaking response has been successfully created.',

@@ -28,11 +28,12 @@ export class SpeakingResponse extends Model {
   response_type: 'part1' | 'part2' | 'part3' | 'pronunciation';
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.ARRAY(DataType.STRING),
     allowNull: true,
-    comment: 'URL to the audio recording',
+    comment: 'URLs to the audio recordings',
+    defaultValue: []
   })
-  audio_url: string;
+  audio_url: string[];
 
   @Column({
     type: DataType.TEXT,
