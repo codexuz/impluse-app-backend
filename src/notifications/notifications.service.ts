@@ -31,7 +31,10 @@ export class NotificationsService {
   ): Promise<NotificationResponseDto> {
     const notification = await Notifications.create(createNotificationDto);
 
+    // Get all users
     const users = await User.findAll();
+    
+    // Create user notification records
     const records = users.map((user) => ({
       user_id: user.user_id,
       notification_id: notification.id,
@@ -39,6 +42,33 @@ export class NotificationsService {
     }));
 
     await UserNotification.bulkCreate(records);
+
+    try {
+      // Get all user tokens
+      const notificationTokens = await NotificationToken.findAll({
+        where: {
+          user_id: users.map(user => user.user_id)
+        }
+      });
+
+      if (notificationTokens.length > 0) {
+        // Extract tokens and send push notifications
+        const tokens = notificationTokens.map(nt => nt.token);
+        await this.notifyMultipleUsers(
+          tokens,
+          createNotificationDto.title || 'New Notification',
+          createNotificationDto.message,
+          { 
+            notification_id: notification.id,
+            img_url: createNotificationDto.img_url,
+            type: 'global'
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error sending push notifications:', error);
+      // Continue even if push notification fails
+    }
 
     return notification;
   }
@@ -170,7 +200,14 @@ export class NotificationsService {
 
   async findAllNotificationTokens() {
     try {
-      return await NotificationToken.findAll();
+      return await NotificationToken.findAll({
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['user_id', 'username', 'first_name', 'last_name', 'level_id']
+        }],
+        order: [['createdAt', 'DESC']]
+      });
     } catch (error) {
       console.error("Error fetching notification tokens:", error);
       throw error;
