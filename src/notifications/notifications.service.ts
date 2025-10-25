@@ -43,7 +43,7 @@ export class NotificationsService {
     }));
 
     await UserNotification.bulkCreate(records);
-
+    console.log(records)
     try {
       // Get all user tokens
       const notificationTokens = await NotificationToken.findAll({
@@ -349,3 +349,4 @@ export class NotificationsService {
     });
   }
 }
+
