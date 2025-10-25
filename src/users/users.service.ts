@@ -302,6 +302,9 @@ export class UsersService {
 
   async getAllTeachers(): Promise<User[]> {
     return this.userModel.findAll({
+      where: {
+        is_active: true
+      },
       attributes: {
         exclude: ["password_hash"],
       },
@@ -318,6 +321,9 @@ export class UsersService {
 
   async getAllStudents(): Promise<User[]> {
     return this.userModel.findAll({
+      where: {
+        is_active: true
+      },
       attributes: {
         exclude: ["password_hash"],
       },
