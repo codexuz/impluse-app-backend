@@ -9,7 +9,6 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  HttpException,
   BadRequestException,
 } from "@nestjs/common";
 import {
@@ -37,9 +36,7 @@ import { SendAppUpdateDto } from "./dto/send-app-update.dto.js";
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("notifications")
 export class NotificationsController {
-  constructor(
-    private readonly notificationsService: NotificationsService,
-  ) {}
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
   @Roles(Role.ADMIN)
@@ -99,30 +96,6 @@ export class NotificationsController {
     status: 400,
     description: "Bad Request - Invalid notification_id or user_id",
   })
-
-  @Post('app-update')
-  @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
-  @ApiOperation({ 
-    summary: 'Send app update notification', 
-    description: 'Send app update notification to all users or specific tokens'
-  })
-  @ApiBody({ type: SendAppUpdateDto })
-  @ApiResponse({
-    status: 200,
-    description: 'App update notification sent successfully'
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Invalid input data'
-  })
-  async sendAppUpdate(@Body() sendAppUpdateDto: SendAppUpdateDto) {
-    try {
-      return await this.notificationsService.sendAppUpdateNotification(sendAppUpdateDto);
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
-  }
   async markSeen(
     @Param("notificationId") notification_id: string,
     @Param("userId") user_id: string
@@ -133,6 +106,33 @@ export class NotificationsController {
         user_id,
       });
       return { success: true, message: "Notification marked as seen" };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  // ✅ FIXED: app-update endpoint is now separate and will appear in Swagger
+  @Post("app-update")
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "Send app update notification",
+    description: "Send app update notification to all users or specific tokens",
+  })
+  @ApiBody({ type: SendAppUpdateDto })
+  @ApiResponse({
+    status: 200,
+    description: "App update notification sent successfully",
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Bad Request - Invalid input data",
+  })
+  async sendAppUpdate(@Body() sendAppUpdateDto: SendAppUpdateDto) {
+    try {
+      return await this.notificationsService.sendAppUpdateNotification(
+        sendAppUpdateDto
+      );
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -223,24 +223,24 @@ export class NotificationsController {
         token: { type: "string", example: "device_token_here" },
         title: { type: "string", example: "Notification Title" },
         body: { type: "string", example: "Notification message body" },
-        data: { 
-          type: "object", 
+        data: {
+          type: "object",
           additionalProperties: { type: "string" },
-          example: { "key1": "value1", "key2": "value2" }
-        }
+          example: { key1: "value1", key2: "value2" },
+        },
       },
-      required: ["token", "title", "body"]
-    }
+      required: ["token", "title", "body"],
+    },
   })
   @ApiResponse({
     status: 200,
-    description: "Push notification sent successfully"
+    description: "Push notification sent successfully",
   })
   async sendPush(
-    @Body('token') token: string,
-    @Body('title') title: string,
-    @Body('body') body: string,
-    @Body('data') data?: Record<string, string>,
+    @Body("token") token: string,
+    @Body("title") title: string,
+    @Body("body") body: string,
+    @Body("data") data?: Record<string, string>
   ) {
     return this.notificationsService.notifyUser(token, title, body, data);
   }
@@ -252,33 +252,38 @@ export class NotificationsController {
     schema: {
       type: "object",
       properties: {
-        tokens: { 
-          type: "array", 
+        tokens: {
+          type: "array",
           items: { type: "string" },
-          example: ["token1", "token2", "token3"]
+          example: ["token1", "token2", "token3"],
         },
         title: { type: "string", example: "Notification Title" },
         body: { type: "string", example: "Notification message body" },
-        data: { 
-          type: "object", 
+        data: {
+          type: "object",
           additionalProperties: { type: "string" },
-          example: { "key1": "value1", "key2": "value2" }
-        }
+          example: { key1: "value1", key2: "value2" },
+        },
       },
-      required: ["tokens", "title", "body"]
-    }
+      required: ["tokens", "title", "body"],
+    },
   })
   @ApiResponse({
     status: 200,
-    description: "Multicast push notification sent successfully"
+    description: "Multicast push notification sent successfully",
   })
   async sendMulticastPush(
-    @Body('tokens') tokens: string[],
-    @Body('title') title: string,
-    @Body('body') body: string,
-    @Body('data') data?: Record<string, string>,
+    @Body("tokens") tokens: string[],
+    @Body("title") title: string,
+    @Body("body") body: string,
+    @Body("data") data?: Record<string, string>
   ) {
-    return this.notificationsService.notifyMultipleUsers(tokens, title, body, data);
+    return this.notificationsService.notifyMultipleUsers(
+      tokens,
+      title,
+      body,
+      data
+    );
   }
 
   @Post("push/topic")
@@ -291,24 +296,24 @@ export class NotificationsController {
         topic: { type: "string", example: "news" },
         title: { type: "string", example: "Notification Title" },
         body: { type: "string", example: "Notification message body" },
-        data: { 
-          type: "object", 
+        data: {
+          type: "object",
           additionalProperties: { type: "string" },
-          example: { "key1": "value1", "key2": "value2" }
-        }
+          example: { key1: "value1", key2: "value2" },
+        },
       },
-      required: ["topic", "title", "body"]
-    }
+      required: ["topic", "title", "body"],
+    },
   })
   @ApiResponse({
     status: 200,
-    description: "Topic push notification sent successfully"
+    description: "Topic push notification sent successfully",
   })
   async sendTopicPush(
-    @Body('topic') topic: string,
-    @Body('title') title: string,
-    @Body('body') body: string,
-    @Body('data') data?: Record<string, string>,
+    @Body("topic") topic: string,
+    @Body("title") title: string,
+    @Body("body") body: string,
+    @Body("data") data?: Record<string, string>
   ) {
     return this.notificationsService.notifyTopic(topic, title, body, data);
   }
@@ -409,6 +414,4 @@ export class NotificationsController {
   async deleteNotificationToken(@Param("id") id: string) {
     return await this.notificationsService.deleteNotificationToken(id);
   }
-
-
 }
