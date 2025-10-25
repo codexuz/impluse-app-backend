@@ -87,4 +87,41 @@ export class FirebaseServiceService {
       throw error;
     }
   }
+
+  /**
+   * Send app update notification to multiple devices
+   * @param tokens Array of FCM tokens to send the notification to
+   * @param customBody Optional custom message (defaults to "Please, update to the latest version.")
+   * @param playStoreUrl Optional custom Play Store URL
+   */
+  async sendAppUpdateNotification(
+    tokens: string[],
+    customBody?: string,
+    playStoreUrl: string = 'https://play.google.com/store/apps/details?id=edu.impulse.uz'
+  ) {
+    const message: MulticastMessage = {
+      tokens,
+      notification: {
+        title: 'App Update',
+        body: customBody || 'Please, update to the latest version.',
+      },
+      data: {
+        url: playStoreUrl,
+        type: 'app_update'
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+        }
+      }
+    };
+
+    try {
+      return await this.messaging.sendEachForMulticast(message);
+    } catch (error) {
+      console.error('Error sending app update notification:', error);
+      throw error;
+    }
+  }
 }

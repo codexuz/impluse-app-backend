@@ -14,6 +14,7 @@ import { UpdateNotificationTokenDto } from "./dto/update-notification-token.dto.
 import { NotificationTokenResponseDto } from "./dto/notification-token-response.dto.js";
 import { NotificationToken } from "./entities/notification-token.entity.js";
 import { FirebaseServiceService } from "./firebase-service.service.js";
+import { Op } from "sequelize";
 @Injectable()
 export class NotificationsService {
   constructor(private readonly firebaseService: FirebaseServiceService) {}
@@ -249,6 +250,40 @@ export class NotificationsService {
       body || 'This is a test push notification 🚀',
       data || { customData: '12345' },
     );
+  }
+
+  /**
+   * Send app update notification to all users or specific tokens
+   * @param options Optional configuration for the update notification
+   * @returns Result of the notification send operation
+   */
+  async sendAppUpdateNotification(options?: {
+    customMessage?: string;
+    playStoreUrl?: string;
+  }) {
+    try {
+      // Get all user tokens
+      const notificationTokens = await NotificationToken.findAll({
+        where: {
+          user_id: { [Op.not]: null } // Only get tokens associated with users
+        }
+      });
+      const tokens = notificationTokens.map(nt => nt.token);
+
+      if (tokens.length === 0) {
+        console.log('No tokens found to send app update notification');
+        return;
+      }
+
+      return await this.firebaseService.sendAppUpdateNotification(
+        tokens,
+        options?.customMessage,
+        options?.playStoreUrl
+      );
+    } catch (error) {
+      console.error('Error sending app update notification:', error);
+      throw error;
+    }
   }
   
   async findNotificationTokenById(

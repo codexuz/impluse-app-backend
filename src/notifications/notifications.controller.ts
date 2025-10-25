@@ -31,6 +31,7 @@ import { CreateNotificationTokenDto } from "./dto/create-notification-token.dto.
 import { UpdateNotificationTokenDto } from "./dto/update-notification-token.dto.js";
 import { NotificationTokenResponseDto } from "./dto/notification-token-response.dto.js";
 import { Role } from "../roles/role.enum.js";
+import { SendAppUpdateDto } from "./dto/send-app-update.dto.js";
 
 @ApiTags("notifications")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -98,6 +99,30 @@ export class NotificationsController {
     status: 400,
     description: "Bad Request - Invalid notification_id or user_id",
   })
+
+  @Post('app-update')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ 
+    summary: 'Send app update notification', 
+    description: 'Send app update notification to all users or specific tokens'
+  })
+  @ApiBody({ type: SendAppUpdateDto })
+  @ApiResponse({
+    status: 200,
+    description: 'App update notification sent successfully'
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input data'
+  })
+  async sendAppUpdate(@Body() sendAppUpdateDto: SendAppUpdateDto) {
+    try {
+      return await this.notificationsService.sendAppUpdateNotification(sendAppUpdateDto);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
   async markSeen(
     @Param("notificationId") notification_id: string,
     @Param("userId") user_id: string
