@@ -1,21 +1,137 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 import { readdir, unlink, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { Upload } from './entities/upload.entity.js';
+import { CreateUploadDto } from './dto/create-upload.dto.js';
+import { UpdateUploadDto } from './dto/update-upload.dto.js';
+import { UploadResponseDto, FileListItemDto } from './dto/upload-response.dto.js';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class UploadService {
   private readonly uploadDir = './uploads';
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    @InjectModel(Upload)
+    private uploadModel: typeof Upload,
+    private configService: ConfigService
+  ) {}
 
   getFileUrl(filename: string): string {
     const baseUrl = this.configService.get('APP_URL') || 'https://backend.impulselc.uz';
     return `${baseUrl}/uploads/${filename}`;
   }
 
-  async getAllFiles() {
+  // Database operations
+  async create(createUploadDto: CreateUploadDto): Promise<UploadResponseDto> {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const extension = this.getExtensionFromMimeType(createUploadDto.mime_type);
+    const filename = `file-${uniqueSuffix}${extension}`;
+
+    const upload = await this.uploadModel.create({
+      ...createUploadDto,
+      filename,
+      uploaded_at: new Date(),
+    });
+
+    return upload.toJSON();
+  }
+
+  async findAll(): Promise<UploadResponseDto[]> {
+    const uploads = await this.uploadModel.findAll({
+      where: {
+        deleted_at: { [Op.is]: null }
+      },
+      order: [['uploaded_at', 'DESC']]
+    });
+
+    return uploads.map(upload => upload.toJSON());
+  }
+
+  async findOne(id: string): Promise<UploadResponseDto> {
+    const upload = await this.uploadModel.findOne({
+      where: {
+        id,
+        deleted_at: { [Op.is]: null }
+      }
+    });
+
+    if (!upload) {
+      throw new NotFoundException(`Upload with ID ${id} not found`);
+    }
+
+    return upload.toJSON();
+  }
+
+  async findByUploadedBy(userId: string): Promise<UploadResponseDto[]> {
+    const uploads = await this.uploadModel.findAll({
+      where: {
+        uploaded_by: userId,
+        deleted_at: { [Op.is]: null }
+      },
+      order: [['uploaded_at', 'DESC']]
+    });
+
+    return uploads.map(upload => upload.toJSON());
+  }
+
+  async findByType(uploadType: string): Promise<UploadResponseDto[]> {
+    const uploads = await this.uploadModel.findAll({
+      where: {
+        upload_type: uploadType,
+        deleted_at: { [Op.is]: null }
+      },
+      order: [['uploaded_at', 'DESC']]
+    });
+
+    return uploads.map(upload => upload.toJSON());
+  }
+
+  async update(id: string, updateUploadDto: UpdateUploadDto): Promise<UploadResponseDto> {
+    const upload = await this.uploadModel.findOne({
+      where: {
+        id,
+        deleted_at: { [Op.is]: null }
+      }
+    });
+
+    if (!upload) {
+      throw new NotFoundException(`Upload with ID ${id} not found`);
+    }
+
+    await upload.update(updateUploadDto);
+    return upload.toJSON();
+  }
+
+  async remove(id: string): Promise<void> {
+    const upload = await this.uploadModel.findOne({
+      where: {
+        id,
+        deleted_at: { [Op.is]: null }
+      }
+    });
+
+    if (!upload) {
+      throw new NotFoundException(`Upload with ID ${id} not found`);
+    }
+
+    // Soft delete
+    await upload.update({ deleted_at: new Date() });
+
+    // Optionally delete the actual file
+    try {
+      await unlink(join(this.uploadDir, upload.filename));
+    } catch (error) {
+      console.error('Error deleting physical file:', error);
+      // Continue even if file deletion fails
+    }
+  }
+
+  // File system operations
+  async getAllFiles(): Promise<FileListItemDto[]> {
     const files = await readdir(this.uploadDir);
     return files.map(filename => ({
       filename,

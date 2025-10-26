@@ -8,16 +8,25 @@ import {
   Delete,
   Param,
   Body,
+  Patch,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { ApiConsumes, ApiBody, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiConsumes, ApiBody, ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { UploadService } from './upload.service.js';
 import { FileUploadDto } from './dto/file-upload.dto.js';
 import { Base64UploadDto } from './dto/base64-upload.dto.js';
+import { CreateUploadDto } from './dto/create-upload.dto.js';
+import { UpdateUploadDto } from './dto/update-upload.dto.js';
+import { UploadResponseDto, FileListItemDto } from './dto/upload-response.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
 @ApiTags('Upload')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('upload')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
@@ -56,7 +65,7 @@ export class UploadController {
           callback(null, filename);
         },
       }),
-      limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
     }),
   )
   uploadFile(@UploadedFile() file: Express.Multer.File) {
@@ -102,5 +111,94 @@ export class UploadController {
       base64UploadDto.filename
     );
   }
-}
 
+  // Database operations
+  @Post('records')
+  @ApiOperation({ summary: 'Create upload record in database' })
+  @ApiBody({ type: CreateUploadDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Upload record created successfully',
+    type: UploadResponseDto
+  })
+  async createUploadRecord(@Body() createUploadDto: CreateUploadDto): Promise<UploadResponseDto> {
+    return this.uploadService.create(createUploadDto);
+  }
+
+  @Get('records')
+  @ApiOperation({ summary: 'Get all upload records from database' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all upload records',
+    type: [UploadResponseDto]
+  })
+  async getAllUploadRecords(): Promise<UploadResponseDto[]> {
+    return this.uploadService.findAll();
+  }
+
+  @Get('records/:id')
+  @ApiOperation({ summary: 'Get upload record by ID' })
+  @ApiParam({ name: 'id', description: 'Upload ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Upload record found',
+    type: UploadResponseDto
+  })
+  @ApiResponse({ status: 404, description: 'Upload record not found' })
+  async getUploadRecord(@Param('id') id: string): Promise<UploadResponseDto> {
+    return this.uploadService.findOne(id);
+  }
+
+  @Get('records/user/:userId')
+  @ApiOperation({ summary: 'Get upload records by user ID' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Upload records found for user',
+    type: [UploadResponseDto]
+  })
+  async getUploadsByUser(@Param('userId') userId: string): Promise<UploadResponseDto[]> {
+    return this.uploadService.findByUploadedBy(userId);
+  }
+
+  @Get('records/type/:uploadType')
+  @ApiOperation({ summary: 'Get upload records by type' })
+  @ApiParam({ name: 'uploadType', description: 'Upload type (audio, image, document, etc.)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Upload records found for type',
+    type: [UploadResponseDto]
+  })
+  async getUploadsByType(@Param('uploadType') uploadType: string): Promise<UploadResponseDto[]> {
+    return this.uploadService.findByType(uploadType);
+  }
+
+  @Patch('records/:id')
+  @ApiOperation({ summary: 'Update upload record' })
+  @ApiParam({ name: 'id', description: 'Upload ID' })
+  @ApiBody({ type: UpdateUploadDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Upload record updated successfully',
+    type: UploadResponseDto
+  })
+  @ApiResponse({ status: 404, description: 'Upload record not found' })
+  async updateUploadRecord(
+    @Param('id') id: string,
+    @Body() updateUploadDto: UpdateUploadDto
+  ): Promise<UploadResponseDto> {
+    return this.uploadService.update(id, updateUploadDto);
+  }
+
+  @Delete('records/:id')
+  @ApiOperation({ summary: 'Delete upload record (soft delete)' })
+  @ApiParam({ name: 'id', description: 'Upload ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Upload record deleted successfully'
+  })
+  @ApiResponse({ status: 404, description: 'Upload record not found' })
+  async deleteUploadRecord(@Param('id') id: string): Promise<void> {
+    return this.uploadService.remove(id);
+  }
+}
