@@ -1,7 +1,14 @@
-import { Table, Column, Model, DataType, CreatedAt, UpdatedAt } from 'sequelize-typescript';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  CreatedAt,
+  UpdatedAt,
+} from "sequelize-typescript";
 
 @Table({
-  tableName: 'lesson_contents',
+  tableName: "lesson_contents",
   timestamps: true,
 })
 export class LessonContent extends Model {
@@ -30,6 +37,18 @@ export class LessonContent extends Model {
   })
   mediaUrl: string;
 
+    @Column({
+    type: DataType.ENUM("url", "youtube_url", "embed"),
+    allowNull: true,
+  })
+  mediaType: string;
+
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  resources: string[];
+
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
@@ -53,6 +72,4 @@ export class LessonContent extends Model {
 
   @UpdatedAt
   updatedAt: Date;
-
-
 }
