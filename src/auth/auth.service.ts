@@ -9,6 +9,7 @@ import { Op } from 'sequelize';
 import { User } from '../users/entities/user.entity.js';
 import { Role } from '../users/entities/role.model.js';
 import { UserSession } from '../users/entities/user-session.model.js';
+import { StudentWallet } from '../student-wallet/entities/student-wallet.entity.js';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -18,6 +19,8 @@ export class AuthService {
     private userModel: typeof User,
     @InjectModel(UserSession)
     private userSessionModel: typeof UserSession,
+    @InjectModel(StudentWallet)
+    private studentWalletModel: typeof StudentWallet,
     private jwtService: JwtService
   ) {}
 
@@ -211,6 +214,12 @@ export class AuthService {
         points: 0,
         coins: 0,
         streaks: 0
+      });
+
+      // Create student wallet with initial balance of 0
+      await this.studentWalletModel.create({
+        student_id: user.user_id,
+        amount: 0
       });
 
       // Return user with roles and profile included

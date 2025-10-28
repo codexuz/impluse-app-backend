@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsObject } from 'class-validator';
+import { IsNotEmpty, IsString, IsObject } from 'class-validator';
 
 export class CreateResponseDto {
   @ApiProperty({
     description: 'ID of the form being responded to',
-    example: 1
+    example: "UUID or numeric ID"
   })
   @IsNotEmpty()
-  @IsNumber()
-  form_id: number;
+  @IsString()
+  form_id: string;
 
   @ApiProperty({
     description: 'The user\'s answers to the form',

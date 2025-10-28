@@ -25,7 +25,7 @@ export class FormsService {
     return this.formModel.findAll();
   }
 
-  async findOne(id: number): Promise<Form> {
+  async findOne(id: string): Promise<Form> {
     const form = await this.formModel.findByPk(id);
     if (!form) {
       throw new NotFoundException(`Form with ID "${id}" not found`);
@@ -33,13 +33,13 @@ export class FormsService {
     return form;
   }
 
-  async update(id: number, updateFormDto: UpdateFormDto): Promise<Form> {
+  async update(id: string, updateFormDto: UpdateFormDto): Promise<Form> {
     const form = await this.findOne(id);
     await form.update(updateFormDto);
     return form;
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const form = await this.findOne(id);
     await form.destroy();
   }

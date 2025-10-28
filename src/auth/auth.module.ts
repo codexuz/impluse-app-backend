@@ -13,6 +13,7 @@ import { UserRole } from '../users/entities/user-role.model.js';
 import { UserSession } from '../users/entities/user-session.model.js';
 import { Permission } from '../users/entities/permission.model.js';
 import { RolePermission } from '../users/entities/role-permission.model.js';
+import { StudentWallet } from '../student-wallet/entities/student-wallet.entity.js';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { RolePermission } from '../users/entities/role-permission.model.js';
       }),
       inject: [ConfigService]
    }),
-   SequelizeModule.forFeature([User, Role, UserRole, UserSession, Permission, RolePermission])
+   SequelizeModule.forFeature([User, Role, UserRole, UserSession, Permission, RolePermission, StudentWallet])
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy],

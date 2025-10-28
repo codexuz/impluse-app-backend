@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException, Logger } from "@nestjs/common";
+import { Injectable, NotFoundException, Logger, BadRequestException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { StudentPayment } from "./entities/student-payment.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
+import { StudentTransaction } from "../student-transaction/entities/student-transaction.entity.js";
 import {
   CreateStudentPaymentDto,
   PaymentStatus,
@@ -18,13 +20,74 @@ export class StudentPaymentService {
 
   constructor(
     @InjectModel(StudentPayment)
-    private studentPaymentModel: typeof StudentPayment
+    private studentPaymentModel: typeof StudentPayment,
+    @InjectModel(StudentWallet)
+    private studentWalletModel: typeof StudentWallet,
+    @InjectModel(StudentTransaction)
+    private studentTransactionModel: typeof StudentTransaction
   ) {}
 
   async create(
     createStudentPaymentDto: CreateStudentPaymentDto
   ): Promise<StudentPayment> {
-    return this.studentPaymentModel.create({ ...createStudentPaymentDto });
+    // Start a transaction to ensure atomicity
+    const transaction = await this.studentPaymentModel.sequelize.transaction();
+
+    try {
+      // Create the payment record
+      const payment = await this.studentPaymentModel.create(
+        { ...createStudentPaymentDto },
+        { transaction }
+      );
+
+      // Only update wallet and create transaction if payment status is "completed"
+      if (payment.status === 'completed') {
+        // Find or create student wallet
+        let wallet = await this.studentWalletModel.findOne({
+          where: { student_id: payment.student_id },
+          transaction,
+        });
+
+        if (!wallet) {
+          // Create wallet if it doesn't exist
+          wallet = await this.studentWalletModel.create(
+            {
+              student_id: payment.student_id,
+              amount: 0,
+            },
+            { transaction }
+          );
+        }
+
+        // Add payment amount to wallet
+        const newAmount = wallet.amount + payment.amount;
+        await wallet.update({ amount: newAmount }, { transaction });
+
+        // Create a transaction record
+        await this.studentTransactionModel.create(
+          {
+            student_id: payment.student_id,
+            amount: payment.amount,
+            type: 'payment',
+          },
+          { transaction }
+        );
+
+        this.logger.log(
+          `Payment completed: Added ${payment.amount} to student ${payment.student_id} wallet. New balance: ${newAmount}`
+        );
+      }
+
+      // Commit the transaction
+      await transaction.commit();
+
+      return payment;
+    } catch (error) {
+      // Rollback the transaction on error
+      await transaction.rollback();
+      this.logger.error('Error creating payment:', error);
+      throw error;
+    }
   }
 
   async findAll(): Promise<StudentPayment[]> {
