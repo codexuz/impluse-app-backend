@@ -71,6 +71,14 @@ import { Form } from "../forms/entities/form.entity.js";
 import { Response as FormResponse } from "../forms/entities/response.entity.js";
 import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
 // Export the models array for Sequelize registration
+import { Expense } from "../expenses/entities/expense.entity.js";
+import { ExpensesCategory } from "../expenses/entities/expenses-category.entity.js";
+import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
+import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
+import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
+import { StudentTransaction } from "../student-transaction/entities/student-transaction.entity.js";
+import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
+
 export const Models = [
   User,
   Role,
@@ -133,7 +141,14 @@ export const Models = [
   CdIelts,
   CdRegister,
   Form,
-  FormResponse
+  FormResponse,
+  Expense,
+  ExpensesCategory,
+  TeacherProfile,
+  StudentWallet,
+  TeacherWallet,
+  StudentTransaction,
+  TeacherTransaction,
 ];
 
 // Define associations after all models are loaded
@@ -873,5 +888,84 @@ export function initializeAssociations() {
   SpeakingResponse.belongsTo(User, {
     foreignKey: "student_id",
     as: "student",
+  });
+
+
+  // Expense associations
+  ExpensesCategory.hasMany(Expense, {
+    foreignKey: "category_id",
+    as: "expenses",
+  });
+  Expense.belongsTo(ExpensesCategory, {
+    foreignKey: "category_id",
+    as: "category",
+  });
+
+  User.hasMany(Expense, {
+    foreignKey: "reported_by",
+    as: "reported_expenses",
+  });
+  Expense.belongsTo(User, {
+    foreignKey: "reported_by",
+    as: "reporter",
+  });
+
+  User.hasMany(Expense, {
+    foreignKey: "teacher_id",
+    as: "teacher_expenses",
+  });
+  Expense.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "teacher",
+  });
+
+  // StudentWallet associations
+  User.hasOne(StudentWallet, {
+    foreignKey: "student_id",
+    as: "student_wallet",
+  });
+  StudentWallet.belongsTo(User, {
+    foreignKey: "student_id",
+    as: "student",
+  });
+
+    // TeacherWallet associations
+  User.hasOne(TeacherWallet, {
+    foreignKey: "teacher_id",
+    as: "teacher_wallet",
+  });
+  TeacherWallet.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "teacher",
+  });
+
+  // TeacherProfile associations
+  User.hasOne(TeacherProfile, {
+    foreignKey: "teacher_id",
+    as: "teacher_profile",
+  });
+  TeacherProfile.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "teacher",
+  });
+
+  // StudentTransaction associations
+  User.hasMany(StudentTransaction, {
+    foreignKey: "student_id",
+    as: "student_transactions",
+  });
+  StudentTransaction.belongsTo(User, {
+    foreignKey: "student_id",
+    as: "student",
+  });
+
+  // TeacherTransaction associations
+  User.hasMany(TeacherTransaction, {
+    foreignKey: "teacher_id",
+    as: "teacher_transactions",
+  });
+  TeacherTransaction.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "teacher",
   });
 }

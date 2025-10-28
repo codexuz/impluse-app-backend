@@ -70,6 +70,13 @@ import { CdIeltsModule } from './cd-ielts/cd-ielts.module.js';
 import { FormsModule } from './forms/forms.module.js';
 import { SpeakingResponseModule } from './speaking-response/speaking-response.module.js';
 
+import { ExpensesModule } from './expenses/expenses.module.js';
+import { StudentWalletModule } from './student-wallet/student-wallet.module.js';
+import { TeacherWalletModule } from './teacher-wallet/teacher-wallet.module.js';
+import { StudentTransactionModule } from './student-transaction/student-transaction.module.js';
+import { TeacherTransactionModule } from './teacher-transaction/teacher-transaction.module.js';
+import { TeacherProfileModule } from './teacher-profile/teacher-profile.module.js';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -140,6 +147,12 @@ import { SpeakingResponseModule } from './speaking-response/speaking-response.mo
     CdIeltsModule,
     FormsModule,
     SpeakingResponseModule,
+    ExpensesModule,
+    StudentWalletModule,
+    TeacherWalletModule,
+    StudentTransactionModule,
+    TeacherTransactionModule,
+    TeacherProfileModule,
   ],
   controllers: [AppController],
   providers: [
