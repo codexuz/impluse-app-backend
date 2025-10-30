@@ -35,27 +35,6 @@ export class GroupStudentsService {
       );
     }
 
-    // Check if student is already in any other active group
-    const existingInOtherGroup = await this.groupStudentModel.findOne({
-      where: {
-        student_id: createDto.student_id,
-        status: "active",
-      },
-      include: [
-        {
-          model: Group,
-          as: "group",
-          attributes: ["id", "name"],
-        },
-      ],
-    });
-
-    if (existingInOtherGroup) {
-      throw new ConflictException(
-        `Student is already enrolled in another active group: "${existingInOtherGroup.group.name}" (ID: ${existingInOtherGroup.group_id}). A student can only be in one active group at a time.`
-      );
-    }
-
     return await this.groupStudentModel.create({
       ...createDto,
     });
@@ -423,3 +402,4 @@ export class GroupStudentsService {
     });
   }
 }
+
