@@ -941,11 +941,11 @@ export function initializeAssociations() {
 
   // TeacherProfile associations
   User.hasOne(TeacherProfile, {
-    foreignKey: "teacher_id",
+    foreignKey: "user_id",
     as: "teacher_profile",
   });
   TeacherProfile.belongsTo(User, {
-    foreignKey: "teacher_id",
+    foreignKey: "user_id",
     as: "teacher",
   });
 
