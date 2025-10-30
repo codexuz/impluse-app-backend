@@ -13,7 +13,12 @@ import { Op } from "sequelize";
 
 @Injectable()
 export class AttendanceService {
-  private async handleTeacherPayment(teacherId: string, status: string) {
+  private async handleTeacherPayment(
+    teacherId: string,
+    status: string,
+    studentId: string,
+    date: string
+  ) {
     // Only process payment if status is 'present'
     if (status !== "present") {
       return;
@@ -55,7 +60,7 @@ export class AttendanceService {
             });
           }
 
-          // Create teacher transaction record for audit trail
+          // Create teacher transaction record for audit trail (one per student)
           await TeacherTransaction.create({
             teacher_id: teacherId,
             amount: paymentAmount,
@@ -63,7 +68,7 @@ export class AttendanceService {
           });
 
           console.log(
-            `Teacher payment processed: ${paymentAmount} for teacher ${teacherId}`
+            `Teacher payment processed: ${paymentAmount} for teacher ${teacherId}, student ${studentId}, date ${date}`
           );
         }
       } else {
@@ -101,13 +106,73 @@ export class AttendanceService {
       note: createAttendanceDto.note || "",
     } as any);
 
-    // Handle teacher payment if status is 'present'
+    // Handle teacher payment if status is 'present' (per student)
     await this.handleTeacherPayment(
       createAttendanceDto.teacher_id,
-      createAttendanceDto.status
+      createAttendanceDto.status,
+      createAttendanceDto.student_id,
+      createAttendanceDto.date
     );
 
     return attendance;
+  }
+
+  async createBulk(createAttendanceDtos: CreateAttendanceDto[]) {
+    const createdAttendances = [];
+    const errors = [];
+
+    for (const dto of createAttendanceDtos) {
+      try {
+        // Check if attendance already exists
+        const existingAttendance = await Attendance.findOne({
+          where: {
+            group_id: dto.group_id,
+            student_id: dto.student_id,
+            date: dto.date,
+          },
+        });
+
+        if (existingAttendance) {
+          errors.push({
+            student_id: dto.student_id,
+            error:
+              "Attendance record already exists for this student, group, and date",
+          });
+          continue;
+        }
+
+        // Create attendance
+        const attendance = await Attendance.create({
+          ...dto,
+          note: dto.note || "",
+        } as any);
+
+        createdAttendances.push(attendance);
+
+        // Handle teacher payment if status is 'present' (per student)
+        await this.handleTeacherPayment(
+          dto.teacher_id,
+          dto.status,
+          dto.student_id,
+          dto.date
+        );
+      } catch (error) {
+        errors.push({
+          student_id: dto.student_id,
+          error: error.message,
+        });
+      }
+    }
+
+    return {
+      created: createdAttendances,
+      errors: errors,
+      summary: {
+        total_processed: createAttendanceDtos.length,
+        successful: createdAttendances.length,
+        failed: errors.length,
+      },
+    };
   }
 
   async findAll() {
@@ -209,7 +274,14 @@ export class AttendanceService {
     const newStatus = updateAttendanceDto.status || attendance.status;
     if (newStatus === "present" && previousStatus !== "present") {
       const teacherId = updateAttendanceDto.teacher_id || attendance.teacher_id;
-      await this.handleTeacherPayment(teacherId, newStatus);
+      const studentId = updateAttendanceDto.student_id || attendance.student_id;
+      const attendanceDate = updateAttendanceDto.date || attendance.date;
+      await this.handleTeacherPayment(
+        teacherId,
+        newStatus,
+        studentId,
+        attendanceDate
+      );
     }
 
     // Reload the attendance to return updated data
