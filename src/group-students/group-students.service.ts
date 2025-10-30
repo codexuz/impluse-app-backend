@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { CreateGroupStudentDto } from "./dto/create-group-student.dto.js";
 import { UpdateGroupStudentDto } from "./dto/update-group-student.dto.js";
@@ -16,6 +20,42 @@ export class GroupStudentsService {
   ) {}
 
   async create(createDto: CreateGroupStudentDto): Promise<GroupStudent> {
+    // Check if student is already in this specific group
+    const existingInSameGroup = await this.groupStudentModel.findOne({
+      where: {
+        group_id: createDto.group_id,
+        student_id: createDto.student_id,
+        status: ["active", "frozen"], // Consider both active and frozen as existing
+      },
+    });
+
+    if (existingInSameGroup) {
+      throw new ConflictException(
+        `Student is already enrolled in this group with status: ${existingInSameGroup.status}`
+      );
+    }
+
+    // Check if student is already in any other active group
+    const existingInOtherGroup = await this.groupStudentModel.findOne({
+      where: {
+        student_id: createDto.student_id,
+        status: "active",
+      },
+      include: [
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name"],
+        },
+      ],
+    });
+
+    if (existingInOtherGroup) {
+      throw new ConflictException(
+        `Student is already enrolled in another active group: "${existingInOtherGroup.group.name}" (ID: ${existingInOtherGroup.group_id}). A student can only be in one active group at a time.`
+      );
+    }
+
     return await this.groupStudentModel.create({
       ...createDto,
     });
@@ -247,6 +287,58 @@ export class GroupStudentsService {
     }
 
     return await this.findOne(id);
+  }
+
+  async transferStudent(
+    studentId: string,
+    fromGroupId: string,
+    toGroupId: string
+  ): Promise<{ removed: GroupStudent; added: GroupStudent }> {
+    // Find existing enrollment in the source group
+    const existingEnrollment = await this.groupStudentModel.findOne({
+      where: {
+        student_id: studentId,
+        group_id: fromGroupId,
+        status: "active",
+      },
+    });
+
+    if (!existingEnrollment) {
+      throw new NotFoundException(
+        `Student is not actively enrolled in the source group (ID: ${fromGroupId})`
+      );
+    }
+
+    // Check if student is already in the target group
+    const existingInTargetGroup = await this.groupStudentModel.findOne({
+      where: {
+        group_id: toGroupId,
+        student_id: studentId,
+        status: ["active", "frozen"],
+      },
+    });
+
+    if (existingInTargetGroup) {
+      throw new ConflictException(
+        `Student is already enrolled in the target group with status: ${existingInTargetGroup.status}`
+      );
+    }
+
+    // Remove from current group (set status to 'removed')
+    await existingEnrollment.update({ status: "removed" });
+
+    // Add to new group
+    const newEnrollment = await this.groupStudentModel.create({
+      group_id: toGroupId,
+      student_id: studentId,
+      enrolled_at: new Date(),
+      status: "active",
+    });
+
+    return {
+      removed: existingEnrollment,
+      added: await this.findOne(newEnrollment.id),
+    };
   }
 
   async countStudentsByTeacher(teacherId: string): Promise<number> {

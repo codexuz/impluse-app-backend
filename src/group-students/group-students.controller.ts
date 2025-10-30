@@ -17,6 +17,7 @@ import {
 import { GroupStudentsService } from "./group-students.service.js";
 import { CreateGroupStudentDto } from "./dto/create-group-student.dto.js";
 import { UpdateGroupStudentDto } from "./dto/update-group-student.dto.js";
+import { TransferStudentDto } from "./dto/transfer-student.dto.js";
 import { GroupStudent } from "./entities/group-student.entity.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
@@ -192,6 +193,51 @@ export class GroupStudentsController {
     return await this.groupStudentsService.updateStatus(id, status);
   }
 
+  @Post("transfer")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({
+    summary: "Transfer a student from one group to another",
+    description:
+      "Removes student from current group and adds them to new group in a single operation.",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "The student has been successfully transferred.",
+    schema: {
+      type: "object",
+      properties: {
+        removed: {
+          type: "object",
+          description:
+            "The student's record from the source group (now with 'removed' status)",
+        },
+        added: {
+          type: "object",
+          description: "The student's new record in the target group",
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  @ApiResponse({
+    status: 404,
+    description: "Student not found in source group.",
+  })
+  @ApiResponse({
+    status: 409,
+    description: "Student already exists in target group.",
+  })
+  async transferStudent(
+    @Body() transferStudentDto: TransferStudentDto
+  ): Promise<{ removed: GroupStudent; added: GroupStudent }> {
+    return await this.groupStudentsService.transferStudent(
+      transferStudentDto.student_id,
+      transferStudentDto.from_group_id,
+      transferStudentDto.to_group_id
+    );
+  }
+
   @Delete(":id")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Delete a group student entry" })
@@ -208,4 +254,3 @@ export class GroupStudentsController {
     return await this.groupStudentsService.remove(id);
   }
 }
-
