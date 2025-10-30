@@ -64,6 +64,66 @@ export class AttendanceController {
     return await this.attendanceService.create(createAttendanceDto);
   }
 
+  @Post("bulk")
+  @HttpCode(HttpStatus.CREATED)
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({
+    summary: "Create multiple attendance records at once",
+    description:
+      "Efficiently create attendance records for multiple students. Teacher payment is processed individually for each present student.",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Bulk attendance records processed successfully.",
+    schema: {
+      type: "object",
+      properties: {
+        created: {
+          type: "array",
+          items: { $ref: "#/components/schemas/AttendanceResponseDto" },
+          description: "Successfully created attendance records",
+        },
+        errors: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              student_id: { type: "string" },
+              error: { type: "string" },
+            },
+          },
+          description: "Failed attendance records with error details",
+        },
+        summary: {
+          type: "object",
+          properties: {
+            total_processed: {
+              type: "number",
+              description: "Total number of records processed",
+            },
+            successful: {
+              type: "number",
+              description: "Number of successfully created records",
+            },
+            failed: { type: "number", description: "Number of failed records" },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Bad request - Invalid input data.",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({
+    status: 403,
+    description: "Forbidden - Insufficient permissions.",
+  })
+  async createBulk(@Body() createAttendanceDtos: CreateAttendanceDto[]) {
+    return await this.attendanceService.createBulk(createAttendanceDtos);
+  }
+
   @Get()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Get all attendance records" })
@@ -357,7 +417,9 @@ export class AttendanceController {
 
   @Get("student/:studentId/current-month")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get student's attendance summary for current month" })
+  @ApiOperation({
+    summary: "Get student's attendance summary for current month",
+  })
   @ApiParam({ name: "studentId", description: "Student ID", type: "string" })
   @ApiResponse({
     status: 200,
@@ -377,7 +439,11 @@ export class AttendanceController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 404, description: "Student not found." })
-  async getStudentCurrentMonthAttendance(@Param("studentId") studentId: string) {
-    return await this.attendanceService.getStudentCurrentMonthAttendance(studentId);
+  async getStudentCurrentMonthAttendance(
+    @Param("studentId") studentId: string
+  ) {
+    return await this.attendanceService.getStudentCurrentMonthAttendance(
+      studentId
+    );
   }
 }
