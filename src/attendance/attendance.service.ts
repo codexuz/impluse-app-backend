@@ -6,10 +6,80 @@ import {
 import { CreateAttendanceDto } from "./dto/create-attendance.dto.js";
 import { UpdateAttendanceDto } from "./dto/update-attendance.dto.js";
 import { Attendance } from "./entities/attendance.entity.js";
+import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
+import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
+import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 import { Op } from "sequelize";
 
 @Injectable()
 export class AttendanceService {
+  private async handleTeacherPayment(teacherId: string, status: string) {
+    // Only process payment if status is 'present'
+    if (status !== "present") {
+      return;
+    }
+
+    try {
+      // Get teacher profile with payment information
+      const teacherProfile = await TeacherProfile.findOne({
+        where: { user_id: teacherId },
+      });
+
+      if (!teacherProfile) {
+        console.warn(`Teacher profile not found for teacher ID ${teacherId}`);
+        return; // Don't throw error, just skip payment processing
+      }
+
+      // Business logic:
+      // - If payment_type is 'percentage': update wallet and create transaction
+      // - If payment_type is 'fixed': create attendance but don't process payment
+      if (teacherProfile.payment_type === "percentage") {
+        const paymentAmount = teacherProfile.payment_value;
+
+        if (paymentAmount && paymentAmount > 0) {
+          // Find or create teacher wallet
+          let teacherWallet = await TeacherWallet.findOne({
+            where: { teacher_id: teacherId },
+          });
+
+          if (!teacherWallet) {
+            // Create new wallet if doesn't exist
+            teacherWallet = await TeacherWallet.create({
+              teacher_id: teacherId,
+              amount: paymentAmount,
+            });
+          } else {
+            // Update existing wallet by adding the payment amount
+            await teacherWallet.update({
+              amount: teacherWallet.amount + paymentAmount,
+            });
+          }
+
+          // Create teacher transaction record for audit trail
+          await TeacherTransaction.create({
+            teacher_id: teacherId,
+            amount: paymentAmount,
+            type: "oylik", // Payment for attendance
+          });
+
+          console.log(
+            `Teacher payment processed: ${paymentAmount} for teacher ${teacherId}`
+          );
+        }
+      } else {
+        console.log(
+          `Teacher ${teacherId} has fixed payment type - no wallet update needed`
+        );
+      }
+    } catch (error) {
+      console.error(
+        `Error processing teacher payment for ${teacherId}:`,
+        error
+      );
+      // Don't throw error to prevent attendance creation from failing
+      // Payment processing failure shouldn't block attendance recording
+    }
+  }
   async create(createAttendanceDto: CreateAttendanceDto) {
     // Check if attendance already exists for this student, group, and date
     const existingAttendance = await Attendance.findOne({
@@ -26,10 +96,18 @@ export class AttendanceService {
       );
     }
 
-    return await Attendance.create({
+    const attendance = await Attendance.create({
       ...createAttendanceDto,
       note: createAttendanceDto.note || "",
     } as any);
+
+    // Handle teacher payment if status is 'present'
+    await this.handleTeacherPayment(
+      createAttendanceDto.teacher_id,
+      createAttendanceDto.status
+    );
+
+    return attendance;
   }
 
   async findAll() {
@@ -98,6 +176,7 @@ export class AttendanceService {
 
   async update(id: string, updateAttendanceDto: UpdateAttendanceDto) {
     const attendance = await this.findOne(id);
+    const previousStatus = attendance.status;
 
     // If updating student, group, or date, check for conflicts
     if (
@@ -123,8 +202,18 @@ export class AttendanceService {
       }
     }
 
+    // Update the attendance record
     await attendance.update(updateAttendanceDto);
-    return attendance;
+
+    // Handle teacher payment if status is being updated to 'present' and wasn't 'present' before
+    const newStatus = updateAttendanceDto.status || attendance.status;
+    if (newStatus === "present" && previousStatus !== "present") {
+      const teacherId = updateAttendanceDto.teacher_id || attendance.teacher_id;
+      await this.handleTeacherPayment(teacherId, newStatus);
+    }
+
+    // Reload the attendance to return updated data
+    return await this.findOne(id);
   }
 
   async remove(id: string) {
@@ -432,8 +521,8 @@ export class AttendanceService {
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     // Format dates to YYYY-MM-DD for database query
-    const startDate = startOfMonth.toISOString().split('T')[0];
-    const endDate = endOfMonth.toISOString().split('T')[0];
+    const startDate = startOfMonth.toISOString().split("T")[0];
+    const endDate = endOfMonth.toISOString().split("T")[0];
 
     const whereClause = {
       student_id,
@@ -454,7 +543,7 @@ export class AttendanceService {
     });
 
     return {
-      month: now.toLocaleString('default', { month: 'long', year: 'numeric' }),
+      month: now.toLocaleString("default", { month: "long", year: "numeric" }),
       student_id,
       total: totalRecords,
       present: presentCount,
