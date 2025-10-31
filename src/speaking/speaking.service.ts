@@ -1,12 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Speaking } from './entities/speaking.entity.js';
-import { CreateSpeakingDto } from './dto/create-speaking.dto.js';
-import { UpdateSpeakingDto } from './dto/update-speaking.dto.js';
-import { PronunciationExercise } from '../pronunciation-exercise/entities/pronunciation-exercise.entity.js';
-import { Ieltspart1Question } from '../ieltspart1-question/entities/ieltspart1-question.entity.js';
-import { Ieltspart2Question } from '../ieltspart2-question/entities/ieltspart2-question.entity.js';
-import { Ieltspart3Question } from '../ieltspart3-question/entities/ieltspart3-question.entity.js';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectModel } from "@nestjs/sequelize";
+import { Speaking } from "./entities/speaking.entity.js";
+import { CreateSpeakingDto } from "./dto/create-speaking.dto.js";
+import { UpdateSpeakingDto } from "./dto/update-speaking.dto.js";
+import { PronunciationExercise } from "../pronunciation-exercise/entities/pronunciation-exercise.entity.js";
+import { Ieltspart1Question } from "../ieltspart1-question/entities/ieltspart1-question.entity.js";
+import { Ieltspart2Question } from "../ieltspart2-question/entities/ieltspart2-question.entity.js";
+import { Ieltspart3Question } from "../ieltspart3-question/entities/ieltspart3-question.entity.js";
 
 @Injectable()
 export class SpeakingService {
@@ -27,7 +27,7 @@ export class SpeakingService {
     const speaking = await this.speakingModel.create({
       lessonId: createSpeakingDto.lessonId,
       title: createSpeakingDto.title,
-      type: createSpeakingDto.type
+      type: createSpeakingDto.type,
     });
 
     return speaking;
@@ -43,27 +43,29 @@ export class SpeakingService {
       include: [
         {
           model: this.pronunciationModel,
-          as: 'pronunciationExercise',  // Changed from 'pronunciationExercises' to 'pronunciationExercise'
-          required: false
+          as: "pronunciationExercise",
+          required: false,
+          order: [["createdAt", "ASC"]],
         },
         {
           model: this.ieltspart1Model,
-          as: 'part1_questions',
-          required: false
+          as: "part1_questions",
+          required: false,
+          order: [["createdAt", "ASC"]],
         },
         {
           model: this.ieltspart2Model,
-          as: 'part2_questions',
-          required: false
+          as: "part2_questions",
+          required: false,
         },
         {
           model: this.ieltspart3Model,
-          as: 'part3_questions',
-          required: false
-        }
-      ]
+          as: "part3_questions",
+          required: false,
+        },
+      ],
     });
-    
+
     if (!speaking) {
       throw new NotFoundException(`Speaking exercise with ID ${id} not found`);
     }
@@ -78,173 +80,185 @@ export class SpeakingService {
       include: [
         {
           model: this.pronunciationModel,
-          as: 'pronunciationExercise',  // Changed from 'pronunciationExercises' to 'pronunciationExercise'
-          required: false
+          as: "pronunciationExercise", // Changed from 'pronunciationExercises' to 'pronunciationExercise'
+          required: false,
+          order: [["createdAt", "ASC"]],
         },
         {
           model: this.ieltspart1Model,
-          as: 'part1_questions',
-          required: false
+          as: "part1_questions",
+          required: false,
+          order: [["createdAt", "ASC"]],
         },
         {
           model: this.ieltspart2Model,
-          as: 'part2_questions',
-          required: false
+          as: "part2_questions",
+          required: false,
         },
         {
           model: this.ieltspart3Model,
-          as: 'part3_questions',
-          required: false
-        }
-      ]
+          as: "part3_questions",
+          required: false,
+        },
+      ],
     });
 
     return speakingExercises;
   }
 
-  async getByType(type: 'speaking' | 'pronunciation'): Promise<any[]> {
+  async getByType(type: "speaking" | "pronunciation"): Promise<any[]> {
     // Get all speaking exercises by type with eager loading of related entities
     const speakingExercises = await this.speakingModel.findAll({
       where: { type },
       include: [
         {
           model: this.pronunciationModel,
-          as: 'pronunciationExercise',  // Changed from 'pronunciationExercises' to 'pronunciationExercise'
-          required: false
+          as: "pronunciationExercise", // Changed from 'pronunciationExercises' to 'pronunciationExercise'
+          required: false,
+          order: [["createdAt", "ASC"]],
         },
         {
           model: this.ieltspart1Model,
-          as: 'part1_questions',
-          required: false
+          as: "part1_questions",
+          required: false,
+          order: [["createdAt", "ASC"]],
         },
         {
           model: this.ieltspart2Model,
-          as: 'part2_questions',
-          required: false
+          as: "part2_questions",
+          required: false,
         },
         {
           model: this.ieltspart3Model,
-          as: 'part3_questions',
-          required: false
-        }
+          as: "part3_questions",
+          required: false,
+        },
       ],
-      order: [['createdAt', 'DESC']]
+      order: [["createdAt", "DESC"]],
     });
 
     return speakingExercises;
   }
-  
-  async findByLessonAndType(lessonId: string, type: 'speaking' | 'pronunciation'): Promise<any[]> {
+
+  async findByLessonAndType(
+    lessonId: string,
+    type: "speaking" | "pronunciation"
+  ): Promise<any[]> {
     // Get all speaking exercises filtered by both lesson ID and type
     const speakingExercises = await this.speakingModel.findAll({
-      where: { 
-        lessonId, 
-        type 
+      where: {
+        lessonId,
+        type,
       },
       include: [
         {
           model: this.pronunciationModel,
-          as: 'pronunciationExercise',  // Changed from 'pronunciationExercises' to 'pronunciationExercise'
-          required: false
+          as: "pronunciationExercise", // Changed from 'pronunciationExercises' to 'pronunciationExercise'
+          required: false,
+          order: [["createdAt", "ASC"]],
         },
         {
           model: this.ieltspart1Model,
-          as: 'part1_questions',
-          required: false
+          as: "part1_questions",
+          required: false,
+          order: [["createdAt", "ASC"]],
         },
         {
           model: this.ieltspart2Model,
-          as: 'part2_questions',
-          required: false
+          as: "part2_questions",
+          required: false,
         },
         {
           model: this.ieltspart3Model,
-          as: 'part3_questions',
-          required: false
-        }
+          as: "part3_questions",
+          required: false,
+        },
       ],
-      order: [['createdAt', 'DESC']]
+      order: [["createdAt", "DESC"]],
     });
 
     return speakingExercises;
   }
 
-  async update(id: string, updateSpeakingDto: UpdateSpeakingDto): Promise<Speaking> {
+  async update(
+    id: string,
+    updateSpeakingDto: UpdateSpeakingDto
+  ): Promise<Speaking> {
     const speaking = await this.speakingModel.findByPk(id);
-    
+
     if (!speaking) {
       throw new NotFoundException(`Speaking exercise with ID ${id} not found`);
     }
-    
+
     await speaking.update(updateSpeakingDto);
     return speaking;
   }
 
   async countRelatedEntities(id: string): Promise<any> {
     const pronunciationCount = await this.pronunciationModel.count({
-      where: { speaking_id: id }
+      where: { speaking_id: id },
     });
-    
+
     const part1Count = await this.ieltspart1Model.count({
-      where: { speaking_id: id }
+      where: { speaking_id: id },
     });
-    
+
     const part2Count = await this.ieltspart2Model.count({
-      where: { speaking_id: id }
+      where: { speaking_id: id },
     });
-    
+
     const part3Count = await this.ieltspart3Model.count({
-      where: { speaking_id: id }
+      where: { speaking_id: id },
     });
-    
+
     return {
       pronunciationExercises: pronunciationCount,
       part1Questions: part1Count,
       part2Questions: part2Count,
       part3Questions: part3Count,
-      total: pronunciationCount + part1Count + part2Count + part3Count
+      total: pronunciationCount + part1Count + part2Count + part3Count,
     };
   }
-  
+
   async deleteRelatedEntities(id: string): Promise<any> {
     // First count what will be deleted
     const countBefore = await this.countRelatedEntities(id);
-    
+
     // Use Sequelize transaction to ensure data consistency
     const t = await this.speakingModel.sequelize.transaction();
-    
+
     try {
       // Delete all pronunciation exercises associated with this speaking exercise
       await this.pronunciationModel.destroy({
         where: { speaking_id: id },
-        transaction: t
+        transaction: t,
       });
-      
+
       // Delete all IELTS part 1 questions associated with this speaking exercise
       await this.ieltspart1Model.destroy({
         where: { speaking_id: id },
-        transaction: t
+        transaction: t,
       });
-      
+
       // Delete all IELTS part 2 questions associated with this speaking exercise
       await this.ieltspart2Model.destroy({
         where: { speaking_id: id },
-        transaction: t
+        transaction: t,
       });
-      
+
       // Delete all IELTS part 3 questions associated with this speaking exercise
       await this.ieltspart3Model.destroy({
         where: { speaking_id: id },
-        transaction: t
+        transaction: t,
       });
-      
+
       // Commit the transaction if all operations succeed
       await t.commit();
-      
+
       // Return summary of what was deleted
       return {
-        message: 'Successfully deleted all related entities',
-        deleted: countBefore
+        message: "Successfully deleted all related entities",
+        deleted: countBefore,
       };
     } catch (error) {
       // Rollback the transaction if any operation fails
@@ -256,54 +270,55 @@ export class SpeakingService {
   async remove(id: string): Promise<any> {
     // First check if speaking exercise exists
     const speaking = await this.speakingModel.findByPk(id);
-    
+
     if (!speaking) {
       throw new NotFoundException(`Speaking exercise with ID ${id} not found`);
     }
-    
+
     // Count what will be deleted
     const countBefore = await this.countRelatedEntities(id);
     const speakingDetails = speaking.toJSON();
-    
+
     // Use a transaction for complete delete operation
     const t = await this.speakingModel.sequelize.transaction();
-    
+
     try {
       // Delete all pronunciation exercises associated with this speaking exercise
       await this.pronunciationModel.destroy({
         where: { speaking_id: id },
-        transaction: t
+        transaction: t,
       });
-      
+
       // Delete all IELTS part 1 questions associated with this speaking exercise
       await this.ieltspart1Model.destroy({
         where: { speaking_id: id },
-        transaction: t
+        transaction: t,
       });
-      
+
       // Delete all IELTS part 2 questions associated with this speaking exercise
       await this.ieltspart2Model.destroy({
         where: { speaking_id: id },
-        transaction: t
+        transaction: t,
       });
-      
+
       // Delete all IELTS part 3 questions associated with this speaking exercise
       await this.ieltspart3Model.destroy({
         where: { speaking_id: id },
-        transaction: t
+        transaction: t,
       });
-      
+
       // Finally delete the speaking exercise itself
       await speaking.destroy({ transaction: t });
-      
+
       // Commit the transaction if all operations succeed
       await t.commit();
-      
+
       // Return summary of what was deleted
       return {
-        message: 'Successfully deleted speaking exercise and all related entities',
+        message:
+          "Successfully deleted speaking exercise and all related entities",
         speaking: speakingDetails,
-        relatedEntities: countBefore
+        relatedEntities: countBefore,
       };
     } catch (error) {
       // Rollback the transaction if any operation fails
