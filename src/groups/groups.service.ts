@@ -72,7 +72,7 @@ export class GroupsService {
           attributes: ["id", "title", "description", "level", "isActive"],
         },
         {
-          association: "groupStudents",
+          association: "students",
           attributes: ["id", "student_id", "status"],
           where: { status: "active" },
           required: false,
@@ -96,4 +96,5 @@ export class GroupsService {
         await group.destroy();
     }
 }
+
 
