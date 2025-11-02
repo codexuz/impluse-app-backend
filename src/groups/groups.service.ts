@@ -59,17 +59,27 @@ export class GroupsService {
         return group;
     }
 
-    async findByTeacherId(teacherId: string): Promise<Group[]> {
-        return await this.groupModel.findAll({ 
-            where: { teacher_id: teacherId },
-            include: [
-                {
-                    association: 'teacher',
-                    attributes: { exclude: ['password_hash'] },
-                }
-            ]
-        });
-    }
+  async findByTeacherId(teacherId: string): Promise<Group[]> {
+    return await this.groupModel.findAll({
+      where: { teacher_id: teacherId },
+      include: [
+        {
+          association: "teacher",
+          attributes: { exclude: ["password_hash"] },
+        },
+        {
+          association: "level",
+          attributes: ["id", "title", "description", "level", "isActive"],
+        },
+        {
+          association: "groupStudents",
+          attributes: ["id", "student_id", "status"],
+          where: { status: "active" },
+          required: false,
+        },
+      ],
+    });
+  }
 
     async findByLevelId(levelId: string): Promise<Group[]> {
         return await this.groupModel.findAll({ where: { level_id: levelId } });
@@ -86,3 +96,4 @@ export class GroupsService {
         await group.destroy();
     }
 }
+
