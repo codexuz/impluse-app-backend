@@ -108,8 +108,8 @@ export class AuthService {
 
     console.log('Role validation successful for user:', loginDto.username);
 
-    // Terminate existing sessions for single-login enforcement
-    await this.terminateUserSessions(user.user_id);
+    // Ensure maximum 2 sessions per user
+    await this.limitUserSessions(user.user_id, 2);
     
     // Create new session
     const sessionId = uuidv4();
@@ -274,6 +274,34 @@ export class AuthService {
     return true;
   }
 
+  async limitUserSessions(userId: string, maxSessions: number = 2): Promise<void> {
+    // Get all active sessions for the user, ordered by last accessed (oldest first)
+    const activeSessions = await this.userSessionModel.findAll({
+      where: { 
+        userId, 
+        isActive: true,
+        expiresAt: { [Op.gt]: new Date() }
+      },
+      order: [['lastAccessedAt', 'ASC']]
+    });
+
+    // If we have reached the limit, deactivate the oldest sessions
+    if (activeSessions.length >= maxSessions) {
+      const sessionsToDeactivate = activeSessions.slice(0, activeSessions.length - maxSessions + 1);
+      
+      for (const session of sessionsToDeactivate) {
+        await session.update({ isActive: false });
+      }
+
+      // Clear current session if any of the deactivated sessions was the current one
+      const deactivatedSessionIds = sessionsToDeactivate.map(s => s.id);
+      const user = await this.userModel.findByPk(userId);
+      if (user && deactivatedSessionIds.includes(user.currentSessionId)) {
+        await user.update({ currentSessionId: null });
+      }
+    }
+  }
+
   async terminateUserSessions(userId: string): Promise<void> {
     await this.userSessionModel.update(
       { isActive: false },
@@ -301,6 +329,16 @@ export class AuthService {
       expiresAt: session.expiresAt,
       isActive: session.isActive
     }));
+  }
+
+  async getActiveSessionCount(userId: string): Promise<number> {
+    return await this.userSessionModel.count({
+      where: { 
+        userId, 
+        isActive: true,
+        expiresAt: { [Op.gt]: new Date() }
+      }
+    });
   }
 
   async cleanupExpiredSessions(): Promise<void> {
