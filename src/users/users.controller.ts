@@ -53,6 +53,14 @@ export class UsersController {
     return this.usersService.getAllStudents();
   }
 
+  @Get("students/archived")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Get all archived students" })
+  @ApiResponse({ status: 200, description: "List of all archived students (is_active = false)" })
+  getArchivedStudents() {
+    return this.usersService.getArchivedStudents();
+  }
+
   @Get("support-teachers")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all support teachers" })
@@ -96,6 +104,24 @@ export class UsersController {
   @Roles(Role.ADMIN)
   activate(@Param("id") id: string) {
     return this.usersService.activate(id);
+  }
+
+  @Patch("students/:id/archive")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Archive a student" })
+  @ApiResponse({ status: 200, description: "Student archived successfully (is_active = false)" })
+  @ApiResponse({ status: 404, description: "Student not found" })
+  archiveStudent(@Param("id") id: string) {
+    return this.usersService.archiveStudent(id);
+  }
+
+  @Patch("students/:id/restore")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Restore an archived student to active status" })
+  @ApiResponse({ status: 200, description: "Student restored successfully (is_active = true)" })
+  @ApiResponse({ status: 404, description: "Student not found" })
+  restoreStudent(@Param("id") id: string) {
+    return this.usersService.restoreStudent(id);
   }
 
   @Patch(":id/update-password")
