@@ -19,6 +19,10 @@ export class GroupsService {
         return await this.groupModel.findAll();
     }
 
+    async countActiveGroups(): Promise<number> {
+        return await this.groupModel.count();
+    }
+
     async findOne(id: string): Promise<Group> {
         const group = await this.groupModel.findOne({ where: { id } });
         if (!group) {

@@ -35,6 +35,16 @@ export class GroupsController {
         return await this.groupsService.findAll();
     }
 
+    @Get('group-count')
+    @Roles(Role.ADMIN, Role.TEACHER)
+    @ApiOperation({ summary: 'Get count of all active groups' })
+    @ApiResponse({ status: 200, description: 'Return the count of active groups.' })
+    @ApiResponse({ status: 401, description: 'Unauthorized.' })
+    async getActiveGroupsCount(): Promise<{ count: number }> {
+        const count = await this.groupsService.countActiveGroups();
+        return { count };
+    }
+
     @Get(':id')
     @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
     @ApiOperation({ summary: 'Get a group by id' })
