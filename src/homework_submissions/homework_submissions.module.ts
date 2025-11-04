@@ -7,6 +7,7 @@ import { HomeworkSection } from "./entities/homework_sections.entity.js";
 import { LessonProgressModule } from "../lesson_progress/lesson_progress.module.js";
 import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
 import { GroupStudentsModule } from "../group-students/group-students.module.js";
+import { OpenaiService } from "../services/openai/openai.service.js";
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { GroupStudentsModule } from "../group-students/group-students.module.js"
     GroupStudentsModule,
   ],
   controllers: [HomeworkSubmissionsController],
-  providers: [HomeworkSubmissionsService],
+  providers: [HomeworkSubmissionsService, OpenaiService],
   exports: [HomeworkSubmissionsService],
 })
 export class HomeworkSubmissionsModule {}

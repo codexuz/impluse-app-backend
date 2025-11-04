@@ -338,6 +338,111 @@ export class HomeworkSubmissionsController {
     );
   }
 
+  @Post("sections/:sectionId/check-writing")
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({
+    summary: "Check writing answers using AI writing assessment",
+    description:
+      "Uses OpenAI writing checker bot to assess student's writing, provides feedback in Uzbek, and updates the score automatically.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Writing has been successfully assessed and scored.",
+    type: HomeworkSectionResponseDto,
+    schema: {
+      example: {
+        id: "section-123",
+        score: 75,
+        answers: {
+          writing: "Student's writing response...",
+          assessment: {
+            score: 75,
+            grammarScore: 70,
+            vocabularyScore: 80,
+            coherenceScore: 75,
+            taskResponseScore: 80,
+            grammarFeedback: "Grammatika bo'yicha maslahatlar...",
+            vocabularyFeedback: "Lug'at boyligi bo'yicha...",
+            overallFeedback: "Umumiy baho va tavsiyalar...",
+            correctedText: "Corrected version...",
+            assessedAt: "2025-11-04T10:30:00.000Z",
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Invalid section type or no writing content found.",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  @ApiResponse({ status: 404, description: "Section not found." })
+  async checkWritingAnswers(
+    @Param("sectionId") sectionId: string,
+    @Query("taskType") taskType?: string
+  ): Promise<HomeworkSection> {
+    return await this.homeworkSubmissionsService.checkWritingAnswers(
+      sectionId,
+      taskType
+    );
+  }
+
+  @Post("sections/bulk-check-writing")
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({
+    summary: "Bulk check writing answers for multiple sections",
+    description:
+      "Processes multiple writing sections at once using AI assessment. Returns success/failure status for each section.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Bulk writing assessment completed.",
+    schema: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          sectionId: { type: "string" },
+          success: { type: "boolean" },
+          section: { $ref: "#/components/schemas/HomeworkSectionResponseDto" },
+          error: { type: "string" },
+        },
+      },
+      example: [
+        {
+          sectionId: "section-1",
+          success: true,
+          section: {
+            /* assessed section data */
+          },
+        },
+        {
+          sectionId: "section-2",
+          success: false,
+          error: "No writing content found",
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  async bulkCheckWritingAnswers(
+    @Body() requestBody: { sectionIds: string[]; taskType?: string }
+  ): Promise<
+    Array<{
+      sectionId: string;
+      success: boolean;
+      section?: HomeworkSection;
+      error?: string;
+    }>
+  > {
+    return await this.homeworkSubmissionsService.bulkCheckWritingAnswers(
+      requestBody.sectionIds,
+      requestBody.taskType
+    );
+  }
+
   @Delete(":id")
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Delete a homework submission" })

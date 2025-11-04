@@ -9,6 +9,7 @@ import { UpdateHomeworkSectionDto } from "./dto/update-homework-section.dto.js";
 import { LessonProgressService } from "../lesson_progress/lesson_progress.service.js";
 import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
 import { GroupStudentsService } from "../group-students/group-students.service.js";
+import { OpenaiService } from "../services/openai/openai.service.js";
 
 @Injectable()
 export class HomeworkSubmissionsService {
@@ -20,7 +21,8 @@ export class HomeworkSubmissionsService {
     @InjectModel(SpeakingResponse)
     private speakingResponseModel: typeof SpeakingResponse,
     private lessonProgressService: LessonProgressService,
-    private groupStudentsService: GroupStudentsService
+    private groupStudentsService: GroupStudentsService,
+    private openaiService: OpenaiService
   ) {}
 
   async create(
@@ -876,6 +878,141 @@ export class HomeworkSubmissionsService {
     // Return the average rounded to 2 decimal places
     return parseFloat((totalScore / speakingResponses.length).toFixed(2));
   }
+  /**
+   * Check writing answers from homework sections using OpenAI writing checker bot
+   * @param sectionId The homework section ID containing writing answers
+   * @param taskType Optional task type for better assessment context
+   * @returns Updated homework section with AI assessment and score
+   */
+  async checkWritingAnswers(
+    sectionId: string,
+    taskType?: string
+  ): Promise<HomeworkSection> {
+    // Find the homework section
+    const section = await this.homeworkSectionModel.findOne({
+      where: { id: sectionId },
+    });
+
+    if (!section) {
+      throw new NotFoundException(
+        `Homework section with ID ${sectionId} not found`
+      );
+    }
+
+    // Check if this is a writing section
+    if (section.section !== "writing") {
+      throw new Error(
+        `This method can only be used for writing sections. Current section type: ${section.section}`
+      );
+    }
+
+    // Extract writing text from answers
+    const answers = section.answers as any;
+    if (!answers || !answers.writing) {
+      throw new Error(
+        "No writing content found in the answers. Expected format: {writing: 'student writing text'}"
+      );
+    }
+
+    const writingText = answers.writing;
+
+    try {
+      // Use OpenAI service to assess the writing
+      const assessment = await this.openaiService.assessWriting(
+        writingText,
+        taskType
+      );
+
+      // Update the answers JSON to include the assessment
+      const updatedAnswers = {
+        ...answers,
+        assessment: {
+          ...assessment,
+          assessedAt: new Date().toISOString(),
+          taskType: taskType || "General Writing",
+        },
+      };
+
+      // Update the section with the new score and answers
+      await section.update({
+        score: assessment.score,
+        answers: updatedAnswers,
+      });
+
+      // Load the parent submission to potentially update lesson progress
+      const submission = await this.homeworkSubmissionModel.findOne({
+        where: { id: section.submission_id },
+      });
+
+      // If the score is passing (>=20), update lesson progress
+      if (
+        assessment.score >= 20 &&
+        submission &&
+        submission.student_id &&
+        submission.homework_id
+      ) {
+        try {
+          await this.lessonProgressService.updateProgressFromHomeworkSubmission(
+            submission.student_id,
+            submission.homework_id,
+            section.section
+          );
+
+          // Re-check all sections for this submission
+          await this.checkAndUpdateAllSectionsCompleted(submission);
+        } catch (error) {
+          console.warn("Failed to update lesson progress:", error);
+        }
+      }
+
+      return section;
+    } catch (error) {
+      console.error("Error assessing writing with OpenAI:", error);
+      throw new Error(
+        `Failed to assess writing: ${error.message || "Unknown error"}`
+      );
+    }
+  }
+
+  /**
+   * Bulk check writing answers for multiple homework sections
+   * @param sectionIds Array of homework section IDs
+   * @param taskType Optional task type for better assessment context
+   * @returns Array of results with success/failure status for each section
+   */
+  async bulkCheckWritingAnswers(
+    sectionIds: string[],
+    taskType?: string
+  ): Promise<
+    Array<{
+      sectionId: string;
+      success: boolean;
+      section?: HomeworkSection;
+      error?: string;
+    }>
+  > {
+    const results = [];
+
+    for (const sectionId of sectionIds) {
+      try {
+        const section = await this.checkWritingAnswers(sectionId, taskType);
+        results.push({
+          sectionId,
+          success: true,
+          section,
+        });
+      } catch (error) {
+        results.push({
+          sectionId,
+          success: false,
+          error: error.message,
+        });
+      }
+    }
+
+    return results;
+  }
+
   /**
    * Fetch homework submissions for all (active) students in a group
    * @param groupId The group ID
