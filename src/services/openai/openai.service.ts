@@ -29,6 +29,47 @@ export class OpenaiService {
     feedback: z.string(),
   });
 
+  private writingResponseFormat = z.object({
+    score: z
+      .number()
+      .min(0)
+      .max(100)
+      .describe("Overall writing score from 0-100"),
+    grammarScore: z
+      .number()
+      .min(0)
+      .max(100)
+      .describe("Grammar score from 0-100"),
+    vocabularyScore: z
+      .number()
+      .min(0)
+      .max(100)
+      .describe("Vocabulary score from 0-100"),
+    coherenceScore: z
+      .number()
+      .min(0)
+      .max(100)
+      .describe("Coherence and cohesion score from 0-100"),
+    taskResponseScore: z
+      .number()
+      .min(0)
+      .max(100)
+      .describe("Task response score from 0-100"),
+    grammarFeedback: z.string().describe("Grammar feedback in Uzbek"),
+    vocabularyFeedback: z.string().describe("Vocabulary feedback in Uzbek"),
+    coherenceFeedback: z
+      .string()
+      .describe("Coherence and structure feedback in Uzbek"),
+    taskResponseFeedback: z
+      .string()
+      .describe("Task response feedback in Uzbek"),
+    overallFeedback: z
+      .string()
+      .describe("Overall feedback and suggestions in Uzbek"),
+    correctedText: z
+      .string()
+      .describe("Corrected version of the text with improvements"),
+  });
 
   constructor(private readonly configService: ConfigService) {
     const api_key = this.configService.get<string>("openAiKey");
@@ -40,10 +81,9 @@ export class OpenaiService {
     setDefaultOpenAIKey(api_key);
     setTracingDisabled(true);
 
-
     this.grammarAgent = new Agent({
-     name: "English Grammar Teacher",
-     instructions: `You are a professional English teacher. Your only job is to help students improve their grammar and vocabulary.
+      name: "English Grammar Teacher",
+      instructions: `You are a professional English teacher. Your only job is to help students improve their grammar and vocabulary.
           You must:
           - Correct grammar mistakes clearly and politely
           - Explain grammar rules in a simple, understandable way
@@ -66,7 +106,7 @@ export class OpenaiService {
 
           Speak professionally, like a real English teacher in a classroom. Always stay in character.
           `,
-   });
+    });
 
     this.speakingAgent = new Agent({
       name: "English Teacher",
@@ -86,11 +126,9 @@ export class OpenaiService {
         temperature: 0.1,
         maxTokens: 3000,
       },
-      outputType: "text"
+      outputType: "text",
     });
   }
-
-
 
   async chatCompletion(
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
@@ -125,6 +163,47 @@ export class OpenaiService {
     return result.output_parsed;
   }
 
+  async assessWriting(writingText: string, taskType?: string) {
+    const systemPrompt = `Siz ingliz tili yozuv ko'nikmalarini baholash bo'yicha professional ekspertsiz. Sizning vazifangiz:
+
+1. Yozuvni to'liq tahlil qiling va 0-100% orasida ball bering
+2. Barcha fikr-mulohazalaringizni O'ZBEK TILIDA bering
+3. Quyidagi kriteriyalar bo'yicha baholang:
+   - Grammatika (0-100%): Fe'l zamonlari, gaplar tuzilishi, so'z tartibi
+   - Lug'at boyligi (0-100%): So'zlar tanlovi, sinonimlar, iboralar
+   - Mazmun va tuzilish (0-100%): G'oyalar ketma-ketligi, paragraflar bog'lanishi
+   - Vazifaga javob (0-100%): Berilgan mavzuga mos javob berish
+
+4. Har bir mezon bo'yicha ANIQ va FOYDALI maslahatlar bering
+5. Matnning to'g'irlangan variantini taqdim eting
+6. Umumiy baho va yaxshilash yo'llarini ko'rsating
+
+Majburiy ravishda o'zbek tilida javob bering!`;
+
+    const userPrompt = taskType
+      ? `Vazifa turi: ${taskType}\n\nYozilgan matn:\n${writingText}`
+      : `Yozilgan matn:\n${writingText}`;
+
+    const result = await this.openai.responses.parse({
+      model: "gpt-4o-mini",
+      input: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: userPrompt,
+        },
+      ],
+      text: {
+        format: zodTextFormat(this.writingResponseFormat, "writingAssessment"),
+      },
+    });
+
+    return result.output_parsed;
+  }
+
   async agentBotChat(prompt: string) {
     let thread: AgentInputItem[] = [];
 
@@ -149,5 +228,3 @@ export class OpenaiService {
     return result?.finalOutput;
   }
 }
-
-
