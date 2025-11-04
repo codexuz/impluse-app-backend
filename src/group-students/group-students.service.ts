@@ -304,7 +304,7 @@ export class GroupStudentsService {
     }
 
     // Remove from current group (set status to 'removed')
-    await existingEnrollment.remove();
+    await existingEnrollment.destroy()
 
     // Add to new group
     const newEnrollment = await this.groupStudentModel.create({
@@ -402,5 +402,6 @@ export class GroupStudentsService {
     });
   }
 }
+
 
 
