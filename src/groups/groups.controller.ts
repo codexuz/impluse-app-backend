@@ -108,7 +108,7 @@ export class GroupsController {
     }
 
     @Delete(':id')
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.TEACHER)
     @ApiOperation({ summary: 'Delete a group' })
     @ApiResponse({ status: 200, description: 'The group has been successfully deleted.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -118,3 +118,4 @@ export class GroupsController {
         return await this.groupsService.remove(id);
     }
 }
+
