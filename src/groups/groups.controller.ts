@@ -27,7 +27,7 @@ export class GroupsController {
     }
 
     @Get()
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.TEACHER)
     @ApiOperation({ summary: 'Get all groups' })
     @ApiResponse({ status: 200, description: 'Return all groups.', type: [Group] })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -118,4 +118,5 @@ export class GroupsController {
         return await this.groupsService.remove(id);
     }
 }
+
 
