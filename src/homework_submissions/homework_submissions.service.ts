@@ -253,6 +253,20 @@ export class HomeworkSubmissionsService {
       });
     }
 
+    // If this is a writing section, automatically assess it using OpenAI
+    if (createHomeworkSubmissionDto.section === "writing") {
+      try {
+        // Use checkWritingAnswers method to automatically assess the writing
+        section = await this.checkWritingAnswers(section.id, "General Writing");
+        console.log(
+          `Writing section ${section.id} automatically assessed with score: ${section.score}`
+        );
+      } catch (error) {
+        console.warn("Failed to automatically assess writing section:", error);
+        // Continue with the original flow even if assessment fails
+      }
+    }
+
     // Only proceed if we have a passing score, a student ID, lesson ID and homework ID
     if (
       section.score &&

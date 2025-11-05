@@ -1,15 +1,17 @@
-import { Module } from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { SpeakingResponseService } from './speaking-response.service.js';
-import { SpeakingResponseController } from './speaking-response.controller.js';
-import { SpeakingResponse } from './entities/speaking-response.entity.js';
-import { Speaking } from '../speaking/entities/speaking.entity.js';
-import { OpenaiModule } from '../services/openai/openai.module.js';
+import { Module } from "@nestjs/common";
+import { SequelizeModule } from "@nestjs/sequelize";
+import { SpeakingResponseService } from "./speaking-response.service.js";
+import { SpeakingResponseController } from "./speaking-response.controller.js";
+import { SpeakingResponse } from "./entities/speaking-response.entity.js";
+import { Speaking } from "../speaking/entities/speaking.entity.js";
+import { OpenaiModule } from "../services/openai/openai.module.js";
+import { StudentProfileModule } from "../student_profiles/student-profile.module.js";
 
 @Module({
   imports: [
     SequelizeModule.forFeature([SpeakingResponse, Speaking]),
     OpenaiModule,
+    StudentProfileModule,
   ],
   controllers: [SpeakingResponseController],
   providers: [SpeakingResponseService],

@@ -5,6 +5,7 @@ import { UpdateSpeakingResponseDto } from "./dto/update-speaking-response.dto.js
 import { SpeakingResponse } from "./entities/speaking-response.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
 import { OpenaiService } from "../services/openai/openai.service.js";
+import { StudentProfileService } from "../student_profiles/student-profile.service.js";
 
 // Define the interface for the exercise details we'll return
 export interface ExerciseDetail {
@@ -25,13 +26,15 @@ export class SpeakingResponseService {
     private speakingResponseModel: typeof SpeakingResponse,
     @InjectModel(Speaking)
     private speakingModel: typeof Speaking,
-    private readonly openaiService: OpenaiService
+    private readonly openaiService: OpenaiService,
+    private readonly studentProfileService: StudentProfileService
   ) {}
 
   async create(
     createSpeakingResponseDto: CreateSpeakingResponseDto
   ): Promise<SpeakingResponse> {
     let assessmentResult = null;
+    let pronunciationScore = 0;
 
     // Check if response_type is not "pronunciation" and transcription exists
     if (
@@ -43,16 +46,54 @@ export class SpeakingResponseService {
         assessmentResult = await this.openaiService.assessSpeaking(
           createSpeakingResponseDto.transcription
         );
+
+        // Calculate the average score from OpenAI assessment
+        if (assessmentResult && assessmentResult.speakingAssessment) {
+          const { fluency, grammar, vocabulary, pronunciation } =
+            assessmentResult.speakingAssessment;
+          pronunciationScore = Math.round(
+            (fluency + grammar + vocabulary + pronunciation) / 4
+          );
+        }
       } catch (error) {
         console.error("Error assessing speaking response:", error);
         // Continue with creation even if assessment fails
       }
     }
 
-    return this.speakingResponseModel.create({
+    // Create the speaking response with calculated pronunciation_score
+    const speakingResponse = await this.speakingResponseModel.create({
       ...createSpeakingResponseDto,
+      pronunciation_score: pronunciationScore,
       result: assessmentResult || null,
     });
+
+    // Add rewards if score is 80% or higher and student_id exists
+    if (pronunciationScore >= 80 && createSpeakingResponseDto.student_id) {
+      try {
+        // Add coins (e.g., 10 coins for good performance)
+        await this.studentProfileService.addCoins(
+          createSpeakingResponseDto.student_id,
+          10
+        );
+
+        // Add points (e.g., 50 points for good performance)
+        await this.studentProfileService.addPoints(
+          createSpeakingResponseDto.student_id,
+          50
+        );
+
+        // Increment streak
+        await this.studentProfileService.incrementStreak(
+          createSpeakingResponseDto.student_id
+        );
+      } catch (error) {
+        console.error("Error adding rewards:", error);
+        // Continue even if rewards fail to prevent blocking the main operation
+      }
+    }
+
+    return speakingResponse;
   }
 
   async findAll(): Promise<SpeakingResponse[]> {
