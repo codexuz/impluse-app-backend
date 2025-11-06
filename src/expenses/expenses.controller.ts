@@ -109,7 +109,7 @@ export class ExpensesController {
 
   // ============= EXPENSE CATEGORIES ENDPOINTS =============
 
-  @Post('categories')
+  @Post('categories/')
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Create a new expense category' })
