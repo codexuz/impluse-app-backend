@@ -332,8 +332,7 @@ export class StudentPaymentService {
    */
   /**
    * Check for debitor students (students with passed next_payment_date)
-   * This identifies all students who are past their payment date
-   * regardless of payment status.
+   * This identifies students whose LATEST payment's next_payment_date has passed
    */
   async checkDuePayments(): Promise<{ count: number; payments: any[] }> {
     this.logger.log("Checking for debitor students with passed next_payment_date");
@@ -343,14 +342,8 @@ export class StudentPaymentService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Find all payments with next_payment_date in the past
-      // We don't filter by status since we want to identify all debitors
-      const overduePayments = await this.studentPaymentModel.findAll({
-        where: {
-          next_payment_date: {
-            [Op.lt]: today,
-          },
-        },
+      // Get all students who have payments
+      const allPayments = await this.studentPaymentModel.findAll({
         include: [
           {
             model: User,
@@ -363,13 +356,33 @@ export class StudentPaymentService {
             attributes: { exclude: ["password_hash"] },
           },
         ],
+        order: [['next_payment_date', 'DESC']]
       });
 
-      // Update status to PENDING for all overdue payments that aren't already handled
-      for (const payment of overduePayments) {
-        if (payment.status !== PaymentStatus.COMPLETED) {
-          await payment.update({ status: PaymentStatus.PENDING });
-          this.logger.log(`Updated payment ${payment.id} status to PENDING for debitor student ${payment.student_id}`);
+      // Group payments by student_id and get the latest payment for each student
+      const studentLatestPayments = new Map();
+      
+      for (const payment of allPayments) {
+        if (!studentLatestPayments.has(payment.student_id)) {
+          studentLatestPayments.set(payment.student_id, payment);
+        }
+      }
+
+      // Find students whose latest payment's next_payment_date has passed
+      const overduePayments = [];
+      
+      for (const [studentId, latestPayment] of studentLatestPayments) {
+        const nextPaymentDate = new Date(latestPayment.next_payment_date);
+        nextPaymentDate.setHours(0, 0, 0, 0);
+        
+        if (nextPaymentDate < today) {
+          overduePayments.push(latestPayment);
+          
+          // Update status to PENDING for overdue payments that aren't already completed
+          if (latestPayment.status !== PaymentStatus.COMPLETED) {
+            await latestPayment.update({ status: PaymentStatus.PENDING });
+            this.logger.log(`Updated payment ${latestPayment.id} status to PENDING for debitor student ${latestPayment.student_id}`);
+          }
         }
       }
 
@@ -422,14 +435,8 @@ export class StudentPaymentService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Find all payments with next_payment_date in the past
-      // We want to identify all debitors, regardless of current status
-      const overduePayments = await this.studentPaymentModel.findAll({
-        where: {
-          next_payment_date: {
-            [Op.lt]: today,
-          },
-        },
+      // Get all students who have payments
+      const allPayments = await this.studentPaymentModel.findAll({
         include: [
           {
             model: User,
@@ -442,14 +449,36 @@ export class StudentPaymentService {
             attributes: { exclude: ["password_hash"] },
           },
         ],
+        order: [['next_payment_date', 'DESC']]
       });
 
+      // Group payments by student_id and get the latest payment for each student
+      const studentLatestPayments = new Map();
+      
+      for (const payment of allPayments) {
+        if (!studentLatestPayments.has(payment.student_id)) {
+          studentLatestPayments.set(payment.student_id, payment);
+        }
+      }
+
+      // Find students whose latest payment's next_payment_date has passed
+      const overdueStudents = [];
+      
+      for (const [studentId, latestPayment] of studentLatestPayments) {
+        const nextPaymentDate = new Date(latestPayment.next_payment_date);
+        nextPaymentDate.setHours(0, 0, 0, 0);
+        
+        if (nextPaymentDate < today) {
+          overdueStudents.push(latestPayment);
+        }
+      }
+
       this.logger.log(
-        `Found ${overduePayments.length} students with passed payment dates (debitors)`
+        `Found ${overdueStudents.length} students with passed payment dates (debitors)`
       );
 
-      // Process each overdue payment
-      for (const payment of overduePayments) {
+      // Process each overdue student's latest payment
+      for (const payment of overdueStudents) {
         // Get student info safely using toJSON to convert to plain object
         const studentInfo = payment.get({ plain: true });
         const student = studentInfo.student as any;
