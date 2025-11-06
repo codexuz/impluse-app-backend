@@ -10,6 +10,7 @@ import * as bcrypt from "bcrypt";
 import { User } from "./entities/user.entity.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
+import { CreateAdminDto } from "./dto/create-admin.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { Role } from "./entities/role.model.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
@@ -70,6 +71,35 @@ export class UsersService {
     });
     if (teacherRole) {
       await user.$add("roles", teacherRole);
+    }
+
+    // Return user with profile included
+    return this.findOne(user.user_id);
+  }
+
+  async createAdmin(createAdminDto: CreateAdminDto): Promise<User> {
+    // Check if user already exists
+    await this.checkExistingUser(
+      createAdminDto.username,
+      createAdminDto.phone
+    );
+
+    // Hash password
+    const hashedPassword = await this.hashPassword(createAdminDto.password);
+
+    // Create user
+    const user = await this.userModel.create({
+      ...createAdminDto,
+      password_hash: hashedPassword,
+      is_active: true,
+    });
+
+    // Assign admin role
+    const adminRole = await this.roleModel.findOne({
+      where: { name: "admin" },
+    });
+    if (adminRole) {
+      await user.$add("roles", adminRole);
     }
 
     // Return user with profile included
@@ -349,6 +379,25 @@ export class UsersService {
           model: Role,
           as: "roles",
           where: { name: "teacher" },
+          through: { attributes: [] },
+        },
+      ],
+    });
+  }
+
+  async getAllAdmins(): Promise<User[]> {
+    return this.userModel.findAll({
+      where: {
+        is_active: true
+      },
+      attributes: {
+        exclude: ["password_hash"],
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          where: { name: "admin" },
           through: { attributes: [] },
         },
       ],

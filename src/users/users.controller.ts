@@ -14,6 +14,7 @@ import { ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { UsersService } from "./users.service.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
+import { CreateAdminDto } from "./dto/create-admin.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { UpdatePasswordDto } from "./dto/update-password.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
@@ -37,12 +38,30 @@ export class UsersController {
     return this.usersService.createTeacher(createTeacherDto);
   }
 
+  @Post("admins")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Create a new admin user" })
+  @ApiResponse({ status: 201, description: "Admin created successfully" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 409, description: "User already exists" })
+  createAdmin(@Body() createAdminDto: CreateAdminDto) {
+    return this.usersService.createAdmin(createAdminDto);
+  }
+
   @Get("teachers")
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Get all teachers" })
   @ApiResponse({ status: 200, description: "List of all teachers" })
   getAllTeachers() {
     return this.usersService.getAllTeachers();
+  }
+
+  @Get("admins")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get all admins" })
+  @ApiResponse({ status: 200, description: "List of all admin users" })
+  getAllAdmins() {
+    return this.usersService.getAllAdmins();
   }
 
   @Get("students")
