@@ -1,5 +1,0 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateUploadDto } from './create-upload.dto.js';
-export class UpdateUploadDto extends PartialType(CreateUploadDto) {
-}
-//# sourceMappingURL=update-upload.dto.js.map
