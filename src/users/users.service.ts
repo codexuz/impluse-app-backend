@@ -14,6 +14,7 @@ import { CreateAdminDto } from "./dto/create-admin.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { Role } from "./entities/role.model.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
+import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { UserSession } from "./entities/user-session.model.js";
 import { StudentPayment } from "../student-payment/entities/student-payment.entity.js";
 
@@ -380,6 +381,10 @@ export class UsersService {
           as: "roles",
           where: { name: "teacher" },
           through: { attributes: [] },
+        },
+        {
+          model: TeacherProfile,
+          as: "teacher_profile",
         },
       ],
     });
