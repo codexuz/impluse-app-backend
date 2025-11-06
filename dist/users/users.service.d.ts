@@ -1,0 +1,31 @@
+import { User } from "./entities/user.entity.js";
+import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
+import { CreateAdminDto } from "./dto/create-admin.dto.js";
+import { UpdateUserDto } from "./dto/update-user.dto.js";
+import { Role } from "./entities/role.model.js";
+import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
+export declare class UsersService {
+    private userModel;
+    private roleModel;
+    private studentProfileModel;
+    constructor(userModel: typeof User, roleModel: typeof Role, studentProfileModel: typeof StudentProfile);
+    private checkExistingUser;
+    private hashPassword;
+    createTeacher(createTeacherDto: CreateTeacherDto): Promise<User>;
+    createAdmin(createAdminDto: CreateAdminDto): Promise<User>;
+    findAll(): Promise<User[]>;
+    findOne(id: string): Promise<User>;
+    findByUsername(username: string): Promise<User>;
+    update(id: string, updateUserDto: UpdateUserDto): Promise<User>;
+    remove(id: string): Promise<void>;
+    deactivate(id: string): Promise<User>;
+    activate(id: string): Promise<User>;
+    archiveStudent(studentId: string): Promise<User>;
+    restoreStudent(studentId: string): Promise<User>;
+    getAllTeachers(): Promise<User[]>;
+    getAllAdmins(): Promise<User[]>;
+    getAllStudents(): Promise<User[]>;
+    getArchivedStudents(): Promise<User[]>;
+    getAllSupportTeachers(): Promise<User[]>;
+    updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<User>;
+}

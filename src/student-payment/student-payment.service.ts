@@ -205,11 +205,13 @@ export class StudentPaymentService {
           model: User,
           as: "student",
           attributes: { exclude: ["password_hash"] },
+          where: { is_active: true },
         },
         {
           model: User,
           as: "manager",
           attributes: { exclude: ["password_hash"] },
+          where: { is_active: true },
         },
       ],
     });
@@ -342,13 +344,14 @@ export class StudentPaymentService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Get all students who have payments
+      // Get all students who have payments and are active
       const allPayments = await this.studentPaymentModel.findAll({
         include: [
           {
             model: User,
             as: "student",
             attributes: { exclude: ["password_hash"] },
+            where: { is_active: true },
           },
           {
             model: User,
@@ -435,13 +438,14 @@ export class StudentPaymentService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Get all students who have payments
+      // Get all students who have payments and are active
       const allPayments = await this.studentPaymentModel.findAll({
         include: [
           {
             model: User,
             as: "student",
             attributes: { exclude: ["password_hash"] },
+            where: { is_active: true },
           },
           {
             model: User,

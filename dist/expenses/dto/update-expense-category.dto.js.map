@@ -1,0 +1,1 @@
+{"version":3,"file":"update-expense-category.dto.js","sourceRoot":"","sources":["../../../src/expenses/dto/update-expense-category.dto.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,WAAW,EAAE,MAAM,iBAAiB,CAAC;AAC9C,OAAO,EAAE,wBAAwB,EAAE,MAAM,kCAAkC,CAAC;AAE5E,MAAM,OAAO,wBAAyB,SAAQ,WAAW,CAAC,wBAAwB,CAAC;CAAG"}
