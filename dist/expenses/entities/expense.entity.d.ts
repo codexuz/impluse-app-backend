@@ -5,6 +5,7 @@ export declare class Expense extends Model<Expense> {
     category_id: string;
     description: string;
     amount: number;
+    expense_date: Date;
     teacher_id: string;
     reported_by: string;
     created_at: Date;

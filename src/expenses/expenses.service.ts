@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { CreateExpenseDto } from './dto/create-expense.dto.js';
 import { UpdateExpenseDto } from './dto/update-expense.dto.js';
 import { CreateExpenseCategoryDto } from './dto/create-expense-category.dto.js';
@@ -78,6 +79,39 @@ export class ExpensesService {
     const expense = await this.findOne(id);
 
     await expense.destroy(); // Soft delete since paranoid is enabled
+  }
+
+  async findByDateRange(startDate: Date, endDate: Date): Promise<Expense[]> {
+    return await this.expenseModel.findAll({
+      where: {
+        expense_date: {
+          [Op.between]: [startDate, endDate],
+        },
+      },
+      include: [
+        {
+          model: this.expensesCategoryModel,
+          as: 'category',
+        },
+      ],
+      order: [['expense_date', 'DESC']],
+    });
+  }
+
+  async getTotalExpensesByDateRange(startDate: Date, endDate: Date): Promise<{ total: number; count: number }> {
+    const expenses = await this.findByDateRange(startDate, endDate);
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    return {
+      total,
+      count: expenses.length,
+    };
+  }
+
+  async findByMonth(year: number, month: number): Promise<Expense[]> {
+    const startDate = new Date(year, month - 1, 1); // month is 0-indexed
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Last day of the month
+    
+    return this.findByDateRange(startDate, endDate);
   }
 
   // ============= EXPENSE CATEGORIES METHODS =============

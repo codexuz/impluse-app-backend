@@ -40,6 +40,19 @@ let ExpensesController = class ExpensesController {
     remove(id) {
         return this.expensesService.remove(id);
     }
+    findByDateRange(startDate, endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        return this.expensesService.findByDateRange(start, end);
+    }
+    findByMonth(year, month) {
+        return this.expensesService.findByMonth(Number(year), Number(month));
+    }
+    getTotalExpensesByDateRange(startDate, endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        return this.expensesService.getTotalExpensesByDateRange(start, end);
+    }
     createCategory(createExpenseCategoryDto) {
         return this.expensesService.createCategory(createExpenseCategoryDto);
     }
@@ -113,6 +126,42 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ExpensesController.prototype, "remove", null);
+__decorate([
+    Get('reports/date-range'),
+    Roles(Role.ADMIN),
+    ApiOperation({ summary: 'Get expenses by date range' }),
+    ApiQuery({ name: 'start_date', required: true, description: 'Start date (YYYY-MM-DD)', type: 'string' }),
+    ApiQuery({ name: 'end_date', required: true, description: 'End date (YYYY-MM-DD)', type: 'string' }),
+    __param(0, Query('start_date')),
+    __param(1, Query('end_date')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ExpensesController.prototype, "findByDateRange", null);
+__decorate([
+    Get('reports/monthly/:year/:month'),
+    Roles(Role.ADMIN),
+    ApiOperation({ summary: 'Get expenses by month' }),
+    ApiParam({ name: 'year', description: 'Year (YYYY)', type: 'number' }),
+    ApiParam({ name: 'month', description: 'Month (1-12)', type: 'number' }),
+    __param(0, Param('year')),
+    __param(1, Param('month')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", void 0)
+], ExpensesController.prototype, "findByMonth", null);
+__decorate([
+    Get('reports/total'),
+    Roles(Role.ADMIN),
+    ApiOperation({ summary: 'Get total expenses by date range' }),
+    ApiQuery({ name: 'start_date', required: true, description: 'Start date (YYYY-MM-DD)', type: 'string' }),
+    ApiQuery({ name: 'end_date', required: true, description: 'End date (YYYY-MM-DD)', type: 'string' }),
+    __param(0, Query('start_date')),
+    __param(1, Query('end_date')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ExpensesController.prototype, "getTotalExpensesByDateRange", null);
 __decorate([
     Post('categories'),
     HttpCode(HttpStatus.CREATED),

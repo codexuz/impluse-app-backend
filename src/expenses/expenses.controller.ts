@@ -67,6 +67,46 @@ export class ExpensesController {
     return this.expensesService.remove(id);
   }
 
+  @Get('reports/date-range')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Get expenses by date range' })
+  @ApiQuery({ name: 'start_date', required: true, description: 'Start date (YYYY-MM-DD)', type: 'string' })
+  @ApiQuery({ name: 'end_date', required: true, description: 'End date (YYYY-MM-DD)', type: 'string' })
+  findByDateRange(
+    @Query('start_date') startDate: string,
+    @Query('end_date') endDate: string
+  ) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return this.expensesService.findByDateRange(start, end);
+  }
+
+  @Get('reports/monthly/:year/:month')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Get expenses by month' })
+  @ApiParam({ name: 'year', description: 'Year (YYYY)', type: 'number' })
+  @ApiParam({ name: 'month', description: 'Month (1-12)', type: 'number' })
+  findByMonth(
+    @Param('year') year: number,
+    @Param('month') month: number
+  ) {
+    return this.expensesService.findByMonth(Number(year), Number(month));
+  }
+
+  @Get('reports/total')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Get total expenses by date range' })
+  @ApiQuery({ name: 'start_date', required: true, description: 'Start date (YYYY-MM-DD)', type: 'string' })
+  @ApiQuery({ name: 'end_date', required: true, description: 'End date (YYYY-MM-DD)', type: 'string' })
+  getTotalExpensesByDateRange(
+    @Query('start_date') startDate: string,
+    @Query('end_date') endDate: string
+  ) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return this.expensesService.getTotalExpensesByDateRange(start, end);
+  }
+
   // ============= EXPENSE CATEGORIES ENDPOINTS =============
 
   @Post('categories')

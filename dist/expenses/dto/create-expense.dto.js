@@ -7,7 +7,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { IsString, IsNotEmpty, IsUUID, IsOptional, IsInt, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsOptional, IsInt, Min, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class CreateExpenseDto {
 }
@@ -49,6 +49,15 @@ __decorate([
     IsNotEmpty(),
     __metadata("design:type", Number)
 ], CreateExpenseDto.prototype, "amount", void 0);
+__decorate([
+    ApiProperty({
+        description: 'Date when the expense occurred',
+        example: '2025-11-06T10:30:00.000Z',
+    }),
+    IsDateString(),
+    IsNotEmpty(),
+    __metadata("design:type", Date)
+], CreateExpenseDto.prototype, "expense_date", void 0);
 __decorate([
     ApiPropertyOptional({
         description: 'Teacher ID if expense is related to a teacher (UUID)',

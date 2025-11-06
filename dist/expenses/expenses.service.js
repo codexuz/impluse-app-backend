@@ -12,6 +12,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { Expense } from './entities/expense.entity.js';
 import { ExpensesCategory } from './entities/expenses-category.entity.js';
 let ExpensesService = class ExpensesService {
@@ -66,6 +67,35 @@ let ExpensesService = class ExpensesService {
     async remove(id) {
         const expense = await this.findOne(id);
         await expense.destroy();
+    }
+    async findByDateRange(startDate, endDate) {
+        return await this.expenseModel.findAll({
+            where: {
+                expense_date: {
+                    [Op.between]: [startDate, endDate],
+                },
+            },
+            include: [
+                {
+                    model: this.expensesCategoryModel,
+                    as: 'category',
+                },
+            ],
+            order: [['expense_date', 'DESC']],
+        });
+    }
+    async getTotalExpensesByDateRange(startDate, endDate) {
+        const expenses = await this.findByDateRange(startDate, endDate);
+        const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        return {
+            total,
+            count: expenses.length,
+        };
+    }
+    async findByMonth(year, month) {
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+        return this.findByDateRange(startDate, endDate);
     }
     async createCategory(createExpenseCategoryDto) {
         return await this.expensesCategoryModel.create(createExpenseCategoryDto);

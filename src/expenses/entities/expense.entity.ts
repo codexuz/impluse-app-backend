@@ -46,6 +46,12 @@ export class Expense extends Model<Expense> {
     amount: number;
 
     @Column({
+        type: DataType.DATE,
+        allowNull: false,
+    })
+    expense_date: Date;
+
+    @Column({
         type: DataType.UUID,
         allowNull: true,
     })

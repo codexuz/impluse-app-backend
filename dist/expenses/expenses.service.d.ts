@@ -13,6 +13,12 @@ export declare class ExpensesService {
     findOne(id: string): Promise<Expense>;
     update(id: string, updateExpenseDto: UpdateExpenseDto): Promise<Expense>;
     remove(id: string): Promise<void>;
+    findByDateRange(startDate: Date, endDate: Date): Promise<Expense[]>;
+    getTotalExpensesByDateRange(startDate: Date, endDate: Date): Promise<{
+        total: number;
+        count: number;
+    }>;
+    findByMonth(year: number, month: number): Promise<Expense[]>;
     createCategory(createExpenseCategoryDto: CreateExpenseCategoryDto): Promise<ExpensesCategory>;
     findAllCategories(): Promise<ExpensesCategory[]>;
     findOneCategory(id: string): Promise<ExpensesCategory>;

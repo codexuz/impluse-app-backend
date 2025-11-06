@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUUID, IsOptional, IsInt, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsOptional, IsInt, Min, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateExpenseDto {
@@ -35,6 +35,14 @@ export class CreateExpenseDto {
   @Min(0)
   @IsNotEmpty()
   amount: number;
+
+  @ApiProperty({
+    description: 'Date when the expense occurred',
+    example: '2025-11-06T10:30:00.000Z',
+  })
+  @IsDateString()
+  @IsNotEmpty()
+  expense_date: Date;
 
   @ApiPropertyOptional({
     description: 'Teacher ID if expense is related to a teacher (UUID)',

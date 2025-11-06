@@ -48,6 +48,13 @@ __decorate([
 ], Expense.prototype, "amount", void 0);
 __decorate([
     Column({
+        type: DataType.DATE,
+        allowNull: false,
+    }),
+    __metadata("design:type", Date)
+], Expense.prototype, "expense_date", void 0);
+__decorate([
+    Column({
         type: DataType.UUID,
         allowNull: true,
     }),
