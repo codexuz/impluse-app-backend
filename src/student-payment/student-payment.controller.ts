@@ -68,6 +68,24 @@ export class StudentPaymentController {
     return this.studentPaymentService.findAll();
   }
 
+  @Get("date-range")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get all student payments within a date range" })
+  @ApiResponse({ status: 200, description: "List of payments within date range." })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  findByDateRange(
+    @Query("start_date") startDate?: string,
+    @Query("end_date") endDate?: string
+  ) {
+    if (!startDate || !endDate) {
+      return [];
+    }
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return this.studentPaymentService.findByDateRange(start, end);
+  }
+
   @Get("student/:studentId")
   @Roles(Role.ADMIN, Role.STUDENT)
   @ApiOperation({ summary: "Get all payments for a specific student" })
