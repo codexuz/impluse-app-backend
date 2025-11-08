@@ -10,10 +10,12 @@ import { Speaking } from '../speaking/entities/speaking.entity.js';
 import { LessonContent } from '../lesson-content/entities/lesson-content.entity.js';
 import { LessonVocabularySet } from '../lesson_vocabulary_sets/entities/lesson_vocabulary_set.entity.js';
 import { HomeworkSubmission } from '../homework_submissions/entities/homework_submission.entity.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([GroupHomework, GroupStudent, Lesson, Exercise, Speaking, LessonContent, LessonVocabularySet, HomeworkSubmission])
+    SequelizeModule.forFeature([GroupHomework, GroupStudent, Lesson, Exercise, Speaking, LessonContent, LessonVocabularySet, HomeworkSubmission]),
+    NotificationsModule
   ],
   controllers: [GroupHomeworksController],
   providers: [GroupHomeworksService],

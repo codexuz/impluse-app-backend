@@ -10,6 +10,10 @@ import { Speaking } from "../speaking/entities/speaking.entity.js";
 import { LessonContent } from "../lesson-content/entities/lesson-content.entity.js";
 import { LessonVocabularySet } from "../lesson_vocabulary_sets/entities/lesson_vocabulary_set.entity.js";
 import { HomeworkSubmission } from "../homework_submissions/entities/homework_submission.entity.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
+import { Notifications } from "../notifications/entities/notification.entity.js";
+import { UserNotification } from "../user-notifications/entities/user-notification.entity.js";
+import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 
 import { Op } from "sequelize";
 
@@ -31,13 +35,80 @@ export class GroupHomeworksService {
     @InjectModel(LessonVocabularySet)
     private lessonVocabularySetModel: typeof LessonVocabularySet,
     @InjectModel(HomeworkSubmission)
-    private homeworkSubmissionModel: typeof HomeworkSubmission
+    private homeworkSubmissionModel: typeof HomeworkSubmission,
+    private readonly notificationsService: NotificationsService
   ) {}
 
   async create(createDto: CreateGroupHomeworkDto): Promise<GroupHomework> {
-    return await this.groupHomeworkModel.create({
+    // Create the homework
+    const homework = await this.groupHomeworkModel.create({
       ...createDto,
     });
+
+    // Get all students in the group
+    const groupStudents = await this.groupStudentModel.findAll({
+      where: { group_id: createDto.group_id },
+      attributes: ['student_id'],
+    });
+
+    const studentIds = groupStudents.map(gs => gs.student_id);
+
+    if (studentIds.length > 0) {
+      try {
+        // Get lesson details for notification
+        const lesson = await this.lessonModel.findByPk(createDto.lesson_id, {
+          attributes: ['title'],
+        });
+
+        const lessonTitle = lesson ? lesson.title : 'Homework';
+        const deadlineText = createDto.deadline 
+          ? ` Deadline: ${new Date(createDto.deadline).toLocaleDateString()}`
+          : '';
+
+        // Create notification record
+        const notification = await Notifications.create({
+          title: 'New Homework Assigned',
+          message: `A new homework "${lessonTitle}" has been assigned to your group.${deadlineText}`,
+          img_url: null,
+        });
+
+        // Create user notification records for each student
+        const userNotificationRecords = studentIds.map(studentId => ({
+          user_id: studentId,
+          notification_id: notification.id,
+          seen: false,
+        }));
+
+        await UserNotification.bulkCreate(userNotificationRecords);
+
+        // Send push notifications to students
+        const notificationTokens = await NotificationToken.findAll({
+          where: {
+            user_id: { [Op.in]: studentIds },
+          },
+        });
+
+        if (notificationTokens.length > 0) {
+          const tokens = notificationTokens.map(nt => nt.token);
+          await this.notificationsService.notifyMultipleUsers(
+            tokens,
+            'New Homework Assigned',
+            `A new homework "${lessonTitle}" has been assigned to your group.${deadlineText}`,
+            {
+              notification_id: notification.id,
+              homework_id: homework.id,
+              lesson_id: createDto.lesson_id,
+              type: 'homework',
+            }
+          );
+        }
+      } catch (error) {
+        console.error('Error sending homework notifications:', error);
+        // Continue even if notification fails
+      }
+    }
+
+    return homework;
   }
 
   async findAll(): Promise<GroupHomework[]> {
