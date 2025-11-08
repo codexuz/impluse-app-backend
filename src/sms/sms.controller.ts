@@ -1,6 +1,11 @@
 import { Controller, Get, Post, Body, UseGuards, HttpCode, HttpStatus, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { SmsService, SendSmsDto, SendBulkSmsDto, CreateTemplateDto } from './sms.service.js';
+import { SmsService } from './sms.service.js';
+import { SendSmsDto } from './dto/send-sms.dto.js';
+import { SendBulkSmsDto } from './dto/send-bulk-sms.dto.js';
+import { CreateTemplateDto } from './dto/create-template.dto.js';
+import { SendVerificationCodeDto } from './dto/send-verification-code.dto.js';
+import { SendNotificationDto } from './dto/send-notification.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -43,9 +48,12 @@ export class SmsController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async sendVerificationCode(
-    @Body() body: { mobile_phone: string; code: string }
+    @Body() sendVerificationCodeDto: SendVerificationCodeDto
   ) {
-    return this.smsService.sendVerificationCode(body.mobile_phone, body.code);
+    return this.smsService.sendVerificationCode(
+      sendVerificationCodeDto.mobile_phone,
+      sendVerificationCodeDto.code
+    );
   }
 
   @Post('send-notification')
@@ -56,12 +64,12 @@ export class SmsController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async sendNotification(
-    @Body() body: { mobile_phone: string; title: string; body: string }
+    @Body() sendNotificationDto: SendNotificationDto
   ) {
     return this.smsService.sendNotification(
-      body.mobile_phone,
-      body.title,
-      body.body
+      sendNotificationDto.mobile_phone,
+      sendNotificationDto.title,
+      sendNotificationDto.body
     );
   }
 

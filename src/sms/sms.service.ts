@@ -3,23 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { EskizSms } from 'eskiz-sms';
-
-export interface SendSmsDto {
-  mobile_phone: string;
-  message: string;
-}
-
-export interface SendBulkSmsDto {
-  messages: {
-    user_sms_id?: string;
-    mobile_phone: string;
-    message: string;
-  }[];
-}
-
-export interface CreateTemplateDto {
-  template: string;
-}
+import { SendSmsDto } from './dto/send-sms.dto.js';
+import { SendBulkSmsDto } from './dto/send-bulk-sms.dto.js';
+import { CreateTemplateDto } from './dto/create-template.dto.js';
 
 @Injectable()
 export class SmsService implements OnModuleInit {
