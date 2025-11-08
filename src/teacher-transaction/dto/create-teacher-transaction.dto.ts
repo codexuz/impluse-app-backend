@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export enum TeacherTransactionType {
   OYLIK = 'oylik',
-  JARIMA = 'jarima',
+  BONUS = 'bonus',
   AVANS = 'avans',
 }
 

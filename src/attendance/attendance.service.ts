@@ -64,7 +64,7 @@ export class AttendanceService {
           await TeacherTransaction.create({
             teacher_id: teacherId,
             amount: paymentAmount,
-            type: "oylik", // Payment for attendance
+            type: "kirim", // Payment for attendance
           });
 
           console.log(

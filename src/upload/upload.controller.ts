@@ -86,7 +86,7 @@ export class UploadController {
     };
   }
 
-  @Get()
+  @Get("files")
   @ApiOperation({ summary: "Get all uploaded files" })
   @ApiResponse({ status: 200, description: "List of all files" })
   async getAllFiles() {

@@ -76,6 +76,7 @@ import { TeacherWalletModule } from './teacher-wallet/teacher-wallet.module.js';
 import { StudentTransactionModule } from './student-transaction/student-transaction.module.js';
 import { TeacherTransactionModule } from './teacher-transaction/teacher-transaction.module.js';
 import { TeacherProfileModule } from './teacher-profile/teacher-profile.module.js';
+import { SmsModule } from './sms/sms.module.js';
 
 @Module({
   imports: [
@@ -153,6 +154,7 @@ import { TeacherProfileModule } from './teacher-profile/teacher-profile.module.j
     StudentTransactionModule,
     TeacherTransactionModule,
     TeacherProfileModule,
+    SmsModule,
   ],
   controllers: [AppController],
   providers: [

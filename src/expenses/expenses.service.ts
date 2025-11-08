@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { CreateExpenseDto } from './dto/create-expense.dto.js';
@@ -7,6 +7,8 @@ import { CreateExpenseCategoryDto } from './dto/create-expense-category.dto.js';
 import { UpdateExpenseCategoryDto } from './dto/update-expense-category.dto.js';
 import { Expense } from './entities/expense.entity.js';
 import { ExpensesCategory } from './entities/expenses-category.entity.js';
+import { TeacherWallet } from '../teacher-wallet/entities/teacher-wallet.entity.js';
+import { TeacherTransaction } from '../teacher-transaction/entities/teacher-transaction.entity.js';
 
 @Injectable()
 export class ExpensesService {
@@ -15,12 +17,147 @@ export class ExpensesService {
     private expenseModel: typeof Expense,
     @InjectModel(ExpensesCategory)
     private expensesCategoryModel: typeof ExpensesCategory,
+    @InjectModel(TeacherWallet)
+    private teacherWalletModel: typeof TeacherWallet,
+    @InjectModel(TeacherTransaction)
+    private teacherTransactionModel: typeof TeacherTransaction,
   ) {}
 
   // ============= EXPENSES METHODS =============
 
   async create(createExpenseDto: CreateExpenseDto): Promise<Expense> {
-    return await this.expenseModel.create(createExpenseDto as any);
+    // Start a transaction to ensure atomicity
+    const transaction = await this.expenseModel.sequelize.transaction();
+
+    try {
+      // Create the expense record
+      const expense = await this.expenseModel.create(createExpenseDto as any, { transaction });
+
+      // If teacher_id is provided, handle wallet operations based on category
+      if (createExpenseDto.teacher_id) {
+        // Get the expense category
+        const category = await this.expensesCategoryModel.findByPk(
+          createExpenseDto.category_id,
+          { transaction }
+        );
+
+        if (!category) {
+          throw new BadRequestException('Expense category not found');
+        }
+
+        const categoryName = category.name.toLowerCase();
+
+        // Handle different category types
+        if (categoryName === 'avans' || categoryName === 'oylik') {
+          // Deduct amount from teacher wallet
+          await this.deductFromTeacherWallet(
+            createExpenseDto.teacher_id,
+            expense.amount,
+            categoryName as 'avans' | 'oylik',
+            transaction
+          );
+        } else if (categoryName === 'bonus') {
+          // Add amount to teacher wallet
+          await this.addToTeacherWallet(
+            createExpenseDto.teacher_id,
+            expense.amount,
+            'bonus',
+            transaction
+          );
+        }
+      }
+
+      // Commit the transaction
+      await transaction.commit();
+
+      return expense;
+    } catch (error) {
+      // Rollback the transaction on error
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  /**
+   * Deduct amount from teacher wallet and create transaction
+   */
+  private async deductFromTeacherWallet(
+    teacherId: string,
+    amount: number,
+    type: 'avans' | 'oylik',
+    transaction: any
+  ): Promise<void> {
+    // Find or create teacher wallet
+    let wallet = await this.teacherWalletModel.findOne({
+      where: { teacher_id: teacherId },
+      transaction,
+    });
+
+    if (!wallet) {
+      // Create wallet with negative balance if it doesn't exist
+      wallet = await this.teacherWalletModel.create(
+        {
+          teacher_id: teacherId,
+          amount: -amount,
+        },
+        { transaction }
+      );
+    } else {
+      // Deduct amount from existing wallet
+      const newAmount = wallet.amount - amount;
+      await wallet.update({ amount: newAmount }, { transaction });
+    }
+
+    // Create teacher transaction record
+    await this.teacherTransactionModel.create(
+      {
+        teacher_id: teacherId,
+        amount: -amount, // Negative for deduction
+        type: type,
+      },
+      { transaction }
+    );
+  }
+
+  /**
+   * Add amount to teacher wallet and create transaction
+   */
+  private async addToTeacherWallet(
+    teacherId: string,
+    amount: number,
+    type: 'bonus',
+    transaction: any
+  ): Promise<void> {
+    // Find or create teacher wallet
+    let wallet = await this.teacherWalletModel.findOne({
+      where: { teacher_id: teacherId },
+      transaction,
+    });
+
+    if (!wallet) {
+      // Create wallet if it doesn't exist
+      wallet = await this.teacherWalletModel.create(
+        {
+          teacher_id: teacherId,
+          amount: amount,
+        },
+        { transaction }
+      );
+    } else {
+      // Add amount to existing wallet
+      const newAmount = wallet.amount + amount;
+      await wallet.update({ amount: newAmount }, { transaction });
+    }
+
+    // Create teacher transaction record
+    await this.teacherTransactionModel.create(
+      {
+        teacher_id: teacherId,
+        amount: amount, // Positive for bonus
+        type: type,
+      },
+      { transaction }
+    );
   }
 
   async findAll(categoryId?: string, teacherId?: string, reportedBy?: string): Promise<Expense[]> {
