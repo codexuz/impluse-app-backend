@@ -601,17 +601,12 @@ export class HomeworkSubmissionsService {
   }
 
   /**
-   * Get student's homework statistics average by section type over time
+   * Get student's homework statistics average by section type for all time
    * @param studentId The student's ID
-   * @param startDate Optional start date to filter statistics (format: YYYY-MM-DD)
-   * @param endDate Optional end date to filter statistics (format: YYYY-MM-DD)
    * @returns Object with section types as keys and average scores as values
-   * @description If startDate and endDate are not provided, defaults to the last month of data
    */
   async getStudentHomeworkStatsBySection(
-    studentId: string,
-    startDate?: string,
-    endDate?: string
+    studentId: string
   ): Promise<{
     overall: number;
     sections: {
@@ -654,55 +649,12 @@ export class HomeworkSubmissionsService {
 
     const submissionIds = submissions.map((sub) => sub.id);
 
-    // Prepare date filter with default one-month interval if not provided
-    const dateFilter = {};
-
-    // If neither startDate nor endDate is provided, set default one-month interval
-    if (!startDate && !endDate) {
-      const today = new Date();
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-      dateFilter["createdAt"] = {
-        [Op.gte]: oneMonthAgo,
-        [Op.lte]: today,
-      };
-    } else {
-      // Handle provided dates
-      if (startDate) {
-        dateFilter["createdAt"] = {
-          [Op.gte]: new Date(startDate),
-        };
-      }
-      if (endDate) {
-        dateFilter["createdAt"] = {
-          ...dateFilter["createdAt"],
-          [Op.lte]: new Date(endDate),
-        };
-      }
-    }
-
-    // Apply date filter to speaking responses
-    let filteredSpeakingResponses = speakingResponses;
-    if (dateFilter["createdAt"]) {
-      const { [Op.gte]: startDateFilter, [Op.lte]: endDateFilter } =
-        dateFilter["createdAt"];
-      filteredSpeakingResponses = speakingResponses.filter((response) => {
-        const responseDate = new Date(response.get("created_at") as string);
-        return (
-          (!startDateFilter || responseDate >= startDateFilter) &&
-          (!endDateFilter || responseDate <= endDateFilter)
-        );
-      });
-    }
-
     // Get all sections for these submissions
     let sections = [];
     if (submissionIds.length > 0) {
       sections = await this.homeworkSectionModel.findAll({
         where: {
           submission_id: { [Op.in]: submissionIds },
-          ...dateFilter,
         },
         order: [["createdAt", "ASC"]],
         attributes: ["section", "score", "createdAt"],
@@ -764,7 +716,7 @@ export class HomeworkSubmissionsService {
 
     // Process speaking responses and add them to the speaking section
     // Only include speaking responses if there are no speaking sections from homework submissions
-    filteredSpeakingResponses.forEach((response) => {
+    speakingResponses.forEach((response) => {
       const score = response.pronunciation_score;
       if (score !== null && score !== undefined) {
         // Add to speaking section stats

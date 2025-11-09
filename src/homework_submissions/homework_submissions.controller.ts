@@ -486,9 +486,9 @@ export class HomeworkSubmissionsController {
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary:
-      "Get student's homework statistics average by section type over time",
+      "Get student's homework statistics average by section type for all time",
     description:
-      "If startDate and endDate query parameters are not provided, defaults to the last month of data",
+      "Returns comprehensive homework statistics across all sections for the entire history of the student",
   })
   @ApiResponse({
     status: 200,
@@ -497,14 +497,10 @@ export class HomeworkSubmissionsController {
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 403, description: "Forbidden." })
   async getStudentHomeworkStats(
-    @Param("studentId") studentId: string,
-    @Query("startDate") startDate?: string,
-    @Query("endDate") endDate?: string
+    @Param("studentId") studentId: string
   ): Promise<any> {
     return await this.homeworkSubmissionsService.getStudentHomeworkStatsBySection(
-      studentId,
-      startDate,
-      endDate
+      studentId
     );
   }
 
