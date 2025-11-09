@@ -719,14 +719,19 @@ export class HomeworkSubmissionsService {
     speakingResponses.forEach((response) => {
       const score = response.pronunciation_score;
       if (score !== null && score !== undefined) {
-        // Add to speaking section stats
-        result.sections.speaking.submissions += 1;
-        result.sections.speaking.average += score;
-        result.sections.speaking.trend.push(score);
+        // Convert score to number if it's a string
+        const numericScore = typeof score === 'string' ? parseFloat(score) : score;
+        
+        if (!isNaN(numericScore)) {
+          // Add to speaking section stats
+          result.sections.speaking.submissions += 1;
+          result.sections.speaking.average += numericScore;
+          result.sections.speaking.trend.push(numericScore);
 
-        // Add to overall stats
-        totalScore += score;
-        totalSubmissions += 1;
+          // Add to overall stats
+          totalScore += numericScore;
+          totalSubmissions += 1;
+        }
       }
     });
 
@@ -743,8 +748,14 @@ export class HomeworkSubmissionsService {
               result.sections[sectionType].submissions
             ).toFixed(2)
           );
+        } else {
+          // Ensure average is 0 for sections with no submissions
+          result.sections[sectionType].average = 0;
         }
       });
+    } else {
+      // Ensure overall is 0 if no submissions
+      result.overall = 0;
     }
 
     return result;
