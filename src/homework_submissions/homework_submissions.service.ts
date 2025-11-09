@@ -739,14 +739,13 @@ export class HomeworkSubmissionsService {
       };
     });
 
-    // Process homework sections (excluding speaking as we'll handle those separately)
+    // Process homework sections (including speaking sections from homework submissions)
     let totalScore = 0;
     let totalSubmissions = 0;
 
     sections.forEach((section) => {
       if (
         section.section &&
-        section.section !== "speaking" &&
         sectionTypes.includes(section.section)
       ) {
         // Only include valid sections and scores
@@ -764,6 +763,7 @@ export class HomeworkSubmissionsService {
     });
 
     // Process speaking responses and add them to the speaking section
+    // Only include speaking responses if there are no speaking sections from homework submissions
     filteredSpeakingResponses.forEach((response) => {
       const score = response.pronunciation_score;
       if (score !== null && score !== undefined) {
