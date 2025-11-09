@@ -38,6 +38,17 @@ export class StoriesController {
     return await this.storiesService.findAll();
   }
 
+  @Get('type/:type')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Get published stories by type (video or image)' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Return published stories of specified type'
+  })
+  async findByType(@Param('type') type: 'video' | 'image') {
+    return await this.storiesService.findByType(type);
+  }
+
   @Get('admin')
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Get all stories (including unpublished) - Admin only' })
@@ -153,5 +164,35 @@ export class StoriesController {
   })
   async incrementViewCount(@Param('id') id: string) {
     return await this.storiesService.incrementViewCount(id);
+  }
+
+  @Patch(':id/like')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Increment the likes count of a story' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'The story likes count has been successfully incremented.'
+  })
+  @ApiResponse({ 
+    status: HttpStatus.NOT_FOUND, 
+    description: 'Story not found'
+  })
+  async incrementLikesCount(@Param('id') id: string) {
+    return await this.storiesService.incrementLikesCount(id);
+  }
+
+  @Patch(':id/unlike')
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: 'Decrement the likes count of a story' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'The story likes count has been successfully decremented.'
+  })
+  @ApiResponse({ 
+    status: HttpStatus.NOT_FOUND, 
+    description: 'Story not found'
+  })
+  async decrementLikesCount(@Param('id') id: string) {
+    return await this.storiesService.decrementLikesCount(id);
   }
 }

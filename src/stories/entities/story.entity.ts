@@ -27,12 +27,17 @@ export class Story extends Model {
   @Column({
     type: DataType.TEXT,
   })
-  url!: string;
+  open_url!: string;
 
   @Column({
     type: DataType.TEXT,
   })
-  image_url!: string;
+  url!: string;
+
+   @Column({
+    type: DataType.ENUM("video", "image"),
+  })
+  type!: "video" | "image";
 
   @Column({
     type: DataType.BOOLEAN,
@@ -43,6 +48,11 @@ export class Story extends Model {
     type: DataType.INTEGER,
   })
   viewCount!: number;
+
+    @Column({
+    type: DataType.INTEGER,
+  })
+  likesCount!: number;
 
   @CreatedAt
   createdAt!: Date;

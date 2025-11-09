@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsUrl, IsInt } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsUrl, IsEnum } from 'class-validator';
 
 export class CreateStoryDto {
   @ApiProperty({
@@ -11,7 +11,16 @@ export class CreateStoryDto {
   title: string;
 
   @ApiProperty({
-    description: 'The URL to the story content',
+    description: 'The open URL for the story',
+    example: 'https://example.com/open/adventure-begins'
+  })
+  @IsString()
+  @IsUrl()
+  @IsOptional()
+  open_url?: string;
+
+  @ApiProperty({
+    description: 'The main URL to the story content',
     example: 'https://example.com/stories/adventure-begins'
   })
   @IsString()
@@ -20,14 +29,13 @@ export class CreateStoryDto {
   url?: string;
 
   @ApiProperty({
-    description: 'Image URL for the story',
-    example: 'https://example.com/images/adventure.jpg',
-    required: false
+    description: 'The type of story content',
+    example: 'video',
+    enum: ['video', 'image']
   })
-  @IsString()
-  @IsUrl()
-  @IsOptional()
-  image_url?: string;
+  @IsEnum(['video', 'image'])
+  @IsNotEmpty()
+  type: 'video' | 'image';
 
   @ApiProperty({
     description: 'Whether the story is published or not',

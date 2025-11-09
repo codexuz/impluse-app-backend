@@ -12,10 +12,11 @@ export class StoriesService {
   ) {}
 
   async create(createStoryDto: CreateStoryDto): Promise<Story> {
-    // Initialize viewCount to 0 and set default isPublished if not provided
+    // Initialize viewCount and likesCount to 0 and set default isPublished if not provided
     const story = await this.storyModel.create({
       ...createStoryDto,
       viewCount: 0,
+      likesCount: 0,
       isPublished: createStoryDto.isPublished ?? false
     });
     
@@ -26,6 +27,17 @@ export class StoriesService {
     // By default, only return published stories
     return this.storyModel.findAll({
       where: { isPublished: true },
+      order: [['createdAt', 'DESC']]
+    });
+  }
+
+  async findByType(type: 'video' | 'image'): Promise<Story[]> {
+    // Return published stories of specific type
+    return this.storyModel.findAll({
+      where: { 
+        isPublished: true,
+        type: type
+      },
       order: [['createdAt', 'DESC']]
     });
   }
@@ -98,6 +110,32 @@ export class StoriesService {
     }
     
     await story.increment('viewCount');
+    
+    return story.reload();
+  }
+
+  async incrementLikesCount(id: string): Promise<Story> {
+    const story = await this.storyModel.findByPk(id);
+    
+    if (!story) {
+      throw new NotFoundException(`Story with ID ${id} not found`);
+    }
+    
+    await story.increment('likesCount');
+    
+    return story.reload();
+  }
+
+  async decrementLikesCount(id: string): Promise<Story> {
+    const story = await this.storyModel.findByPk(id);
+    
+    if (!story) {
+      throw new NotFoundException(`Story with ID ${id} not found`);
+    }
+
+    if (story.likesCount > 0) {
+      await story.decrement('likesCount');
+    }
     
     return story.reload();
   }
