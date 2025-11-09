@@ -639,7 +639,7 @@ export class HomeworkSubmissionsService {
           [Op.not]: null,
         },
       },
-      attributes: ["pronunciation_score", "createdAt"],
+      attributes: ["pronunciation_score", "created_at"],
     });
 
     if (
@@ -688,7 +688,7 @@ export class HomeworkSubmissionsService {
       const { [Op.gte]: startDateFilter, [Op.lte]: endDateFilter } =
         dateFilter["createdAt"];
       filteredSpeakingResponses = speakingResponses.filter((response) => {
-        const responseDate = new Date(response.get("createdAt") as string);
+        const responseDate = new Date(response.get("created_at") as string);
         return (
           (!startDateFilter || responseDate >= startDateFilter) &&
           (!endDateFilter || responseDate <= endDateFilter)
