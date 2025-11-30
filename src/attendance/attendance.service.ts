@@ -475,15 +475,22 @@ export class AttendanceService {
   async findByStudentAndDateRange(
     student_id: string,
     startDate: string,
-    endDate: string
+    endDate: string,
+    teacher_id?: string
   ) {
-    return await Attendance.findAll({
-      where: {
-        student_id,
-        date: {
-          [Op.between]: [startDate, endDate],
-        },
+    const whereClause: any = {
+      student_id,
+      date: {
+        [Op.between]: [startDate, endDate],
       },
+    };
+
+    if (teacher_id) {
+      whereClause.teacher_id = teacher_id;
+    }
+
+    return await Attendance.findAll({
+      where: whereClause,
       order: [
         ["date", "DESC"],
         ["createdAt", "DESC"],

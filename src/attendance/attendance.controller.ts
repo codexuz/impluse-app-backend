@@ -284,6 +284,12 @@ export class AttendanceController {
     description: "End date (YYYY-MM-DD)",
     type: "string",
   })
+  @ApiQuery({
+    name: "teacherId",
+    description: "Teacher ID (optional)",
+    type: "string",
+    required: false,
+  })
   @ApiResponse({
     status: 200,
     description:
@@ -298,12 +304,14 @@ export class AttendanceController {
   async findByStudentAndDateRange(
     @Param("studentId") studentId: string,
     @Query("startDate") startDate: string,
-    @Query("endDate") endDate: string
+    @Query("endDate") endDate: string,
+    @Query("teacherId") teacherId?: string
   ) {
     return await this.attendanceService.findByStudentAndDateRange(
       studentId,
       startDate,
-      endDate
+      endDate,
+      teacherId
     );
   }
 
