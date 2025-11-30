@@ -332,7 +332,7 @@ export class ExpensesService {
     // Find the 'oylik' category
     const oylikCategory = await this.expensesCategoryModel.findOne({
       where: {
-        name: { [Op.iLike]: "oylik" },
+        name: { [Op.like]: "oylik" },
       },
     });
 
