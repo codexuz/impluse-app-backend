@@ -1,14 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
-import { CreateExpenseDto } from './dto/create-expense.dto.js';
-import { UpdateExpenseDto } from './dto/update-expense.dto.js';
-import { CreateExpenseCategoryDto } from './dto/create-expense-category.dto.js';
-import { UpdateExpenseCategoryDto } from './dto/update-expense-category.dto.js';
-import { Expense } from './entities/expense.entity.js';
-import { ExpensesCategory } from './entities/expenses-category.entity.js';
-import { TeacherWallet } from '../teacher-wallet/entities/teacher-wallet.entity.js';
-import { TeacherTransaction } from '../teacher-transaction/entities/teacher-transaction.entity.js';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/sequelize";
+import { Op } from "sequelize";
+import { CreateExpenseDto } from "./dto/create-expense.dto.js";
+import { UpdateExpenseDto } from "./dto/update-expense.dto.js";
+import { CreateExpenseCategoryDto } from "./dto/create-expense-category.dto.js";
+import { UpdateExpenseCategoryDto } from "./dto/update-expense-category.dto.js";
+import { Expense } from "./entities/expense.entity.js";
+import { ExpensesCategory } from "./entities/expenses-category.entity.js";
+import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
+import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 
 @Injectable()
 export class ExpensesService {
@@ -20,7 +24,7 @@ export class ExpensesService {
     @InjectModel(TeacherWallet)
     private teacherWalletModel: typeof TeacherWallet,
     @InjectModel(TeacherTransaction)
-    private teacherTransactionModel: typeof TeacherTransaction,
+    private teacherTransactionModel: typeof TeacherTransaction
   ) {}
 
   // ============= EXPENSES METHODS =============
@@ -31,7 +35,9 @@ export class ExpensesService {
 
     try {
       // Create the expense record
-      const expense = await this.expenseModel.create(createExpenseDto as any, { transaction });
+      const expense = await this.expenseModel.create(createExpenseDto as any, {
+        transaction,
+      });
 
       // If teacher_id is provided, handle wallet operations based on category
       if (createExpenseDto.teacher_id) {
@@ -42,26 +48,26 @@ export class ExpensesService {
         );
 
         if (!category) {
-          throw new BadRequestException('Expense category not found');
+          throw new BadRequestException("Expense category not found");
         }
 
         const categoryName = category.name.toLowerCase();
 
         // Handle different category types
-        if (categoryName === 'avans' || categoryName === 'oylik') {
+        if (categoryName === "avans" || categoryName === "oylik") {
           // Deduct amount from teacher wallet
           await this.deductFromTeacherWallet(
             createExpenseDto.teacher_id,
             expense.amount,
-            categoryName as 'avans' | 'oylik',
+            categoryName as "avans" | "oylik",
             transaction
           );
-        } else if (categoryName === 'bonus') {
+        } else if (categoryName === "bonus") {
           // Add amount to teacher wallet
           await this.addToTeacherWallet(
             createExpenseDto.teacher_id,
             expense.amount,
-            'bonus',
+            "bonus",
             transaction
           );
         }
@@ -84,7 +90,7 @@ export class ExpensesService {
   private async deductFromTeacherWallet(
     teacherId: string,
     amount: number,
-    type: 'avans' | 'oylik',
+    type: "avans" | "oylik",
     transaction: any
   ): Promise<void> {
     // Find or create teacher wallet
@@ -125,7 +131,7 @@ export class ExpensesService {
   private async addToTeacherWallet(
     teacherId: string,
     amount: number,
-    type: 'bonus',
+    type: "bonus",
     transaction: any
   ): Promise<void> {
     // Find or create teacher wallet
@@ -160,7 +166,11 @@ export class ExpensesService {
     );
   }
 
-  async findAll(categoryId?: string, teacherId?: string, reportedBy?: string): Promise<Expense[]> {
+  async findAll(
+    categoryId?: string,
+    teacherId?: string,
+    reportedBy?: string
+  ): Promise<Expense[]> {
     const whereCondition: any = {};
 
     if (categoryId) {
@@ -180,10 +190,10 @@ export class ExpensesService {
       include: [
         {
           model: this.expensesCategoryModel,
-          as: 'category',
+          as: "category",
         },
       ],
-      order: [['created_at', 'DESC']],
+      order: [["created_at", "DESC"]],
     });
   }
 
@@ -192,7 +202,7 @@ export class ExpensesService {
       include: [
         {
           model: this.expensesCategoryModel,
-          as: 'category',
+          as: "category",
         },
       ],
     });
@@ -204,7 +214,10 @@ export class ExpensesService {
     return expense;
   }
 
-  async update(id: string, updateExpenseDto: UpdateExpenseDto): Promise<Expense> {
+  async update(
+    id: string,
+    updateExpenseDto: UpdateExpenseDto
+  ): Promise<Expense> {
     const expense = await this.findOne(id);
 
     await expense.update(updateExpenseDto as any);
@@ -228,14 +241,17 @@ export class ExpensesService {
       include: [
         {
           model: this.expensesCategoryModel,
-          as: 'category',
+          as: "category",
         },
       ],
-      order: [['expense_date', 'DESC']],
+      order: [["expense_date", "DESC"]],
     });
   }
 
-  async getTotalExpensesByDateRange(startDate: Date, endDate: Date): Promise<{ total: number; count: number }> {
+  async getTotalExpensesByDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<{ total: number; count: number }> {
     const expenses = await this.findByDateRange(startDate, endDate);
     const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     return {
@@ -247,19 +263,23 @@ export class ExpensesService {
   async findByMonth(year: number, month: number): Promise<Expense[]> {
     const startDate = new Date(year, month - 1, 1); // month is 0-indexed
     const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Last day of the month
-    
+
     return this.findByDateRange(startDate, endDate);
   }
 
   // ============= EXPENSE CATEGORIES METHODS =============
 
-  async createCategory(createExpenseCategoryDto: CreateExpenseCategoryDto): Promise<ExpensesCategory> {
-    return await this.expensesCategoryModel.create(createExpenseCategoryDto as any);
+  async createCategory(
+    createExpenseCategoryDto: CreateExpenseCategoryDto
+  ): Promise<ExpensesCategory> {
+    return await this.expensesCategoryModel.create(
+      createExpenseCategoryDto as any
+    );
   }
 
   async findAllCategories(): Promise<ExpensesCategory[]> {
     return await this.expensesCategoryModel.findAll({
-      order: [['name', 'ASC']],
+      order: [["name", "ASC"]],
     });
   }
 
@@ -273,7 +293,10 @@ export class ExpensesService {
     return category;
   }
 
-  async updateCategory(id: string, updateExpenseCategoryDto: UpdateExpenseCategoryDto): Promise<ExpensesCategory> {
+  async updateCategory(
+    id: string,
+    updateExpenseCategoryDto: UpdateExpenseCategoryDto
+  ): Promise<ExpensesCategory> {
     const category = await this.findOneCategory(id);
 
     await category.update(updateExpenseCategoryDto as any);
@@ -285,5 +308,69 @@ export class ExpensesService {
     const category = await this.findOneCategory(id);
 
     await category.destroy(); // Soft delete since paranoid is enabled
+  }
+
+  /**
+   * Get teacher salary history by filtering 'oylik' category expenses
+   * @param teacherId - Optional teacher ID. If not provided, returns all teachers' salary history
+   * @param startDate - Optional start date. If not provided, defaults to 30 days ago
+   * @param endDate - Optional end date. If not provided, defaults to today
+   */
+  async getTeacherSalaryHistory(
+    teacherId?: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<{ expenses: Expense[]; total: number; count: number }> {
+    // Set default date range to last 30 days if not provided
+    const now = new Date();
+    const defaultStartDate = new Date(now);
+    defaultStartDate.setDate(now.getDate() - 30);
+
+    const finalStartDate = startDate || defaultStartDate;
+    const finalEndDate = endDate || now;
+
+    // Find the 'oylik' category
+    const oylikCategory = await this.expensesCategoryModel.findOne({
+      where: {
+        name: { [Op.iLike]: "oylik" },
+      },
+    });
+
+    if (!oylikCategory) {
+      throw new NotFoundException("Oylik category not found");
+    }
+
+    // Build where clause
+    const whereClause: any = {
+      category_id: oylikCategory.id,
+      expense_date: {
+        [Op.between]: [finalStartDate, finalEndDate],
+      },
+    };
+
+    // Add teacher_id filter only if provided
+    if (teacherId) {
+      whereClause.teacher_id = teacherId;
+    }
+
+    // Find all expenses with oylik category in date range
+    const expenses = await this.expenseModel.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: this.expensesCategoryModel,
+          as: "category",
+        },
+      ],
+      order: [["expense_date", "DESC"]],
+    });
+
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+    return {
+      expenses,
+      total,
+      count: expenses.length,
+    };
   }
 }

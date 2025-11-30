@@ -1,17 +1,35 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpCode, HttpStatus, Query } from '@nestjs/common';
-import { ExpensesService } from './expenses.service.js';
-import { CreateExpenseDto } from './dto/create-expense.dto.js';
-import { UpdateExpenseDto } from './dto/update-expense.dto.js';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import { RolesGuard } from '../auth/guards/roles.guard.js';
-import { Roles } from '../auth/decorators/roles.decorator.js';
-import { Role } from '../roles/role.enum.js';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Query,
+} from "@nestjs/common";
+import { ExpensesService } from "./expenses.service.js";
+import { CreateExpenseDto } from "./dto/create-expense.dto.js";
+import { UpdateExpenseDto } from "./dto/update-expense.dto.js";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
+import { RolesGuard } from "../auth/guards/roles.guard.js";
+import { Roles } from "../auth/decorators/roles.decorator.js";
+import { Role } from "../roles/role.enum.js";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from "@nestjs/swagger";
 
-@ApiTags('Expenses')
+@ApiTags("Expenses")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('expenses')
+@Controller("expenses")
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
@@ -20,34 +38,55 @@ export class ExpensesController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Create a new expense' })
+  @ApiOperation({ summary: "Create a new expense" })
   create(@Body() createExpenseDto: CreateExpenseDto) {
     return this.expensesService.create(createExpenseDto);
   }
 
   @Get()
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Get all expenses' })
-  @ApiQuery({ name: 'category_id', required: false, description: 'Filter by category ID' })
-  @ApiQuery({ name: 'teacher_id', required: false, description: 'Filter by teacher ID' })
-  @ApiQuery({ name: 'reported_by', required: false, description: 'Filter by reporter user ID' })
+  @ApiOperation({ summary: "Get all expenses" })
+  @ApiQuery({
+    name: "category_id",
+    required: false,
+    description: "Filter by category ID",
+  })
+  @ApiQuery({
+    name: "teacher_id",
+    required: false,
+    description: "Filter by teacher ID",
+  })
+  @ApiQuery({
+    name: "reported_by",
+    required: false,
+    description: "Filter by reporter user ID",
+  })
   findAll(
-    @Query('category_id') categoryId?: string,
-    @Query('teacher_id') teacherId?: string,
-    @Query('reported_by') reportedBy?: string
+    @Query("category_id") categoryId?: string,
+    @Query("teacher_id") teacherId?: string,
+    @Query("reported_by") reportedBy?: string
   ) {
     return this.expensesService.findAll(categoryId, teacherId, reportedBy);
   }
 
-
-  @Get('reports/date-range')
+  @Get("reports/date-range")
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Get expenses by date range' })
-  @ApiQuery({ name: 'start_date', required: false, description: 'Start date (YYYY-MM-DD)', type: 'string' })
-  @ApiQuery({ name: 'end_date', required: false, description: 'End date (YYYY-MM-DD)', type: 'string' })
+  @ApiOperation({ summary: "Get expenses by date range" })
+  @ApiQuery({
+    name: "start_date",
+    required: false,
+    description: "Start date (YYYY-MM-DD)",
+    type: "string",
+  })
+  @ApiQuery({
+    name: "end_date",
+    required: false,
+    description: "End date (YYYY-MM-DD)",
+    type: "string",
+  })
   findByDateRange(
-    @Query('start_date') startDate?: string,
-    @Query('end_date') endDate?: string
+    @Query("start_date") startDate?: string,
+    @Query("end_date") endDate?: string
   ) {
     if (!startDate || !endDate) {
       return [];
@@ -57,26 +96,33 @@ export class ExpensesController {
     return this.expensesService.findByDateRange(start, end);
   }
 
-  @Get('reports/monthly/:year/:month')
+  @Get("reports/monthly/:year/:month")
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Get expenses by month' })
-  @ApiParam({ name: 'year', description: 'Year (YYYY)', type: 'number' })
-  @ApiParam({ name: 'month', description: 'Month (1-12)', type: 'number' })
-  findByMonth(
-    @Param('year') year: number,
-    @Param('month') month: number
-  ) {
+  @ApiOperation({ summary: "Get expenses by month" })
+  @ApiParam({ name: "year", description: "Year (YYYY)", type: "number" })
+  @ApiParam({ name: "month", description: "Month (1-12)", type: "number" })
+  findByMonth(@Param("year") year: number, @Param("month") month: number) {
     return this.expensesService.findByMonth(Number(year), Number(month));
   }
 
-  @Get('reports/total')
+  @Get("reports/total")
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Get total expenses by date range' })
-  @ApiQuery({ name: 'start_date', required: false, description: 'Start date (YYYY-MM-DD)', type: 'string' })
-  @ApiQuery({ name: 'end_date', required: false, description: 'End date (YYYY-MM-DD)', type: 'string' })
+  @ApiOperation({ summary: "Get total expenses by date range" })
+  @ApiQuery({
+    name: "start_date",
+    required: false,
+    description: "Start date (YYYY-MM-DD)",
+    type: "string",
+  })
+  @ApiQuery({
+    name: "end_date",
+    required: false,
+    description: "End date (YYYY-MM-DD)",
+    type: "string",
+  })
   getTotalExpensesByDateRange(
-    @Query('start_date') startDate?: string,
-    @Query('end_date') endDate?: string
+    @Query("start_date") startDate?: string,
+    @Query("end_date") endDate?: string
   ) {
     if (!startDate || !endDate) {
       return { total: 0, count: 0 };
@@ -86,30 +132,64 @@ export class ExpensesController {
     return this.expensesService.getTotalExpensesByDateRange(start, end);
   }
 
-
-  @Get(':id')
+  @Get(":id")
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Get expense by ID' })
-  @ApiParam({ name: 'id', description: 'Expense ID (UUID)', type: 'string' })
-  findOne(@Param('id') id: string) {
+  @ApiOperation({ summary: "Get expense by ID" })
+  @ApiParam({ name: "id", description: "Expense ID (UUID)", type: "string" })
+  findOne(@Param("id") id: string) {
     return this.expensesService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch(":id")
   @HttpCode(HttpStatus.OK)
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Update expense' })
-  @ApiParam({ name: 'id', description: 'Expense ID (UUID)', type: 'string' })
-  update(@Param('id') id: string, @Body() updateExpenseDto: UpdateExpenseDto) {
+  @ApiOperation({ summary: "Update expense" })
+  @ApiParam({ name: "id", description: "Expense ID (UUID)", type: "string" })
+  update(@Param("id") id: string, @Body() updateExpenseDto: UpdateExpenseDto) {
     return this.expensesService.update(id, updateExpenseDto);
   }
 
-  @Delete(':id')
+  @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Delete expense (soft delete)' })
-  @ApiParam({ name: 'id', description: 'Expense ID (UUID)', type: 'string' })
-  remove(@Param('id') id: string) {
+  @ApiOperation({ summary: "Delete expense (soft delete)" })
+  @ApiParam({ name: "id", description: "Expense ID (UUID)", type: "string" })
+  remove(@Param("id") id: string) {
     return this.expensesService.remove(id);
+  }
+
+  @Get("teachers/salary-history")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({
+    summary:
+      "Get teacher salary history (oylik category only). Returns all teachers if teacherId not provided. Defaults to last 30 days if dates not provided.",
+  })
+  @ApiQuery({
+    name: "teacher_id",
+    required: false,
+    description:
+      "Teacher ID (UUID) - optional, returns all teachers if not provided",
+    type: "string",
+  })
+  @ApiQuery({
+    name: "start_date",
+    required: false,
+    description: "Start date (YYYY-MM-DD) - optional, defaults to 30 days ago",
+    type: "string",
+  })
+  @ApiQuery({
+    name: "end_date",
+    required: false,
+    description: "End date (YYYY-MM-DD) - optional, defaults to today",
+    type: "string",
+  })
+  getTeacherSalaryHistory(
+    @Query("teacher_id") teacherId?: string,
+    @Query("start_date") startDate?: string,
+    @Query("end_date") endDate?: string
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.expensesService.getTeacherSalaryHistory(teacherId, start, end);
   }
 }
