@@ -13,7 +13,6 @@ import { User } from "../users/entities/user.entity.js";
 import { CreatePaymentActionDto } from "./dto/create-payment-action.dto.js";
 import { UpdatePaymentActionDto } from "./dto/update-payment-action.dto.js";
 import { PaymentActionResponseDto } from "./dto/payment-action-response.dto.js";
-import { SmsService } from "../sms/sms.service.js";
 
 @Injectable()
 export class PaymentActionsService {
@@ -25,8 +24,7 @@ export class PaymentActionsService {
     @InjectModel(StudentPayment)
     private studentPaymentModel: typeof StudentPayment,
     @InjectModel(User)
-    private userModel: typeof User,
-    private smsService: SmsService
+    private userModel: typeof User
   ) {}
 
   async create(
@@ -57,14 +55,6 @@ export class PaymentActionsService {
         ...createPaymentActionDto,
       });
 
-      // Send SMS if action type is SMS and payment has a student with phone
-      if (
-        createPaymentActionDto.action_type === "sms" &&
-        payment.dataValues?.student_phone
-      ) {
-        await this.sendSmsForAction(paymentAction, payment);
-      }
-
       return paymentAction.toJSON() as PaymentActionResponseDto;
     } catch (error) {
       this.logger.error(
@@ -77,113 +67,6 @@ export class PaymentActionsService {
       throw new BadRequestException(
         `Failed to create payment action: ${error.message}`
       );
-    }
-  }
-
-  /**
-   * Send SMS for a payment action
-   * @param paymentAction - The payment action to send SMS for
-   * @param payment - The student payment record
-   */
-  private async sendSmsForAction(
-    paymentAction: PaymentAction,
-    payment: StudentPayment
-  ): Promise<void> {
-    try {
-      // Get student phone number from payment or student profile
-      const student = await this.userModel.findByPk(
-        payment.dataValues.student_id
-      );
-
-      if (!student || !student.phone) {
-        this.logger.warn(
-          `Cannot send SMS for payment action ${paymentAction.id}: Student phone number not found`
-        );
-        return;
-      }
-
-      await this.smsService.sendSms({
-        mobile_phone: student.phone,
-        message: paymentAction.message,
-      });
-
-      this.logger.log(
-        `SMS sent successfully for payment action ${paymentAction.id} to ${student.phone}`
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to send SMS for payment action ${paymentAction.id}: ${error.message}`,
-        error.stack
-      );
-      // Don't throw error - SMS failure shouldn't prevent payment action creation
-    }
-  }
-
-  /**
-   * Send SMS manually for an existing payment action
-   * @param paymentActionId - The ID of the payment action
-   * @returns SMS response
-   */
-  async sendSmsForExistingAction(paymentActionId: string): Promise<any> {
-    try {
-      const paymentAction =
-        await this.paymentActionModel.findByPk(paymentActionId);
-
-      if (!paymentAction) {
-        throw new NotFoundException(
-          `Payment action with ID ${paymentActionId} not found`
-        );
-      }
-
-      if (paymentAction.action_type !== "sms") {
-        throw new BadRequestException(
-          "This payment action is not an SMS type action"
-        );
-      }
-
-      // Get the payment record to find the student
-      const payment = await this.studentPaymentModel.findByPk(
-        paymentAction.payment_id
-      );
-
-      if (!payment) {
-        throw new NotFoundException(
-          "Payment record not found for this payment action"
-        );
-      }
-
-      const student = await this.userModel.findByPk(
-        payment.dataValues.student_id
-      );
-
-      if (!student || !student.phone) {
-        throw new NotFoundException(
-          "Student phone number not found for this payment action"
-        );
-      }
-
-      const response = await this.smsService.sendSms({
-        mobile_phone: student.phone,
-        message: paymentAction.message,
-      });
-
-      this.logger.log(
-        `SMS resent successfully for payment action ${paymentActionId}`
-      );
-
-      return response;
-    } catch (error) {
-      this.logger.error(
-        `Error sending SMS for payment action: ${error.message}`,
-        error.stack
-      );
-      if (
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException
-      ) {
-        throw error;
-      }
-      throw new BadRequestException(`Failed to send SMS: ${error.message}`);
     }
   }
 

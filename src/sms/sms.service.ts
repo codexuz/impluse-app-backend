@@ -1,26 +1,26 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
-import { EskizSms } from 'eskiz-sms';
-import { SendSmsDto } from './dto/send-sms.dto.js';
-import { SendBulkSmsDto } from './dto/send-bulk-sms.dto.js';
-import { CreateTemplateDto } from './dto/create-template.dto.js';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
+import { EskizSms } from "eskiz-sms";
+import { SendSmsDto } from "./dto/send-sms.dto.js";
+import { SendBulkSmsDto } from "./dto/send-bulk-sms.dto.js";
+import { CreateTemplateDto } from "./dto/create-template.dto.js";
 
 @Injectable()
 export class SmsService implements OnModuleInit {
   private readonly logger = new Logger(SmsService.name);
   private smsClient: EskizSms;
   private isInitialized = false;
-  private readonly eskizBaseUrl = 'https://notify.eskiz.uz/api';
+  private readonly eskizBaseUrl = "https://notify.eskiz.uz/api";
 
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService
   ) {
     this.smsClient = new EskizSms({
-      email: this.configService.get<string>('ESKIZ_EMAIL') || '',
-      password: this.configService.get<string>('ESKIZ_PASSWORD') || '',
+      email: this.configService.get<string>("ESKIZ_EMAIL") || "",
+      password: this.configService.get<string>("ESKIZ_PASSWORD") || "",
     });
   }
 
@@ -28,7 +28,10 @@ export class SmsService implements OnModuleInit {
     try {
       await this.initializeSmsClient();
     } catch (error) {
-      this.logger.error('Failed to initialize SMS client on module init:', error);
+      this.logger.error(
+        "Failed to initialize SMS client on module init:",
+        error
+      );
     }
   }
 
@@ -40,9 +43,9 @@ export class SmsService implements OnModuleInit {
     try {
       await this.smsClient.init();
       this.isInitialized = true;
-      this.logger.log('Eskiz SMS client initialized successfully');
+      this.logger.log("Eskiz SMS client initialized successfully");
     } catch (error) {
-      this.logger.error('Failed to initialize Eskiz SMS client:', error);
+      this.logger.error("Failed to initialize Eskiz SMS client:", error);
       throw error;
     }
   }
@@ -60,7 +63,7 @@ export class SmsService implements OnModuleInit {
   private getAuthToken(): string {
     // Access the token from the EskizSms client
     // The token is stored after initialization
-    return (this.smsClient as any).token || '';
+    return (this.smsClient as any).token || "";
   }
 
   /**
@@ -76,22 +79,25 @@ export class SmsService implements OnModuleInit {
 
       const response = await this.smsClient.send({
         mobile_phone: sendSmsDto.mobile_phone,
-        message: sendSmsDto.message
+        message: sendSmsDto.message,
       });
 
       this.logger.log(`SMS sent successfully to ${sendSmsDto.mobile_phone}`);
-      
+
       // Extract safe data from response to avoid circular reference issues
       const safeResponse = {
-        status: response?.status || 'unknown',
-        statusText: response?.statusText || 'unknown',
+        status: response?.status || "unknown",
+        statusText: response?.statusText || "unknown",
         data: response?.data || null,
-        message: 'SMS sent successfully',
+        message: "SMS sent successfully",
       };
-      
+
       return safeResponse;
     } catch (error) {
-      this.logger.error(`Failed to send SMS to ${sendSmsDto.mobile_phone}:`, error);
+      this.logger.error(
+        `Failed to send SMS to ${sendSmsDto.mobile_phone}:`,
+        error
+      );
       throw error;
     }
   }
@@ -105,7 +111,9 @@ export class SmsService implements OnModuleInit {
     try {
       await this.ensureInitialized();
 
-      this.logger.log(`Sending bulk SMS to ${sendBulkSmsDto.messages.length} recipients`);
+      this.logger.log(
+        `Sending bulk SMS to ${sendBulkSmsDto.messages.length} recipients`
+      );
 
       // Generate unique dispatch_id as number
       const dispatchId = Date.now();
@@ -115,28 +123,30 @@ export class SmsService implements OnModuleInit {
         dispatch_id: dispatchId,
         messages: sendBulkSmsDto.messages.map((msg, index) => ({
           user_sms_id: msg.user_sms_id || `sms${index + 1}`,
-          to: parseInt(msg.mobile_phone.replace(/\D/g, '')), // Remove non-digits and convert to number
+          to: parseInt(msg.mobile_phone.replace(/\D/g, "")), // Remove non-digits and convert to number
           text: msg.message,
         })),
       };
 
       const response = await this.smsClient.sendBatch(payload);
 
-      this.logger.log(`Bulk SMS sent successfully. Total: ${sendBulkSmsDto.messages.length}`);
+      this.logger.log(
+        `Bulk SMS sent successfully. Total: ${sendBulkSmsDto.messages.length}`
+      );
 
       // Extract safe data from response
       const safeResponse = {
-        status: response?.status || 'unknown',
-        statusText: response?.statusText || 'unknown',
+        status: response?.status || "unknown",
+        statusText: response?.statusText || "unknown",
         data: response?.data || null,
-        message: 'Bulk SMS sent successfully',
+        message: "Bulk SMS sent successfully",
         total: sendBulkSmsDto.messages.length,
         dispatch_id: dispatchId,
       };
 
       return safeResponse;
     } catch (error) {
-      this.logger.error('Failed to send bulk SMS:', error);
+      this.logger.error("Failed to send bulk SMS:", error);
       throw error;
     }
   }
@@ -149,7 +159,7 @@ export class SmsService implements OnModuleInit {
    */
   async sendVerificationCode(mobile_phone: string, code: string): Promise<any> {
     const message = `Your verification code is: ${code}. Do not share this code with anyone.`;
-    
+
     return this.sendSms({
       mobile_phone,
       message,
@@ -163,9 +173,13 @@ export class SmsService implements OnModuleInit {
    * @param body - Notification body
    * @returns Response from Eskiz SMS API
    */
-  async sendNotification(mobile_phone: string, title: string, body: string): Promise<any> {
+  async sendNotification(
+    mobile_phone: string,
+    title: string,
+    body: string
+  ): Promise<any> {
     const message = `${title}\n${body}`;
-    
+
     return this.sendSms({
       mobile_phone,
       message,
@@ -179,22 +193,22 @@ export class SmsService implements OnModuleInit {
   async getBalance(): Promise<any> {
     try {
       await this.ensureInitialized();
-      
-      this.logger.log('Fetching SMS balance');
-      
+
+      this.logger.log("Fetching SMS balance");
+
       const response = await this.smsClient.getBalance();
-      
+
       // Extract safe data from response
       const safeResponse = {
-        status: response?.status || 'unknown',
-        statusText: response?.statusText || 'unknown',
+        status: response?.status || "unknown",
+        statusText: response?.statusText || "unknown",
         data: response?.data || null,
-        message: 'Balance retrieved successfully',
+        message: "Balance retrieved successfully",
       };
-      
+
       return safeResponse;
     } catch (error) {
-      this.logger.error('Failed to get balance:', error);
+      this.logger.error("Failed to get balance:", error);
       throw error;
     }
   }
@@ -207,23 +221,26 @@ export class SmsService implements OnModuleInit {
   async getReportMonthly(year: number): Promise<any> {
     try {
       await this.ensureInitialized();
-      
+
       this.logger.log(`Fetching monthly SMS report for year ${year}`);
-      
+
       const response = await this.smsClient.getReportMonthly(year);
-      
+
       // Extract safe data from response
       const safeResponse = {
-        status: response?.status || 'unknown',
-        statusText: response?.statusText || 'unknown',
+        status: response?.status || "unknown",
+        statusText: response?.statusText || "unknown",
         data: response?.data || null,
-        message: 'Monthly report retrieved successfully',
+        message: "Monthly report retrieved successfully",
         year,
       };
-      
+
       return safeResponse;
     } catch (error) {
-      this.logger.error(`Failed to get monthly report for year ${year}:`, error);
+      this.logger.error(
+        `Failed to get monthly report for year ${year}:`,
+        error
+      );
       throw error;
     }
   }
@@ -236,14 +253,14 @@ export class SmsService implements OnModuleInit {
   async createTemplate(createTemplateDto: CreateTemplateDto): Promise<any> {
     try {
       await this.ensureInitialized();
-      
+
       const token = this.getAuthToken();
-      
+
       if (!token) {
-        throw new Error('Authentication token not available');
+        throw new Error("Authentication token not available");
       }
 
-      this.logger.log('Creating SMS template');
+      this.logger.log("Creating SMS template");
 
       const response = await firstValueFrom(
         this.httpService.post(
@@ -252,22 +269,22 @@ export class SmsService implements OnModuleInit {
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
           }
         )
       );
 
-      this.logger.log('SMS template created successfully');
+      this.logger.log("SMS template created successfully");
 
       return {
         status: response.status,
         statusText: response.statusText,
         data: response.data,
-        message: 'Template created successfully',
+        message: "Template created successfully",
       };
     } catch (error) {
-      this.logger.error('Failed to create template:', error);
+      this.logger.error("Failed to create template:", error);
       throw error;
     }
   }
@@ -279,36 +296,106 @@ export class SmsService implements OnModuleInit {
   async getTemplates(): Promise<any> {
     try {
       await this.ensureInitialized();
-      
+
       const token = this.getAuthToken();
-      
+
       if (!token) {
-        throw new Error('Authentication token not available');
+        throw new Error("Authentication token not available");
       }
 
-      this.logger.log('Fetching SMS templates');
+      this.logger.log("Fetching SMS templates");
 
       const response = await firstValueFrom(
-        this.httpService.get(
-          `${this.eskizBaseUrl}/user/templates`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        )
+        this.httpService.get(`${this.eskizBaseUrl}/user/templates`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
       );
 
-      this.logger.log('SMS templates retrieved successfully');
+      this.logger.log("SMS templates retrieved successfully");
 
       return {
         status: response.status,
         statusText: response.statusText,
         data: response.data,
-        message: 'Templates retrieved successfully',
+        message: "Templates retrieved successfully",
       };
     } catch (error) {
-      this.logger.error('Failed to get templates:', error);
+      this.logger.error("Failed to get templates:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get total SMS report by date range with optional filters
+   * @param start_date - Start date in YYYY-MM-DD HH:MM format
+   * @param to_date - End date in YYYY-MM-DD HH:MM format
+   * @param status - Status filter: '' for all, 'delivered' for delivered only, 'rejected' for rejected only
+   * @param is_ad - Advertisement filter: '' for all, '1' for advertisement only, '0' for service only
+   * @returns Total SMS report for the specified range
+   */
+  async getTotalReportByRange(
+    start_date: string,
+    to_date: string,
+    status?: string,
+    is_ad?: string
+  ): Promise<any> {
+    try {
+      await this.ensureInitialized();
+
+      const token = this.getAuthToken();
+
+      if (!token) {
+        throw new Error("Authentication token not available");
+      }
+
+      this.logger.log(
+        `Fetching total SMS report from ${start_date} to ${to_date}`
+      );
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("start_date", start_date);
+      formData.append("to_date", to_date);
+
+      if (status && status.trim() !== "") {
+        formData.append("status", status);
+      }
+
+      if (is_ad && is_ad.trim() !== "") {
+        formData.append("is_ad", is_ad);
+      }
+
+      let url = `${this.eskizBaseUrl}/report/total-by-range`;
+      if (status && status.trim() !== "") {
+        url += `?status=${encodeURIComponent(status)}`;
+      }
+
+      const response = await firstValueFrom(
+        this.httpService.post(url, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      );
+
+      this.logger.log("Total SMS report retrieved successfully");
+
+      return {
+        status: response.status,
+        statusText: response.statusText,
+        data: response.data,
+        message: "Total report by range retrieved successfully",
+        filters: {
+          start_date,
+          to_date,
+          status: status || "all",
+          is_ad: is_ad || "all",
+        },
+      };
+    } catch (error) {
+      this.logger.error("Failed to get total report by range:", error);
       throw error;
     }
   }

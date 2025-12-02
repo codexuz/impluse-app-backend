@@ -36,7 +36,7 @@ export class PaymentAction extends Model {
   stage!: string;
 
   @Column({
-    type: DataType.ENUM("sms", "phone", "in_person"),
+    type: DataType.ENUM("sms", "phone", "telegram", "in_person"),
   })
   action_type!: string;
 

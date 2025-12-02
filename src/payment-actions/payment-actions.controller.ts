@@ -234,26 +234,4 @@ export class PaymentActionsController {
     return this.paymentActionsService.remove(id);
   }
 
-  @Post(":id/send-sms")
-  @Roles(Role.ADMIN)
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Send SMS for an existing payment action" })
-  @ApiResponse({
-    status: 200,
-    description: "SMS sent successfully",
-  })
-  @ApiResponse({
-    status: 400,
-    description: "Bad request - Action is not SMS type or student phone not found",
-  })
-  @ApiResponse({ status: 401, description: "Unauthorized" })
-  @ApiResponse({ status: 403, description: "Forbidden" })
-  @ApiResponse({ status: 404, description: "Payment action not found" })
-  async sendSmsForAction(
-    @Param("id", new ParseUUIDPipe())
-    id: string,
-    @CurrentUser() user: any
-  ): Promise<any> {
-    return this.paymentActionsService.sendSmsForExistingAction(id);
-  }
 }

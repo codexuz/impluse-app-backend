@@ -16,6 +16,7 @@ export enum PaymentActionStage {
 export enum ActionType {
   SMS = "sms",
   PHONE = "phone",
+  TELEGRAM = "telegram",
   IN_PERSON = "in_person",
 }
 
