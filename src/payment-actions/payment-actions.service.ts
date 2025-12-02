@@ -103,7 +103,7 @@ export class PaymentActionsService {
           {
             model: User,
             as: "manager",
-            attributes: ["id", "first_name", "last_name", "email"],
+            attributes: ["user_id", "first_name", "last_name", "phone"],
           },
         ],
         order: [["createdAt", "DESC"]],
@@ -135,7 +135,7 @@ export class PaymentActionsService {
           {
             model: User,
             as: "manager",
-            attributes: ["id", "first_name", "last_name", "email"],
+            attributes: ["user_id", "first_name", "last_name", "phone"],
           },
         ],
       });
@@ -182,7 +182,7 @@ export class PaymentActionsService {
           {
             model: User,
             as: "manager",
-            attributes: ["id", "first_name", "last_name", "email"],
+            attributes: ["user_id", "first_name", "last_name", "phone"],
           },
         ],
       });
@@ -235,7 +235,7 @@ export class PaymentActionsService {
           {
             model: User,
             as: "manager",
-            attributes: ["id", "first_name", "last_name", "email"],
+            attributes: ["user_id", "first_name", "last_name", "phone"],
           },
         ],
         order: [["createdAt", "DESC"]],
@@ -298,7 +298,7 @@ export class PaymentActionsService {
           {
             model: User,
             as: "manager",
-            attributes: ["id", "first_name", "last_name", "email"],
+            attributes: ["user_id", "first_name", "last_name", "phone"],
           },
         ],
         order: [["createdAt", "DESC"]],
@@ -336,7 +336,7 @@ export class PaymentActionsService {
           {
             model: User,
             as: "manager",
-            attributes: ["id", "first_name", "last_name", "email"],
+            attributes: ["user_id", "first_name", "last_name", "phone"],
           },
         ],
         order: [["next_action_date", "ASC"]],
