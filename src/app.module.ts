@@ -51,6 +51,7 @@ import { RBACSeeder } from "./database/seeders/rbac.seeder.js";
 import { MoviesModule } from "./movies/movies.module.js";
 import { ExamModule } from "./exams/exam.module.js";
 import { StudentPaymentModule } from "./student-payment/student-payment.module.js";
+import { PaymentActionsModule } from "./payment-actions/payment-actions.module.js";
 
 import { VideosModule } from "./videos/videos.module.js";
 import { AiChatBotModule } from "./ai-chat-bot/ai-chat-bot.module.js";
@@ -66,17 +67,17 @@ import { SpeechifyModule } from "./services/speechify/speechify.module.js";
 import { OpenaiModule } from "./services/openai/openai.module.js";
 import { VoiceChatBotModule } from "./services/voice-chat-bot/voice-chat-bot.module.js";
 import { LessonSchedulesModule } from "./lesson-schedules/lesson-schedules.module.js";
-import { CdIeltsModule } from './cd-ielts/cd-ielts.module.js';
-import { FormsModule } from './forms/forms.module.js';
-import { SpeakingResponseModule } from './speaking-response/speaking-response.module.js';
+import { CdIeltsModule } from "./cd-ielts/cd-ielts.module.js";
+import { FormsModule } from "./forms/forms.module.js";
+import { SpeakingResponseModule } from "./speaking-response/speaking-response.module.js";
 
-import { ExpensesModule } from './expenses/expenses.module.js';
-import { StudentWalletModule } from './student-wallet/student-wallet.module.js';
-import { TeacherWalletModule } from './teacher-wallet/teacher-wallet.module.js';
-import { StudentTransactionModule } from './student-transaction/student-transaction.module.js';
-import { TeacherTransactionModule } from './teacher-transaction/teacher-transaction.module.js';
-import { TeacherProfileModule } from './teacher-profile/teacher-profile.module.js';
-import { SmsModule } from './sms/sms.module.js';
+import { ExpensesModule } from "./expenses/expenses.module.js";
+import { StudentWalletModule } from "./student-wallet/student-wallet.module.js";
+import { TeacherWalletModule } from "./teacher-wallet/teacher-wallet.module.js";
+import { StudentTransactionModule } from "./student-transaction/student-transaction.module.js";
+import { TeacherTransactionModule } from "./teacher-transaction/teacher-transaction.module.js";
+import { TeacherProfileModule } from "./teacher-profile/teacher-profile.module.js";
+import { SmsModule } from "./sms/sms.module.js";
 
 @Module({
   imports: [
@@ -132,6 +133,7 @@ import { SmsModule } from './sms/sms.module.js';
     MoviesModule,
     ExamModule,
     StudentPaymentModule,
+    PaymentActionsModule,
     VideosModule,
     AiChatBotModule,
     LeadsModule,

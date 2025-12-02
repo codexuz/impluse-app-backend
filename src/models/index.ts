@@ -46,6 +46,7 @@ import { UserRole } from "../users/entities/user-role.model.js";
 import { RolePermission } from "../users/entities/role-permission.model.js";
 import { UserSession } from "../users/entities/user-session.model.js";
 import { StudentPayment } from "../student-payment/entities/student-payment.entity.js";
+import { PaymentAction } from "../payment-actions/entities/payment-action.entity.js";
 import { StudentBook } from "../student-book/entities/student-book.entity.js";
 import { StudentBookUnit } from "../student-book-units/entities/student-book-unit.entity.js";
 import { Movie } from "../movies/entities/movie.entity.js";
@@ -65,8 +66,8 @@ import { GroupChatMembers } from "../group-chat/entities/chat_group_members.js";
 import { SentenceBuild } from "../exercise/entities/sentence_build.js";
 import { LessonSchedule } from "../lesson-schedules/entities/lesson-schedule.entity.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
-import { CdIelts } from '../cd-ielts/entities/cd-ielt.entity.js';
-import { CdRegister } from '../cd-ielts/entities/cd-register.entity.js';
+import { CdIelts } from "../cd-ielts/entities/cd-ielt.entity.js";
+import { CdRegister } from "../cd-ielts/entities/cd-register.entity.js";
 import { Form } from "../forms/entities/form.entity.js";
 import { Response as FormResponse } from "../forms/entities/response.entity.js";
 import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
@@ -124,6 +125,7 @@ export const Models = [
   Ieltspart3Question,
   UserNotification,
   StudentPayment,
+  PaymentAction,
   StudentBook,
   StudentBookUnit,
   Movie,
@@ -501,8 +503,6 @@ export function initializeAssociations() {
     as: "lesson",
   });
 
-  
-
   // HomeworkSection Associations
   HomeworkSubmission.hasMany(HomeworkSection, {
     foreignKey: "submission_id",
@@ -513,7 +513,6 @@ export function initializeAssociations() {
     as: "submission",
   });
 
-
   Exercise.hasMany(HomeworkSection, {
     foreignKey: "exercise_id",
     as: "homework_sections",
@@ -522,7 +521,6 @@ export function initializeAssociations() {
     foreignKey: "exercise_id",
     as: "exercise",
   });
-
 
   Speaking.hasMany(HomeworkSection, {
     foreignKey: "speaking_id",
@@ -840,7 +838,6 @@ export function initializeAssociations() {
     as: "user",
   });
 
-
   // CdIelts associations
   CdIelts.hasMany(CdRegister, {
     foreignKey: "cd_test_id",
@@ -860,8 +857,7 @@ export function initializeAssociations() {
     as: "student",
   });
 
-
-  // Form associations  
+  // Form associations
   Form.hasMany(FormResponse, {
     foreignKey: "form_id",
     as: "responses",
@@ -889,7 +885,6 @@ export function initializeAssociations() {
     foreignKey: "student_id",
     as: "student",
   });
-
 
   // Expense associations
   ExpensesCategory.hasMany(Expense, {
@@ -929,7 +924,7 @@ export function initializeAssociations() {
     as: "student",
   });
 
-    // TeacherWallet associations
+  // TeacherWallet associations
   User.hasOne(TeacherWallet, {
     foreignKey: "teacher_id",
     as: "teacher_wallet",
@@ -967,5 +962,24 @@ export function initializeAssociations() {
   TeacherTransaction.belongsTo(User, {
     foreignKey: "teacher_id",
     as: "teacher",
+  });
+
+  // PaymentAction associations
+  StudentPayment.hasMany(PaymentAction, {
+    foreignKey: "payment_id",
+    as: "actions",
+  });
+  PaymentAction.belongsTo(StudentPayment, {
+    foreignKey: "payment_id",
+    as: "payment",
+  });
+
+  User.hasMany(PaymentAction, {
+    foreignKey: "manager_id",
+    as: "payment_actions",
+  });
+  PaymentAction.belongsTo(User, {
+    foreignKey: "manager_id",
+    as: "manager",
   });
 }
