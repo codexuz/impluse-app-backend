@@ -21,6 +21,8 @@ import { CreateTemplateDto } from "./dto/create-template.dto.js";
 import { SendVerificationCodeDto } from "./dto/send-verification-code.dto.js";
 import { SendNotificationDto } from "./dto/send-notification.dto.js";
 import { GetTotalReportByRangeDto } from "./dto/get-total-report-by-range.dto.js";
+import { GetUserMessagesDto } from "./dto/get-user-messages.dto.js";
+import { GetUserTotalsDto } from "./dto/get-user-totals.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -130,9 +132,51 @@ export class SmsController {
   ) {
     return this.smsService.getTotalReportByRange(
       getTotalReportByRangeDto.start_date,
-      getTotalReportByRangeDto.to_date,
+      getTotalReportByRangeDto.end_date,
       getTotalReportByRangeDto.status,
       getTotalReportByRangeDto.is_ad
+    );
+  }
+
+  @Post("messages/get-user-messages")
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "Get user SMS messages by date range with optional filters",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "User messages retrieved successfully",
+  })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getUserMessages(@Body() getUserMessagesDto: GetUserMessagesDto) {
+    return this.smsService.getUserMessages(
+      getUserMessagesDto.start_date,
+      getUserMessagesDto.to_date,
+      getUserMessagesDto.status,
+      getUserMessagesDto.page_size,
+      getUserMessagesDto.count,
+      getUserMessagesDto.is_ad
+    );
+  }
+
+  @Post("user/totals")
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "Get user SMS totals by year and month",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "User totals retrieved successfully",
+  })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async getUserTotals(@Body() getUserTotalsDto: GetUserTotalsDto) {
+    return this.smsService.getUserTotals(
+      getUserTotalsDto.year,
+      getUserTotalsDto.month
     );
   }
 

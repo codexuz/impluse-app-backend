@@ -330,14 +330,14 @@ export class SmsService implements OnModuleInit {
   /**
    * Get total SMS report by date range with optional filters
    * @param start_date - Start date in YYYY-MM-DD HH:MM format
-   * @param to_date - End date in YYYY-MM-DD HH:MM format
+   * @param end_date - End date in YYYY-MM-DD HH:MM format
    * @param status - Status filter: '' for all, 'delivered' for delivered only, 'rejected' for rejected only
    * @param is_ad - Advertisement filter: '' for all, '1' for advertisement only, '0' for service only
    * @returns Total SMS report for the specified range
    */
   async getTotalReportByRange(
     start_date: string,
-    to_date: string,
+    end_date: string,
     status?: string,
     is_ad?: string
   ): Promise<any> {
@@ -351,13 +351,13 @@ export class SmsService implements OnModuleInit {
       }
 
       this.logger.log(
-        `Fetching total SMS report from ${start_date} to ${to_date}`
+        `Fetching total SMS report from ${start_date} to ${end_date}`
       );
 
       // Prepare form data
       const formData = new FormData();
       formData.append("start_date", start_date);
-      formData.append("to_date", to_date);
+      formData.append("end_date", end_date);
 
       if (status && status.trim() !== "") {
         formData.append("status", status);
@@ -389,13 +389,152 @@ export class SmsService implements OnModuleInit {
         message: "Total report by range retrieved successfully",
         filters: {
           start_date,
-          to_date,
+          end_date,
           status: status || "all",
           is_ad: is_ad || "all",
         },
       };
     } catch (error) {
       this.logger.error("Failed to get total report by range:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user messages by date range with optional filters
+   * @param start_date - Start date in YYYY-MM-DD HH:MM format
+   * @param to_date - End date in YYYY-MM-DD HH:MM format
+   * @param status - Status filter: '' for all, 'delivered' for delivered only, 'rejected' for rejected only
+   * @param page_size - Number of SMS messages to return (from 20 to 200)
+   * @param count - 1 if necessary to get totals by status, 0 otherwise
+   * @param is_ad - Advertisement filter: '' for all, '1' for advertisement only, '0' for service only
+   * @returns User messages for the specified range
+   */
+  async getUserMessages(
+    start_date: string,
+    to_date: string,
+    status?: string,
+    page_size?: number,
+    count?: number,
+    is_ad?: string
+  ): Promise<any> {
+    try {
+      await this.ensureInitialized();
+
+      const token = this.getAuthToken();
+
+      if (!token) {
+        throw new Error("Authentication token not available");
+      }
+
+      this.logger.log(
+        `Fetching user messages from ${start_date} to ${to_date}`
+      );
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("start_date", start_date);
+      formData.append("to_date", to_date);
+
+      if (page_size !== undefined) {
+        formData.append("page_size", page_size.toString());
+      }
+
+      if (count !== undefined) {
+        formData.append("count", count.toString());
+      }
+
+      if (status && status.trim() !== "") {
+        formData.append("status", status);
+      }
+
+      if (is_ad && is_ad.trim() !== "") {
+        formData.append("is_ad", is_ad);
+      }
+
+      let url = `${this.eskizBaseUrl}/message/sms/get-user-messages`;
+      if (status && status.trim() !== "") {
+        url += `?status=${encodeURIComponent(status)}`;
+      }
+
+      const response = await firstValueFrom(
+        this.httpService.post(url, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      );
+
+      this.logger.log("User messages retrieved successfully");
+
+      return {
+        status: response.status,
+        statusText: response.statusText,
+        data: response.data,
+        message: "User messages retrieved successfully",
+        filters: {
+          start_date,
+          to_date,
+          status: status || "all",
+          page_size: page_size || 20,
+          count: count || 0,
+          is_ad: is_ad || "all",
+        },
+      };
+    } catch (error) {
+      this.logger.error("Failed to get user messages:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user totals by year and month
+   * @param year - Year for the totals report
+   * @param month - Month for the totals report (1-12)
+   * @returns User totals for the specified year and month
+   */
+  async getUserTotals(year: number, month: number): Promise<any> {
+    try {
+      await this.ensureInitialized();
+
+      const token = this.getAuthToken();
+
+      if (!token) {
+        throw new Error("Authentication token not available");
+      }
+
+      this.logger.log(`Fetching user totals for ${year}-${month}`);
+
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${this.eskizBaseUrl}/user/totals`,
+          {
+            year,
+            month,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        )
+      );
+
+      this.logger.log("User totals retrieved successfully");
+
+      return {
+        status: response.status,
+        statusText: response.statusText,
+        data: response.data,
+        message: "User totals retrieved successfully",
+        filters: {
+          year,
+          month,
+        },
+      };
+    } catch (error) {
+      this.logger.error("Failed to get user totals:", error);
       throw error;
     }
   }

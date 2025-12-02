@@ -1,7 +1,16 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsOptional, IsEnum, IsNotEmpty } from "class-validator";
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  Max,
+} from "class-validator";
+import { Type } from "class-transformer";
 
-export enum ReportStatus {
+export enum MessageStatus {
   ALL = "",
   DELIVERED = "delivered",
   REJECTED = "rejected",
@@ -13,7 +22,7 @@ export enum IsAdType {
   SERVICE = "0",
 }
 
-export class GetTotalReportByRangeDto {
+export class GetUserMessagesDto {
   @ApiProperty({
     description: "Start date in YYYY-MM-DD HH:MM format",
     example: "2023-11-01 00:00",
@@ -28,18 +37,45 @@ export class GetTotalReportByRangeDto {
   })
   @IsString()
   @IsNotEmpty()
-  end_date: string;
+  to_date: string;
 
   @ApiProperty({
     description:
       'Status filter: empty for all, "delivered" for delivered only, "rejected" for rejected only',
-    enum: ReportStatus,
+    enum: MessageStatus,
     required: false,
-    default: ReportStatus.ALL,
+    default: MessageStatus.ALL,
   })
-  @IsEnum(ReportStatus)
+  @IsEnum(MessageStatus)
   @IsOptional()
-  status?: ReportStatus = ReportStatus.ALL;
+  status?: MessageStatus = MessageStatus.ALL;
+
+  @ApiProperty({
+    description: "Number of SMS messages to return (from 20 to 200)",
+    example: 20,
+    minimum: 20,
+    maximum: 200,
+    required: false,
+    default: 20,
+  })
+  @IsNumber()
+  @Min(20)
+  @Max(200)
+  @IsOptional()
+  @Type(() => Number)
+  page_size?: number = 20;
+
+  @ApiProperty({
+    description: "1 - If necessary to get totals by status, 0 - otherwise",
+    example: 0,
+    enum: [0, 1],
+    required: false,
+    default: 0,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  count?: number = 0;
 
   @ApiProperty({
     description:
