@@ -194,17 +194,16 @@ export class StudentPaymentService {
     });
   }
 
-  async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
-    const today = new Date();
-    const futureDate = new Date();
-    futureDate.setDate(today.getDate() + days);
+async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    return this.studentPaymentModel.findAll({
-      where: {
-        next_payment_date: {
-          [Op.between]: [today, futureDate],
-        },
-      },
+  const futureDate = new Date();
+  futureDate.setDate(today.getDate() + days);
+
+  try {
+    // Get all students who have payments and are active
+    const allPayments = await this.studentPaymentModel.findAll({
       include: [
         {
           model: User,
@@ -216,11 +215,39 @@ export class StudentPaymentService {
           model: User,
           as: "manager",
           attributes: { exclude: ["password_hash"] },
-          where: { is_active: true },
         },
       ],
+      order: [["next_payment_date", "DESC"]],
     });
+
+    // Group payments by student_id and get the latest payment for each student
+    const studentLatestPayments = new Map();
+
+    for (const payment of allPayments) {
+      if (!studentLatestPayments.has(payment.student_id)) {
+        studentLatestPayments.set(payment.student_id, payment);
+      }
+    }
+
+    // Find students whose latest payment's next_payment_date is upcoming
+    const upcomingPayments = [];
+
+    for (const [studentId, latestPayment] of studentLatestPayments) {
+      const nextPaymentDate = new Date(latestPayment.next_payment_date);
+      nextPaymentDate.setHours(0, 0, 0, 0);
+
+      // Check if next_payment_date is between today and futureDate
+      if (nextPaymentDate >= today && nextPaymentDate <= futureDate) {
+        upcomingPayments.push(latestPayment);
+      }
+    }
+
+    return upcomingPayments;
+  } catch (error) {
+    this.logger.error(`Error finding upcoming payments: ${error.message}`);
+    throw error;
   }
+}
 
   async update(
     id: string,
