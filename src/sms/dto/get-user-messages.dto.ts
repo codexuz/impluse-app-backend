@@ -37,7 +37,7 @@ export class GetUserMessagesDto {
   })
   @IsString()
   @IsNotEmpty()
-  to_date: string;
+  end_date: string;
 
   @ApiProperty({
     description:

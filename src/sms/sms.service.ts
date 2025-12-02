@@ -403,7 +403,7 @@ export class SmsService implements OnModuleInit {
   /**
    * Get user messages by date range with optional filters
    * @param start_date - Start date in YYYY-MM-DD HH:MM format
-   * @param to_date - End date in YYYY-MM-DD HH:MM format
+   * @param end_date - End date in YYYY-MM-DD HH:MM format
    * @param status - Status filter: '' for all, 'delivered' for delivered only, 'rejected' for rejected only
    * @param page_size - Number of SMS messages to return (from 20 to 200)
    * @param count - 1 if necessary to get totals by status, 0 otherwise
@@ -412,7 +412,7 @@ export class SmsService implements OnModuleInit {
    */
   async getUserMessages(
     start_date: string,
-    to_date: string,
+    end_date: string,
     status?: string,
     page_size?: number,
     count?: number,
@@ -428,13 +428,13 @@ export class SmsService implements OnModuleInit {
       }
 
       this.logger.log(
-        `Fetching user messages from ${start_date} to ${to_date}`
+        `Fetching user messages from ${start_date} to ${end_date}`
       );
 
       // Prepare form data
       const formData = new FormData();
       formData.append("start_date", start_date);
-      formData.append("to_date", to_date);
+      formData.append("end_date", end_date);
 
       if (page_size !== undefined) {
         formData.append("page_size", page_size.toString());
@@ -474,7 +474,7 @@ export class SmsService implements OnModuleInit {
         message: "User messages retrieved successfully",
         filters: {
           start_date,
-          to_date,
+          end_date,
           status: status || "all",
           page_size: page_size || 20,
           count: count || 0,

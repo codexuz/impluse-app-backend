@@ -153,7 +153,7 @@ export class SmsController {
   async getUserMessages(@Body() getUserMessagesDto: GetUserMessagesDto) {
     return this.smsService.getUserMessages(
       getUserMessagesDto.start_date,
-      getUserMessagesDto.to_date,
+      getUserMessagesDto.end_date,
       getUserMessagesDto.status,
       getUserMessagesDto.page_size,
       getUserMessagesDto.count,
