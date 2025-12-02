@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  BadRequestException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { StudentPayment } from "./entities/student-payment.entity.js";
@@ -41,7 +46,7 @@ export class StudentPaymentService {
       );
 
       // Only update wallet and create transaction if payment status is "completed"
-      if (payment.status === 'completed') {
+      if (payment.status === "completed") {
         // Find or create student wallet
         let wallet = await this.studentWalletModel.findOne({
           where: { student_id: payment.student_id },
@@ -68,7 +73,7 @@ export class StudentPaymentService {
           {
             student_id: payment.student_id,
             amount: payment.amount,
-            type: 'payment',
+            type: "payment",
           },
           { transaction }
         );
@@ -85,7 +90,7 @@ export class StudentPaymentService {
     } catch (error) {
       // Rollback the transaction on error
       await transaction.rollback();
-      this.logger.error('Error creating payment:', error);
+      this.logger.error("Error creating payment:", error);
       throw error;
     }
   }
@@ -337,7 +342,9 @@ export class StudentPaymentService {
    * This identifies students whose LATEST payment's next_payment_date has passed
    */
   async checkDuePayments(): Promise<{ count: number; payments: any[] }> {
-    this.logger.log("Checking for debitor students with passed next_payment_date");
+    this.logger.log(
+      "Checking for debitor students with passed next_payment_date"
+    );
 
     try {
       // Set today's date without time for accurate date comparisons
@@ -359,12 +366,12 @@ export class StudentPaymentService {
             attributes: { exclude: ["password_hash"] },
           },
         ],
-        order: [['next_payment_date', 'DESC']]
+        order: [["next_payment_date", "DESC"]],
       });
 
       // Group payments by student_id and get the latest payment for each student
       const studentLatestPayments = new Map();
-      
+
       for (const payment of allPayments) {
         if (!studentLatestPayments.has(payment.student_id)) {
           studentLatestPayments.set(payment.student_id, payment);
@@ -373,18 +380,20 @@ export class StudentPaymentService {
 
       // Find students whose latest payment's next_payment_date has passed
       const overduePayments = [];
-      
+
       for (const [studentId, latestPayment] of studentLatestPayments) {
         const nextPaymentDate = new Date(latestPayment.next_payment_date);
         nextPaymentDate.setHours(0, 0, 0, 0);
-        
+
         if (nextPaymentDate < today) {
           overduePayments.push(latestPayment);
-          
+
           // Update status to PENDING for overdue payments that aren't already completed
           if (latestPayment.status !== PaymentStatus.COMPLETED) {
             await latestPayment.update({ status: PaymentStatus.PENDING });
-            this.logger.log(`Updated payment ${latestPayment.id} status to PENDING for debitor student ${latestPayment.student_id}`);
+            this.logger.log(
+              `Updated payment ${latestPayment.id} status to PENDING for debitor student ${latestPayment.student_id}`
+            );
           }
         }
       }
@@ -396,10 +405,10 @@ export class StudentPaymentService {
           // Get student info safely using toJSON to convert to plain object
           const studentInfo = payment.get({ plain: true });
           const student = studentInfo.student as any;
-          const studentName = student 
-            ? `${student.first_name || ''} ${student.last_name || ''}`.trim() 
-            : 'Unknown';
-            
+          const studentName = student
+            ? `${student.first_name || ""} ${student.last_name || ""}`.trim()
+            : "Unknown";
+
           return {
             id: payment.id,
             student_id: payment.student_id,
@@ -418,8 +427,13 @@ export class StudentPaymentService {
             // Include these as extra properties that aren't in the DTO
             // These won't cause TypeScript errors as we're using any[] type
             status: payment.status,
-            days_overdue: Math.floor((today.getTime() - new Date(payment.next_payment_date).getTime()) / (1000 * 60 * 60 * 24)),
-            student_name: studentName
+            days_overdue: Math.floor(
+              (today.getTime() -
+                new Date(payment.next_payment_date).getTime()) /
+                (1000 * 60 * 60 * 24)
+            ),
+            student_name: studentName,
+            student_phone: student?.phone || null,
           };
         }),
       };
@@ -431,7 +445,9 @@ export class StudentPaymentService {
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleAutomaticPaymentCreation() {
-    this.logger.log("Running automatic payment creation job for debitor students");
+    this.logger.log(
+      "Running automatic payment creation job for debitor students"
+    );
 
     try {
       // Set today's date without time for accurate date comparisons
@@ -453,12 +469,12 @@ export class StudentPaymentService {
             attributes: { exclude: ["password_hash"] },
           },
         ],
-        order: [['next_payment_date', 'DESC']]
+        order: [["next_payment_date", "DESC"]],
       });
 
       // Group payments by student_id and get the latest payment for each student
       const studentLatestPayments = new Map();
-      
+
       for (const payment of allPayments) {
         if (!studentLatestPayments.has(payment.student_id)) {
           studentLatestPayments.set(payment.student_id, payment);
@@ -467,11 +483,11 @@ export class StudentPaymentService {
 
       // Find students whose latest payment's next_payment_date has passed
       const overdueStudents = [];
-      
+
       for (const [studentId, latestPayment] of studentLatestPayments) {
         const nextPaymentDate = new Date(latestPayment.next_payment_date);
         nextPaymentDate.setHours(0, 0, 0, 0);
-        
+
         if (nextPaymentDate < today) {
           overdueStudents.push(latestPayment);
         }
@@ -486,15 +502,15 @@ export class StudentPaymentService {
         // Get student info safely using toJSON to convert to plain object
         const studentInfo = payment.get({ plain: true });
         const student = studentInfo.student as any;
-        const studentName = student 
-          ? `${student.first_name || ''} ${student.last_name || ''}`.trim() 
-          : 'Unknown';
+        const studentName = student
+          ? `${student.first_name || ""} ${student.last_name || ""}`.trim()
+          : "Unknown";
 
         // Only create new payment records for payments that aren't completed
         if (payment.status !== PaymentStatus.COMPLETED) {
           // First, update the current payment to PENDING if it's not already completed
           await payment.update({ status: PaymentStatus.PENDING });
-          
+
           // Create a new pending payment record for the next payment cycle
           const newPaymentDate = new Date(payment.next_payment_date);
 
@@ -512,7 +528,9 @@ export class StudentPaymentService {
               payment_method: payment.payment_method as PaymentMethod,
               payment_date: newPaymentDate,
               next_payment_date: nextPaymentDate,
-              notes: payment.notes || `Automatically generated for debitor student: ${studentName}`,
+              notes:
+                payment.notes ||
+                `Automatically generated for debitor student: ${studentName}`,
             });
 
             this.logger.log(
@@ -526,7 +544,9 @@ export class StudentPaymentService {
         }
       }
 
-      this.logger.log("Automatic payment processing for debitor students completed");
+      this.logger.log(
+        "Automatic payment processing for debitor students completed"
+      );
     } catch (error) {
       this.logger.error(
         `Error in automatic payment creation job: ${error.message}`
