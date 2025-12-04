@@ -157,7 +157,8 @@ export class SmsController {
       getUserMessagesDto.status,
       getUserMessagesDto.page_size,
       getUserMessagesDto.count,
-      getUserMessagesDto.is_ad
+      getUserMessagesDto.is_ad,
+      getUserMessagesDto.page
     );
   }
 

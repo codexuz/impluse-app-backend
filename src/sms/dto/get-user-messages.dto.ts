@@ -87,4 +87,17 @@ export class GetUserMessagesDto {
   @IsEnum(IsAdType)
   @IsOptional()
   is_ad?: IsAdType = IsAdType.ALL;
+
+  @ApiProperty({
+    description: "Page number for pagination",
+    example: 1,
+    minimum: 1,
+    required: false,
+    default: 1,
+  })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  page?: number = 1;
 }
