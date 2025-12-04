@@ -18,6 +18,7 @@ import {
 import { UpdateStudentPaymentDto } from "./dto/update-student-payment.dto.js";
 import { StudentPaymentStatusDto } from "./dto/student-payment-status.dto.js";
 import { Op, fn, col, literal } from "sequelize";
+import { SmsService } from "../sms/sms.service.js";
 
 @Injectable()
 export class StudentPaymentService {
@@ -29,7 +30,10 @@ export class StudentPaymentService {
     @InjectModel(StudentWallet)
     private studentWalletModel: typeof StudentWallet,
     @InjectModel(StudentTransaction)
-    private studentTransactionModel: typeof StudentTransaction
+    private studentTransactionModel: typeof StudentTransaction,
+    @InjectModel(User)
+    private userModel: typeof User,
+    private readonly smsService: SmsService
   ) {}
 
   async create(
@@ -86,11 +90,75 @@ export class StudentPaymentService {
       // Commit the transaction
       await transaction.commit();
 
+      // Send SMS notification (non-blocking, error-free)
+      if (payment.status === "completed") {
+        this.sendPaymentSms(payment).catch((error) => {
+          // Log error but don't throw - SMS failure shouldn't fail payment creation
+          this.logger.error(
+            `Failed to send SMS for payment ${payment.id}:`,
+            error
+          );
+        });
+      }
+
       return payment;
     } catch (error) {
       // Rollback the transaction on error
       await transaction.rollback();
       this.logger.error("Error creating payment:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send payment confirmation SMS to student
+   * @param payment - The payment record
+   */
+  private async sendPaymentSms(payment: StudentPayment): Promise<void> {
+    try {
+      // Fetch student details
+      const student = await this.userModel.findByPk(payment.student_id);
+
+      if (!student) {
+        this.logger.warn(
+          `Student with ID ${payment.student_id} not found for SMS notification`
+        );
+        return;
+      }
+
+      if (!student.phone) {
+        this.logger.warn(
+          `Student ${student.first_name} ${student.last_name} has no phone number`
+        );
+        return;
+      }
+
+      // Format dates as DD.MM.YYYY
+      const formatDate = (date: Date): string => {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, "0");
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+      };
+
+      const paymentDate = formatDate(payment.payment_date);
+      const nextPaymentDate = formatDate(payment.next_payment_date);
+
+      // Build SMS message
+      const message = `Hurmatli, ${student.first_name} ${student.last_name}! Sizning ${paymentDate} dan ${nextPaymentDate} gacha bo'lgan to'lovingiz amalga oshirildi. Impulse Study LC`;
+
+      // Send SMS
+      await this.smsService.sendSms({
+        mobile_phone: student.phone,
+        message: message,
+      });
+
+      this.logger.log(
+        `Payment SMS sent successfully to ${student.first_name} ${student.last_name} (${student.phone})`
+      );
+    } catch (error) {
+      // Re-throw to be caught by the caller's catch block
       throw error;
     }
   }

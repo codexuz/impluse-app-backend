@@ -1,17 +1,24 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import { CreateLeadTrialLessonDto } from "./dto/create-lead-trial-lesson.dto.js";
 import { UpdateLeadTrialLessonDto } from "./dto/update-lead-trial-lesson.dto.js";
 import { LeadTrialLesson } from "./entities/lead-trial-lesson.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { Lead } from "../leads/entities/lead.entity.js";
 import { Op } from "sequelize";
+import { SmsService } from "../sms/sms.service.js";
 
 @Injectable()
 export class LeadTrialLessonsService {
+  private readonly logger = new Logger(LeadTrialLessonsService.name);
+
   constructor(
     @InjectModel(LeadTrialLesson)
-    private trialLessonModel: typeof LeadTrialLesson
+    private trialLessonModel: typeof LeadTrialLesson,
+    @InjectModel(Lead)
+    private leadModel: typeof Lead,
+    private readonly smsService: SmsService
   ) {}
 
   private getIncludeOptions() {
@@ -242,5 +249,116 @@ export class LeadTrialLessonsService {
       trialLessonsByTeacher,
       upcomingTrialLessons,
     };
+  }
+
+  /**
+   * Cron job to send SMS reminders for trial lessons scheduled today
+   * Runs every day at 7:00 AM
+   */
+  @Cron("0 7 * * *", {
+    name: "trial-lesson-sms-reminder",
+    timeZone: "Asia/Tashkent",
+  })
+  async sendTrialLessonReminders(): Promise<void> {
+    this.logger.log("Starting trial lesson SMS reminder job");
+
+    try {
+      // Get today's date range (start and end of day)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Find all trial lessons scheduled for today with status "belgilangan"
+      const todayTrialLessons = await this.trialLessonModel.findAll({
+        where: {
+          scheduledAt: {
+            [Op.gte]: today,
+            [Op.lt]: tomorrow,
+          },
+          status: "belgilangan",
+        },
+        include: [
+          {
+            model: Lead,
+            as: "leadInfo",
+            attributes: ["id", "first_name", "last_name", "phone"],
+          },
+        ],
+      });
+
+      this.logger.log(
+        `Found ${todayTrialLessons.length} trial lessons scheduled for today`
+      );
+
+      // Send SMS to each student
+      for (const lesson of todayTrialLessons) {
+        try {
+          await this.sendTrialLessonSms(lesson);
+        } catch (error) {
+          // Log error but continue with other students
+          this.logger.error(
+            `Failed to send SMS for trial lesson ${lesson.id}:`,
+            error
+          );
+        }
+      }
+
+      this.logger.log("Trial lesson SMS reminder job completed");
+    } catch (error) {
+      this.logger.error("Error in trial lesson SMS reminder job:", error);
+    }
+  }
+
+  /**
+   * Send trial lesson reminder SMS to a student
+   * @param lesson - The trial lesson record
+   */
+  private async sendTrialLessonSms(
+    lesson: LeadTrialLesson
+  ): Promise<void> {
+    try {
+      if (!lesson.leadInfo) {
+        this.logger.warn(
+          `Lead info not found for trial lesson ${lesson.id}`
+        );
+        return;
+      }
+
+      const lead = lesson.leadInfo;
+
+      if (!lead.phone) {
+        this.logger.warn(
+          `Lead ${lead.first_name} ${lead.last_name} has no phone number`
+        );
+        return;
+      }
+
+      // Format time as HH:MM
+      const formatTime = (date: Date): string => {
+        const d = new Date(date);
+        const hours = String(d.getHours()).padStart(2, "0");
+        const minutes = String(d.getMinutes()).padStart(2, "0");
+        return `${hours}:${minutes}`;
+      };
+
+      const lessonTime = formatTime(lesson.scheduledAt);
+
+      // Build SMS message
+      const message = `Assalomu alaykum, ${lead.first_name} ${lead.last_name}! Bugun soat ${lessonTime} da sinov darsiga o'z vaqtida kelishni unutmang. Impulse Study LC`;
+
+      // Send SMS
+      await this.smsService.sendSms({
+        mobile_phone: lead.phone,
+        message: message,
+      });
+
+      this.logger.log(
+        `Trial lesson SMS sent successfully to ${lead.first_name} ${lead.last_name} (${lead.phone}) for lesson at ${lessonTime}`
+      );
+    } catch (error) {
+      // Re-throw to be caught by the caller's catch block
+      throw error;
+    }
   }
 }

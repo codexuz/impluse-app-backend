@@ -5,10 +5,13 @@ import { StudentPaymentController } from './student-payment.controller.js';
 import { StudentPayment } from './entities/student-payment.entity.js';
 import { StudentWallet } from '../student-wallet/entities/student-wallet.entity.js';
 import { StudentTransaction } from '../student-transaction/entities/student-transaction.entity.js';
+import { User } from '../users/entities/user.entity.js';
+import { SmsModule } from '../sms/sms.module.js';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([StudentPayment, StudentWallet, StudentTransaction])
+    SequelizeModule.forFeature([StudentPayment, StudentWallet, StudentTransaction, User]),
+    SmsModule
   ],
   controllers: [StudentPaymentController],
   providers: [StudentPaymentService],
