@@ -408,6 +408,7 @@ export class SmsService implements OnModuleInit {
    * @param page_size - Number of SMS messages to return (from 20 to 200)
    * @param count - 1 if necessary to get totals by status, 0 otherwise
    * @param is_ad - Advertisement filter: '' for all, '1' for advertisement only, '0' for service only
+   * @param page - Page number for pagination (default: 1)
    * @returns User messages for the specified range
    */
   async getUserMessages(
@@ -416,7 +417,8 @@ export class SmsService implements OnModuleInit {
     status?: string,
     page_size?: number,
     count?: number,
-    is_ad?: string
+    is_ad?: string,
+    page?: number
   ): Promise<any> {
     try {
       await this.ensureInitialized();
@@ -452,9 +454,10 @@ export class SmsService implements OnModuleInit {
         formData.append("is_ad", is_ad);
       }
 
-      let url = `${this.eskizBaseUrl}/message/sms/get-user-messages`;
+      // Build URL with query parameters
+      let url = `${this.eskizBaseUrl}/message/sms/get-user-messages?page=${page || 1}`;
       if (status && status.trim() !== "") {
-        url += `?status=${encodeURIComponent(status)}`;
+        url += `&status=${encodeURIComponent(status)}`;
       }
 
       const response = await firstValueFrom(
@@ -479,6 +482,7 @@ export class SmsService implements OnModuleInit {
           page_size: page_size || 20,
           count: count || 0,
           is_ad: is_ad || "all",
+          page: page || 1,
         },
       };
     } catch (error) {
