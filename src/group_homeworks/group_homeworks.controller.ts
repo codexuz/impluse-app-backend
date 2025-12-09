@@ -129,7 +129,7 @@ export class GroupHomeworksController {
         @Param('userId') userId: string,
         @Param('date') dateString: string
     ): Promise<any[]> {
-        const date = new Date(dateString);
+        const date = new Date();
         return await this.groupHomeworksService.getActiveHomeworksByDate(userId, date);
     }
     
