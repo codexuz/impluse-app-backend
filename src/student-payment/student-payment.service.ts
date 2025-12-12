@@ -288,25 +288,52 @@ async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
       order: [["next_payment_date", "DESC"]],
     });
 
-    // Group payments by student_id and get the latest payment for each student
-    const studentLatestPayments = new Map();
+    // Group payments by student_id - track both latest completed and any pending
+    const studentPaymentsMap = new Map();
 
     for (const payment of allPayments) {
-      if (!studentLatestPayments.has(payment.student_id)) {
-        studentLatestPayments.set(payment.student_id, payment);
+      if (!studentPaymentsMap.has(payment.student_id)) {
+        studentPaymentsMap.set(payment.student_id, {
+          latestCompleted: null,
+          pending: [],
+        });
+      }
+
+      const studentPayments = studentPaymentsMap.get(payment.student_id);
+
+      if (payment.status === PaymentStatus.PENDING) {
+        studentPayments.pending.push(payment);
+      } else if (
+        payment.status === PaymentStatus.COMPLETED &&
+        !studentPayments.latestCompleted
+      ) {
+        studentPayments.latestCompleted = payment;
       }
     }
 
-    // Find students whose latest payment's next_payment_date is upcoming
+    // Find students with upcoming payments (either pending or upcoming completed)
     const upcomingPayments = [];
 
-    for (const [studentId, latestPayment] of studentLatestPayments) {
-      const nextPaymentDate = new Date(latestPayment.next_payment_date);
-      nextPaymentDate.setHours(0, 0, 0, 0);
+    for (const [studentId, { latestCompleted, pending }] of studentPaymentsMap) {
+      // Check pending payments first
+      for (const pendingPayment of pending) {
+        const nextPaymentDate = new Date(pendingPayment.next_payment_date);
+        nextPaymentDate.setHours(0, 0, 0, 0);
 
-      // Check if next_payment_date is between today and futureDate
-      if (nextPaymentDate >= today && nextPaymentDate <= futureDate) {
-        upcomingPayments.push(latestPayment);
+        if (nextPaymentDate >= today && nextPaymentDate <= futureDate) {
+          upcomingPayments.push(pendingPayment);
+          break; // Only add one payment per student
+        }
+      }
+
+      // If no pending payment was added, check latest completed payment
+      if (!upcomingPayments.find((p) => p.student_id === studentId) && latestCompleted) {
+        const nextPaymentDate = new Date(latestCompleted.next_payment_date);
+        nextPaymentDate.setHours(0, 0, 0, 0);
+
+        if (nextPaymentDate >= today && nextPaymentDate <= futureDate) {
+          upcomingPayments.push(latestCompleted);
+        }
       }
     }
 
@@ -464,31 +491,62 @@ async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
         order: [["next_payment_date", "DESC"]],
       });
 
-      // Group payments by student_id and get the latest payment for each student
-      const studentLatestPayments = new Map();
+      // Group payments by student_id - track both latest completed and any pending
+      const studentPaymentsMap = new Map();
 
       for (const payment of allPayments) {
-        if (!studentLatestPayments.has(payment.student_id)) {
-          studentLatestPayments.set(payment.student_id, payment);
+        if (!studentPaymentsMap.has(payment.student_id)) {
+          studentPaymentsMap.set(payment.student_id, {
+            latestCompleted: null,
+            pending: [],
+          });
+        }
+
+        const studentPayments = studentPaymentsMap.get(payment.student_id);
+
+        if (payment.status === PaymentStatus.PENDING) {
+          studentPayments.pending.push(payment);
+        } else if (
+          payment.status === PaymentStatus.COMPLETED &&
+          !studentPayments.latestCompleted
+        ) {
+          studentPayments.latestCompleted = payment;
         }
       }
 
-      // Find students whose latest payment's next_payment_date has passed
+      // Find students with overdue payments (either pending or overdue completed)
       const overduePayments = [];
 
-      for (const [studentId, latestPayment] of studentLatestPayments) {
-        const nextPaymentDate = new Date(latestPayment.next_payment_date);
-        nextPaymentDate.setHours(0, 0, 0, 0);
+      for (const [studentId, { latestCompleted, pending }] of studentPaymentsMap) {
+        // Check pending payments first - any pending payment with past next_payment_date is overdue
+        for (const pendingPayment of pending) {
+          const nextPaymentDate = new Date(pendingPayment.next_payment_date);
+          nextPaymentDate.setHours(0, 0, 0, 0);
 
-        if (nextPaymentDate < today) {
-          overduePayments.push(latestPayment);
-
-          // Update status to PENDING for overdue payments that aren't already completed
-          if (latestPayment.status !== PaymentStatus.COMPLETED) {
-            await latestPayment.update({ status: PaymentStatus.PENDING });
+          if (nextPaymentDate < today) {
+            overduePayments.push(pendingPayment);
             this.logger.log(
-              `Updated payment ${latestPayment.id} status to PENDING for debitor student ${latestPayment.student_id}`
+              `Found pending overdue payment ${pendingPayment.id} for student ${pendingPayment.student_id}`
             );
+            break; // Only add one payment per student
+          }
+        }
+
+        // If no pending payment was added, check latest completed payment
+        if (!overduePayments.find((p) => p.student_id === studentId) && latestCompleted) {
+          const nextPaymentDate = new Date(latestCompleted.next_payment_date);
+          nextPaymentDate.setHours(0, 0, 0, 0);
+
+          if (nextPaymentDate < today) {
+            overduePayments.push(latestCompleted);
+
+            // Update status to PENDING for overdue payments that aren't already completed
+            if (latestCompleted.status !== PaymentStatus.COMPLETED) {
+              await latestCompleted.update({ status: PaymentStatus.PENDING });
+              this.logger.log(
+                `Updated payment ${latestCompleted.id} status to PENDING for debitor student ${latestCompleted.student_id}`
+              );
+            }
           }
         }
       }
