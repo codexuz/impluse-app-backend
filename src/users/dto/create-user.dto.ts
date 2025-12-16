@@ -58,6 +58,14 @@ export class CreateUserDto {
   phone?: string;
 
   @ApiPropertyOptional({
+    description: "URL to user's avatar image",
+    example: "https://backend.impulselc.uz/uploads/avatar-1234567890.jpg",
+  })
+  @IsString()
+  @IsOptional()
+  avatar_url?: string;
+
+  @ApiPropertyOptional({
     description: "Whether the user account is active",
     default: true,
   })

@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { ConfigService } from "@nestjs/config";
 import { Op } from "sequelize";
 import * as bcrypt from "bcrypt";
 import { User } from "./entities/user.entity.js";
@@ -26,7 +27,8 @@ export class UsersService {
     @InjectModel(Role)
     private roleModel: typeof Role,
     @InjectModel(StudentProfile)
-    private studentProfileModel: typeof StudentProfile
+    private studentProfileModel: typeof StudentProfile,
+    private configService: ConfigService
   ) {}
 
   private async checkExistingUser(
@@ -506,6 +508,50 @@ export class UsersService {
     await user.update({ password_hash: hashedPassword });
 
     // Return user without password_hash
+    return this.findOne(userId);
+  }
+
+  /**
+   * Update user avatar after uploading a file
+   * @param userId The user's ID
+   * @param filename The uploaded file name
+   * @returns The updated user object with the new avatar URL
+   */
+  async updateAvatar(userId: string, filename: string): Promise<User> {
+    const user = await this.userModel.findByPk(userId);
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+
+    // Generate the full avatar URL
+    const baseUrl = this.configService.get('APP_URL') || 'https://backend.impulselc.uz';
+    const avatarUrl = `${baseUrl}/uploads/avatars/${filename}`;
+
+    // Update the user's avatar_url
+    await user.update({ avatar_url: avatarUrl });
+
+    // Return updated user without password_hash
+    return this.findOne(userId);
+  }
+
+  /**
+   * Update user avatar URL directly
+   * @param userId The user's ID
+   * @param avatarUrl The avatar URL to set
+   * @returns The updated user object
+   */
+  async updateAvatarUrl(userId: string, avatarUrl: string): Promise<User> {
+    const user = await this.userModel.findByPk(userId);
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+
+    // Update the user's avatar_url
+    await user.update({ avatar_url: avatarUrl });
+
+    // Return updated user without password_hash
     return this.findOne(userId);
   }
 }
