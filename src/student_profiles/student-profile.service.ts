@@ -89,7 +89,7 @@ export class StudentProfileService {
       include: [
         {
           association: "user",
-          attributes: ["user_id", "first_name", "last_name", "username"],
+          attributes: ["user_id", "first_name", "last_name", "username","avatar_url"],
         },
       ],
     });
@@ -112,7 +112,7 @@ export class StudentProfileService {
       include: [
         {
           association: "user",
-          attributes: ["user_id", "first_name", "last_name", "username", "level_id"],
+          attributes: ["user_id", "first_name", "last_name", "username", "level_id", "avatar_url"],
           where: {
             level_id: {
               [Op.ne]: null, // Only include users that have a level_id
@@ -162,6 +162,7 @@ export class StudentProfileService {
             "last_name",
             "username",
             "level_id",
+            "avatar_url"
           ],
           where: {
             level_id: levelId, // Only include users with the same level as the current user
@@ -183,7 +184,7 @@ export class StudentProfileService {
       include: [
         {
           association: "user",
-          attributes: ["user_id", "first_name", "last_name", "username"],
+          attributes: ["user_id", "first_name", "last_name", "username","avatar_url"],
         },
       ],
     });
@@ -201,7 +202,7 @@ export class StudentProfileService {
       include: [
         {
           association: "user",
-          attributes: ["user_id", "first_name", "last_name", "username"],
+          attributes: ["user_id", "first_name", "last_name", "username","avatar_url"],
         },
       ],
     });
