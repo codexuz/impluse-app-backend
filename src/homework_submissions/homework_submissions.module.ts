@@ -8,6 +8,9 @@ import { LessonProgressModule } from "../lesson_progress/lesson_progress.module.
 import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
 import { GroupStudentsModule } from "../group-students/group-students.module.js";
 import { OpenaiService } from "../services/openai/openai.service.js";
+import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
+import { Lesson } from "../lesson/entities/lesson.entity.js";
+import { User } from "../users/entities/user.entity.js";
 
 @Module({
   imports: [
@@ -15,6 +18,9 @@ import { OpenaiService } from "../services/openai/openai.service.js";
       HomeworkSubmission,
       HomeworkSection,
       SpeakingResponse,
+      GroupHomework,
+      Lesson,
+      User,
     ]),
     LessonProgressModule,
     GroupStudentsModule,

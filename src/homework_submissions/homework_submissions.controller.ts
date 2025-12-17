@@ -142,6 +142,45 @@ export class HomeworkSubmissionsController {
     );
   }
 
+  @Get("group/:groupId/progress")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({
+    summary: "Get group homework progress for all students by units/lessons",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "Return homework progress grouped by units with student scores.",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  async getGroupProgress(@Param("groupId") groupId: string) {
+    return await this.homeworkSubmissionsService.getGroupHomeworkProgress(
+      groupId
+    );
+  }
+
+  @Get("student/:studentId/group-progress")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({
+    summary:
+      "Get student's group homework progress showing all group members' performance",
+    description:
+      "Allows students to see their group members' homework scores to increase competition",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "Return homework progress for the student's group with all members' scores.",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 404, description: "Student not found in any group." })
+  async getStudentGroupProgress(@Param("studentId") studentId: string) {
+    return await this.homeworkSubmissionsService.getGroupHomeworkProgressByStudentId(
+      studentId
+    );
+  }
+
   @Get("student/:studentId/homework/:homeworkId")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({

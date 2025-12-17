@@ -10,6 +10,14 @@ import { LessonProgressService } from "../lesson_progress/lesson_progress.servic
 import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
 import { GroupStudentsService } from "../group-students/group-students.service.js";
 import { OpenaiService } from "../services/openai/openai.service.js";
+import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
+import { Lesson } from "../lesson/entities/lesson.entity.js";
+import { User } from "../users/entities/user.entity.js";
+import {
+  GroupHomeworkProgressResponseDto,
+  UnitProgressDto,
+  StudentProgressDto,
+} from "./dto/group-homework-progress-response.dto.js";
 
 @Injectable()
 export class HomeworkSubmissionsService {
@@ -20,6 +28,12 @@ export class HomeworkSubmissionsService {
     private homeworkSectionModel: typeof HomeworkSection,
     @InjectModel(SpeakingResponse)
     private speakingResponseModel: typeof SpeakingResponse,
+    @InjectModel(GroupHomework)
+    private groupHomeworkModel: typeof GroupHomework,
+    @InjectModel(Lesson)
+    private lessonModel: typeof Lesson,
+    @InjectModel(User)
+    private userModel: typeof User,
     private lessonProgressService: LessonProgressService,
     private groupStudentsService: GroupStudentsService,
     private openaiService: OpenaiService
@@ -605,9 +619,7 @@ export class HomeworkSubmissionsService {
    * @param studentId The student's ID
    * @returns Object with section types as keys and average scores as values
    */
-  async getStudentHomeworkStatsBySection(
-    studentId: string
-  ): Promise<{
+  async getStudentHomeworkStatsBySection(studentId: string): Promise<{
     overall: number;
     sections: {
       [key: string]: {
@@ -696,10 +708,7 @@ export class HomeworkSubmissionsService {
     let totalSubmissions = 0;
 
     sections.forEach((section) => {
-      if (
-        section.section &&
-        sectionTypes.includes(section.section)
-      ) {
+      if (section.section && sectionTypes.includes(section.section)) {
         // Only include valid sections and scores
         if (section.score !== null && section.score !== undefined) {
           // Add to specific section stats
@@ -720,8 +729,9 @@ export class HomeworkSubmissionsService {
       const score = response.pronunciation_score;
       if (score !== null && score !== undefined) {
         // Convert score to number if it's a string
-        const numericScore = typeof score === 'string' ? parseFloat(score) : score;
-        
+        const numericScore =
+          typeof score === "string" ? parseFloat(score) : score;
+
         if (!isNaN(numericScore)) {
           // Add to speaking section stats
           result.sections.speaking.submissions += 1;
@@ -1031,5 +1041,161 @@ export class HomeworkSubmissionsService {
     });
 
     return submissions;
+  }
+
+  /**
+   * Get group homework progress showing each student's overall score per unit/lesson
+   * Grouped by date with lesson title and student details
+   */
+  async getGroupHomeworkProgress(
+    groupId: string
+  ): Promise<GroupHomeworkProgressResponseDto> {
+    // Get all homeworks for the group
+    const homeworks = await this.groupHomeworkModel.findAll({
+      where: { group_id: groupId },
+      include: [
+        {
+          model: this.lessonModel,
+          as: "lesson",
+          attributes: ["id", "title"],
+        },
+      ],
+      order: [["start_date", "DESC"]],
+    });
+
+    // Get all students in the group
+    const groupStudents =
+      await this.groupStudentsService.findByGroupId(groupId);
+    const studentIds = groupStudents.map((gs) => gs.student_id);
+
+    // Fetch student details
+    const students = await this.userModel.findAll({
+      where: { user_id: { [Op.in]: studentIds } },
+      attributes: [
+        "user_id",
+        "username",
+        "first_name",
+        "last_name",
+        "avatar_url",
+      ],
+    });
+
+    // Create a map for quick student lookup
+    const studentMap = new Map(
+      students.map((student) => [student.user_id, student])
+    );
+
+    // Process each homework to get student submissions and scores
+    const units: UnitProgressDto[] = [];
+
+    for (const homework of homeworks) {
+      // Get all submissions for this homework
+      const submissions = await this.homeworkSubmissionModel.findAll({
+        where: {
+          homework_id: homework.id,
+          student_id: { [Op.in]: studentIds },
+        },
+        include: [
+          {
+            model: this.homeworkSectionModel,
+            as: "sections",
+            attributes: ["score", "section"],
+          },
+        ],
+      });
+
+      // Create a map of student submissions
+      const submissionMap = new Map<string, HomeworkSubmission>();
+      submissions.forEach((submission) => {
+        submissionMap.set(submission.student_id, submission);
+      });
+
+      // Build student progress data
+      const studentProgress: StudentProgressDto[] = [];
+
+      for (const studentId of studentIds) {
+        const student = studentMap.get(studentId);
+        const submission = submissionMap.get(studentId);
+
+        // Calculate overall score from all sections
+        let overallScore = 0;
+        let submissionDate = null;
+
+        if (
+          submission &&
+          submission["sections"] &&
+          submission["sections"].length > 0
+        ) {
+          const sections = submission["sections"];
+          const totalScore = sections.reduce(
+            (sum, section) => sum + (section.score || 0),
+            0
+          );
+          overallScore = Math.round(totalScore / sections.length);
+          submissionDate = submission.createdAt;
+        }
+
+        studentProgress.push({
+          student_id: studentId,
+          username: student?.username || "",
+          first_name: student?.first_name || "",
+          last_name: student?.last_name || "",
+          avatar_url: student?.avatar_url || null,
+          overall_score: overallScore,
+          submission_date: submissionDate
+            ? new Date(submissionDate).toISOString().split("T")[0]
+            : null,
+        });
+      }
+
+      // Sort students by name
+      studentProgress.sort((a, b) => {
+        const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+        const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      units.push({
+        homework_id: homework.id,
+        lesson_id: homework.lesson_id,
+        lesson_title: homework["lesson"]?.title || homework.title || "Untitled",
+        start_date: homework.start_date
+          ? new Date(homework.start_date).toISOString().split("T")[0]
+          : null,
+        deadline: homework.deadline
+          ? new Date(homework.deadline).toISOString().split("T")[0]
+          : null,
+        students: studentProgress,
+      });
+    }
+
+    return {
+      group_id: groupId,
+      units,
+    };
+  }
+
+  /**
+   * Get group homework progress for a student's group
+   * Allows students to see their group members' performance
+   */
+  async getGroupHomeworkProgressByStudentId(
+    studentId: string
+  ): Promise<GroupHomeworkProgressResponseDto> {
+    // Find which group the student belongs to
+    const groupStudents =
+      await this.groupStudentsService.findByStudentId(studentId);
+
+    if (!groupStudents || groupStudents.length === 0) {
+      throw new NotFoundException(
+        `Student with ID ${studentId} is not in any group`
+      );
+    }
+
+    // Use the first group (assuming a student is in one group for homework purposes)
+    const groupId = groupStudents[0].group_id;
+
+    // Reuse the existing method
+    return await this.getGroupHomeworkProgress(groupId);
   }
 }
