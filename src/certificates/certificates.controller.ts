@@ -17,9 +17,9 @@ import {
   ApiResponse,
   ApiParam,
 } from "@nestjs/swagger";
-import { CertificatesService } from "./certificates.service";
-import { CreateCertificateDto } from "./dto/create-certificate.dto";
-import { UpdateCertificateDto } from "./dto/update-certificate.dto";
+import { CertificatesService } from "./certificates.service.js";
+import { CreateCertificateDto } from "./dto/create-certificate.dto.js";
+import { UpdateCertificateDto } from "./dto/update-certificate.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
