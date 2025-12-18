@@ -145,4 +145,57 @@ export class VoiceChatBotService {
       throw new Error(`Base64 speech to text error: ${error.message}`);
     }
   }
+
+  /**
+   * Generate text-to-speech and save to file, returning the file URL
+   * @param text The text to convert to speech
+   * @param voice The voice to use
+   * @returns Object with file URL and filename
+   */
+  async textToVoiceAndSave(
+    text: string,
+    voice: string = "lauren"
+  ): Promise<{
+    url: string;
+    filename: string;
+    path: string;
+  }> {
+    try {
+      // Generate audio buffer
+      const audioBuffer = await this.textToVoice(text, voice);
+
+      // Create filename with timestamp
+      const timestamp = Date.now();
+      const filename = `tts-${timestamp}-${voice}.mp3`;
+      const uploadDir = "./uploads/voice-audio";
+      const filePath = `${uploadDir}/${filename}`;
+
+      // Ensure directory exists
+      const fs = await import("fs/promises");
+
+      try {
+        await fs.access(uploadDir);
+      } catch {
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
+
+      // Save file
+      await fs.writeFile(filePath, audioBuffer);
+
+      // Generate URL
+      const baseUrl = process.env.APP_URL || "https://backend.impulselc.uz";
+      const url = `${baseUrl}/uploads/voice-audio/${filename}`;
+
+      this.logger.log(`Saved audio file: ${filename}`);
+
+      return {
+        url,
+        filename,
+        path: filePath,
+      };
+    } catch (error) {
+      this.logger.error(`Text to voice save error: ${error.message}`);
+      throw new Error(`Text to voice save error: ${error.message}`);
+    }
+  }
 }

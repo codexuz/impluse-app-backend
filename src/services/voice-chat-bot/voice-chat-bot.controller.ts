@@ -184,4 +184,88 @@ export class VoiceChatBotController {
       };
     }
   }
+
+  @Post("text-to-voice-url")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Convert text to voice and save file, returns URL",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "File saved successfully with URL",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean", example: true },
+        url: {
+          type: "string",
+          example:
+            "https://backend.impulselc.uz/uploads/voice-audio/tts-1234567890-lauren.mp3",
+        },
+        filename: { type: "string", example: "tts-1234567890-lauren.mp3" },
+      },
+    },
+  })
+  async textToVoiceUrl(@Body() textToVoiceDto: TextToVoiceDto) {
+    try {
+      const result = await this.voiceChatBotService.textToVoiceAndSave(
+        textToVoiceDto.text,
+        textToVoiceDto.voice || "lauren"
+      );
+
+      return {
+        success: true,
+        url: result.url,
+        filename: result.filename,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  @Get("text-to-voice-url")
+  @ApiOperation({
+    summary: "Convert text to voice and save file (GET with query params)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "File saved successfully with URL",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean", example: true },
+        url: {
+          type: "string",
+          example:
+            "https://backend.impulselc.uz/uploads/voice-audio/tts-1234567890-lauren.mp3",
+        },
+        filename: { type: "string", example: "tts-1234567890-lauren.mp3" },
+      },
+    },
+  })
+  async textToVoiceUrlGet(
+    @Query("text") text: string,
+    @Query("voice") voice: string = "lauren"
+  ) {
+    try {
+      const result = await this.voiceChatBotService.textToVoiceAndSave(
+        text,
+        voice
+      );
+
+      return {
+        success: true,
+        url: result.url,
+        filename: result.filename,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
 }
