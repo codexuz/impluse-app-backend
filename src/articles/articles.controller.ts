@@ -107,7 +107,7 @@ export class ArticlesController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete an article" })
   @ApiParam({ name: "id", description: "The article ID" })
