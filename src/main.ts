@@ -19,9 +19,9 @@ async function bootstrap() {
   app.useBodyParser("urlencoded", { limit: "50mb", extended: true });
 
   // 2. ✅ Serve Vue static files from 'public'
-  // app.useStaticAssets(join(__dirname, '..', 'public'));
+  app.useStaticAssets(join(__dirname, '..', 'public'));
 
-  // app.getHttpAdapter().getInstance().set('*', join(__dirname, '..', 'public'));
+  app.getHttpAdapter().getInstance().set('*', join(__dirname, '..', 'public'));
 
   // Enable validation pipes globally
   app.useGlobalPipes(
