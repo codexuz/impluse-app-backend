@@ -78,6 +78,8 @@ import { StudentTransactionModule } from "./student-transaction/student-transact
 import { TeacherTransactionModule } from "./teacher-transaction/teacher-transaction.module.js";
 import { TeacherProfileModule } from "./teacher-profile/teacher-profile.module.js";
 import { SmsModule } from "./sms/sms.module.js";
+import { ArticlesModule } from './articles/articles.module.js';
+import { CertificatesModule } from './certificates/certificates.module.js';
 
 @Module({
   imports: [
@@ -157,6 +159,8 @@ import { SmsModule } from "./sms/sms.module.js";
     TeacherTransactionModule,
     TeacherProfileModule,
     SmsModule,
+    ArticlesModule,
+    CertificatesModule,
   ],
   controllers: [AppController],
   providers: [

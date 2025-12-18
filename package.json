@@ -41,6 +41,7 @@
     "@treeee/youtube-caption-extractor": "^1.5.5",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
+    "canvas": "^3.2.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "eskiz-sms": "^1.4.1",
