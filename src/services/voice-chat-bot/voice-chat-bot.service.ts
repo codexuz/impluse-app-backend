@@ -87,9 +87,23 @@ export class VoiceChatBotService {
    * @returns Audio buffer
    */
   async textToVoice(text: string, voice: string = "lauren"): Promise<Buffer> {
-    console.log(`Converting text to voice: "${text}" with voice: "${voice}"`);
+    this.logger.log(
+      `Converting text to voice: "${text}" with voice: "${voice}"`
+    );
     try {
-      return await this.speechifyService.streamTexttoSpeech(text, voice);
+      const audioBuffer = await this.speechifyService.streamTexttoSpeech(
+        text,
+        voice
+      );
+      this.logger.log(
+        `Received audio buffer from Speechify: ${audioBuffer?.length || 0} bytes`
+      );
+
+      if (!audioBuffer || audioBuffer.length === 0) {
+        throw new Error("Speechify returned empty audio buffer");
+      }
+
+      return audioBuffer;
     } catch (error) {
       this.logger.error(`Text to voice conversion error: ${error.message}`);
       throw new Error(`Text to voice conversion error: ${error.message}`);
@@ -164,6 +178,13 @@ export class VoiceChatBotService {
       // Generate audio buffer
       const audioBuffer = await this.textToVoice(text, voice);
 
+      // Validate buffer
+      if (!audioBuffer || audioBuffer.length === 0) {
+        throw new Error("Generated audio buffer is empty");
+      }
+
+      this.logger.log(`Generated audio buffer: ${audioBuffer.length} bytes`);
+
       // Create filename with timestamp
       const timestamp = Date.now();
       const filename = `tts-${timestamp}-${voice}.mp3`;
@@ -180,16 +201,28 @@ export class VoiceChatBotService {
         await fs.access(uploadDir);
       } catch {
         await fs.mkdir(uploadDir, { recursive: true });
+        this.logger.log(`Created directory: ${uploadDir}`);
       }
 
+      // Ensure audioBuffer is a proper Buffer, not a base64 string
+      const bufferToWrite = Buffer.isBuffer(audioBuffer)
+        ? audioBuffer
+        : Buffer.from(audioBuffer);
+
       // Save file - Buffer is written as binary data by default
-      await fs.writeFile(filePath, audioBuffer);
+      await fs.writeFile(filePath, bufferToWrite);
+
+      // Verify file was written
+      const stats = await fs.stat(filePath);
+      this.logger.log(`Saved audio file: ${filename} (${stats.size} bytes)`);
+
+      if (stats.size === 0) {
+        throw new Error("Saved file is empty");
+      }
 
       // Generate URL
       const baseUrl = process.env.APP_URL || "https://backend.impulselc.uz";
       const url = `${baseUrl}/uploads/voice-audio/${filename}`;
-
-      this.logger.log(`Saved audio file: ${filename}`);
 
       return {
         url,
