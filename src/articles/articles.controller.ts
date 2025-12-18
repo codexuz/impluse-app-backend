@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -55,8 +56,9 @@ export class ArticlesController {
     status: HttpStatus.OK,
     description: "Return all articles",
   })
-  async findAll() {
-    return await this.articlesService.findAll();
+  async findAll(@Query("limit") limit?: string) {
+    const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+    return await this.articlesService.findAll(parsedLimit);
   }
 
   @Get("category/:category")

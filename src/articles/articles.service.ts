@@ -20,9 +20,10 @@ export class ArticlesService {
     return article;
   }
 
-  async findAll(): Promise<Article[]> {
+  async findAll(limit?: number): Promise<Article[]> {
     return this.articleModel.findAll({
       order: [["createdAt", "DESC"]],
+      ...(limit && { limit }),
     });
   }
 
