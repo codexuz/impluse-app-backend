@@ -1,11 +1,14 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
+  Query,
   HttpCode,
   HttpStatus,
   Res,
   Header,
+  StreamableFile,
 } from "@nestjs/common";
 import { Response } from "express";
 import { VoiceChatBotService } from "./voice-chat-bot.service.js";
@@ -79,9 +82,58 @@ export class VoiceChatBotController {
     );
   }
 
+  @Get("text-to-voice")
+  @ApiOperation({
+    summary: "Stream text to voice audio (GET with query params)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Audio stream",
+    content: {
+      "audio/mpeg": {
+        schema: {
+          type: "string",
+          format: "binary",
+        },
+      },
+    },
+  })
+  async textToVoiceStream(
+    @Query("text") text: string,
+    @Query("voice") voice: string = "lauren",
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      console.log(`Streaming text to voice: "${text}" with voice: "${voice}"`);
+
+      const audioBuffer = await this.voiceChatBotService.textToVoice(
+        text,
+        voice
+      );
+
+      // Set headers for audio streaming
+      res.set({
+        "Content-Type": "audio/mpeg",
+        "Content-Length": audioBuffer.length.toString(),
+        "Cache-Control": "no-cache",
+        "Accept-Ranges": "bytes",
+      });
+
+      return new StreamableFile(audioBuffer);
+    } catch (error) {
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
   @Post("text-to-voice")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Convert any text to voice (returns audio buffer)" })
+  @ApiOperation({
+    summary: "Convert any text to voice (returns audio buffer in JSON)",
+  })
   @ApiResponse({
     status: 200,
     description: "Audio buffer data",
