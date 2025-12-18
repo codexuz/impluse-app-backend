@@ -167,8 +167,11 @@ export class VoiceChatBotService {
       // Create filename with timestamp
       const timestamp = Date.now();
       const filename = `tts-${timestamp}-${voice}.mp3`;
-      const uploadDir = "./uploads/voice-audio";
-      const filePath = `${uploadDir}/${filename}`;
+
+      // Use absolute path to ensure files are saved in the correct location
+      const path = await import("path");
+      const uploadDir = path.join(process.cwd(), "uploads", "voice-audio");
+      const filePath = path.join(uploadDir, filename);
 
       // Ensure directory exists
       const fs = await import("fs/promises");
