@@ -71,7 +71,7 @@ export class ExamController {
   }
 
   @Delete(":id")
-  @Roles("admin")
+  @Roles("admin", "teacher")
   @ApiOperation({ summary: "Delete exam by id" })
   remove(@Param("id") id: string) {
     return this.examService.remove(id);
