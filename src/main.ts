@@ -13,6 +13,20 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, "..", "uploads"), {
     prefix: "/uploads/", // so /uploads/filename.jpg works
+    setHeaders: (res, path) => {
+      // Disable compression for audio files
+      if (
+        path.endsWith(".mp3") ||
+        path.endsWith(".wav") ||
+        path.endsWith(".ogg") ||
+        path.endsWith(".m4a")
+      ) {
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Cache-Control", "public, max-age=31536000");
+        // Explicitly remove any content-encoding
+        res.removeHeader("Content-Encoding");
+      }
+    },
   });
 
   app.useBodyParser("json", { limit: "50mb" });
