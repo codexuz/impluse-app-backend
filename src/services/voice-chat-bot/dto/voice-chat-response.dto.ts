@@ -14,10 +14,15 @@ export class VoiceChatResponseDto {
   textResponse: string;
 
   @ApiProperty({
-    description: "Audio buffer data",
+    description: "Audio data encoded as base64 string",
     type: "string",
-    format: "binary",
-    example: "Binary audio buffer",
+    example: "UklGRiQAAABXQVZFZm10IBAAAA...",
   })
-  audioData: Buffer;
+  audioData: string;
+
+  @ApiProperty({
+    description: "Encoding format of audio data",
+    example: "base64",
+  })
+  encoding: string;
 }

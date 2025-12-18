@@ -8,12 +8,18 @@ export class TextToVoiceResponseDto {
   success: boolean;
 
   @ApiProperty({
-    description: "Audio buffer data",
+    description: "Audio data encoded as base64 string",
     type: "string",
-    format: "binary",
-    example: "Binary audio buffer",
+    example: "UklGRiQAAABXQVZFZm10IBAAAA...",
   })
-  audioData: Buffer;
+  audioData?: string;
+
+  @ApiProperty({
+    description: "Encoding format of audio data",
+    example: "base64",
+    required: false,
+  })
+  encoding?: string;
 
   @ApiProperty({
     description: "Error message if request failed",

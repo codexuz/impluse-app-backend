@@ -61,7 +61,8 @@ export class VoiceChatBotController {
       return {
         success: true,
         textResponse: result.textResponse,
-        audioData: result.audioStream,
+        audioData: result.audioStream.toString("base64"),
+        encoding: "base64",
       };
     } catch (error) {
       return {
@@ -151,7 +152,8 @@ export class VoiceChatBotController {
 
       return {
         success: true,
-        audioData: audioBuffer,
+        audioData: audioBuffer.toString("base64"),
+        encoding: "base64",
       };
     } catch (error) {
       return {

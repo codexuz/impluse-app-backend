@@ -179,7 +179,7 @@ export class VoiceChatBotService {
         await fs.mkdir(uploadDir, { recursive: true });
       }
 
-      // Save file
+      // Save file - Buffer is written as binary data by default
       await fs.writeFile(filePath, audioBuffer);
 
       // Generate URL
