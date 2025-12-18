@@ -12,7 +12,7 @@ import * as path from "path";
 export class CertificatesService {
   private readonly certificatesDir = path.join(
     process.cwd(),
-    "public",
+    "uploads",
     "certificates"
   );
   private readonly templatesDir = path.join(
@@ -100,8 +100,8 @@ export class CertificatesService {
       const buffer = canvas.toBuffer("image/png");
       fs.writeFileSync(filePath, buffer);
 
-      // Return relative URL
-      return `/certificates/${fileName}`;
+      // Return full URL
+      return `https://backend.impulselc.uz/uploads/certificates/${fileName}`;
     } catch (error) {
       throw new Error(`Failed to generate certificate image: ${error.message}`);
     }
@@ -206,7 +206,7 @@ export class CertificatesService {
     if (certificate.certificate_url) {
       const filePath = path.join(
         process.cwd(),
-        "public",
+        "uploads",
         certificate.certificate_url
       );
       if (fs.existsSync(filePath)) {
