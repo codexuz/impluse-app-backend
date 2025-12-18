@@ -171,6 +171,7 @@ export class VoiceChatBotService {
     voice: string = "lauren"
   ): Promise<{
     url: string;
+    staticUrl?: string;
     filename: string;
     path: string;
   }> {
@@ -220,12 +221,14 @@ export class VoiceChatBotService {
         throw new Error("Saved file is empty");
       }
 
-      // Generate URL
+      // Generate URLs - provide both static and direct serve options
       const baseUrl = process.env.APP_URL || "https://backend.impulselc.uz";
-      const url = `${baseUrl}/uploads/voice-audio/${filename}`;
+      const staticUrl = `${baseUrl}/uploads/voice-audio/${filename}`;
+      const directUrl = `${baseUrl}/api/voice-chat-bot/serve-audio/${filename}`;
 
       return {
-        url,
+        url: directUrl, // Use direct serve URL to avoid proxy issues
+        staticUrl, // Provide static URL as backup
         filename,
         path: filePath,
       };

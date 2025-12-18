@@ -4,6 +4,7 @@ import {
   Get,
   Body,
   Query,
+  Param,
   HttpCode,
   HttpStatus,
   Res,
@@ -267,6 +268,65 @@ export class VoiceChatBotController {
       return {
         success: false,
         error: error.message,
+      };
+    }
+  }
+
+  @Get("serve-audio/:filename")
+  @ApiOperation({
+    summary: "Serve audio file directly (bypasses static file middleware)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Audio file stream",
+    content: {
+      "audio/mpeg": {
+        schema: {
+          type: "string",
+          format: "binary",
+        },
+      },
+    },
+  })
+  async serveAudio(
+    @Param("filename") filename: string,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      const path = await import("path");
+      const fs = await import("fs/promises");
+
+      // Sanitize filename to prevent directory traversal
+      const sanitizedFilename = path.basename(filename);
+      const filePath = path.join(
+        process.cwd(),
+        "uploads",
+        "voice-audio",
+        sanitizedFilename
+      );
+
+      // Check if file exists
+      await fs.access(filePath);
+      const fileBuffer = await fs.readFile(filePath);
+
+      // Set headers to prevent any encoding issues
+      res.set({
+        "Content-Type": "audio/mpeg",
+        "Content-Length": fileBuffer.length.toString(),
+        "Content-Disposition": `inline; filename="${sanitizedFilename}"`,
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Accept-Ranges": "none", // Disable range requests to avoid 206 issues
+      });
+
+      // Explicitly ensure no content-encoding
+      res.removeHeader("Content-Encoding");
+
+      return new StreamableFile(fileBuffer);
+    } catch (error) {
+      res.status(HttpStatus.NOT_FOUND);
+      return {
+        success: false,
+        error: "Audio file not found",
       };
     }
   }
