@@ -103,19 +103,24 @@ export class StudentVocabularyProgressService {
    * Find a word's status for a specific student
    * @param studentId The ID of the student
    * @param vocabularyItemId The ID of the vocabulary item
-   * @returns The status of the word or null if no progress record exists
+   * @returns An object containing the status of the word or null if no progress record exists
    */
   async findWordStatus(
     studentId: string,
     vocabularyItemId: string
-  ): Promise<VocabularyProgressStatus | null> {
+  ): Promise<{ status: VocabularyProgressStatus | null }> {
     const progress = await this.studentVocabularyProgressModel.findOne({
       where: {
         student_id: studentId,
         vocabulary_item_id: vocabularyItemId,
       },
     });
-    return progress ? (progress.status as VocabularyProgressStatus) : null;
+    const wordStatus = progress
+      ? (progress.status as VocabularyProgressStatus)
+      : null;
+    return {
+      status: wordStatus
+    };
   }
 
   async update(
