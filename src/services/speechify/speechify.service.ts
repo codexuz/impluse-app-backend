@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
 import { SpeechifyClient } from "@speechify/api";
-import { ConfigService } from '@nestjs/config';
-import { Readable } from 'stream';
+import { ConfigService } from "@nestjs/config";
+import { Readable } from "stream";
 
 @Injectable()
 export class SpeechifyService {
@@ -9,45 +9,39 @@ export class SpeechifyService {
 
   constructor(private configService: ConfigService) {
     this.client = new SpeechifyClient({
-      token: this.configService.get<string>('speechifyToken'),
+      token: this.configService.get<string>("speechifyToken"),
     });
   }
 
-  async streamTexttoSpeech(text: string, voice: string): Promise<string> {
+  async streamTexttoSpeech(text: string, voice: string): Promise<Buffer> {
     try {
       const stream = await this.client.tts.audio.stream({
         accept: "audio/mpeg",
         input: text,
-        voiceId: voice
+        voiceId: voice,
       });
 
       const chunks: Buffer[] = [];
       for await (const chunk of stream as Readable) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+        chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
       }
 
       const audioBuffer = Buffer.concat(chunks);
-     
-      // 🔥 Convert buffer to Base64 string
-      const base64Audio =  `data:audio/mpeg;base64,${audioBuffer.toString("base64")}`;
-      
-      return base64Audio; // 👈 Return raw audio buffer
+
+      return audioBuffer; // 👈 Return raw audio buffer
     } catch (error) {
       throw new Error(`Failed to convert text to speech: ${error.message}`);
     }
   }
 
   async generateTexttoSpeech(text: string, voice: string): Promise<any> {
-        try {
-            return await this.client.tts.audio.speech({
-                input: text,
-                voiceId: voice
-            });
-        } catch (error) {
-            throw new Error(`Failed to convert text to speech: ${error.message}`);
-        }
-    }  
+    try {
+      return await this.client.tts.audio.speech({
+        input: text,
+        voiceId: voice,
+      });
+    } catch (error) {
+      throw new Error(`Failed to convert text to speech: ${error.message}`);
+    }
+  }
 }
-
-
-

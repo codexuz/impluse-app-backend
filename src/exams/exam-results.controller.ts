@@ -101,7 +101,7 @@ export class ExamResultsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete an exam result' })
   @ApiParam({ name: 'id', description: 'Exam result ID' })

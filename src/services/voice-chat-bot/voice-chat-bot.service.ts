@@ -1,126 +1,240 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { OpenaiService } from '../openai/openai.service.js';
-import { SpeechifyService } from '../speechify/speechify.service.js';
-import { DeepgramService } from '../deepgram/deepgram.service.js';
+import { Injectable, Logger } from "@nestjs/common";
+import { OpenaiService } from "../openai/openai.service.js";
+import { SpeechifyService } from "../speechify/speechify.service.js";
+import { DeepgramService } from "../deepgram/deepgram.service.js";
 
 @Injectable()
 export class VoiceChatBotService {
-    private readonly logger = new Logger(VoiceChatBotService.name);
+  private readonly logger = new Logger(VoiceChatBotService.name);
 
-    constructor(
-        private readonly openaiService: OpenaiService,
-        private readonly speechifyService: SpeechifyService,
-        private readonly deepgramService: DeepgramService
-    ) {}
+  constructor(
+    private readonly openaiService: OpenaiService,
+    private readonly speechifyService: SpeechifyService,
+    private readonly deepgramService: DeepgramService
+  ) {}
 
-    /**
-     * Process a text message and optionally convert response to speech
-     * @param text The user's text input
-     * @param voice The voice ID to use (if audio response is needed)
-     * @returns Object containing text response and base64 audio data
-     */
-    async processVoiceChat(text: string, voice: string = 'lauren'): Promise<{
-        textResponse: string;
-        audioStream: string; // base64 encoded audio data
-    }> {
-        try {
-            // Get AI response from OpenAI
-            const textResponse = await this.openaiService.agentBotChat(text);
-            this.logger.debug(`Input: "${text}" → Response: "${textResponse}"`);
-            
-            // Convert the response to speech using Speechify
-            const audioStream = await this.speechifyService.streamTexttoSpeech(textResponse, voice);
-            
-            return {
-                textResponse,
-                audioStream
-            };
-        } catch (error) {
-            this.logger.error(`Error processing chat: ${error.message}`);
-            throw new Error(`Chat processing error: ${error.message}`);
-        }
-    }
-    
-    /**
-     * Generate a non-streaming voice response
-     * @param text The text to convert to speech
-     * @param voice The voice to use
-     * @returns Object with text response and audio data
-     */
-    async generateVoiceResponse(text: string, voice: string = 'lauren'): Promise<{
-        textResponse: string;
-        audioData: any;
-    }> {
-        try {
-            // Get text response from OpenAI
-            const textResponse = await this.openaiService.agentBotChat(text);
+  /**
+   * Process a text message and optionally convert response to speech
+   * @param text The user's text input
+   * @param voice The voice ID to use (if audio response is needed)
+   * @returns Object containing text response and audio buffer
+   */
+  async processVoiceChat(
+    text: string,
+    voice: string = "lauren"
+  ): Promise<{
+    textResponse: string;
+    audioStream: Buffer; // audio buffer
+  }> {
+    try {
+      // Get AI response from OpenAI
+      const textResponse = await this.openaiService.agentBotChat(text);
+      this.logger.debug(`Input: "${text}" → Response: "${textResponse}"`);
 
-            // Generate audio file using Speechify
-            const audioData = await this.speechifyService.generateTexttoSpeech(textResponse, voice);
-            
-            return {
-                textResponse,
-                audioData
-            };
-        } catch (error) {
-            this.logger.error(`Voice response generation error: ${error.message}`);
-            throw new Error(`Voice response generation error: ${error.message}`);
-        }
-    }
+      // Convert the response to speech using Speechify
+      const audioStream = await this.speechifyService.streamTexttoSpeech(
+        textResponse,
+        voice
+      );
 
-    /**
-     * Convert text to voice without AI processing
-     * @param text The text to convert to speech
-     * @param voice The voice to use
-     * @returns Base64 encoded audio data
-     */
-    async textToVoice(text: string, voice: string = 'lauren'): Promise<string> {
-        console.log(`Converting text to voice: "${text}" with voice: "${voice}"`);
-        try {
-            return await this.speechifyService.streamTexttoSpeech(text, voice);
-        } catch (error) {
-            this.logger.error(`Text to voice conversion error: ${error.message}`);
-            throw new Error(`Text to voice conversion error: ${error.message}`);
-        }
+      return {
+        textResponse,
+        audioStream,
+      };
+    } catch (error) {
+      this.logger.error(`Error processing chat: ${error.message}`);
+      throw new Error(`Chat processing error: ${error.message}`);
     }
+  }
 
-    /**
-     * Converts audio buffer to text using speech recognition
-     * @param audioBuffer The audio buffer containing speech data
-     * @param mimeType MIME type of the audio data
-     * @returns Transcribed text from the audio
-     */
-    async speechToText(audioBuffer: Buffer, mimeType: string = 'audio/mpeg'): Promise<string> {
-        try {
-            // Use Deepgram to transcribe the audio buffer
-            const transcription = await this.deepgramService.transcribeBuffer(audioBuffer, mimeType);
-            
-            // Extract the transcript text from the response
-            const transcribedText = transcription?.results?.channels[0]?.alternatives[0]?.transcript || '';
-            
-            return transcribedText;
-        } catch (error) {
-            this.logger.error(`Speech to text error: ${error.message}`);
-            throw new Error(`Speech to text error: ${error.message}`);
-        }
+  /**
+   * Generate a non-streaming voice response
+   * @param text The text to convert to speech
+   * @param voice The voice to use
+   * @returns Object with text response and audio data
+   */
+  async generateVoiceResponse(
+    text: string,
+    voice: string = "lauren"
+  ): Promise<{
+    textResponse: string;
+    audioData: any;
+  }> {
+    try {
+      // Get text response from OpenAI
+      const textResponse = await this.openaiService.agentBotChat(text);
+
+      // Generate audio file using Speechify
+      const audioData = await this.speechifyService.generateTexttoSpeech(
+        textResponse,
+        voice
+      );
+
+      return {
+        textResponse,
+        audioData,
+      };
+    } catch (error) {
+      this.logger.error(`Voice response generation error: ${error.message}`);
+      throw new Error(`Voice response generation error: ${error.message}`);
     }
-    
-    /**
-     * Converts base64 encoded audio to text using speech recognition
-     * @param base64Audio Base64 encoded audio string (without data URI prefix)
-     * @param mimeType MIME type of the audio data
-     * @returns Transcribed text from the audio
-     */
-    async speechToTextFromBase64(base64Audio: string, mimeType: string = 'audio/mpeg'): Promise<string> {
-        try {
-            // Convert base64 to buffer
-            const audioBuffer = Buffer.from(base64Audio, 'base64');
-            
-            // Use the existing method to process the buffer
-            return await this.speechToText(audioBuffer, mimeType);
-        } catch (error) {
-            this.logger.error(`Base64 speech to text error: ${error.message}`);
-            throw new Error(`Base64 speech to text error: ${error.message}`);
-        }
+  }
+
+  /**
+   * Convert text to voice without AI processing
+   * @param text The text to convert to speech
+   * @param voice The voice to use
+   * @returns Audio buffer
+   */
+  async textToVoice(text: string, voice: string = "lauren"): Promise<Buffer> {
+    this.logger.log(
+      `Converting text to voice: "${text}" with voice: "${voice}"`
+    );
+    try {
+      const audioBuffer = await this.speechifyService.streamTexttoSpeech(
+        text,
+        voice
+      );
+      this.logger.log(
+        `Received audio buffer from Speechify: ${audioBuffer?.length || 0} bytes`
+      );
+
+      if (!audioBuffer || audioBuffer.length === 0) {
+        throw new Error("Speechify returned empty audio buffer");
+      }
+
+      return audioBuffer;
+    } catch (error) {
+      this.logger.error(`Text to voice conversion error: ${error.message}`);
+      throw new Error(`Text to voice conversion error: ${error.message}`);
     }
+  }
+
+  /**
+   * Converts audio buffer to text using speech recognition
+   * @param audioBuffer The audio buffer containing speech data
+   * @param mimeType MIME type of the audio data
+   * @returns Transcribed text from the audio
+   */
+  async speechToText(
+    audioBuffer: Buffer,
+    mimeType: string = "audio/mpeg"
+  ): Promise<string> {
+    try {
+      // Use Deepgram to transcribe the audio buffer
+      const transcription = await this.deepgramService.transcribeBuffer(
+        audioBuffer,
+        mimeType
+      );
+
+      // Extract the transcript text from the response
+      const transcribedText =
+        transcription?.results?.channels[0]?.alternatives[0]?.transcript || "";
+
+      return transcribedText;
+    } catch (error) {
+      this.logger.error(`Speech to text error: ${error.message}`);
+      throw new Error(`Speech to text error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Converts base64 encoded audio to text using speech recognition
+   * @param base64Audio Base64 encoded audio string (without data URI prefix)
+   * @param mimeType MIME type of the audio data
+   * @returns Transcribed text from the audio
+   */
+  async speechToTextFromBase64(
+    base64Audio: string,
+    mimeType: string = "audio/mpeg"
+  ): Promise<string> {
+    try {
+      // Convert base64 to buffer
+      const audioBuffer = Buffer.from(base64Audio, "base64");
+
+      // Use the existing method to process the buffer
+      return await this.speechToText(audioBuffer, mimeType);
+    } catch (error) {
+      this.logger.error(`Base64 speech to text error: ${error.message}`);
+      throw new Error(`Base64 speech to text error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate text-to-speech and save to file, returning the file URL
+   * @param text The text to convert to speech
+   * @param voice The voice to use
+   * @returns Object with file URL and filename
+   */
+  async textToVoiceAndSave(
+    text: string,
+    voice: string = "lauren"
+  ): Promise<{
+    url: string;
+    staticUrl?: string;
+    filename: string;
+    path: string;
+  }> {
+    try {
+      // Generate audio buffer
+      const audioBuffer = await this.textToVoice(text, voice);
+
+      // Validate buffer
+      if (!audioBuffer || audioBuffer.length === 0) {
+        throw new Error("Generated audio buffer is empty");
+      }
+
+      this.logger.log(`Generated audio buffer: ${audioBuffer.length} bytes`);
+
+      // Create filename with timestamp
+      const timestamp = Date.now();
+      const filename = `tts-${timestamp}-${voice}.mp3`;
+
+      // Use absolute path to ensure files are saved in the correct location
+      const path = await import("path");
+      const uploadDir = path.join(process.cwd(), "uploads", "voice-audio");
+      const filePath = path.join(uploadDir, filename);
+
+      // Ensure directory exists
+      const fs = await import("fs/promises");
+
+      try {
+        await fs.access(uploadDir);
+      } catch {
+        await fs.mkdir(uploadDir, { recursive: true });
+        this.logger.log(`Created directory: ${uploadDir}`);
+      }
+
+      // Ensure audioBuffer is a proper Buffer, not a base64 string
+      const bufferToWrite = Buffer.isBuffer(audioBuffer)
+        ? audioBuffer
+        : Buffer.from(audioBuffer);
+
+      // Save file - Buffer is written as binary data by default
+      await fs.writeFile(filePath, bufferToWrite);
+
+      // Verify file was written
+      const stats = await fs.stat(filePath);
+      this.logger.log(`Saved audio file: ${filename} (${stats.size} bytes)`);
+
+      if (stats.size === 0) {
+        throw new Error("Saved file is empty");
+      }
+
+      // Generate URLs - provide both static and direct serve options
+      const baseUrl = process.env.APP_URL || "https://backend.impulselc.uz";
+      const staticUrl = `${baseUrl}/uploads/voice-audio/${filename}`;
+      const directUrl = `${baseUrl}/api/voice-chat-bot/serve-audio/${filename}`;
+
+      return {
+        url: directUrl, // Use direct serve URL to avoid proxy issues
+        staticUrl, // Provide static URL as backup
+        filename,
+        path: filePath,
+      };
+    } catch (error) {
+      this.logger.error(`Text to voice save error: ${error.message}`);
+      throw new Error(`Text to voice save error: ${error.message}`);
+    }
+  }
 }

@@ -26,10 +26,10 @@ export class LessonContent extends Model {
   title: string;
 
   @Column({
-    type: DataType.TEXT,
+    type: DataType.JSON,
     allowNull: true,
   })
-  content: string;
+  content: any;
 
   @Column({
     type: DataType.TEXT,
@@ -37,7 +37,7 @@ export class LessonContent extends Model {
   })
   mediaUrl: string;
 
-    @Column({
+  @Column({
     type: DataType.ENUM("url", "youtube_url", "embed"),
     allowNull: true,
   })

@@ -11,17 +11,41 @@ const __dirname = dirname(__filename);
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+ 
   app.useStaticAssets(join(__dirname, "..", "uploads"), {
-    prefix: "/uploads/", // so /uploads/filename.jpg works
-  });
+  prefix: "/uploads/",
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith(".mp3")) {
+      res.setHeader("Content-Type", "audio/mpeg");
+    } else if (filePath.endsWith(".wav")) {
+      res.setHeader("Content-Type", "audio/wav");
+    } else if (filePath.endsWith(".ogg")) {
+      res.setHeader("Content-Type", "audio/ogg");
+    } else if (filePath.endsWith(".m4a")) {
+      res.setHeader("Content-Type", "audio/mp4");
+    }
+
+    if (
+      filePath.endsWith(".mp3") ||
+      filePath.endsWith(".wav") ||
+      filePath.endsWith(".ogg") ||
+      filePath.endsWith(".m4a")
+    ) {
+      res.setHeader("Accept-Ranges", "bytes"); // 🔥 REQUIRED
+      res.setHeader("Cache-Control", "public, max-age=31536000");
+      res.removeHeader("Content-Encoding"); // 🔥 critical
+    }
+  },
+});
+
 
   app.useBodyParser("json", { limit: "50mb" });
   app.useBodyParser("urlencoded", { limit: "50mb", extended: true });
 
   // 2. ✅ Serve Vue static files from 'public'
-  app.useStaticAssets(join(__dirname, '..', 'public'));
+  // app.useStaticAssets(join(__dirname, '..', 'public'));
 
-  app.getHttpAdapter().getInstance().set('*', join(__dirname, '..', 'public'));
+  // app.getHttpAdapter().getInstance().set('*', join(__dirname, '..', 'public'));
 
   // Enable validation pipes globally
   app.useGlobalPipes(

@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -55,8 +56,9 @@ export class ArticlesController {
     status: HttpStatus.OK,
     description: "Return all articles",
   })
-  async findAll() {
-    return await this.articlesService.findAll();
+  async findAll(@Query("limit") limit?: string) {
+    const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+    return await this.articlesService.findAll(parsedLimit);
   }
 
   @Get("category/:category")
@@ -107,7 +109,7 @@ export class ArticlesController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete an article" })
   @ApiParam({ name: "id", description: "The article ID" })

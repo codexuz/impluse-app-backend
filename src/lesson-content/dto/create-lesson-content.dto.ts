@@ -15,12 +15,11 @@ export class CreateLessonContentDto {
   title: string;
 
   @ApiProperty({
-    example: "Detailed content about TypeScript...",
+    example: { text: "Detailed content about TypeScript...", data: [] },
     required: false,
   })
-  @IsString()
   @IsOptional()
-  content?: string;
+  content?: any;
 
   @ApiProperty({
     example: "https://example.com/media/typescript.mp4",
