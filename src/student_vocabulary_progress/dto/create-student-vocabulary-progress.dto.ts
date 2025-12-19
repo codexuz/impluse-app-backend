@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsUUID, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { VocabularyProgressStatus } from '../enums/vocabulary-progress-status.enum.js';
 
@@ -26,6 +26,6 @@ export class CreateStudentVocabularyProgressDto {
         default: VocabularyProgressStatus.LEARNING
     })
     @IsEnum(VocabularyProgressStatus)
-    @IsNotEmpty()
+    @IsOptional()
     status: VocabularyProgressStatus = VocabularyProgressStatus.LEARNING;
 }
