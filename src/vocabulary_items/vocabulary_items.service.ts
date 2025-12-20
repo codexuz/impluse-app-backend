@@ -75,7 +75,7 @@ export class VocabularyItemsService {
   async findBySetIdPaginated(
     setId: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = 10
   ): Promise<{
     data: VocabularyItem[];
     total: number;
