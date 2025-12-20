@@ -57,8 +57,8 @@ export class VocabularyItemsController {
     @Query("page") page?: string,
     @Query("limit") limit?: string
   ) {
-    const pageNumber = page ? parseInt(page, 10) : 1;
-    const limitNumber = limit ? parseInt(limit, 10) : 10;
+    const pageNumber = page ? parseInt(page, 20) : 1;
+    const limitNumber = limit ? parseInt(limit, 20) : 20;
     return this.vocabularyItemsService.findBySetIdPaginated(
       setId,
       pageNumber,
