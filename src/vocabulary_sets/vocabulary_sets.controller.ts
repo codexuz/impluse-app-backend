@@ -57,6 +57,13 @@ export class VocabularySetsController {
     return this.vocabularySetsService.findOne(id);
   }
 
+  @Get("progress/:studentId")
+  @UseGuards(RolesGuard)
+  @Roles("admin", "teacher", "student")
+  getStudentProgressForAllSets(@Param("studentId") studentId: string) {
+    return this.vocabularySetsService.getStudentProgressForAllSets(studentId);
+  }
+
   @Patch(":id")
   @UseGuards(RolesGuard)
   @Roles("admin", "teacher")
