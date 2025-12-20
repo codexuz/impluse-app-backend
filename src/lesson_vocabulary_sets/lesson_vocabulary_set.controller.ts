@@ -41,7 +41,7 @@ export class LessonVocabularySetController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lesson vocabulary sets' })
   @ApiResponse({ 
     status: 200, 

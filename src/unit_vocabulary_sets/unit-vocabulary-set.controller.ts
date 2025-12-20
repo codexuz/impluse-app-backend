@@ -25,7 +25,7 @@ export class UnitVocabularySetController {
   }
 
   @Get()
-  @Roles('admin', 'teacher')
+  @Roles('admin', 'teacher', 'student')
   async findAll() {
     return await this.unitVocabularySetService.findAll();
   }

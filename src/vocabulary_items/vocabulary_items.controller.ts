@@ -37,6 +37,8 @@ export class VocabularyItemsController {
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'teacher', 'student')
   findAll() {
     return this.vocabularyItemsService.findAll();
   }
