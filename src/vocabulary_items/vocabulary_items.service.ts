@@ -95,7 +95,7 @@ export class VocabularyItemsService {
       ],
       limit,
       offset,
-      order: [["created_at", "DESC"]],
+      order: [["createdAt", "DESC"]],
     });
 
     return {
