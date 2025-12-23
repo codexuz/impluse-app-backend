@@ -4,7 +4,6 @@ import { CreateGroupHomeworkDto } from "./dto/create-group-homework.dto.js";
 import { UpdateGroupHomeworkDto } from "./dto/update-group_homework.dto.js";
 import { GroupHomework } from "./entities/group_homework.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
-import { Group } from "../groups/entities/group.entity.js";
 import { Lesson } from "../lesson/entities/lesson.entity.js";
 import { Exercise } from "../exercise/entities/exercise.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
@@ -25,8 +24,6 @@ export class GroupHomeworksService {
     private groupHomeworkModel: typeof GroupHomework,
     @InjectModel(GroupStudent)
     private groupStudentModel: typeof GroupStudent,
-    @InjectModel(Group)
-    private groupModel: typeof Group,
     @InjectModel(Lesson)
     private lessonModel: typeof Lesson,
     @InjectModel(Exercise)
@@ -373,30 +370,12 @@ export class GroupHomeworksService {
   }
 
   async getActiveHomeworksByDate(userId: string, date?: Date): Promise<any[]> {
-    // Try to find user as a student first
     const groupStudent = await this.groupStudentModel.findOne({
       where: { student_id: userId },
     });
 
-    let groupIds: string[] = [];
-
-    if (groupStudent) {
-      // User is a student
-      groupIds = [groupStudent.group_id];
-    } else {
-      // Check if user is a teacher
-      const teacherGroups = await this.groupModel.findAll({
-        where: { teacher_id: userId },
-        attributes: ["id"],
-      });
-
-      if (teacherGroups.length > 0) {
-        groupIds = teacherGroups.map((g) => g.id);
-      } else {
-        throw new NotFoundException(
-          "User is not in any group as student or teacher"
-        );
-      }
+    if (!groupStudent) {
+      throw new NotFoundException("User is not in any group");
     }
 
     // If no date is provided, use current date
@@ -405,7 +384,7 @@ export class GroupHomeworksService {
 
     const homeworks = await this.groupHomeworkModel.findAll({
       where: {
-        group_id: { [Op.in]: groupIds },
+        group_id: groupStudent.group_id,
         // Active homework has start_date before or equal to current date
         // and deadline after or equal to current date
         start_date: {
