@@ -4,6 +4,7 @@ import { CreateGroupHomeworkDto } from "./dto/create-group-homework.dto.js";
 import { UpdateGroupHomeworkDto } from "./dto/update-group_homework.dto.js";
 import { GroupHomework } from "./entities/group_homework.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { Group } from "../groups/entities/group.entity.js";
 import { Lesson } from "../lesson/entities/lesson.entity.js";
 import { Exercise } from "../exercise/entities/exercise.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
@@ -24,6 +25,8 @@ export class GroupHomeworksService {
     private groupHomeworkModel: typeof GroupHomework,
     @InjectModel(GroupStudent)
     private groupStudentModel: typeof GroupStudent,
+    @InjectModel(Group)
+    private groupModel: typeof Group,
     @InjectModel(Lesson)
     private lessonModel: typeof Lesson,
     @InjectModel(Exercise)
@@ -48,32 +51,32 @@ export class GroupHomeworksService {
     // Get all students in the group
     const groupStudents = await this.groupStudentModel.findAll({
       where: { group_id: createDto.group_id },
-      attributes: ['student_id'],
+      attributes: ["student_id"],
     });
 
-    const studentIds = groupStudents.map(gs => gs.student_id);
+    const studentIds = groupStudents.map((gs) => gs.student_id);
 
     if (studentIds.length > 0) {
       try {
         // Get lesson details for notification
         const lesson = await this.lessonModel.findByPk(createDto.lesson_id, {
-          attributes: ['title'],
+          attributes: ["title"],
         });
 
-        const lessonTitle = lesson ? lesson.title : 'Homework';
-        const deadlineText = createDto.deadline 
+        const lessonTitle = lesson ? lesson.title : "Homework";
+        const deadlineText = createDto.deadline
           ? ` Deadline: ${new Date(createDto.deadline).toLocaleDateString()}`
-          : '';
+          : "";
 
         // Create notification record
         const notification = await Notifications.create({
-          title: 'New Homework Assigned',
+          title: "New Homework Assigned",
           message: `A new homework "${lessonTitle}" has been assigned to your group.${deadlineText}`,
           img_url: null,
         });
 
         // Create user notification records for each student
-        const userNotificationRecords = studentIds.map(studentId => ({
+        const userNotificationRecords = studentIds.map((studentId) => ({
           user_id: studentId,
           notification_id: notification.id,
           seen: false,
@@ -89,21 +92,21 @@ export class GroupHomeworksService {
         });
 
         if (notificationTokens.length > 0) {
-          const tokens = notificationTokens.map(nt => nt.token);
+          const tokens = notificationTokens.map((nt) => nt.token);
           await this.notificationsService.notifyMultipleUsers(
             tokens,
-            'New Homework Assigned',
+            "New Homework Assigned",
             `A new homework "${lessonTitle}" has been assigned to your group.${deadlineText}`,
             {
               notification_id: notification.id,
               homework_id: homework.id,
               lesson_id: createDto.lesson_id,
-              type: 'homework',
+              type: "homework",
             }
           );
         }
       } catch (error) {
-        console.error('Error sending homework notifications:', error);
+        console.error("Error sending homework notifications:", error);
         // Continue even if notification fails
       }
     }
@@ -336,7 +339,7 @@ export class GroupHomeworksService {
         homeworkData.lesson.exercises = homeworkData.lesson.exercises.map(
           (exercise) => {
             return {
-              ...exercise
+              ...exercise,
             };
           }
         );
@@ -345,7 +348,7 @@ export class GroupHomeworksService {
       // Include speaking exercises without submission or status
       if (homeworkData.lesson && homeworkData.lesson.speaking) {
         homeworkData.lesson.speaking = {
-          ...homeworkData.lesson.speaking
+          ...homeworkData.lesson.speaking,
         };
       }
 
@@ -354,7 +357,7 @@ export class GroupHomeworksService {
         homeworkData.lesson.lesson_vocabulary =
           homeworkData.lesson.lesson_vocabulary.map((vocab) => {
             return {
-              ...vocab
+              ...vocab,
             };
           });
       }
@@ -362,7 +365,7 @@ export class GroupHomeworksService {
       return {
         ...homeworkData,
         isOverdue:
-          homework.deadline && new Date(homework.deadline) < new Date()
+          homework.deadline && new Date(homework.deadline) < new Date(),
       };
     });
 
@@ -370,12 +373,30 @@ export class GroupHomeworksService {
   }
 
   async getActiveHomeworksByDate(userId: string, date?: Date): Promise<any[]> {
+    // Try to find user as a student first
     const groupStudent = await this.groupStudentModel.findOne({
       where: { student_id: userId },
     });
 
-    if (!groupStudent) {
-      throw new NotFoundException("User is not in any group");
+    let groupIds: string[] = [];
+
+    if (groupStudent) {
+      // User is a student
+      groupIds = [groupStudent.group_id];
+    } else {
+      // Check if user is a teacher
+      const teacherGroups = await this.groupModel.findAll({
+        where: { teacher_id: userId },
+        attributes: ["id"],
+      });
+
+      if (teacherGroups.length > 0) {
+        groupIds = teacherGroups.map((g) => g.id);
+      } else {
+        throw new NotFoundException(
+          "User is not in any group as student or teacher"
+        );
+      }
     }
 
     // If no date is provided, use current date
@@ -384,7 +405,7 @@ export class GroupHomeworksService {
 
     const homeworks = await this.groupHomeworkModel.findAll({
       where: {
-        group_id: groupStudent.group_id,
+        group_id: { [Op.in]: groupIds },
         // Active homework has start_date before or equal to current date
         // and deadline after or equal to current date
         start_date: {
