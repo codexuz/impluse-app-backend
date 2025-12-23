@@ -106,12 +106,12 @@ export class CertificatesService {
       // Draw student full name at specific coordinates
       const fullName = `${firstName} ${lastName}`;
       ctx.font = "bold 17px 'Poppins'";
-      ctx.fillText(fullName, 237, 216);
+      ctx.fillText(fullName, 238, 216);
 
       // Draw certificate ID at specific coordinates
       ctx.font = "16px 'Poppins'";
       ctx.textAlign = "left";
-      ctx.fillText(`${certificatedId}`, 180, 371);
+      ctx.fillText(`${certificatedId}`, 181, 389);
 
       // Save the image
       const fileName = `certificate-${certificatedId}.png`;
