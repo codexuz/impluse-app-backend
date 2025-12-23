@@ -9,10 +9,12 @@ import { ExamService } from "./exam.service.js";
 import { ExamController } from "./exam.controller.js";
 import { ExamResultsService } from "./exam-results.service.js";
 import { ExamResultsController } from "./exam-results.controller.js";
+import { NotificationsModule } from "../notifications/notifications.module.js";
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Exam, GroupStudent, Group, ExamResult, User]),
+    NotificationsModule,
   ],
   controllers: [ExamController, ExamResultsController],
   providers: [ExamService, ExamResultsService],

@@ -6,6 +6,9 @@ import { GroupStudent } from "../group-students/entities/group-student.entity.js
 import { Group } from "../groups/entities/group.entity.js";
 import { CreateExamDto } from "./dto/create-exam.dto.js";
 import { UpdateExamDto } from "./dto/update-exam.dto.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
+import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
+import { User } from "../users/entities/user.entity.js";
 
 @Injectable()
 export class ExamService {
@@ -15,11 +18,65 @@ export class ExamService {
     @InjectModel(GroupStudent)
     private groupStudentModel: typeof GroupStudent,
     @InjectModel(Group)
-    private groupModel: typeof Group
+    private groupModel: typeof Group,
+    private notificationsService: NotificationsService
   ) {}
 
   async create(createExamDto: CreateExamDto): Promise<Exam> {
-    return this.examModel.create({ ...createExamDto });
+    const exam = await this.examModel.create({ ...createExamDto });
+
+    // Send notifications to students in the group
+    try {
+      // Get all students in the group
+      const groupStudents = await this.groupStudentModel.findAll({
+        where: {
+          group_id: createExamDto.group_id,
+          status: "active",
+        },
+        include: [
+          {
+            model: User,
+            as: "student",
+            attributes: ["user_id", "first_name", "last_name"],
+          },
+        ],
+      });
+
+      if (groupStudents.length > 0) {
+        const studentIds = groupStudents.map((gs) => gs.student_id);
+
+        // Get notification tokens for these students
+        const notificationTokens = await NotificationToken.findAll({
+          where: {
+            user_id: studentIds,
+          },
+        });
+
+        if (notificationTokens.length > 0) {
+          const tokens = notificationTokens.map((nt) => nt.token);
+          const scheduledDate = new Date(
+            exam.scheduled_at
+          ).toLocaleDateString();
+
+          // Send push notifications
+          await this.notificationsService.notifyMultipleUsers(
+            tokens,
+            "New Exam Scheduled",
+            `A new exam "${exam.title}" has been scheduled for ${scheduledDate}`,
+            {
+              exam_id: exam.id,
+              group_id: exam.group_id,
+              type: "exam_created",
+            }
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error sending exam notifications:", error);
+      // Continue even if notification fails
+    }
+
+    return exam;
   }
 
   async findAll(): Promise<Exam[]> {

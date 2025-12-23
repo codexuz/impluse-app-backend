@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { ExamResult } from './entities/exam_result.entity.js';
-import { CreateExamResultDto } from './dto/create-exam-result.dto.js';
-import { UpdateExamResultDto } from './dto/update-exam-result.dto.js';
-import { Exam } from './entities/exam.entity.js';
-import { User } from '../users/entities/user.entity.js';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectModel } from "@nestjs/sequelize";
+import { ExamResult } from "./entities/exam_result.entity.js";
+import { CreateExamResultDto } from "./dto/create-exam-result.dto.js";
+import { UpdateExamResultDto } from "./dto/update-exam-result.dto.js";
+import { Exam } from "./entities/exam.entity.js";
+import { User } from "../users/entities/user.entity.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
+import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 
 @Injectable()
 export class ExamResultsService {
@@ -13,34 +15,87 @@ export class ExamResultsService {
     private examResultModel: typeof ExamResult,
     @InjectModel(Exam)
     private examModel: typeof Exam,
+    private notificationsService: NotificationsService
   ) {}
 
   async create(createExamResultDto: CreateExamResultDto): Promise<ExamResult> {
     // Check if the exam exists
     const exam = await this.examModel.findByPk(createExamResultDto.exam_id);
     if (!exam) {
-      throw new NotFoundException(`Exam with ID ${createExamResultDto.exam_id} not found`);
+      throw new NotFoundException(
+        `Exam with ID ${createExamResultDto.exam_id} not found`
+      );
     }
 
     // Calculate percentage if not provided
-    if (!createExamResultDto.percentage && createExamResultDto.score !== undefined && createExamResultDto.max_score) {
-      createExamResultDto.percentage = (createExamResultDto.score / createExamResultDto.max_score) * 100;
+    if (
+      !createExamResultDto.percentage &&
+      createExamResultDto.score !== undefined &&
+      createExamResultDto.max_score
+    ) {
+      createExamResultDto.percentage =
+        (createExamResultDto.score / createExamResultDto.max_score) * 100;
     }
 
     // Determine pass/fail result if not provided
-    if (!createExamResultDto.result && createExamResultDto.percentage !== undefined) {
-      createExamResultDto.result = createExamResultDto.percentage >= 60 ? 'passed' : 'failed';
+    if (
+      !createExamResultDto.result &&
+      createExamResultDto.percentage !== undefined
+    ) {
+      createExamResultDto.result =
+        createExamResultDto.percentage >= 60 ? "passed" : "failed";
     }
 
-    return this.examResultModel.create(createExamResultDto);
+    const examResult = await this.examResultModel.create(createExamResultDto);
+
+    // Send notification to the student
+    try {
+      const notificationToken = await NotificationToken.findOne({
+        where: {
+          user_id: createExamResultDto.student_id,
+        },
+      });
+
+      if (notificationToken) {
+        const resultStatus =
+          examResult.result === "passed" ? "✅ Passed" : "❌ Failed";
+        const score =
+          examResult.score !== undefined && examResult.max_score
+            ? `${examResult.score}/${examResult.max_score}`
+            : examResult.percentage
+              ? `${examResult.percentage.toFixed(1)}%`
+              : "";
+
+        await this.notificationsService.notifyUser(
+          notificationToken.token,
+          "Exam Result Available",
+          `Your result for "${exam.title}" is ready. ${resultStatus}${score ? " - Score: " + score : ""}`,
+          {
+            exam_id: exam.id,
+            exam_result_id: examResult.id,
+            result: examResult.result,
+            type: "exam_result_created",
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Error sending exam result notification:", error);
+      // Continue even if notification fails
+    }
+
+    return examResult;
   }
 
   async findAll(): Promise<ExamResult[]> {
     return this.examResultModel.findAll({
       include: [
         { model: Exam, as: "exam" },
-        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
-      ]
+        {
+          model: User,
+          as: "student",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+      ],
     });
   }
 
@@ -49,8 +104,12 @@ export class ExamResultsService {
       where: { id },
       include: [
         { model: Exam, as: "exam" },
-        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
-      ]
+        {
+          model: User,
+          as: "student",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+      ],
     });
 
     if (!result) {
@@ -65,8 +124,12 @@ export class ExamResultsService {
       where: { exam_id: examId },
       include: [
         { model: Exam, as: "exam" },
-        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
-      ]
+        {
+          model: User,
+          as: "student",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+      ],
     });
   }
 
@@ -75,36 +138,55 @@ export class ExamResultsService {
       where: { student_id: studentId },
       include: [
         { model: Exam, as: "exam" },
-        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
-      ]
+        {
+          model: User,
+          as: "student",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+      ],
     });
   }
 
-  async findByExamAndStudent(examId: string, studentId: string): Promise<ExamResult> {
+  async findByExamAndStudent(
+    examId: string,
+    studentId: string
+  ): Promise<ExamResult> {
     const result = await this.examResultModel.findOne({
       where: {
         exam_id: examId,
-        student_id: studentId
+        student_id: studentId,
       },
       include: [
         { model: Exam, as: "exam" },
-        { model: User, as: "student", attributes: ["user_id", "first_name", "last_name"] }
-      ]
+        {
+          model: User,
+          as: "student",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+      ],
     });
 
     if (!result) {
-      throw new NotFoundException(`Exam result for exam ${examId} and student ${studentId} not found`);
+      throw new NotFoundException(
+        `Exam result for exam ${examId} and student ${studentId} not found`
+      );
     }
 
     return result;
   }
 
-  async update(id: string, updateExamResultDto: UpdateExamResultDto): Promise<ExamResult> {
+  async update(
+    id: string,
+    updateExamResultDto: UpdateExamResultDto
+  ): Promise<ExamResult> {
     const result = await this.findOne(id);
 
     // Recalculate percentage if score or max_score is updated
-    if ((updateExamResultDto.score !== undefined || updateExamResultDto.max_score !== undefined) && 
-        (result.max_score || updateExamResultDto.max_score)) {
+    if (
+      (updateExamResultDto.score !== undefined ||
+        updateExamResultDto.max_score !== undefined) &&
+      (result.max_score || updateExamResultDto.max_score)
+    ) {
       const score = updateExamResultDto.score ?? result.score;
       const maxScore = updateExamResultDto.max_score ?? result.max_score;
       updateExamResultDto.percentage = (score / maxScore) * 100;
@@ -112,7 +194,8 @@ export class ExamResultsService {
 
     // Update pass/fail status if percentage is updated
     if (updateExamResultDto.percentage !== undefined) {
-      updateExamResultDto.result = updateExamResultDto.percentage >= 60 ? 'passed' : 'failed';
+      updateExamResultDto.result =
+        updateExamResultDto.percentage >= 60 ? "passed" : "failed";
     }
 
     await result.update(updateExamResultDto);
@@ -131,26 +214,37 @@ export class ExamResultsService {
     sectionAverages: { [key: string]: number };
   }> {
     const results = await this.findByExam(examId);
-    
+
     if (results.length === 0) {
       return {
         totalStudents: 0,
         averageScore: 0,
         passRate: 0,
-        sectionAverages: {}
+        sectionAverages: {},
       };
     }
 
     const totalStudents = results.length;
-    const averageScore = results.reduce((sum, result) => sum + result.percentage, 0) / totalStudents;
-    const passedCount = results.filter(result => result.result === 'passed').length;
+    const averageScore =
+      results.reduce((sum, result) => sum + result.percentage, 0) /
+      totalStudents;
+    const passedCount = results.filter(
+      (result) => result.result === "passed"
+    ).length;
     const passRate = (passedCount / totalStudents) * 100;
 
     // Calculate section averages
     const sectionTotals: { [key: string]: { sum: number; count: number } } = {};
-    const sectionTypes = ['reading', 'writing', 'listening', 'speaking', 'grammar', 'vocabulary'];
+    const sectionTypes = [
+      "reading",
+      "writing",
+      "listening",
+      "speaking",
+      "grammar",
+      "vocabulary",
+    ];
 
-    results.forEach(result => {
+    results.forEach((result) => {
       if (result.section_scores) {
         Object.entries(result.section_scores).forEach(([section, score]) => {
           if (!sectionTotals[section]) {
@@ -171,7 +265,7 @@ export class ExamResultsService {
       totalStudents,
       averageScore,
       passRate,
-      sectionAverages
+      sectionAverages,
     };
   }
 }
