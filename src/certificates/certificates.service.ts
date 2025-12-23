@@ -4,7 +4,7 @@ import { CreateCertificateDto } from "./dto/create-certificate.dto.js";
 import { UpdateCertificateDto } from "./dto/update-certificate.dto.js";
 import { Certificate } from "./entities/certificate.entity.js";
 import { User } from "../users/entities/user.entity.js";
-import { createCanvas, loadImage } from "canvas";
+import { createCanvas, loadImage, registerFont } from "canvas";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -30,6 +30,25 @@ export class CertificatesService {
     // Ensure certificates directory exists
     if (!fs.existsSync(this.certificatesDir)) {
       fs.mkdirSync(this.certificatesDir, { recursive: true });
+    }
+
+    // Register Poppins font
+    try {
+      const fontPath = path.join(
+        process.cwd(),
+        "public",
+        "fonts",
+        "Poppins-Bold.ttf"
+      );
+
+      if (fs.existsSync(fontPath)) {
+        registerFont(fontPath, { family: "Poppins" });
+        console.log(`Registered font: ${fontPath}`);
+      } else {
+        console.error(`Font file not found at: ${fontPath}`);
+      }
+    } catch (error) {
+      console.error("Font registration error:", error);
     }
   }
 
@@ -81,18 +100,18 @@ export class CertificatesService {
       ctx.drawImage(template, 0, 0);
 
       // Configure text styling for student name
-      ctx.fillStyle = "#000000";
-      ctx.textAlign = "center";
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "left";
 
-      // Draw student full name (centered on the line)
+      // Draw student full name at specific coordinates
       const fullName = `${firstName} ${lastName}`;
-      ctx.font = "bold 60px Arial";
-      ctx.fillText(fullName, canvas.width / 2, canvas.height / 2 - 50);
+      ctx.font = "bold 17px 'Poppins'";
+      ctx.fillText(fullName, 237, 216);
 
-      // Draw certificate ID (bottom right)
-      ctx.font = "20px Arial";
-      ctx.textAlign = "right";
-      ctx.fillText(`${certificatedId}`, canvas.width - 50, canvas.height - 50);
+      // Draw certificate ID at specific coordinates
+      ctx.font = "16px 'Poppins'";
+      ctx.textAlign = "left";
+      ctx.fillText(`${certificatedId}`, 180, 371);
 
       // Save the image
       const fileName = `certificate-${certificatedId}.png`;
