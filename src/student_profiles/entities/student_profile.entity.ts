@@ -48,6 +48,9 @@ export class StudentProfile extends Model {
   })
   strikes!: number
 
+   @Column({ type: DataType.INTEGER, defaultValue: 1 })
+  level!: number
+
   @Column(DataType.DATEONLY)
   last_active_date?: string
 

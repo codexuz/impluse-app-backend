@@ -80,7 +80,7 @@ import { TeacherProfileModule } from "./teacher-profile/teacher-profile.module.j
 import { SmsModule } from "./sms/sms.module.js";
 import { ArticlesModule } from './articles/articles.module.js';
 import { CertificatesModule } from './certificates/certificates.module.js';
-import { DailyTaskModule } from './daily-task/daily-task.module.js';
+import { FeedVideosModule } from './feed-videos/feed-videos.module.js';
 
 @Module({
   imports: [
@@ -92,7 +92,7 @@ import { DailyTaskModule } from './daily-task/daily-task.module.js';
     SequelizeModule.forRoot({
       dialect: "mysql",
       uri: process.env.DATABASE_URL,
-      sync: { alter: false },
+      sync: { alter: true },
       models: [...Models],
       autoLoadModels: true,
       logging: true,
@@ -162,7 +162,7 @@ import { DailyTaskModule } from './daily-task/daily-task.module.js';
     SmsModule,
     ArticlesModule,
     CertificatesModule,
-    DailyTaskModule,
+    FeedVideosModule,
   ],
   controllers: [AppController],
   providers: [
