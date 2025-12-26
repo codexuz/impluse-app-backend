@@ -41,13 +41,6 @@ export class StudentProfile extends Model {
   })
   streaks!: number;
 
-   // Moderation
-  @Column({
-    type: DataType.INTEGER,
-    defaultValue: 0,
-  })
-  strikes!: number
-
    @Column({ type: DataType.INTEGER, defaultValue: 1 })
   level!: number
 
