@@ -80,6 +80,7 @@ import { TeacherProfileModule } from "./teacher-profile/teacher-profile.module.j
 import { SmsModule } from "./sms/sms.module.js";
 import { ArticlesModule } from './articles/articles.module.js';
 import { CertificatesModule } from './certificates/certificates.module.js';
+import { ContestFeedModule } from './contest-feed/contest-feed.module.js';
 
 @Module({
   imports: [
@@ -161,6 +162,7 @@ import { CertificatesModule } from './certificates/certificates.module.js';
     SmsModule,
     ArticlesModule,
     CertificatesModule,
+    ContestFeedModule,
   ],
   controllers: [AppController],
   providers: [
