@@ -41,6 +41,16 @@ export class StudentProfile extends Model {
   })
   streaks!: number;
 
+   // Moderation
+  @Column({
+    type: DataType.INTEGER,
+    defaultValue: 0,
+  })
+  strikes!: number
+
+  @Column(DataType.DATEONLY)
+  last_active_date?: string
+
   @CreatedAt
   createdAt!: Date;
 
