@@ -5,10 +5,10 @@ import {
   DataType,
   AllowNull,
   ForeignKey,
-  BelongsTo,
   Default,
 } from "sequelize-typescript";
 import { FeedVideo } from "./feed-video.js";
+import { User } from "../../users/entities/user.entity.js";
 
 @Table({
   tableName: "video_judges",
@@ -23,7 +23,7 @@ export class VideoJudge extends Model<VideoJudge> {
   videoId: number;
 
   @AllowNull(false)
-  @ForeignKey(() => require("../../users/entities/user.entity").default)
+  @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
   })
@@ -53,7 +53,4 @@ export class VideoJudge extends Model<VideoJudge> {
     type: DataType.INTEGER,
   })
   helpfulCount: number; // Other students can mark judge as helpful
-
-  @BelongsTo(() => FeedVideo)
-  video: FeedVideo;
 }

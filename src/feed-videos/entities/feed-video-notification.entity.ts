@@ -5,10 +5,10 @@ import {
   DataType,
   AllowNull,
   ForeignKey,
-  BelongsTo,
   Default,
 } from "sequelize-typescript";
 import { FeedVideo } from "../../feed-videos/entities/feed-video.js";
+import { User } from "../../users/entities/user.entity.js";
 
 @Table({
   tableName: "feed_video_notifications",
@@ -16,14 +16,14 @@ import { FeedVideo } from "../../feed-videos/entities/feed-video.js";
 })
 export class FeedVideoNotification extends Model<FeedVideoNotification> {
   @AllowNull(false)
-  @ForeignKey(() => require("../../users/entities/user.entity").default)
+  @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
   })
   userId: string; // Recipient
 
   @AllowNull(true)
-  @ForeignKey(() => require("../../users/entities/user.entity").default)
+  @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
   })
@@ -54,7 +54,4 @@ export class FeedVideoNotification extends Model<FeedVideoNotification> {
     type: DataType.BOOLEAN,
   })
   isRead: boolean;
-
-  @BelongsTo(() => FeedVideo)
-  video: FeedVideo;
 }

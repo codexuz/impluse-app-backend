@@ -71,6 +71,11 @@ import { CdRegister } from "../cd-ielts/entities/cd-register.entity.js";
 import { Form } from "../forms/entities/form.entity.js";
 import { Response as FormResponse } from "../forms/entities/response.entity.js";
 import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
+import { FeedVideo } from "../feed-videos/entities/feed-video.js";
+import { VideoComment } from "../feed-videos/entities/comments.js";
+import { VideoLike } from "../feed-videos/entities/likes.js";
+import { VideoJudge } from "../feed-videos/entities/judge.js";
+import { FeedVideoTask } from "../feed-videos/entities/feed-video-task.entity.js";
 // Export the models array for Sequelize registration
 import { Expense } from "../expenses/entities/expense.entity.js";
 import { ExpensesCategory } from "../expenses/entities/expenses-category.entity.js";
@@ -151,6 +156,11 @@ export const Models = [
   TeacherWallet,
   StudentTransaction,
   TeacherTransaction,
+  FeedVideo,
+  VideoComment,
+  VideoLike,
+  VideoJudge,
+  FeedVideoTask,
 ];
 
 // Define associations after all models are loaded
@@ -981,5 +991,81 @@ export function initializeAssociations() {
   PaymentAction.belongsTo(User, {
     foreignKey: "manager_id",
     as: "manager",
+  });
+
+  // FeedVideo associations
+  User.hasMany(FeedVideo, {
+    foreignKey: "studentId",
+    as: "feed_videos",
+  });
+  FeedVideo.belongsTo(User, {
+    foreignKey: "studentId",
+    as: "student",
+  });
+
+  FeedVideoTask.hasMany(FeedVideo, {
+    foreignKey: "taskId",
+    as: "videos",
+  });
+  FeedVideo.belongsTo(FeedVideoTask, {
+    foreignKey: "taskId",
+    as: "task",
+  });
+
+  // VideoComment associations
+  FeedVideo.hasMany(VideoComment, {
+    foreignKey: "videoId",
+    as: "comments",
+  });
+  VideoComment.belongsTo(FeedVideo, {
+    foreignKey: "videoId",
+    as: "video",
+  });
+
+  User.hasMany(VideoComment, {
+    foreignKey: "userId",
+    as: "video_comments",
+  });
+  VideoComment.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  // VideoLike associations
+  FeedVideo.hasMany(VideoLike, {
+    foreignKey: "videoId",
+    as: "likes",
+  });
+  VideoLike.belongsTo(FeedVideo, {
+    foreignKey: "videoId",
+    as: "video",
+  });
+
+  User.hasMany(VideoLike, {
+    foreignKey: "userId",
+    as: "video_likes",
+  });
+  VideoLike.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  // VideoJudge associations
+  FeedVideo.hasMany(VideoJudge, {
+    foreignKey: "videoId",
+    as: "judges",
+  });
+  VideoJudge.belongsTo(FeedVideo, {
+    foreignKey: "videoId",
+    as: "video",
+  });
+
+  User.hasMany(VideoJudge, {
+    foreignKey: "judgeUserId",
+    as: "video_judgments",
+  });
+  VideoJudge.belongsTo(User, {
+    foreignKey: "judgeUserId",
+    as: "judge",
   });
 }

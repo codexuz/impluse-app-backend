@@ -6,9 +6,8 @@ import {
   AllowNull,
   Default,
   ForeignKey,
-  BelongsTo,
-  HasMany,
 } from "sequelize-typescript";
+import { User } from "../../users/entities/user.entity.js";
 
 @Table({
   tableName: "feed_video_tasks",
@@ -28,7 +27,7 @@ export class FeedVideoTask extends Model<FeedVideoTask> {
   instructions: string;
 
   @AllowNull(false)
-  @ForeignKey(() => require("../../users/entities/user.entity").default)
+  @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
   })

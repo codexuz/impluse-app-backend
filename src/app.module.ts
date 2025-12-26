@@ -92,7 +92,7 @@ import { FeedVideosModule } from './feed-videos/feed-videos.module.js';
     SequelizeModule.forRoot({
       dialect: "mysql",
       uri: process.env.DATABASE_URL,
-      sync: { alter: true },
+      sync: { alter: false },
       models: [...Models],
       autoLoadModels: true,
       logging: true,

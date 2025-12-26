@@ -5,10 +5,10 @@ import {
   DataType,
   AllowNull,
   ForeignKey,
-  BelongsTo,
   Unique,
 } from "sequelize-typescript";
 import { FeedVideo } from "./feed-video.js";
+import { User } from "../../users/entities/user.entity.js";
 
 @Table({
   tableName: "video_likes",
@@ -23,12 +23,9 @@ export class VideoLike extends Model<VideoLike> {
   videoId: number;
 
   @AllowNull(false)
-  @ForeignKey(() => require("../../users/entities/user.entity").default)
+  @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
   })
   userId: string;
-
-  @BelongsTo(() => FeedVideo)
-  video: FeedVideo;
 }

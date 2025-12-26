@@ -6,13 +6,9 @@ import {
   AllowNull,
   Default,
   ForeignKey,
-  BelongsTo,
-  HasMany,
 } from "sequelize-typescript";
 import { FeedVideoTask } from "./feed-video-task.entity.js";
-import { VideoLike } from "./likes.js";
-import { VideoComment } from "./comments.js";
-import { VideoJudge } from "./judge.js";
+import { User } from "../../users/entities/user.entity.js";
 
 @Table({
   tableName: "feed_videos",
@@ -20,7 +16,7 @@ import { VideoJudge } from "./judge.js";
 })
 export class FeedVideo extends Model<FeedVideo> {
   @AllowNull(false)
-  @ForeignKey(() => require("../../users/entities/user.entity").default)
+  @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
   })
@@ -112,16 +108,4 @@ export class FeedVideo extends Model<FeedVideo> {
     type: DataType.ENUM("draft", "published", "archived"),
   })
   status: "draft" | "published" | "archived";
-
-  @BelongsTo(() => FeedVideoTask)
-  task: FeedVideoTask;
-
-  @HasMany(() => VideoLike)
-  likes: VideoLike[];
-
-  @HasMany(() => VideoComment)
-  comments: VideoComment[];
-
-  @HasMany(() => VideoJudge)
-  judges: VideoJudge[];
 }

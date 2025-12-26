@@ -5,9 +5,9 @@ import {
   DataType,
   AllowNull,
   ForeignKey,
-  BelongsTo,
 } from "sequelize-typescript";
 import { FeedVideo } from "./feed-video.js";
+import { User } from "../../users/entities/user.entity.js";
 
 @Table({
   tableName: "video_comments",
@@ -22,7 +22,7 @@ export class VideoComment extends Model<VideoComment> {
   videoId: number;
 
   @AllowNull(false)
-  @ForeignKey(() => require("../../users/entities/user.entity").default)
+  @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
   })
@@ -33,7 +33,4 @@ export class VideoComment extends Model<VideoComment> {
     type: DataType.TEXT,
   })
   comment: string;
-
-  @BelongsTo(() => FeedVideo)
-  video: FeedVideo;
 }
