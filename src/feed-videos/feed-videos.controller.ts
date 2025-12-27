@@ -120,7 +120,27 @@ export class FeedVideosController {
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     description: "Video upload with file and metadata",
-    type: CreateFeedVideoDto,
+    schema: {
+      type: "object",
+      properties: {
+        file: {
+          type: "string",
+          format: "binary",
+          description: "Video file",
+        },
+        caption: {
+          type: "string",
+          description: "Video caption",
+          example: "My speaking practice video",
+        },
+        taskId: {
+          type: "number",
+          description: "Task ID (optional)",
+          example: 1,
+        },
+      },
+      required: ["file", "caption"],
+    },
   })
   @ApiResponse({
     status: 201,
