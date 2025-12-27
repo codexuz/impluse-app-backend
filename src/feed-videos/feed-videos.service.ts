@@ -118,6 +118,9 @@ export class FeedVideosService {
     // Update streak
     await this.updateStreak(studentId);
 
+    // Send notification to all other users about new video
+    await this.notifyNewVideoUpload(studentId, video.id);
+
     return video;
   }
 
@@ -459,6 +462,67 @@ export class FeedVideosService {
   }
 
   // ========== NOTIFICATIONS ==========
+  private async notifyNewVideoUpload(uploaderId: string, videoId: number) {
+    try {
+      // Get all users except the uploader
+      const allUsers = await this.userModel.findAll({
+        where: {
+          id: { [Op.ne]: uploaderId },
+        },
+        attributes: ["id"],
+      });
+
+      // Get uploader's name
+      const uploader = await this.userModel.findByPk(uploaderId, {
+        attributes: ["first_name", "last_name"],
+      });
+
+      const uploaderName = uploader
+        ? `${uploader.first_name} ${uploader.last_name}`
+        : "Someone";
+
+      const message = `${uploaderName} uploaded a new Speaking Challenge video! Watch it now 🔥!`;
+
+      // Send notification to all users
+      for (const user of allUsers) {
+        // Create notification record
+        await this.notificationModel.create({
+          userId: user.id,
+          fromUserId: uploaderId,
+          videoId: videoId,
+          type: NotificationType.VIDEO_UPLOAD, // Reusing type, or you can create a new type
+          message: message,
+        });
+      }
+
+      // Get all FCM tokens except uploader's
+      const tokens = await this.notificationTokenModel.findAll({
+        where: {
+          user_id: { [Op.ne]: uploaderId },
+        },
+      });
+
+      if (tokens.length > 0) {
+        const fcmTokens = tokens.map((t) => t.token);
+
+        // Send push notification
+        await this.firebaseService.sendMulticastNotification(
+          fcmTokens,
+          "🎥 New Speaking Challenge!",
+          message,
+          {
+            type: "NEW_VIDEO",
+            videoId: videoId.toString(),
+            fromUserId: uploaderId,
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Error sending new video notification:", error);
+      // Don't throw - notifications shouldn't break the main flow
+    }
+  }
+
   private async sendNotification(params: {
     userId: string;
     fromUserId?: string;
