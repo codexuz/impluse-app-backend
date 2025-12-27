@@ -32,7 +32,6 @@ import {
   CreateJudgeDto,
 } from "./dto/create-feed-video.dto.js";
 import { UpdateFeedVideoDto } from "./dto/update-feed-video.dto.js";
-import { UploadVideoMinioDto } from "./dto/upload-video-minio.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -119,7 +118,7 @@ export class FeedVideosController {
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     description: "Video upload with file and metadata",
-    type: UploadVideoMinioDto,
+    type: CreateFeedVideoDto,
   })
   @ApiResponse({
     status: 201,
