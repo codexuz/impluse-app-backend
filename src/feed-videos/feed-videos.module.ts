@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { SequelizeModule } from "@nestjs/sequelize";
 import { FeedVideosService } from "./feed-videos.service.js";
 import { FeedVideosController } from "./feed-videos.controller.js";
+import { MinioService } from "./minio.service.js";
 import { FeedVideo } from "./entities/feed-video.js";
 import { FeedVideoTask } from "./entities/feed-video-task.entity.js";
 import { VideoLike } from "./entities/likes.js";
@@ -28,7 +29,7 @@ import { User } from "../users/entities/user.entity.js";
     StudentProfileModule,
   ],
   controllers: [FeedVideosController],
-  providers: [FeedVideosService, FirebaseServiceService],
-  exports: [FeedVideosService],
+  providers: [FeedVideosService, MinioService, FirebaseServiceService],
+  exports: [FeedVideosService, MinioService],
 })
 export class FeedVideosModule {}

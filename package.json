@@ -53,6 +53,7 @@
     "i": "^0.3.7",
     "markdown-to-text": "^0.1.1",
     "markdown-to-txt": "^2.0.1",
+    "minio": "^8.0.6",
     "multer": "^2.0.2",
     "mysql2": "^3.14.1",
     "npm": "^11.4.2",

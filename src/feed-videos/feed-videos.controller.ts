@@ -9,7 +9,11 @@ import {
   Query,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
   ApiTags,
   ApiBearerAuth,
@@ -17,6 +21,8 @@ import {
   ApiResponse,
   ApiQuery,
   ApiParam,
+  ApiConsumes,
+  ApiBody,
 } from "@nestjs/swagger";
 import { FeedVideosService } from "./feed-videos.service.js";
 import {
@@ -26,6 +32,7 @@ import {
   CreateJudgeDto,
 } from "./dto/create-feed-video.dto.js";
 import { UpdateFeedVideoDto } from "./dto/update-feed-video.dto.js";
+import { UploadVideoMinioDto } from "./dto/upload-video-minio.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -108,18 +115,47 @@ export class FeedVideosController {
   // ========== VIDEO MANAGEMENT (Student) ==========
   @Post("upload")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Upload a video response to a task" })
+  @ApiOperation({ summary: "Upload a video file" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    description: "Video upload with file and metadata",
+    type: UploadVideoMinioDto,
+  })
   @ApiResponse({
     status: 201,
     description: "Video uploaded successfully. Rewards: +15 coins, +25 points",
   })
+  @ApiResponse({
+    status: 400,
+    description: "Bad request - invalid file or data",
+  })
   @ApiResponse({ status: 401, description: "Unauthorized" })
-  uploadVideo(
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadVideo(
+    @UploadedFile() file: Express.Multer.File,
     @Body() createVideoDto: CreateFeedVideoDto,
     @CurrentUser() user: any
   ) {
+    if (!file) {
+      throw new BadRequestException("Video file is required");
+    }
+
+    // Validate file type (video only)
+    const allowedMimeTypes = [
+      "video/mp4",
+      "video/mpeg",
+      "video/quicktime",
+      "video/x-msvideo",
+      "video/webm",
+    ];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        "Invalid file type. Only video files are allowed."
+      );
+    }
+
     const studentId = user.userId;
-    return this.feedVideosService.uploadVideo(createVideoDto, studentId);
+    return this.feedVideosService.uploadVideo(file, createVideoDto, studentId);
   }
 
   @Get("trending")

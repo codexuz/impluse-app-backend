@@ -23,6 +23,7 @@ import { StudentProfileService } from "../student_profiles/student-profile.servi
 import { FirebaseServiceService } from "../notifications/firebase-service.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { MinioService } from "./minio.service.js";
 
 @Injectable()
 export class FeedVideosService {
@@ -44,7 +45,8 @@ export class FeedVideosService {
     @InjectModel(User)
     private userModel: typeof User,
     private studentProfileService: StudentProfileService,
-    private firebaseService: FirebaseServiceService
+    private firebaseService: FirebaseServiceService,
+    private minioService: MinioService
   ) {}
 
   // ========== TASK MANAGEMENT (Admin) ==========
@@ -84,9 +86,19 @@ export class FeedVideosService {
   }
 
   // ========== VIDEO MANAGEMENT (Student) ==========
-  async uploadVideo(createVideoDto: CreateFeedVideoDto, studentId: string) {
+  async uploadVideo(
+    file: Express.Multer.File,
+    createVideoDto: CreateFeedVideoDto,
+    studentId: string
+  ) {
+    // Upload to MinIO
+    const { url, fileName, size } = await this.minioService.uploadVideo(file);
+
+    // Create video record in database with MinIO URL
     const video = await this.feedVideoModel.create({
       ...createVideoDto,
+      videoUrl: url,
+      thumbnailUrl: url, // You can generate thumbnail separately if needed
       studentId,
       status: "published",
     });
@@ -137,6 +149,19 @@ export class FeedVideosService {
     if (video.studentId !== studentId) {
       throw new BadRequestException("You can only delete your own videos");
     }
+
+    // Delete from MinIO if video URL exists
+    if (video.videoUrl) {
+      try {
+        const urlParts = video.videoUrl.split("/");
+        const fileName = urlParts[urlParts.length - 1].split("?")[0]; // Remove query params if presigned
+        await this.minioService.deleteVideo(fileName);
+      } catch (error) {
+        console.error("Error deleting from MinIO:", error);
+        // Continue with database deletion even if MinIO deletion fails
+      }
+    }
+
     await video.destroy();
     return { message: "Video deleted successfully" };
   }
