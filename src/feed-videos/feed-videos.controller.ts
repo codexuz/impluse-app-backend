@@ -129,7 +129,11 @@ export class FeedVideosController {
     description: "Bad request - invalid file or data",
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(
+    FileInterceptor("file", {
+      dest: "./uploads/videos",
+    })
+  )
   async uploadVideo(
     @UploadedFile() file: Express.Multer.File,
     @Body("caption") caption: string,

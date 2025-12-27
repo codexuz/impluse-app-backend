@@ -11,33 +11,45 @@ const __dirname = dirname(__filename);
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
- 
+
   app.useStaticAssets(join(__dirname, "..", "uploads"), {
-  prefix: "/uploads/",
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith(".mp3")) {
-      res.setHeader("Content-Type", "audio/mpeg");
-    } else if (filePath.endsWith(".wav")) {
-      res.setHeader("Content-Type", "audio/wav");
-    } else if (filePath.endsWith(".ogg")) {
-      res.setHeader("Content-Type", "audio/ogg");
-    } else if (filePath.endsWith(".m4a")) {
-      res.setHeader("Content-Type", "audio/mp4");
-    }
+    prefix: "/uploads/", // so /uploads/filename.jpg works
+    setHeaders: (res, path) => {
+      // Add CORS headers for all static files
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept, Range"
+      );
+      res.setHeader(
+        "Access-Control-Expose-Headers",
+        "Content-Length, Content-Range"
+      );
 
-    if (
-      filePath.endsWith(".mp3") ||
-      filePath.endsWith(".wav") ||
-      filePath.endsWith(".ogg") ||
-      filePath.endsWith(".m4a")
-    ) {
-      res.setHeader("Accept-Ranges", "bytes"); // 🔥 REQUIRED
-      res.setHeader("Cache-Control", "public, max-age=31536000");
-      res.removeHeader("Content-Encoding"); // 🔥 critical
-    }
-  },
-});
+      // Set content type for audio files
+      if (path.endsWith(".mp3")) {
+        res.setHeader("Content-Type", "audio/mpeg");
+      } else if (path.endsWith(".wav")) {
+        res.setHeader("Content-Type", "audio/wav");
+      } else if (path.endsWith(".ogg")) {
+        res.setHeader("Content-Type", "audio/ogg");
+      } else if (path.endsWith(".m4a")) {
+        res.setHeader("Content-Type", "audio/mp4");
+      } else if (path.endsWith(".webm")) {
+        res.setHeader("Content-Type", "audio/webm");
+      }
 
+      // Set proper cache control and range support for media files
+      if (
+        path.match(/\.(mp3|wav|ogg|m4a|webm|mp4|mpeg|quicktime|x-msvideo)$/i)
+      ) {
+        res.setHeader("Accept-Ranges", "bytes");
+        res.setHeader("Cache-Control", "public, max-age=31536000");
+        res.removeHeader("Content-Encoding");
+      }
+    },
+  });
 
   app.useBodyParser("json", { limit: "50mb" });
   app.useBodyParser("urlencoded", { limit: "50mb", extended: true });
@@ -57,7 +69,7 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: "*", // Adjust this to your needs
+    origin: "*", // Enable CORS for frontend integration
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   });
