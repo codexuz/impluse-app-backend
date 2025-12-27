@@ -161,7 +161,20 @@ export class FeedVideosService {
 
     const videos = await this.feedVideoModel.findAll({
       where: { status: "published" },
-      include: [{ model: FeedVideoTask, as: "task" }],
+      include: [
+        { model: FeedVideoTask, as: "task" },
+        {
+          model: User,
+          as: "student",
+          attributes: [
+            "id",
+            "first_name",
+            "last_name",
+            "username",
+            "avatar_url",
+          ],
+        },
+      ],
       order: [
         ["trendingScore", "DESC"],
         ["createdAt", "DESC"],
