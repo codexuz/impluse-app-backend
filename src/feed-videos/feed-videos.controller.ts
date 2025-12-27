@@ -132,11 +132,16 @@ export class FeedVideosController {
   @UseInterceptors(FileInterceptor("file"))
   async uploadVideo(
     @UploadedFile() file: Express.Multer.File,
-    @Body() createVideoDto: CreateFeedVideoDto,
+    @Body("caption") caption: string,
+    @Body("taskId") taskId: string,
     @CurrentUser() user: any
   ) {
     if (!file) {
       throw new BadRequestException("Video file is required");
+    }
+
+    if (!caption) {
+      throw new BadRequestException("Video caption is required");
     }
 
     // Validate file type (video only)
@@ -154,6 +159,10 @@ export class FeedVideosController {
     }
 
     const studentId = user.userId;
+    const createVideoDto: CreateFeedVideoDto = {
+      caption,
+      taskId: taskId ? +taskId : undefined,
+    };
     return this.feedVideosService.uploadVideo(file, createVideoDto, studentId);
   }
 

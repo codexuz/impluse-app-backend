@@ -10,13 +10,13 @@ export class CreateVideoDto {
   @IsInt()
   taskId?: number;
 
-  @ApiProperty({
-    description: "Video URL",
+  @ApiPropertyOptional({
+    description: "Video URL (auto-generated when uploading file)",
     example: "https://storage.example.com/videos/video123.mp4",
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  videoUrl: string;
+  videoUrl?: string;
 
   @ApiPropertyOptional({
     description: "Video thumbnail URL",
