@@ -91,7 +91,7 @@ export class FeedVideosService {
   ) {
     // Generate file path for the uploaded video
     const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, "-")}`;
-    const videoUrl = `/uploads/videos/${fileName}`;
+    const videoUrl = `https://backend.impulselc.uz/uploads/videos/${fileName}`;
 
     // Create video record in database with local file path
     const video = await this.feedVideoModel.create({
