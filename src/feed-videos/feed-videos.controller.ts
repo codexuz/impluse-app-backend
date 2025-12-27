@@ -14,6 +14,8 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { diskStorage } from "multer";
+import { extname } from "path";
 import {
   ApiTags,
   ApiBearerAuth,
@@ -131,7 +133,16 @@ export class FeedVideosController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @UseInterceptors(
     FileInterceptor("file", {
-      dest: "./uploads/videos",
+      storage: diskStorage({
+        destination: "./uploads/videos",
+        filename: (req, file, cb) => {
+          const uniqueName = `${Date.now()}-${file.originalname.replace(/\s+/g, "-")}`;
+          cb(null, uniqueName);
+        },
+      }),
+      limits: {
+        fileSize: 100 * 1024 * 1024, // 100MB limit
+      },
     })
   )
   async uploadVideo(

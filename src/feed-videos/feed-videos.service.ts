@@ -89,11 +89,10 @@ export class FeedVideosService {
     createVideoDto: CreateFeedVideoDto,
     studentId: string
   ) {
-    // Generate file path for the uploaded video
-    const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, "-")}`;
-    const videoUrl = `https://backend.impulselc.uz/uploads/videos/${fileName}`;
+    // Use the filename that was saved by Multer
+    const videoUrl = `https://backend.impulselc.uz/uploads/videos/${file.filename}`;
 
-    // Create video record in database with local file path
+    // Create video record in database with the file URL
     const video = await this.feedVideoModel.create({
       ...createVideoDto,
       videoUrl,
