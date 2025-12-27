@@ -167,7 +167,7 @@ export class FeedVideosService {
           model: User,
           as: "student",
           attributes: [
-            "id",
+            "user_id",
             "first_name",
             "last_name",
             "username",
