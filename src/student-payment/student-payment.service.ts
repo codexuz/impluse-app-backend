@@ -262,87 +262,93 @@ export class StudentPaymentService {
     });
   }
 
-async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  const futureDate = new Date();
-  futureDate.setDate(today.getDate() + days);
+    const futureDate = new Date();
+    futureDate.setDate(today.getDate() + days);
 
-  try {
-    // Get all students who have payments and are active
-    const allPayments = await this.studentPaymentModel.findAll({
-      include: [
-        {
-          model: User,
-          as: "student",
-          attributes: { exclude: ["password_hash"] },
-          where: { is_active: true },
-        },
-        {
-          model: User,
-          as: "manager",
-          attributes: { exclude: ["password_hash"] },
-        },
-      ],
-      order: [["next_payment_date", "DESC"]],
-    });
+    try {
+      // Get all students who have payments and are active
+      const allPayments = await this.studentPaymentModel.findAll({
+        include: [
+          {
+            model: User,
+            as: "student",
+            attributes: { exclude: ["password_hash"] },
+            where: { is_active: true },
+          },
+          {
+            model: User,
+            as: "manager",
+            attributes: { exclude: ["password_hash"] },
+          },
+        ],
+        order: [["next_payment_date", "DESC"]],
+      });
 
-    // Group payments by student_id - track both latest completed and any pending
-    const studentPaymentsMap = new Map();
+      // Group payments by student_id - track both latest completed and any pending
+      const studentPaymentsMap = new Map();
 
-    for (const payment of allPayments) {
-      if (!studentPaymentsMap.has(payment.student_id)) {
-        studentPaymentsMap.set(payment.student_id, {
-          latestCompleted: null,
-          pending: [],
-        });
-      }
+      for (const payment of allPayments) {
+        if (!studentPaymentsMap.has(payment.student_id)) {
+          studentPaymentsMap.set(payment.student_id, {
+            latestCompleted: null,
+            pending: [],
+          });
+        }
 
-      const studentPayments = studentPaymentsMap.get(payment.student_id);
+        const studentPayments = studentPaymentsMap.get(payment.student_id);
 
-      if (payment.status === PaymentStatus.PENDING) {
-        studentPayments.pending.push(payment);
-      } else if (
-        payment.status === PaymentStatus.COMPLETED &&
-        !studentPayments.latestCompleted
-      ) {
-        studentPayments.latestCompleted = payment;
-      }
-    }
-
-    // Find students with upcoming payments (either pending or upcoming completed)
-    const upcomingPayments = [];
-
-    for (const [studentId, { latestCompleted, pending }] of studentPaymentsMap) {
-      // Check pending payments first
-      for (const pendingPayment of pending) {
-        const nextPaymentDate = new Date(pendingPayment.next_payment_date);
-        nextPaymentDate.setHours(0, 0, 0, 0);
-
-        if (nextPaymentDate >= today && nextPaymentDate <= futureDate) {
-          upcomingPayments.push(pendingPayment);
-          break; // Only add one payment per student
+        if (payment.status === PaymentStatus.PENDING) {
+          studentPayments.pending.push(payment);
+        } else if (
+          payment.status === PaymentStatus.COMPLETED &&
+          !studentPayments.latestCompleted
+        ) {
+          studentPayments.latestCompleted = payment;
         }
       }
 
-      // If no pending payment was added, check latest completed payment
-      if (!upcomingPayments.find((p) => p.student_id === studentId) && latestCompleted) {
-        const nextPaymentDate = new Date(latestCompleted.next_payment_date);
-        nextPaymentDate.setHours(0, 0, 0, 0);
+      // Find students with upcoming payments (either pending or upcoming completed)
+      const upcomingPayments = [];
 
-        if (nextPaymentDate >= today && nextPaymentDate <= futureDate) {
-          upcomingPayments.push(latestCompleted);
+      for (const [
+        studentId,
+        { latestCompleted, pending },
+      ] of studentPaymentsMap) {
+        // Check pending payments first
+        for (const pendingPayment of pending) {
+          const nextPaymentDate = new Date(pendingPayment.next_payment_date);
+          nextPaymentDate.setHours(0, 0, 0, 0);
+
+          if (nextPaymentDate >= today && nextPaymentDate <= futureDate) {
+            upcomingPayments.push(pendingPayment);
+            break; // Only add one payment per student
+          }
+        }
+
+        // If no pending payment was added, check latest completed payment
+        if (
+          !upcomingPayments.find((p) => p.student_id === studentId) &&
+          latestCompleted
+        ) {
+          const nextPaymentDate = new Date(latestCompleted.next_payment_date);
+          nextPaymentDate.setHours(0, 0, 0, 0);
+
+          if (nextPaymentDate >= today && nextPaymentDate <= futureDate) {
+            upcomingPayments.push(latestCompleted);
+          }
         }
       }
-    }
 
-    return upcomingPayments;
-  } catch (error) {
-    this.logger.error(`Error finding upcoming payments: ${error.message}`);
-    throw error;
+      return upcomingPayments;
+    } catch (error) {
+      this.logger.error(`Error finding upcoming payments: ${error.message}`);
+      throw error;
+    }
   }
-}
 
   async update(
     id: string,
@@ -379,9 +385,13 @@ async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
     const payments = await this.findByStudent(studentId);
 
     if (!payments.length) {
-      throw new NotFoundException(
-        `No payment records found for student ID "${studentId}"`
-      );
+      return {
+        totalPaid: 0,
+        pendingAmount: 0,
+        paymentStatus: "overdue" as const,
+        daysUntilNextPayment: 0,
+        nextPaymentDate: null,
+      };
     }
 
     // Set today's date without time for accurate date comparisons
@@ -517,7 +527,10 @@ async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
       // Find students with overdue payments (either pending or overdue completed)
       const overduePayments = [];
 
-      for (const [studentId, { latestCompleted, pending }] of studentPaymentsMap) {
+      for (const [
+        studentId,
+        { latestCompleted, pending },
+      ] of studentPaymentsMap) {
         // Check pending payments first - any pending payment with past next_payment_date is overdue
         for (const pendingPayment of pending) {
           const nextPaymentDate = new Date(pendingPayment.next_payment_date);
@@ -533,7 +546,10 @@ async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
         }
 
         // If no pending payment was added, check latest completed payment
-        if (!overduePayments.find((p) => p.student_id === studentId) && latestCompleted) {
+        if (
+          !overduePayments.find((p) => p.student_id === studentId) &&
+          latestCompleted
+        ) {
           const nextPaymentDate = new Date(latestCompleted.next_payment_date);
           nextPaymentDate.setHours(0, 0, 0, 0);
 
