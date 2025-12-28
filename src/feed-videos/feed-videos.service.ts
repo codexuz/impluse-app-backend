@@ -156,7 +156,7 @@ export class FeedVideosService {
   }
 
   // ========== TRENDING FEED ==========
-  async getTrendingFeed(page: number = 1, limit: number = 20) {
+  async getTrendingFeed(page: number = 1, limit: number = 20, userId?: string) {
     const offset = (page - 1) * limit;
 
     const videos = await this.feedVideoModel.findAll({
@@ -183,12 +183,40 @@ export class FeedVideosService {
       offset,
     });
 
+    // Check if user has liked each video
+    let videosWithLikeStatus: any[] = videos;
+    if (userId) {
+      const videoIds = videos.map((v) => v.id);
+      const userLikes = await this.videoLikeModel.findAll({
+        where: {
+          videoId: videoIds,
+          userId: userId,
+        },
+        attributes: ["videoId"],
+      });
+
+      const likedVideoIds = new Set(userLikes.map((like) => like.videoId));
+
+      videosWithLikeStatus = videos.map((video) => {
+        const videoJson = video.toJSON();
+        return {
+          ...videoJson,
+          isLiked: likedVideoIds.has(video.id),
+        };
+      });
+    } else {
+      videosWithLikeStatus = videos.map((video) => ({
+        ...video.toJSON(),
+        isLiked: false,
+      }));
+    }
+
     const total = await this.feedVideoModel.count({
       where: { status: "published" },
     });
 
     return {
-      videos,
+      videos: videosWithLikeStatus,
       pagination: {
         page,
         limit,
@@ -300,6 +328,19 @@ export class FeedVideosService {
   async getVideoComments(videoId: number) {
     return await this.videoCommentModel.findAll({
       where: { videoId },
+      include: [
+        {
+          model: User,
+          as: "student",
+          attributes: [
+            "user_id",
+            "first_name",
+            "last_name",
+            "username",
+            "avatar_url",
+          ],
+        },
+      ],
       order: [["createdAt", "DESC"]],
     });
   }
@@ -369,6 +410,19 @@ export class FeedVideosService {
   async getVideoJudges(videoId: number) {
     return await this.videoJudgeModel.findAll({
       where: { videoId },
+      include: [
+        {
+          model: User,
+          as: "student",
+          attributes: [
+            "user_id",
+            "first_name",
+            "last_name",
+            "username",
+            "avatar_url",
+          ],
+        },
+      ],
       order: [
         ["helpfulCount", "DESC"],
         ["createdAt", "DESC"],
