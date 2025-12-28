@@ -331,7 +331,7 @@ export class FeedVideosService {
       include: [
         {
           model: User,
-          as: "student",
+          as: "user",
           attributes: [
             "user_id",
             "first_name",
@@ -413,7 +413,7 @@ export class FeedVideosService {
       include: [
         {
           model: User,
-          as: "student",
+          as: "judge",
           attributes: [
             "user_id",
             "first_name",
