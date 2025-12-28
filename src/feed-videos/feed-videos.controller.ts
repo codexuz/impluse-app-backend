@@ -12,10 +12,17 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Res,
+  Headers,
+  HttpStatus,
+  Header,
+  NotFoundException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { extname } from "path";
+import { statSync, createReadStream, existsSync } from "fs";
+import { Response } from "express";
 import {
   ApiTags,
   ApiBearerAuth,
@@ -250,6 +257,87 @@ export class FeedVideosController {
   @ApiResponse({ status: 404, description: "Video not found" })
   getVideoById(@Param("id") id: string) {
     return this.feedVideosService.getVideoById(+id);
+  }
+
+  @Get(":id/stream")
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: "Stream video file with range support" })
+  @ApiParam({ name: "id", description: "Video ID" })
+  @Header("Accept-Ranges", "bytes")
+  @Header("Content-Type", "video/mp4")
+  @ApiResponse({
+    status: 206,
+    description: "Partial content - video streaming with range support",
+  })
+  @ApiResponse({ status: 200, description: "Full video content" })
+  @ApiResponse({ status: 404, description: "Video not found" })
+  async streamVideo(
+    @Param("id") id: string,
+    @Headers() headers,
+    @Res() res: Response
+  ) {
+    // Get video details from database
+    const video = await this.feedVideosService.getVideoById(+id);
+    if (!video) {
+      throw new NotFoundException("Video not found");
+    }
+
+    // Extract file path from video URL
+    let videoPath: string;
+    if (
+      video.videoUrl.startsWith("http://") ||
+      video.videoUrl.startsWith("https://")
+    ) {
+      // Parse URL to get path (e.g., /uploads/videos/filename.mp4)
+      const url = new URL(video.videoUrl);
+      videoPath = `.${url.pathname}`; // Convert to relative path: ./uploads/videos/filename.mp4
+    } else if (video.videoUrl.startsWith("/")) {
+      // Absolute path from root
+      videoPath = `.${video.videoUrl}`;
+    } else {
+      // Already a relative path
+      videoPath = video.videoUrl;
+    }
+
+    // Check if file exists
+    if (!existsSync(videoPath)) {
+      throw new NotFoundException("Video file not found on server");
+    }
+
+    const { size } = statSync(videoPath);
+    const videoRange = headers.range;
+
+    if (videoRange) {
+      // Handle range request (for seeking/progressive download)
+      const parts = videoRange.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : size - 1;
+      const chunkSize = end - start + 1;
+
+      const readStreamfile = createReadStream(videoPath, {
+        start,
+        end,
+        highWaterMark: 60,
+      });
+
+      const head = {
+        "Content-Range": `bytes ${start}-${end}/${size}`,
+        "Content-Length": chunkSize,
+        "Content-Type": "video/mp4",
+      };
+
+      res.writeHead(HttpStatus.PARTIAL_CONTENT, head); // 206
+      readStreamfile.pipe(res);
+    } else {
+      // Send full video
+      const head = {
+        "Content-Length": size,
+        "Content-Type": "video/mp4",
+      };
+
+      res.writeHead(HttpStatus.OK, head); // 200
+      createReadStream(videoPath).pipe(res);
+    }
   }
 
   @Post(":id/view")
