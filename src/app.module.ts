@@ -2,6 +2,7 @@ import { Module, OnModuleInit } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ConfigModule } from "@nestjs/config";
 import { SequelizeModule } from "@nestjs/sequelize";
+import { BullModule } from "@nestjs/bullmq";
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { UsersModule } from "./users/users.module.js";
@@ -78,9 +79,9 @@ import { StudentTransactionModule } from "./student-transaction/student-transact
 import { TeacherTransactionModule } from "./teacher-transaction/teacher-transaction.module.js";
 import { TeacherProfileModule } from "./teacher-profile/teacher-profile.module.js";
 import { SmsModule } from "./sms/sms.module.js";
-import { ArticlesModule } from './articles/articles.module.js';
-import { CertificatesModule } from './certificates/certificates.module.js';
-import { FeedVideosModule } from './feed-videos/feed-videos.module.js';
+import { ArticlesModule } from "./articles/articles.module.js";
+import { CertificatesModule } from "./certificates/certificates.module.js";
+import { FeedVideosModule } from "./feed-videos/feed-videos.module.js";
 
 @Module({
   imports: [
@@ -89,6 +90,11 @@ import { FeedVideosModule } from './feed-videos/feed-videos.module.js';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    BullModule.forRoot({
+      connection: {
+        url: process.env.REDIS_URL,
+      },
+    }),
     SequelizeModule.forRoot({
       dialect: "mysql",
       uri: process.env.DATABASE_URL,

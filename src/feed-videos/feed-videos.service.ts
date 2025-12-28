@@ -4,6 +4,8 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue, Job } from "bullmq";
 import {
   CreateFeedVideoDto,
   CreateTaskDto,
@@ -23,6 +25,8 @@ import { StudentProfileService } from "../student_profiles/student-profile.servi
 import { FirebaseServiceService } from "../notifications/firebase-service.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { VideoCompressionJobData } from "./video-compression.processor.js";
+import * as path from "path";
 
 @Injectable()
 export class FeedVideosService {
@@ -44,7 +48,9 @@ export class FeedVideosService {
     @InjectModel(User)
     private userModel: typeof User,
     private studentProfileService: StudentProfileService,
-    private firebaseService: FirebaseServiceService
+    private firebaseService: FirebaseServiceService,
+    @InjectQueue("video-compression")
+    private videoCompressionQueue: Queue<VideoCompressionJobData>
   ) {}
 
   // ========== TASK MANAGEMENT (Admin) ==========
@@ -93,8 +99,9 @@ export class FeedVideosService {
     const videoUrl = `https://backend.impulselc.uz/uploads/videos/${file.filename}`;
 
     // Create video record in database with the file URL
+    const { videoUrl: _, thumbnailUrl: __, ...videoData } = createVideoDto;
     const video = await this.feedVideoModel.create({
-      ...createVideoDto,
+      ...videoData,
       videoUrl,
       thumbnailUrl: videoUrl, // You can generate thumbnail separately if needed
       studentId,
@@ -680,24 +687,120 @@ export class FeedVideosService {
     return notification;
   }
 
-  // Legacy methods for compatibility
-  create(createFeedVideoDto: CreateFeedVideoDto) {
-    return "Use uploadVideo instead";
+  // ========== VIDEO COMPRESSION QUEUE METHODS ==========
+  async addVideoToCompressionQueue(
+    inputPath: string,
+    originalFilename: string,
+    userId: number,
+    videoId?: number
+  ): Promise<Job<VideoCompressionJobData>> {
+    const timestamp = Date.now();
+    const ext = path.extname(originalFilename);
+    const outputFilename = `compressed_${timestamp}${ext}`;
+    const outputPath = path.join(
+      process.cwd(),
+      "uploads",
+      "videos",
+      outputFilename
+    );
+
+    const jobData: VideoCompressionJobData = {
+      inputPath,
+      outputPath,
+      userId,
+      videoId,
+      originalFilename,
+    };
+
+    const job = await this.videoCompressionQueue.add(
+      "compress-video",
+      jobData,
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+        removeOnComplete: 100, // Keep last 100 completed jobs
+        removeOnFail: 50, // Keep last 50 failed jobs
+      }
+    );
+
+    return job;
   }
 
-  findAll() {
-    return `Use getTrendingFeed instead`;
+  async getCompressionJobStatus(jobId: string): Promise<any> {
+    const job = await this.videoCompressionQueue.getJob(jobId);
+
+    if (!job) {
+      throw new NotFoundException("Job not found");
+    }
+
+    const state = await job.getState();
+    const progress = job.progress;
+    const result = job.returnvalue;
+
+    return {
+      id: job.id,
+      state,
+      progress,
+      result,
+      failedReason: job.failedReason,
+      finishedOn: job.finishedOn,
+      processedOn: job.processedOn,
+    };
   }
 
-  findOne(id: number) {
-    return `Use getVideoById instead`;
+  async uploadVideoWithCompression(
+    file: Express.Multer.File,
+    createVideoDto: CreateFeedVideoDto,
+    studentId: string
+  ) {
+    // Create initial video record with pending status
+    const { videoUrl: _, thumbnailUrl: __, ...videoData } = createVideoDto;
+    const video = await this.feedVideoModel.create({
+      ...videoData,
+      videoUrl: "", // Will be updated after compression
+      thumbnailUrl: "",
+      studentId,
+      status: "processing", // Add this field to your model if needed
+    });
+
+    // Add to compression queue
+    const job = await this.addVideoToCompressionQueue(
+      file.path,
+      file.originalname,
+      parseInt(studentId),
+      video.id
+    );
+
+    return {
+      videoId: video.id,
+      jobId: job.id,
+      status: "processing",
+      message: "Video uploaded and queued for compression",
+    };
   }
 
-  update(id: number, updateFeedVideoDto: UpdateFeedVideoDto) {
-    return `This action updates a #${id} feedVideo`;
-  }
+  async updateVideoAfterCompression(
+    videoId: number,
+    outputPath: string,
+    compressedSize: number
+  ) {
+    const video = await this.feedVideoModel.findByPk(videoId);
+    if (!video) {
+      throw new NotFoundException("Video not found");
+    }
 
-  remove(id: number) {
-    return `Use deleteVideo instead`;
+    const filename = path.basename(outputPath);
+    const videoUrl = `https://backend.impulselc.uz/uploads/videos/${filename}`;
+
+    await video.update({
+      videoUrl,
+      thumbnailUrl: videoUrl,
+      status: "completed",
+    });
+
+    return video;
   }
 }

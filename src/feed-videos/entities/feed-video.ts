@@ -105,7 +105,7 @@ export class FeedVideo extends Model<FeedVideo> {
   @AllowNull(false)
   @Default("published")
   @Column({
-    type: DataType.ENUM("draft", "published", "archived"),
+    type: DataType.ENUM("draft", "published", "archived", "processing", "completed"),
   })
-  status: "draft" | "published" | "archived";
+  status: "draft" | "published" | "archived" | "processing" | "completed";
 }

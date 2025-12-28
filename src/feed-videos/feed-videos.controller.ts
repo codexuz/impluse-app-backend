@@ -17,12 +17,16 @@ import {
   HttpStatus,
   Header,
   NotFoundException,
+  Sse,
+  MessageEvent,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { extname } from "path";
 import { statSync, createReadStream, existsSync } from "fs";
 import { Response } from "express";
+import { Observable, interval } from "rxjs";
+import { map, switchMap, takeWhile } from "rxjs/operators";
 import {
   ApiTags,
   ApiBearerAuth,
@@ -123,7 +127,11 @@ export class FeedVideosController {
   // ========== VIDEO MANAGEMENT (Student) ==========
   @Post("upload")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Upload a video file" })
+  @ApiOperation({
+    summary: "Upload a video file",
+    description:
+      "Uploads a video and queues it for compression. Returns job ID for tracking progress via SSE.",
+  })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     description: "Video upload with file and metadata",
@@ -151,7 +159,19 @@ export class FeedVideosController {
   })
   @ApiResponse({
     status: 201,
-    description: "Video uploaded successfully. Rewards: +15 coins, +25 points",
+    description: "Video uploaded and queued for compression",
+    schema: {
+      type: "object",
+      properties: {
+        videoId: { type: "number", example: 123 },
+        jobId: { type: "string", example: "1" },
+        status: { type: "string", example: "processing" },
+        message: {
+          type: "string",
+          example: "Video uploaded and queued for compression",
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -161,7 +181,7 @@ export class FeedVideosController {
   @UseInterceptors(
     FileInterceptor("file", {
       storage: diskStorage({
-        destination: "./uploads/videos",
+        destination: "./uploads/temp",
         filename: (req, file, cb) => {
           const uniqueName = `${Date.now()}-${file.originalname.replace(/\s+/g, "-")}`;
           cb(null, uniqueName);
@@ -205,7 +225,11 @@ export class FeedVideosController {
       caption,
       taskId: taskId ? +taskId : undefined,
     };
-    return this.feedVideosService.uploadVideo(file, createVideoDto, studentId);
+    return this.feedVideosService.uploadVideoWithCompression(
+      file,
+      createVideoDto,
+      studentId
+    );
   }
 
   @Get("trending")
@@ -485,5 +509,70 @@ export class FeedVideosController {
   markNotificationAsRead(@Param("id") id: string, @CurrentUser() user: any) {
     const userId = user.userId;
     return this.feedVideosService.markNotificationAsRead(+id, userId);
+  }
+
+  // ========== VIDEO COMPRESSION ==========
+  @Get("compression/status/:jobId")
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: "Get compression job status" })
+  @ApiParam({ name: "jobId", description: "Compression job ID" })
+  @ApiResponse({
+    status: 200,
+    description: "Return job status and progress",
+    schema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        state: {
+          type: "string",
+          enum: ["waiting", "active", "completed", "failed"],
+        },
+        progress: { type: "object" },
+        result: { type: "object" },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: "Job not found" })
+  getCompressionStatus(@Param("jobId") jobId: string) {
+    return this.feedVideosService.getCompressionJobStatus(jobId);
+  }
+
+  @Sse("compression/progress/:jobId")
+  @ApiOperation({
+    summary: "Stream compression progress via Server-Sent Events",
+    description:
+      "Real-time updates of video compression progress. Connect to this endpoint to receive live progress updates.",
+  })
+  @ApiParam({ name: "jobId", description: "Compression job ID" })
+  @ApiResponse({
+    status: 200,
+    description: "SSE stream of compression progress",
+  })
+  streamCompressionProgress(
+    @Param("jobId") jobId: string
+  ): Observable<MessageEvent> {
+    return interval(500).pipe(
+      switchMap(async () => {
+        try {
+          const status =
+            await this.feedVideosService.getCompressionJobStatus(jobId);
+          return status;
+        } catch (error) {
+          return { error: error.message, state: "error" };
+        }
+      }),
+      takeWhile(
+        (status: any) => {
+          return !["completed", "failed", "error"].includes(status.state);
+        },
+        true // Include the final value
+      ),
+      map(
+        (status) =>
+          ({
+            data: status,
+          }) as MessageEvent
+      )
+    );
   }
 }

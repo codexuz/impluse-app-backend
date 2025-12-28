@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { SequelizeModule } from "@nestjs/sequelize";
+import { BullModule } from "@nestjs/bullmq";
 import { FeedVideosService } from "./feed-videos.service.js";
 import { FeedVideosController } from "./feed-videos.controller.js";
 import { FeedVideo } from "./entities/feed-video.js";
@@ -12,6 +13,7 @@ import { StudentProfileModule } from "../student_profiles/student-profile.module
 import { FirebaseServiceService } from "../notifications/firebase-service.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { VideoCompressionProcessor } from "./video-compression.processor.js";
 
 @Module({
   imports: [
@@ -25,10 +27,21 @@ import { User } from "../users/entities/user.entity.js";
       NotificationToken,
       User,
     ]),
+    BullModule.registerQueue({
+      name: "video-compression",
+    }),
     StudentProfileModule,
   ],
   controllers: [FeedVideosController],
-  providers: [FeedVideosService, FirebaseServiceService],
+  providers: [
+    FeedVideosService,
+    {
+      provide: "FeedVideosService",
+      useExisting: FeedVideosService,
+    },
+    FirebaseServiceService,
+    VideoCompressionProcessor,
+  ],
   exports: [FeedVideosService],
 })
 export class FeedVideosModule {}
