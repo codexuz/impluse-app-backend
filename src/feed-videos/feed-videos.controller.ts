@@ -222,11 +222,14 @@ export class FeedVideosController {
   })
   getTrendingFeed(
     @Query("page") page?: string,
-    @Query("limit") limit?: string
+    @Query("limit") limit?: string,
+    @CurrentUser() user?: any
   ) {
+    const userId = user?.userId;
     return this.feedVideosService.getTrendingFeed(
       page ? +page : 1,
-      limit ? +limit : 20
+      limit ? +limit : 20,
+      userId
     );
   }
 
