@@ -562,9 +562,9 @@ export class FeedVideosService {
       // Get all users except the uploader
       const allUsers = await this.userModel.findAll({
         where: {
-          id: { [Op.ne]: uploaderId },
+          user_id: { [Op.ne]: uploaderId },
         },
-        attributes: ["id"],
+        attributes: ["user_id"],
       });
 
       // Get uploader's name and video details
@@ -610,7 +610,7 @@ export class FeedVideosService {
       for (const user of allUsers) {
         // Create notification record
         await this.notificationModel.create({
-          userId: user.id,
+          userId: user.user_id,
           fromUserId: uploaderId,
           videoId: videoId,
           type: NotificationType.VIDEO_UPLOAD, // Reusing type, or you can create a new type
