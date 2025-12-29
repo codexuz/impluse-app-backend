@@ -105,7 +105,7 @@ export class FeedVideosService {
       videoUrl,
       thumbnailUrl: videoUrl, // You can generate thumbnail separately if needed
       studentId,
-      status: "published",
+      status: "completed",
     });
 
     // Increment task submission count if taskId provided
