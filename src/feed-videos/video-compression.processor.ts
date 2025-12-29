@@ -22,7 +22,7 @@ export interface CompressionProgress {
 }
 
 @Processor("video-compression", {
-  concurrency: 2, // Process 2 videos at a time
+  concurrency: 5, // Process 5 videos at a time
 })
 export class VideoCompressionProcessor extends WorkerHost {
   private readonly logger = new Logger(VideoCompressionProcessor.name);
