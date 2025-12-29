@@ -51,8 +51,8 @@ async function bootstrap() {
     },
   });
 
-  app.useBodyParser("json", { limit: "50mb" });
-  app.useBodyParser("urlencoded", { limit: "50mb", extended: true });
+  app.useBodyParser("json", { limit: "1000mb" });
+  app.useBodyParser("urlencoded", { limit: "1000mb", extended: true });
 
   // 2. ✅ Serve Vue static files from 'public'
   // app.useStaticAssets(join(__dirname, '..', 'public'));
@@ -79,16 +79,6 @@ async function bootstrap() {
     .setTitle("Impulse App API")
     .setDescription("Learning Management System API Documentation")
     .setVersion("1.0")
-    .addTag("auth", "Authentication endpoints")
-    .addTag("users", "User management")
-    .addTag("courses", "Course management")
-    .addTag("lessons", "Lesson management")
-    .addTag("units", "Unit management")
-    .addTag("reading", "Reading exercises")
-    .addTag("writing", "Writing exercises")
-    .addTag("speaking", "Speaking exercises")
-    .addTag("listening", "Listening exercises")
-    .addTag("exams", "Exam management")
     .addBearerAuth()
     .build();
 
