@@ -167,7 +167,7 @@ export class FeedVideosService {
     const offset = (page - 1) * limit;
 
     const videos = await this.feedVideoModel.findAll({
-      where: { status: "published" },
+      where: { status: "completed" },
       include: [
         { model: FeedVideoTask, as: "task" },
         {
@@ -219,7 +219,7 @@ export class FeedVideosService {
     }
 
     const total = await this.feedVideoModel.count({
-      where: { status: "published" },
+      where: { status: "completed" },
     });
 
     return {
@@ -237,7 +237,7 @@ export class FeedVideosService {
     const offset = (page - 1) * limit;
 
     const videos = await this.feedVideoModel.findAll({
-      where: { taskId, status: "published" },
+      where: { taskId, status: "completed" },
       order: [
         ["trendingScore", "DESC"],
         ["createdAt", "DESC"],
@@ -247,7 +247,7 @@ export class FeedVideosService {
     });
 
     const total = await this.feedVideoModel.count({
-      where: { taskId, status: "published" },
+      where: { taskId, status: "completed" },
     });
 
     return {
