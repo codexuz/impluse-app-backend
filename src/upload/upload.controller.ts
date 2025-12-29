@@ -10,6 +10,7 @@ import {
   Body,
   Patch,
   Query,
+  BadRequestException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
@@ -64,7 +65,7 @@ export class UploadController {
   @UseInterceptors(
     FileInterceptor("file", {
       storage: diskStorage({
-        destination: "./uploads", // or use dynamic path logic
+        destination: "./uploads",
         filename: (req, file, callback) => {
           const uniqueSuffix =
             Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -73,7 +74,10 @@ export class UploadController {
           callback(null, filename);
         },
       }),
-      limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB limit
+      limits: {
+        fileSize: 1024 * 1024 * 1024, // 1GB limit
+        fieldSize: 1024 * 1024 * 1024,
+      },
     })
   )
   uploadFile(@UploadedFile() file: Express.Multer.File) {
@@ -83,6 +87,84 @@ export class UploadController {
       filename: file.filename,
       path: file.path,
       url: fileUrl,
+    };
+  }
+
+  @Post("video")
+  @ApiOperation({ summary: "Upload a video file with optimized settings" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        video: {
+          type: "string",
+          format: "binary",
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Video uploaded successfully",
+    type: FileUploadDto,
+  })
+  @ApiResponse({
+    status: 413,
+    description: "Video file too large",
+  })
+  @UseInterceptors(
+    FileInterceptor("video", {
+      storage: diskStorage({
+        destination: "./uploads/videos",
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + "-" + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          const filename = `video-${uniqueSuffix}${ext}`;
+          callback(null, filename);
+        },
+      }),
+      limits: {
+        fileSize: 2 * 1024 * 1024 * 1024, // 2GB limit for videos
+        fieldSize: 2 * 1024 * 1024 * 1024,
+        parts: 10,
+        fields: 10,
+      },
+      fileFilter: (req, file, callback) => {
+        // Accept video files only
+        const allowedMimeTypes = [
+          "video/mp4",
+          "video/mpeg",
+          "video/quicktime",
+          "video/x-msvideo",
+          "video/webm",
+          "video/x-ms-wmv",
+          "video/x-flv",
+        ];
+
+        if (allowedMimeTypes.includes(file.mimetype)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Only video files are allowed"), false);
+        }
+      },
+    })
+  )
+  async uploadVideo(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new Error("No video file provided");
+    }
+
+    const fileUrl = this.uploadService.getFileUrl(`videos/${file.filename}`);
+    return {
+      originalName: file.originalname,
+      filename: file.filename,
+      path: file.path,
+      url: fileUrl,
+      size: file.size,
+      mimeType: file.mimetype,
+      uploadType: "video",
     };
   }
 

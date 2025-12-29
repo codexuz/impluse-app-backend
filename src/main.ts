@@ -51,8 +51,22 @@ async function bootstrap() {
     },
   });
 
-  app.useBodyParser("json", { limit: "1000mb" });
-  app.useBodyParser("urlencoded", { limit: "1000mb", extended: true });
+  // Configure body parser with higher limits and timeouts
+  app.useBodyParser("json", {
+    limit: "1000mb",
+    requestTimeout: 600000, // 10 minutes
+  });
+  app.useBodyParser("urlencoded", {
+    limit: "1000mb",
+    extended: true,
+    requestTimeout: 600000, // 10 minutes
+  });
+
+  // Set server timeout for large uploads
+  const server = app.getHttpServer();
+  server.timeout = 600000; // 10 minutes
+  server.keepAliveTimeout = 610000; // Slightly longer than timeout
+  server.headersTimeout = 620000; // Slightly longer than keepAliveTimeout
 
   // 2. ✅ Serve Vue static files from 'public'
   // app.useStaticAssets(join(__dirname, '..', 'public'));
