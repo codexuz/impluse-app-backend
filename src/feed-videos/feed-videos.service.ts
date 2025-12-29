@@ -27,6 +27,7 @@ import { NotificationToken } from "../notifications/entities/notification-token.
 import { User } from "../users/entities/user.entity.js";
 import { VideoCompressionJobData } from "./video-compression.processor.js";
 import * as path from "path";
+import * as fs from "fs/promises";
 
 @Injectable()
 export class FeedVideosService {
@@ -156,6 +157,24 @@ export class FeedVideosService {
     const video = await this.getVideoById(videoId);
     if (video.studentId !== studentId) {
       throw new BadRequestException("You can only delete your own videos");
+    }
+
+    // Delete the physical video file
+    if (video.videoUrl) {
+      try {
+        // Extract filename from URL (e.g., from https://backend.impulselc.uz/uploads/videos/compressed_1766994942763.mp4)
+        const filename = video.videoUrl.split("/").pop() || "";
+        const filePath = path.join(
+          process.cwd(),
+          "uploads",
+          "videos",
+          filename
+        );
+        await fs.unlink(filePath);
+      } catch (error) {
+        console.error("Error deleting video file:", error);
+        // Continue with database deletion even if file deletion fails
+      }
     }
 
     await video.destroy();
