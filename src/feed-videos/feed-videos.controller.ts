@@ -58,6 +58,50 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 export class FeedVideosController {
   constructor(private readonly feedVideosService: FeedVideosService) {}
 
+  // ========== SSE EVENTS ==========
+  @Sse("new-videos/stream")
+  @ApiOperation({
+    summary: "Server-Sent Events stream for new video uploads",
+    description:
+      "Subscribe to real-time notifications when new videos are uploaded",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "SSE stream established",
+    headers: {
+      "Content-Type": { description: "text/event-stream" },
+      "Cache-Control": { description: "no-cache" },
+      Connection: { description: "keep-alive" },
+    },
+  })
+  streamNewVideos(
+    @Headers() headers: any,
+    @CurrentUser() user: any
+  ): Observable<MessageEvent> {
+    // Create an observable that listens for video upload events
+    return new Observable<MessageEvent>((observer) => {
+      const eventHandler = (data: any) => {
+        // Don't send notification to the uploader themselves
+        if (data.uploader.id !== user.userId) {
+          const event: MessageEvent = {
+            data: JSON.stringify(data),
+            type: "new-video",
+            id: Date.now().toString(),
+          };
+          observer.next(event);
+        }
+      };
+
+      // Listen for video upload events
+      this.feedVideosService.onVideoUploaded(eventHandler);
+
+      // Cleanup when client disconnects
+      return () => {
+        this.feedVideosService.removeVideoUploadListener(eventHandler);
+      };
+    });
+  }
+
   // ========== TASK MANAGEMENT (Admin) ==========
   @Post("tasks")
   @Roles(Role.ADMIN, Role.TEACHER)

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { SequelizeModule } from "@nestjs/sequelize";
 import { BullModule } from "@nestjs/bullmq";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 import { FeedVideosService } from "./feed-videos.service.js";
 import { FeedVideosController } from "./feed-videos.controller.js";
 import { FeedVideo } from "./entities/feed-video.js";
@@ -30,6 +31,7 @@ import { VideoCompressionProcessor } from "./video-compression.processor.js";
     BullModule.registerQueue({
       name: "video-compression",
     }),
+    EventEmitterModule,
     StudentProfileModule,
   ],
   controllers: [FeedVideosController],

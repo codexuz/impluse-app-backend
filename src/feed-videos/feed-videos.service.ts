@@ -6,6 +6,7 @@ import {
 import { InjectModel } from "@nestjs/sequelize";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue, Job } from "bullmq";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   CreateFeedVideoDto,
   CreateTaskDto,
@@ -51,7 +52,8 @@ export class FeedVideosService {
     private studentProfileService: StudentProfileService,
     private firebaseService: FirebaseServiceService,
     @InjectQueue("video-compression")
-    private videoCompressionQueue: Queue<VideoCompressionJobData>
+    private videoCompressionQueue: Queue<VideoCompressionJobData>,
+    private eventEmitter: EventEmitter2
   ) {}
 
   // ========== TASK MANAGEMENT (Admin) ==========
@@ -565,9 +567,13 @@ export class FeedVideosService {
         attributes: ["id"],
       });
 
-      // Get uploader's name
+      // Get uploader's name and video details
       const uploader = await this.userModel.findByPk(uploaderId, {
-        attributes: ["first_name", "last_name"],
+        attributes: ["first_name", "last_name", "username", "avatar_url"],
+      });
+
+      const video = await this.feedVideoModel.findByPk(videoId, {
+        include: [{ model: FeedVideoTask, as: "task" }],
       });
 
       const uploaderName = uploader
@@ -575,6 +581,30 @@ export class FeedVideosService {
         : "Someone";
 
       const message = `${uploaderName} uploaded a new Speaking Challenge video! Watch it now 🔥!`;
+
+      // Emit SSE event for new video upload
+      const sseEventData = {
+        type: "NEW_VIDEO_UPLOAD",
+        videoId: videoId,
+        video: {
+          id: video.id,
+          caption: video.caption,
+          videoUrl: video.videoUrl,
+          thumbnailUrl: video.thumbnailUrl,
+          createdAt: video.createdAt,
+          task: (video as any).task || null,
+        },
+        uploader: {
+          id: uploaderId,
+          name: uploaderName,
+          username: uploader?.username,
+          avatarUrl: uploader?.avatar_url,
+        },
+        message: message,
+        timestamp: new Date().toISOString(),
+      };
+
+      this.eventEmitter.emit("video.uploaded", sseEventData);
 
       // Send notification to all users
       for (const user of allUsers) {
@@ -820,6 +850,18 @@ export class FeedVideosService {
       status: "completed",
     });
 
+    // Send notifications (including SSE) after video processing is complete
+    await this.notifyNewVideoUpload(video.studentId, videoId);
+
     return video;
+  }
+
+  // ========== SSE EVENT LISTENERS ==========
+  onVideoUploaded(callback: (data: any) => void) {
+    this.eventEmitter.on("video.uploaded", callback);
+  }
+
+  removeVideoUploadListener(callback: (data: any) => void) {
+    this.eventEmitter.off("video.uploaded", callback);
   }
 }
