@@ -27,6 +27,7 @@ import { FirebaseServiceService } from "../notifications/firebase-service.servic
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { VideoCompressionJobData } from "./video-compression.processor.js";
+import { MinioService } from "../minio/minio.service.js";
 import * as path from "path";
 import * as fs from "fs/promises";
 
@@ -53,7 +54,8 @@ export class FeedVideosService {
     private firebaseService: FirebaseServiceService,
     @InjectQueue("video-compression")
     private videoCompressionQueue: Queue<VideoCompressionJobData>,
-    private eventEmitter: EventEmitter2
+    private eventEmitter: EventEmitter2,
+    private minioService: MinioService
   ) {}
 
   // ========== TASK MANAGEMENT (Admin) ==========
@@ -98,18 +100,23 @@ export class FeedVideosService {
     createVideoDto: CreateFeedVideoDto,
     studentId: string
   ) {
-    // Use the filename that was saved by Multer
-    const videoUrl = `https://backend.impulselc.uz/uploads/videos/${file.filename}`;
-
-    // Create video record in database with the file URL
+    // Create initial video record with pending status
     const { videoUrl: _, thumbnailUrl: __, ...videoData } = createVideoDto;
     const video = await this.feedVideoModel.create({
       ...videoData,
-      videoUrl,
-      thumbnailUrl: videoUrl, // You can generate thumbnail separately if needed
+      videoUrl: "", // Will be updated after compression and MinIO upload
+      thumbnailUrl: "",
       studentId,
-      status: "completed",
+      status: "processing", // Processing status until compression and upload complete
     });
+
+    // Add to compression queue (file is in temp folder)
+    const job = await this.addVideoToCompressionQueue(
+      file.path,
+      file.originalname,
+      parseInt(studentId),
+      video.id
+    );
 
     // Increment task submission count if taskId provided
     if (createVideoDto.taskId) {
@@ -118,20 +125,12 @@ export class FeedVideosService {
       });
     }
 
-    // Reward user for video upload
-    await this.rewardUser(
-      studentId,
-      REWARDS.VIDEO_UPLOAD.coins,
-      REWARDS.VIDEO_UPLOAD.points
-    );
-
-    // Update streak
-    await this.updateStreak(studentId);
-
-    // Send notification to all other users about new video
-    await this.notifyNewVideoUpload(studentId, video.id);
-
-    return video;
+    return {
+      videoId: video.id,
+      jobId: job.id,
+      status: "processing",
+      message: "Video uploaded to temp folder and queued for compression",
+    };
   }
 
   async getVideoById(videoId: number) {
@@ -161,21 +160,15 @@ export class FeedVideosService {
       throw new BadRequestException("You can only delete your own videos");
     }
 
-    // Delete the physical video file
+    // Delete the video file from MinIO
     if (video.videoUrl) {
       try {
-        // Extract filename from URL (e.g., from https://backend.impulselc.uz/uploads/videos/compressed_1766994942763.mp4)
-        const filename = video.videoUrl.split("/").pop() || "";
-        const filePath = path.join(
-          process.cwd(),
-          "uploads",
-          "videos",
-          filename
-        );
-        await fs.unlink(filePath);
+        // Extract object name from MinIO URL or use video ID as object name
+        const objectName = `videos/${video.id}.mp4`;
+        await this.minioService.deleteFile("feed-videos", objectName);
       } catch (error) {
-        console.error("Error deleting video file:", error);
-        // Continue with database deletion even if file deletion fails
+        console.error("Error deleting video file from MinIO:", error);
+        // Continue with database deletion even if MinIO deletion fails
       }
     }
 
@@ -800,37 +793,6 @@ export class FeedVideosService {
     };
   }
 
-  async uploadVideoWithCompression(
-    file: Express.Multer.File,
-    createVideoDto: CreateFeedVideoDto,
-    studentId: string
-  ) {
-    // Create initial video record with pending status
-    const { videoUrl: _, thumbnailUrl: __, ...videoData } = createVideoDto;
-    const video = await this.feedVideoModel.create({
-      ...videoData,
-      videoUrl: "", // Will be updated after compression
-      thumbnailUrl: "",
-      studentId,
-      status: "processing", // Add this field to your model if needed
-    });
-
-    // Add to compression queue
-    const job = await this.addVideoToCompressionQueue(
-      file.path,
-      file.originalname,
-      parseInt(studentId),
-      video.id
-    );
-
-    return {
-      videoId: video.id,
-      jobId: job.id,
-      status: "processing",
-      message: "Video uploaded and queued for compression",
-    };
-  }
-
   async updateVideoAfterCompression(
     videoId: number,
     outputPath: string,
@@ -841,17 +803,102 @@ export class FeedVideosService {
       throw new NotFoundException("Video not found");
     }
 
-    const filename = path.basename(outputPath);
-    const videoUrl = `https://backend.impulselc.uz/uploads/videos/${filename}`;
+    try {
+      // Ensure feed-videos bucket exists
+      const bucketExists = await this.minioService.bucketExists("feed-videos");
+      if (!bucketExists) {
+        await this.minioService.makeBucket("feed-videos");
+      }
+
+      // Upload compressed video to MinIO
+      const objectName = `videos/${videoId}.mp4`;
+      await this.minioService.uploadFile(
+        "feed-videos",
+        objectName,
+        outputPath,
+        {
+          "Content-Type": "video/mp4",
+          "Original-Size": compressedSize.toString(),
+        }
+      );
+
+      // Generate presigned URL (valid for 7 days)
+      const presignedUrl = await this.minioService.getPresignedUrl(
+        "feed-videos",
+        objectName,
+        7 * 24 * 60 * 60 // 7 days
+      );
+
+      // Update video record with MinIO URL
+      await video.update({
+        videoUrl: presignedUrl,
+        thumbnailUrl: presignedUrl, // Can be updated with actual thumbnail later
+        status: "completed",
+      });
+
+      // Clean up temporary compressed file
+      try {
+        await fs.unlink(outputPath);
+      } catch (error) {
+        console.error("Error cleaning up temp file:", error);
+      }
+
+      // Reward user for successful video processing
+      await this.rewardUser(
+        video.studentId,
+        REWARDS.VIDEO_UPLOAD.coins,
+        REWARDS.VIDEO_UPLOAD.points
+      );
+
+      // Update streak
+      await this.updateStreak(video.studentId);
+
+      // Send notifications after video processing is complete
+      await this.notifyNewVideoUpload(video.studentId, videoId);
+
+      return video;
+    } catch (error) {
+      console.error("Error uploading to MinIO:", error);
+      // Update video status to failed
+      await video.update({ status: "draft" });
+      throw error;
+    }
+  }
+
+  // ========== PRESIGNED URL MANAGEMENT ==========
+  async refreshVideoUrl(videoId: number): Promise<string> {
+    const video = await this.feedVideoModel.findByPk(videoId);
+    if (!video) {
+      throw new NotFoundException("Video not found");
+    }
+
+    const objectName = `videos/${videoId}.mp4`;
+    const newPresignedUrl = await this.minioService.getPresignedUrl(
+      "feed-videos",
+      objectName,
+      7 * 24 * 60 * 60 // 7 days
+    );
 
     await video.update({
-      videoUrl,
-      thumbnailUrl: videoUrl,
-      status: "completed",
+      videoUrl: newPresignedUrl,
+      thumbnailUrl: newPresignedUrl,
     });
 
-    // Send notifications (including SSE) after video processing is complete
-    await this.notifyNewVideoUpload(video.studentId, videoId);
+    return newPresignedUrl;
+  }
+
+  async getVideoWithFreshUrl(videoId: number) {
+    const video = await this.getVideoById(videoId);
+
+    // Check if URL needs refresh (you might want to store expiry date)
+    // For now, we'll refresh if the URL is older than 6 days
+    const videoAge = Date.now() - new Date(video.updatedAt).getTime();
+    const sixDaysInMs = 6 * 24 * 60 * 60 * 1000;
+
+    if (videoAge > sixDaysInMs && video.status === "completed") {
+      await this.refreshVideoUrl(videoId);
+      return await this.getVideoById(videoId); // Fetch updated video
+    }
 
     return video;
   }

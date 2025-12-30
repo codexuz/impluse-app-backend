@@ -83,6 +83,7 @@ import { SmsModule } from "./sms/sms.module.js";
 import { ArticlesModule } from "./articles/articles.module.js";
 import { CertificatesModule } from "./certificates/certificates.module.js";
 import { FeedVideosModule } from "./feed-videos/feed-videos.module.js";
+import { MinioModule } from "./minio/minio.module.js";
 
 @Module({
   imports: [
@@ -171,6 +172,7 @@ import { FeedVideosModule } from "./feed-videos/feed-videos.module.js";
     ArticlesModule,
     CertificatesModule,
     FeedVideosModule,
+    MinioModule,
   ],
   controllers: [AppController],
   providers: [

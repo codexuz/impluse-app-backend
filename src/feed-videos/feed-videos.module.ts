@@ -15,6 +15,7 @@ import { FirebaseServiceService } from "../notifications/firebase-service.servic
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { VideoCompressionProcessor } from "./video-compression.processor.js";
+import { MinioModule } from "../minio/minio.module.js";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { VideoCompressionProcessor } from "./video-compression.processor.js";
     }),
     EventEmitterModule,
     StudentProfileModule,
+    MinioModule,
   ],
   controllers: [FeedVideosController],
   providers: [

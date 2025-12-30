@@ -269,11 +269,7 @@ export class FeedVideosController {
       caption,
       taskId: taskId ? +taskId : undefined,
     };
-    return this.feedVideosService.uploadVideoWithCompression(
-      file,
-      createVideoDto,
-      studentId
-    );
+    return this.feedVideosService.uploadVideo(file, createVideoDto, studentId);
   }
 
   @Get("trending")
