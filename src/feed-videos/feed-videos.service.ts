@@ -225,10 +225,13 @@ export class FeedVideosService {
       offset,
     });
 
+    // Process videos with fresh URLs in batches to handle large datasets
+    const videosWithFreshUrls = await this.processVideosWithFreshUrls(videos);
+
     // Check if user has liked each video
-    let videosWithLikeStatus: any[] = videos;
+    let videosWithLikeStatus: any[] = videosWithFreshUrls;
     if (userId) {
-      const videoIds = videos.map((v) => v.id);
+      const videoIds = videosWithFreshUrls.map((v) => v.id);
       const userLikes = await this.videoLikeModel.findAll({
         where: {
           videoId: videoIds,
@@ -239,18 +242,23 @@ export class FeedVideosService {
 
       const likedVideoIds = new Set(userLikes.map((like) => like.videoId));
 
-      videosWithLikeStatus = videos.map((video) => {
-        const videoJson = video.toJSON();
+      videosWithLikeStatus = videosWithFreshUrls.map((video) => {
+        const videoJson =
+          typeof video.toJSON === "function" ? video.toJSON() : video;
         return {
           ...videoJson,
           isLiked: likedVideoIds.has(video.id),
         };
       });
     } else {
-      videosWithLikeStatus = videos.map((video) => ({
-        ...video.toJSON(),
-        isLiked: false,
-      }));
+      videosWithLikeStatus = videosWithFreshUrls.map((video) => {
+        const videoJson =
+          typeof video.toJSON === "function" ? video.toJSON() : video;
+        return {
+          ...videoJson,
+          isLiked: false,
+        };
+      });
     }
 
     const total = await this.feedVideoModel.count({
@@ -266,6 +274,99 @@ export class FeedVideosService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  // ========== HELPER METHODS FOR URL PROCESSING ==========
+  private async processVideosWithFreshUrls(videos: any[]): Promise<any[]> {
+    // If no videos, return empty array
+    if (!videos || videos.length === 0) {
+      return [];
+    }
+
+    // For small datasets (< 1000), process all at once
+    if (videos.length < 1000) {
+      return await this.batchProcessVideos(videos);
+    }
+
+    // For large datasets, process in smaller batches to prevent memory issues
+    const BATCH_SIZE = 100;
+    const processedVideos: any[] = [];
+
+    for (let i = 0; i < videos.length; i += BATCH_SIZE) {
+      const batch = videos.slice(i, i + BATCH_SIZE);
+      try {
+        const processedBatch = await this.batchProcessVideos(batch);
+        processedVideos.push(...processedBatch);
+
+        // Add small delay between batches to prevent overwhelming the system
+        if (i + BATCH_SIZE < videos.length) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+      } catch (error) {
+        console.error(
+          `Error processing video batch ${i}-${i + BATCH_SIZE}:`,
+          error
+        );
+        // Include original videos in case of error to prevent data loss
+        processedVideos.push(...batch);
+      }
+    }
+
+    return processedVideos;
+  }
+
+  private async batchProcessVideos(videos: any[]): Promise<any[]> {
+    const processedVideos = await Promise.allSettled(
+      videos.map(async (video) => {
+        try {
+          // Check if URL needs refresh (older than 6 days)
+          const videoAge = Date.now() - new Date(video.updatedAt).getTime();
+          const sixDaysInMs = 6 * 24 * 60 * 60 * 1000;
+
+          if (videoAge > sixDaysInMs && video.status === "completed") {
+            // Refresh the URL for this video
+            await this.refreshVideoUrl(video.id);
+            // Get the updated video data
+            const updatedVideo = await this.feedVideoModel.findByPk(video.id, {
+              include: [
+                { model: FeedVideoTask, as: "task" },
+                {
+                  model: User,
+                  as: "student",
+                  attributes: [
+                    "user_id",
+                    "first_name",
+                    "last_name",
+                    "username",
+                    "avatar_url",
+                  ],
+                },
+              ],
+            });
+            return updatedVideo || video;
+          }
+
+          return video;
+        } catch (error) {
+          console.error(`Error processing video ${video.id}:`, error);
+          // Return original video if processing fails
+          return video;
+        }
+      })
+    );
+
+    // Extract successful results and fallback to original video for failed ones
+    return processedVideos.map((result, index) => {
+      if (result.status === "fulfilled") {
+        return result.value;
+      } else {
+        console.error(
+          `Failed to process video ${videos[index].id}:`,
+          result.reason
+        );
+        return videos[index]; // Return original video on failure
+      }
+    });
   }
 
   async getTaskVideos(taskId: number, page: number = 1, limit: number = 20) {
@@ -958,19 +1059,36 @@ export class FeedVideosService {
       throw new BadRequestException("Invalid video ID provided");
     }
 
-    const video = await this.getVideoById(videoId);
+    try {
+      const video = await this.getVideoById(videoId);
 
-    // Check if URL needs refresh (you might want to store expiry date)
-    // For now, we'll refresh if the URL is older than 6 days
-    const videoAge = Date.now() - new Date(video.updatedAt).getTime();
-    const sixDaysInMs = 6 * 24 * 60 * 60 * 1000;
+      // Check if URL needs refresh (you might want to store expiry date)
+      // For now, we'll refresh if the URL is older than 6 days
+      const videoAge = Date.now() - new Date(video.updatedAt).getTime();
+      const sixDaysInMs = 6 * 24 * 60 * 60 * 1000;
 
-    if (videoAge > sixDaysInMs && video.status === "completed") {
-      await this.refreshVideoUrl(videoId);
-      return await this.getVideoById(videoId); // Fetch updated video
+      if (videoAge > sixDaysInMs && video.status === "completed") {
+        try {
+          await this.refreshVideoUrl(videoId);
+          return await this.getVideoById(videoId); // Fetch updated video
+        } catch (refreshError) {
+          console.error(
+            `Failed to refresh URL for video ${videoId}:`,
+            refreshError
+          );
+          // Return original video if refresh fails
+          return video;
+        }
+      }
+
+      return video;
+    } catch (error) {
+      console.error(
+        `Error in getVideoWithFreshUrl for video ${videoId}:`,
+        error
+      );
+      throw error; // Re-throw the error for the caller to handle
     }
-
-    return video;
   }
 
   // ========== SSE EVENT LISTENERS ==========
