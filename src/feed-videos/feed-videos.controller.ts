@@ -133,7 +133,11 @@ export class FeedVideosController {
   @ApiResponse({ status: 200, description: "Return task details" })
   @ApiResponse({ status: 404, description: "Task not found" })
   getTaskById(@Param("id") id: string) {
-    return this.feedVideosService.getTaskById(+id);
+    const taskId = parseInt(id);
+    if (isNaN(taskId) || taskId <= 0) {
+      throw new BadRequestException("Invalid task ID");
+    }
+    return this.feedVideosService.getTaskById(taskId);
   }
 
   @Patch("tasks/:id")
@@ -146,7 +150,11 @@ export class FeedVideosController {
     @Param("id") id: string,
     @Body() updateTaskDto: Partial<CreateTaskDto>
   ) {
-    return this.feedVideosService.updateTask(+id, updateTaskDto);
+    const taskId = parseInt(id);
+    if (isNaN(taskId) || taskId <= 0) {
+      throw new BadRequestException("Invalid task ID");
+    }
+    return this.feedVideosService.updateTask(taskId, updateTaskDto);
   }
 
   @Get("tasks/:taskId/videos")
@@ -320,7 +328,11 @@ export class FeedVideosController {
   @ApiResponse({ status: 200, description: "Return video details" })
   @ApiResponse({ status: 404, description: "Video not found" })
   getVideoById(@Param("id") id: string) {
-    return this.feedVideosService.getVideoById(+id);
+    const videoId = parseInt(id);
+    if (isNaN(videoId) || videoId <= 0) {
+      throw new BadRequestException("Invalid video ID");
+    }
+    return this.feedVideosService.getVideoById(videoId);
   }
 
   @Get(":id/stream")
@@ -340,8 +352,13 @@ export class FeedVideosController {
     @Headers() headers,
     @Res() res: Response
   ) {
+    const videoId = parseInt(id);
+    if (isNaN(videoId) || videoId <= 0) {
+      throw new BadRequestException("Invalid video ID");
+    }
+
     // Get video details from database
-    const video = await this.feedVideosService.getVideoById(+id);
+    const video = await this.feedVideosService.getVideoById(videoId);
     if (!video) {
       throw new NotFoundException("Video not found");
     }
@@ -410,7 +427,11 @@ export class FeedVideosController {
   @ApiParam({ name: "id", description: "Video ID" })
   @ApiResponse({ status: 200, description: "View count incremented" })
   incrementViewCount(@Param("id") id: string) {
-    return this.feedVideosService.incrementViewCount(+id);
+    const videoId = parseInt(id);
+    if (isNaN(videoId) || videoId <= 0) {
+      throw new BadRequestException("Invalid video ID");
+    }
+    return this.feedVideosService.incrementViewCount(videoId);
   }
 
   @Delete(":id")
@@ -421,8 +442,12 @@ export class FeedVideosController {
   @ApiResponse({ status: 403, description: "Can only delete your own videos" })
   @ApiResponse({ status: 404, description: "Video not found" })
   deleteVideo(@Param("id") id: string, @CurrentUser() user: any) {
+    const videoId = parseInt(id);
+    if (isNaN(videoId) || videoId <= 0) {
+      throw new BadRequestException("Invalid video ID");
+    }
     const studentId = user.userId;
-    return this.feedVideosService.deleteVideo(+id, studentId);
+    return this.feedVideosService.deleteVideo(videoId, studentId);
   }
 
   // ========== LIKES ==========
@@ -436,8 +461,12 @@ export class FeedVideosController {
   })
   @ApiResponse({ status: 404, description: "Video not found" })
   toggleLike(@Param("id") id: string, @CurrentUser() user: any) {
+    const videoId = parseInt(id);
+    if (isNaN(videoId) || videoId <= 0) {
+      throw new BadRequestException("Invalid video ID");
+    }
     const userId = user.userId;
-    return this.feedVideosService.toggleLike(+id, userId);
+    return this.feedVideosService.toggleLike(videoId, userId);
   }
 
   // ========== COMMENTS ==========
@@ -463,7 +492,11 @@ export class FeedVideosController {
   @ApiParam({ name: "id", description: "Video ID" })
   @ApiResponse({ status: 200, description: "Return video comments" })
   getVideoComments(@Param("id") id: string) {
-    return this.feedVideosService.getVideoComments(+id);
+    const videoId = parseInt(id);
+    if (isNaN(videoId) || videoId <= 0) {
+      throw new BadRequestException("Invalid video ID");
+    }
+    return this.feedVideosService.getVideoComments(videoId);
   }
 
   @Delete("comments/:commentId")
@@ -508,7 +541,11 @@ export class FeedVideosController {
     description: "Return video judges sorted by helpfulness",
   })
   getVideoJudges(@Param("id") id: string) {
-    return this.feedVideosService.getVideoJudges(+id);
+    const videoId = parseInt(id);
+    if (isNaN(videoId) || videoId <= 0) {
+      throw new BadRequestException("Invalid video ID");
+    }
+    return this.feedVideosService.getVideoJudges(videoId);
   }
 
   @Post("judge/:judgeId/helpful")
@@ -547,8 +584,15 @@ export class FeedVideosController {
   @ApiResponse({ status: 200, description: "Notification marked as read" })
   @ApiResponse({ status: 404, description: "Notification not found" })
   markNotificationAsRead(@Param("id") id: string, @CurrentUser() user: any) {
+    const notificationId = parseInt(id);
+    if (isNaN(notificationId) || notificationId <= 0) {
+      throw new BadRequestException("Invalid notification ID");
+    }
     const userId = user.userId;
-    return this.feedVideosService.markNotificationAsRead(+id, userId);
+    return this.feedVideosService.markNotificationAsRead(
+      notificationId,
+      userId
+    );
   }
 
   // ========== VIDEO COMPRESSION ==========

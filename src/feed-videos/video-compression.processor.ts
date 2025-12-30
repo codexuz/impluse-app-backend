@@ -38,19 +38,30 @@ export class VideoCompressionProcessor extends WorkerHost {
     const { inputPath, outputPath, userId, videoId, originalFilename } =
       job.data;
 
+    // Normalize paths for cross-platform compatibility
+    const normalizedInputPath = path.resolve(inputPath);
+    const normalizedOutputPath = path.resolve(outputPath);
+
     this.logger.log(
       `Starting compression for job ${job.id} - User: ${userId}, File: ${originalFilename}`
     );
+    this.logger.log(`Input path: ${normalizedInputPath}`);
+    this.logger.log(`Output path: ${normalizedOutputPath}`);
 
     try {
+      // Validate input file exists
+      if (!fs.existsSync(normalizedInputPath)) {
+        throw new Error(`Input file does not exist: ${normalizedInputPath}`);
+      }
+
       // Ensure output directory exists
-      const outputDir = path.dirname(outputPath);
+      const outputDir = path.dirname(normalizedOutputPath);
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
       // Get video metadata first
-      const metadata = await this.getVideoMetadata(inputPath);
+      const metadata = await this.getVideoMetadata(normalizedInputPath);
 
       await job.updateProgress({
         percent: 0,
@@ -59,7 +70,12 @@ export class VideoCompressionProcessor extends WorkerHost {
       });
 
       // Compress video with Instagram-like settings
-      await this.compressVideo(inputPath, outputPath, job, metadata);
+      await this.compressVideo(
+        normalizedInputPath,
+        normalizedOutputPath,
+        job,
+        metadata
+      );
 
       await job.updateProgress({
         percent: 100,
@@ -68,17 +84,17 @@ export class VideoCompressionProcessor extends WorkerHost {
       });
 
       // Clean up input file
-      if (fs.existsSync(inputPath)) {
-        fs.unlinkSync(inputPath);
-        this.logger.log(`Cleaned up input file: ${inputPath}`);
+      if (fs.existsSync(normalizedInputPath)) {
+        fs.unlinkSync(normalizedInputPath);
+        this.logger.log(`Cleaned up input file: ${normalizedInputPath}`);
       }
 
       const result = {
         success: true,
-        outputPath,
+        outputPath: normalizedOutputPath,
         videoId,
         userId,
-        compressedSize: fs.statSync(outputPath).size,
+        compressedSize: fs.statSync(normalizedOutputPath).size,
         originalSize: metadata.size,
       };
 
@@ -87,7 +103,7 @@ export class VideoCompressionProcessor extends WorkerHost {
         try {
           await this.feedVideosService.updateVideoAfterCompression(
             videoId,
-            outputPath,
+            normalizedOutputPath,
             result.compressedSize
           );
           this.logger.log(`Updated video ${videoId} with compressed URL`);
@@ -101,11 +117,11 @@ export class VideoCompressionProcessor extends WorkerHost {
       this.logger.error(`Compression failed for job ${job.id}:`, error);
 
       // Clean up files on error
-      if (fs.existsSync(inputPath)) {
-        fs.unlinkSync(inputPath);
+      if (fs.existsSync(normalizedInputPath)) {
+        fs.unlinkSync(normalizedInputPath);
       }
-      if (fs.existsSync(outputPath)) {
-        fs.unlinkSync(outputPath);
+      if (fs.existsSync(normalizedOutputPath)) {
+        fs.unlinkSync(normalizedOutputPath);
       }
 
       throw error;

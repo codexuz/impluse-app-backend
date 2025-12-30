@@ -31,13 +31,13 @@ export class FeedVideo extends Model<FeedVideo> {
 
   @AllowNull(false)
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT, // Changed from STRING to handle long presigned URLs
   })
   videoUrl: string;
 
   @AllowNull(true)
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT, // Changed from STRING to handle long presigned URLs
   })
   thumbnailUrl: string;
 
@@ -105,7 +105,13 @@ export class FeedVideo extends Model<FeedVideo> {
   @AllowNull(false)
   @Default("published")
   @Column({
-    type: DataType.ENUM("draft", "published", "archived", "processing", "completed"),
+    type: DataType.ENUM(
+      "draft",
+      "published",
+      "archived",
+      "processing",
+      "completed"
+    ),
   })
   status: "draft" | "published" | "archived" | "processing" | "completed";
 }

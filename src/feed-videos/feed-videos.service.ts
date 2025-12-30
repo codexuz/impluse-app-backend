@@ -30,6 +30,7 @@ import { VideoCompressionJobData } from "./video-compression.processor.js";
 import { MinioService } from "../minio/minio.service.js";
 import * as path from "path";
 import * as fs from "fs/promises";
+import { existsSync } from "fs";
 
 @Injectable()
 export class FeedVideosService {
@@ -134,6 +135,16 @@ export class FeedVideosService {
   }
 
   async getVideoById(videoId: number) {
+    // Validate videoId parameter
+    if (
+      !videoId ||
+      isNaN(videoId) ||
+      !Number.isInteger(videoId) ||
+      videoId <= 0
+    ) {
+      throw new BadRequestException("Invalid video ID provided");
+    }
+
     const video = await this.feedVideoModel.findByPk(videoId, {
       include: [
         { model: FeedVideoTask, as: "task" },
@@ -155,6 +166,16 @@ export class FeedVideosService {
   }
 
   async deleteVideo(videoId: number, studentId: string) {
+    // Validate videoId parameter
+    if (
+      !videoId ||
+      isNaN(videoId) ||
+      !Number.isInteger(videoId) ||
+      videoId <= 0
+    ) {
+      throw new BadRequestException("Invalid video ID provided");
+    }
+
     const video = await this.getVideoById(videoId);
     if (video.studentId !== studentId) {
       throw new BadRequestException("You can only delete your own videos");
@@ -347,6 +368,16 @@ export class FeedVideosService {
   }
 
   async getVideoComments(videoId: number) {
+    // Validate videoId parameter
+    if (
+      !videoId ||
+      isNaN(videoId) ||
+      !Number.isInteger(videoId) ||
+      videoId <= 0
+    ) {
+      throw new BadRequestException("Invalid video ID provided");
+    }
+
     return await this.videoCommentModel.findAll({
       where: { videoId },
       include: [
@@ -429,6 +460,16 @@ export class FeedVideosService {
   }
 
   async getVideoJudges(videoId: number) {
+    // Validate videoId parameter
+    if (
+      !videoId ||
+      isNaN(videoId) ||
+      !Number.isInteger(videoId) ||
+      videoId <= 0
+    ) {
+      throw new BadRequestException("Invalid video ID provided");
+    }
+
     return await this.videoJudgeModel.findAll({
       where: { videoId },
       include: [
@@ -739,15 +780,24 @@ export class FeedVideosService {
     const timestamp = Date.now();
     const ext = path.extname(originalFilename);
     const outputFilename = `compressed_${timestamp}${ext}`;
-    const outputPath = path.join(
+
+    // Ensure cross-platform path handling
+    const normalizedInputPath = path.resolve(inputPath);
+    const outputPath = path.resolve(
       process.cwd(),
       "uploads",
       "videos",
       outputFilename
     );
 
+    // Ensure output directory exists
+    const outputDir = path.dirname(outputPath);
+    if (!existsSync(outputDir)) {
+      await fs.mkdir(outputDir, { recursive: true });
+    }
+
     const jobData: VideoCompressionJobData = {
-      inputPath,
+      inputPath: normalizedInputPath,
       outputPath,
       userId,
       videoId,
@@ -867,6 +917,16 @@ export class FeedVideosService {
 
   // ========== PRESIGNED URL MANAGEMENT ==========
   async refreshVideoUrl(videoId: number): Promise<string> {
+    // Validate videoId parameter
+    if (
+      !videoId ||
+      isNaN(videoId) ||
+      !Number.isInteger(videoId) ||
+      videoId <= 0
+    ) {
+      throw new BadRequestException("Invalid video ID provided");
+    }
+
     const video = await this.feedVideoModel.findByPk(videoId);
     if (!video) {
       throw new NotFoundException("Video not found");
@@ -888,6 +948,16 @@ export class FeedVideosService {
   }
 
   async getVideoWithFreshUrl(videoId: number) {
+    // Validate videoId parameter
+    if (
+      !videoId ||
+      isNaN(videoId) ||
+      !Number.isInteger(videoId) ||
+      videoId <= 0
+    ) {
+      throw new BadRequestException("Invalid video ID provided");
+    }
+
     const video = await this.getVideoById(videoId);
 
     // Check if URL needs refresh (you might want to store expiry date)
