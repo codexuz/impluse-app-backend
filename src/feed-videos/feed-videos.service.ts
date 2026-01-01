@@ -741,18 +741,6 @@ export class FeedVideosService {
 
       this.eventEmitter.emit("video.uploaded", sseEventData);
 
-      // Send notification to all users
-      for (const user of allUsers) {
-        // Create notification record
-        await this.notificationModel.create({
-          userId: user.user_id,
-          fromUserId: uploaderId,
-          videoId: videoId,
-          type: NotificationType.VIDEO_UPLOAD, // Reusing type, or you can create a new type
-          message: message,
-        });
-      }
-
       // Get all FCM tokens except uploader's
       const tokens = await this.notificationTokenModel.findAll({
         where: {
@@ -802,15 +790,6 @@ export class FeedVideosService {
 
       // Replace "Someone" in message with actual username
       const personalizedMessage = params.message.replace("Someone", username);
-
-      // Create notification record
-      await this.notificationModel.create({
-        userId: params.userId,
-        fromUserId: params.fromUserId,
-        videoId: params.videoId,
-        type: params.type,
-        message: personalizedMessage,
-      });
 
       // Send push notification
       const tokens = await this.notificationTokenModel.findAll({
