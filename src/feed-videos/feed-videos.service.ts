@@ -73,11 +73,11 @@ export class FeedVideosService {
 
   async getAllTasks(status?: string) {
     const today = new Date();
-    today.setHours(23, 59, 59, 999); // End of today
+    today.setHours(0, 0, 0, 0); // Start of today
 
     const where: any = {
       dueDate: {
-        [Op.lte]: today, // Less than or equal to today
+        [Op.gte]: today, // Greater than or equal to today (active tasks only)
       },
     };
 
