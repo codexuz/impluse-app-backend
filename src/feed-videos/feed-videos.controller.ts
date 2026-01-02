@@ -176,6 +176,44 @@ export class FeedVideosController {
     );
   }
 
+  @Get("tasks/:taskId/check-done")
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: "Check if user has completed a task" })
+  @ApiParam({ name: "taskId", description: "Task ID" })
+  @ApiResponse({
+    status: 200,
+    description: "Return task completion status",
+    schema: {
+      type: "object",
+      properties: {
+        taskId: { type: "number", example: 1 },
+        userId: { type: "string", example: "123" },
+        isDone: { type: "boolean", example: true },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: "Invalid task ID" })
+  async isTaskDoneByUser(
+    @Param("taskId") taskId: string,
+    @CurrentUser() user: any
+  ) {
+    const taskIdNum = parseInt(taskId);
+    if (isNaN(taskIdNum) || taskIdNum <= 0) {
+      throw new BadRequestException("Invalid task ID");
+    }
+
+    const isDone = await this.feedVideosService.isTaskDoneByUser(
+      taskIdNum,
+      user.userId
+    );
+
+    return {
+      taskId: taskIdNum,
+      userId: user.userId,
+      isDone,
+    };
+  }
+
   // ========== VIDEO MANAGEMENT (Student) ==========
   @Post("upload")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)

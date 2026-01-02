@@ -72,7 +72,19 @@ export class FeedVideosService {
   }
 
   async getAllTasks(status?: string) {
-    const where = status ? { status } : {};
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+
+    const where: any = {
+      dueDate: {
+        [Op.lte]: today, // Less than or equal to today
+      },
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
     return await this.feedVideoTaskModel.findAll({
       where,
       order: [["createdAt", "DESC"]],
@@ -83,6 +95,21 @@ export class FeedVideosService {
     const task = await this.feedVideoTaskModel.findByPk(taskId);
     if (!task) throw new NotFoundException("Task not found");
     return task;
+  }
+
+  async isTaskDoneByUser(taskId: number, userId: string): Promise<boolean> {
+    // Check if user has submitted a video for this task
+    const submission = await this.feedVideoModel.findOne({
+      where: {
+        taskId,
+        studentId: userId,
+        status: {
+          [Op.in]: ["completed", "processing"], // Consider both completed and processing as done
+        },
+      },
+    });
+
+    return !!submission; // Returns true if submission exists, false otherwise
   }
 
   async updateTask(taskId: number, updateData: Partial<CreateTaskDto>) {
