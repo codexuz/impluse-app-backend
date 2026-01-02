@@ -280,6 +280,32 @@ export class FeedVideosController {
       limits: {
         fileSize: 1000 * 1024 * 1024, // 1000MB limit
       },
+      fileFilter: (req, file, cb) => {
+        // Allow video files including .mov for iOS
+        const allowedMimeTypes = [
+          "video/mp4",
+          "video/mpeg",
+          "video/quicktime", // .mov files
+          "video/x-msvideo",
+          "video/webm",
+        ];
+        const ext = extname(file.originalname).toLowerCase();
+        const allowedExtensions = [".mp4", ".mpeg", ".mov", ".avi", ".webm"];
+
+        if (
+          allowedMimeTypes.includes(file.mimetype) ||
+          allowedExtensions.includes(ext)
+        ) {
+          cb(null, true);
+        } else {
+          cb(
+            new BadRequestException(
+              "Invalid file type. Only video files are allowed (mp4, mov, mpeg, avi, webm)."
+            ),
+            false
+          );
+        }
+      },
     })
   )
   async uploadVideo(
