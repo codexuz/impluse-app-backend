@@ -84,6 +84,7 @@ import { ArticlesModule } from "./articles/articles.module.js";
 import { CertificatesModule } from "./certificates/certificates.module.js";
 import { FeedVideosModule } from "./feed-videos/feed-videos.module.js";
 import { MinioModule } from "./minio/minio.module.js";
+import { StudentParentsModule } from './student-parents/student-parents.module.js';
 
 @Module({
   imports: [
@@ -173,6 +174,7 @@ import { MinioModule } from "./minio/minio.module.js";
     CertificatesModule,
     FeedVideosModule,
     MinioModule,
+    StudentParentsModule,
   ],
   controllers: [AppController],
   providers: [

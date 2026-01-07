@@ -5,9 +5,6 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { ConfigService } from "@nestjs/config";
-import { readdir, unlink, writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { Upload } from "./entities/upload.entity.js";
 import { CreateUploadDto } from "./dto/create-upload.dto.js";
 import { UpdateUploadDto } from "./dto/update-upload.dto.js";
@@ -16,41 +13,55 @@ import {
   FileListItemDto,
 } from "./dto/upload-response.dto.js";
 import { Op } from "sequelize";
+import { MinioService } from "../minio/minio.service.js";
 
 @Injectable()
 export class UploadService {
-  private readonly uploadDir = "./uploads";
+  private readonly minioBucket = process.env.MINIO_BUCKET || "impulse";
 
   constructor(
     @InjectModel(Upload)
     private uploadModel: typeof Upload,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private minioService: MinioService
   ) {
-    this.ensureUploadDirectories();
+    this.ensureBucket();
   }
 
-  private async ensureUploadDirectories() {
-    const directories = [
-      "./uploads",
-      "./uploads/videos",
-      "./uploads/avatars",
-      "./uploads/temp",
-    ];
-    for (const dir of directories) {
-      if (!existsSync(dir)) {
-        await mkdir(dir, { recursive: true });
+  private async ensureBucket() {
+    try {
+      const exists = await this.minioService.bucketExists(this.minioBucket);
+      if (!exists) {
+        await this.minioService.makeBucket(this.minioBucket);
       }
+    } catch (error) {
+      console.error("Error ensuring MinIO bucket:", error);
     }
   }
 
-  getFileUrl(filename: string): string {
-    const baseUrl =
-      this.configService.get("APP_URL") || "https://backend.impulselc.uz";
-    // Handle both regular uploads and video uploads
-    if (filename.includes("/")) {
-      return `${baseUrl}/uploads/${filename}`;
+  // Public accessors for controller usage
+  getMinioService(): MinioService {
+    return this.minioService;
+  }
+
+  getMinioBucket(): string {
+    return this.minioBucket;
+  }
+
+  async getFileUrl(objectName: string): Promise<string> {
+    try {
+      // Generate a presigned URL valid for 7 days
+      const url = await this.minioService.getPresignedUrl(
+        this.minioBucket,
+        objectName,
+        7 * 24 * 60 * 60
+      );
+      return url;
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to generate file URL: ${error.message}`
+      );
     }
-    return `${baseUrl}/uploads/${filename}`;
   }
 
   // Database operations
@@ -152,27 +163,40 @@ export class UploadService {
     // Soft delete
     await upload.update({ deleted_at: new Date() });
 
-    // Optionally delete the actual file
+    // Delete the actual file from MinIO
     try {
-      await unlink(join(this.uploadDir, upload.filename));
+      await this.minioService.deleteFile(this.minioBucket, upload.filename);
     } catch (error) {
-      console.error("Error deleting physical file:", error);
+      console.error("Error deleting file from MinIO:", error);
       // Continue even if file deletion fails
     }
   }
 
   // File system operations
   async getAllFiles(): Promise<FileListItemDto[]> {
-    const files = await readdir(this.uploadDir);
-    return files.map((filename) => ({
-      filename,
-      url: this.getFileUrl(filename),
-    }));
+    try {
+      const files = await this.minioService.listFiles(this.minioBucket);
+      const fileList: FileListItemDto[] = [];
+
+      for (const file of files) {
+        if (file.name) {
+          const url = await this.getFileUrl(file.name);
+          fileList.push({
+            filename: file.name,
+            url,
+          });
+        }
+      }
+
+      return fileList;
+    } catch (error) {
+      throw new BadRequestException(`Failed to list files: ${error.message}`);
+    }
   }
 
   async deleteFile(filename: string) {
     try {
-      await unlink(join(this.uploadDir, filename));
+      await this.minioService.deleteFile(this.minioBucket, filename);
       return { success: true, message: "File deleted successfully" };
     } catch (error) {
       throw new NotFoundException("File not found");
@@ -180,7 +204,7 @@ export class UploadService {
   }
 
   /**
-   * Save base64 data as a file
+   * Save base64 data as a file in MinIO
    * @param base64Data Base64 encoded file content
    * @param customFilename Optional custom filename
    * @returns File details including URL
@@ -190,11 +214,6 @@ export class UploadService {
     customFilename?: string
   ): Promise<any> {
     try {
-      // Ensure upload directory exists
-      if (!existsSync(this.uploadDir)) {
-        await mkdir(this.uploadDir, { recursive: true });
-      }
-
       // Decode the base64 data
       const buffer = Buffer.from(base64Data, "base64");
 
@@ -207,19 +226,25 @@ export class UploadService {
         }
       }
 
-      // Always generate a random filename
+      // Generate a random filename
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
       const filename = `file-${uniqueSuffix}${extension}`;
-      const filepath = join(this.uploadDir, filename);
 
-      // Write the file to disk
-      await writeFile(filepath, buffer);
+      // Upload to MinIO
+      await this.minioService.uploadBuffer(
+        this.minioBucket,
+        filename,
+        buffer,
+        buffer.length
+      );
+
+      // Generate presigned URL
+      const url = await this.getFileUrl(filename);
 
       // Return file information
       return {
         filename: filename,
-        path: filepath,
-        url: this.getFileUrl(filename),
+        url: url,
       };
     } catch (error) {
       if (error instanceof BadRequestException) {

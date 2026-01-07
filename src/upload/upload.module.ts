@@ -4,9 +4,10 @@ import { UploadController } from "./upload.controller.js";
 import { UploadService } from "./upload.service.js";
 import { Upload } from "./entities/upload.entity.js";
 import { TimeoutMiddleware } from "./middleware/timeout.middleware.js";
+import { MinioModule } from "../minio/minio.module.js";
 
 @Module({
-  imports: [SequelizeModule.forFeature([Upload])],
+  imports: [SequelizeModule.forFeature([Upload]), MinioModule],
   controllers: [UploadController],
   providers: [UploadService, TimeoutMiddleware],
   exports: [UploadService], // Exporting UploadService if needed in other modules

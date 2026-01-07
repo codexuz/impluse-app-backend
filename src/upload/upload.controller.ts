@@ -13,7 +13,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { diskStorage } from "multer";
+import { memoryStorage } from "multer";
 import { extname } from "path";
 import {
   ApiConsumes,
@@ -64,29 +64,42 @@ export class UploadController {
   })
   @UseInterceptors(
     FileInterceptor("file", {
-      storage: diskStorage({
-        destination: "./uploads",
-        filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + "-" + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
-          callback(null, filename);
-        },
-      }),
+      storage: memoryStorage(),
       limits: {
         fileSize: 1024 * 1024 * 1024, // 1GB limit
         fieldSize: 1024 * 1024 * 1024,
       },
     })
   )
-  uploadFile(@UploadedFile() file: Express.Multer.File) {
-    const fileUrl = this.uploadService.getFileUrl(file.filename);
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException("No file provided");
+    }
+
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = extname(file.originalname);
+    const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
+
+    // Upload to MinIO
+    const minioService = this.uploadService.getMinioService();
+    const minioBucket = this.uploadService.getMinioBucket();
+
+    await minioService.uploadBuffer(
+      minioBucket,
+      filename,
+      file.buffer,
+      file.size
+    );
+
+    // Get presigned URL
+    const fileUrl = await this.uploadService.getFileUrl(filename);
+
     return {
       originalName: file.originalname,
-      filename: file.filename,
-      path: file.path,
+      filename: filename,
       url: fileUrl,
+      size: file.size,
+      mimeType: file.mimetype,
     };
   }
 
@@ -115,16 +128,7 @@ export class UploadController {
   })
   @UseInterceptors(
     FileInterceptor("video", {
-      storage: diskStorage({
-        destination: "./uploads/videos",
-        filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + "-" + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          const filename = `video-${uniqueSuffix}${ext}`;
-          callback(null, filename);
-        },
-      }),
+      storage: memoryStorage(),
       limits: {
         fileSize: 2 * 1024 * 1024 * 1024, // 2GB limit for videos
         fieldSize: 2 * 1024 * 1024 * 1024,
@@ -153,14 +157,30 @@ export class UploadController {
   )
   async uploadVideo(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
-      throw new Error("No video file provided");
+      throw new BadRequestException("No video file provided");
     }
 
-    const fileUrl = this.uploadService.getFileUrl(`videos/${file.filename}`);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = extname(file.originalname);
+    const filename = `video-${uniqueSuffix}${ext}`;
+
+    // Upload to MinIO
+    const minioService = this.uploadService.getMinioService();
+    const minioBucket = this.uploadService.getMinioBucket();
+
+    await minioService.uploadBuffer(
+      minioBucket,
+      filename,
+      file.buffer,
+      file.size
+    );
+
+    // Get presigned URL
+    const fileUrl = await this.uploadService.getFileUrl(filename);
+
     return {
       originalName: file.originalname,
-      filename: file.filename,
-      path: file.path,
+      filename: filename,
       url: fileUrl,
       size: file.size,
       mimeType: file.mimetype,
