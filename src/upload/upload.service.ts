@@ -13,46 +13,48 @@ import {
   FileListItemDto,
 } from "./dto/upload-response.dto.js";
 import { Op } from "sequelize";
-import { MinioService } from "../minio/minio.service.js";
+import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 
 @Injectable()
 export class UploadService {
-  private readonly minioBucket = process.env.MINIO_BUCKET || "impulse";
+  private readonly storageBucket = process.env.AWS_BUCKET || "speakup";
 
   constructor(
     @InjectModel(Upload)
     private uploadModel: typeof Upload,
     private configService: ConfigService,
-    private minioService: MinioService
+    private awsStorageService: AwsStorageService
   ) {
     this.ensureBucket();
   }
 
   private async ensureBucket() {
     try {
-      const exists = await this.minioService.bucketExists(this.minioBucket);
+      const exists = await this.awsStorageService.bucketExists(
+        this.storageBucket
+      );
       if (!exists) {
-        await this.minioService.makeBucket(this.minioBucket);
+        await this.awsStorageService.makeBucket(this.storageBucket);
       }
     } catch (error) {
-      console.error("Error ensuring MinIO bucket:", error);
+      console.error("Error ensuring AWS S3 bucket:", error);
     }
   }
 
   // Public accessors for controller usage
-  getMinioService(): MinioService {
-    return this.minioService;
+  getStorageService(): AwsStorageService {
+    return this.awsStorageService;
   }
 
-  getMinioBucket(): string {
-    return this.minioBucket;
+  getStorageBucket(): string {
+    return this.storageBucket;
   }
 
   async getFileUrl(objectName: string): Promise<string> {
     try {
       // Generate a presigned URL valid for 7 days
-      const url = await this.minioService.getPresignedUrl(
-        this.minioBucket,
+      const url = await this.awsStorageService.getPresignedUrl(
+        this.storageBucket,
         objectName,
         7 * 24 * 60 * 60
       );
@@ -163,11 +165,14 @@ export class UploadService {
     // Soft delete
     await upload.update({ deleted_at: new Date() });
 
-    // Delete the actual file from MinIO
+    // Delete the actual file from AWS S3
     try {
-      await this.minioService.deleteFile(this.minioBucket, upload.filename);
+      await this.awsStorageService.deleteFile(
+        this.storageBucket,
+        upload.filename
+      );
     } catch (error) {
-      console.error("Error deleting file from MinIO:", error);
+      console.error("Error deleting file from AWS S3:", error);
       // Continue even if file deletion fails
     }
   }
@@ -175,7 +180,7 @@ export class UploadService {
   // File system operations
   async getAllFiles(): Promise<FileListItemDto[]> {
     try {
-      const files = await this.minioService.listFiles(this.minioBucket);
+      const files = await this.awsStorageService.listFiles(this.storageBucket);
       const fileList: FileListItemDto[] = [];
 
       for (const file of files) {
@@ -196,7 +201,7 @@ export class UploadService {
 
   async deleteFile(filename: string) {
     try {
-      await this.minioService.deleteFile(this.minioBucket, filename);
+      await this.awsStorageService.deleteFile(this.storageBucket, filename);
       return { success: true, message: "File deleted successfully" };
     } catch (error) {
       throw new NotFoundException("File not found");
@@ -204,7 +209,7 @@ export class UploadService {
   }
 
   /**
-   * Save base64 data as a file in MinIO
+   * Save base64 data as a file in AWS S3
    * @param base64Data Base64 encoded file content
    * @param customFilename Optional custom filename
    * @returns File details including URL
@@ -230,12 +235,11 @@ export class UploadService {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
       const filename = `file-${uniqueSuffix}${extension}`;
 
-      // Upload to MinIO
-      await this.minioService.uploadBuffer(
-        this.minioBucket,
+      // Upload to AWS S3
+      await this.awsStorageService.uploadBuffer(
+        this.storageBucket,
         filename,
-        buffer,
-        buffer.length
+        buffer
       );
 
       // Generate presigned URL

@@ -80,16 +80,11 @@ export class UploadController {
     const ext = extname(file.originalname);
     const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
 
-    // Upload to MinIO
-    const minioService = this.uploadService.getMinioService();
-    const minioBucket = this.uploadService.getMinioBucket();
+    // Upload to AWS S3
+    const storageService = this.uploadService.getStorageService();
+    const storageBucket = this.uploadService.getStorageBucket();
 
-    await minioService.uploadBuffer(
-      minioBucket,
-      filename,
-      file.buffer,
-      file.size
-    );
+    await storageService.uploadBuffer(storageBucket, filename, file.buffer);
 
     // Get presigned URL
     const fileUrl = await this.uploadService.getFileUrl(filename);
@@ -164,16 +159,11 @@ export class UploadController {
     const ext = extname(file.originalname);
     const filename = `video-${uniqueSuffix}${ext}`;
 
-    // Upload to MinIO
-    const minioService = this.uploadService.getMinioService();
-    const minioBucket = this.uploadService.getMinioBucket();
+    // Upload to AWS S3
+    const storageService = this.uploadService.getStorageService();
+    const storageBucket = this.uploadService.getStorageBucket();
 
-    await minioService.uploadBuffer(
-      minioBucket,
-      filename,
-      file.buffer,
-      file.size
-    );
+    await storageService.uploadBuffer(storageBucket, filename, file.buffer);
 
     // Get presigned URL
     const fileUrl = await this.uploadService.getFileUrl(filename);
