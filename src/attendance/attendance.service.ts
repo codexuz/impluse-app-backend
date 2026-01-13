@@ -6,6 +6,11 @@ import {
 import { CreateAttendanceDto } from "./dto/create-attendance.dto.js";
 import { UpdateAttendanceDto } from "./dto/update-attendance.dto.js";
 import { Attendance } from "./entities/attendance.entity.js";
+import {
+  AttendanceLog,
+  AttendanceStatus,
+  AttendanceAction,
+} from "./entities/attendance-log.entity.js";
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
@@ -17,14 +22,29 @@ export class AttendanceService {
     teacherId: string,
     status: string,
     studentId: string,
-    date: string
+    date: string,
+    attendanceId: string,
+    markedBy: string,
+    oldStatus?: string
   ) {
-    // Only process payment if status is 'present'
-    if (status !== "present") {
-      return;
-    }
-
     try {
+      // Create attendance log
+      await AttendanceLog.create({
+        attendance_id: attendanceId,
+        student_id: studentId,
+        marked_by: markedBy,
+        new_status: status as AttendanceStatus,
+        old_status: oldStatus as AttendanceStatus,
+        action: oldStatus
+          ? AttendanceAction.STATUS_CHANGED
+          : AttendanceAction.STATUS_CREATED,
+      });
+
+      // Only process payment if status is 'present'
+      if (status !== "present") {
+        return;
+      }
+
       // Get teacher profile with payment information
       const teacherProfile = await TeacherProfile.findOne({
         where: { user_id: teacherId },
@@ -63,6 +83,7 @@ export class AttendanceService {
           // Create teacher transaction record for audit trail (one per student)
           await TeacherTransaction.create({
             teacher_id: teacherId,
+            student_id: studentId,
             amount: paymentAmount,
             type: "kirim", // Payment for attendance
           });
@@ -106,12 +127,14 @@ export class AttendanceService {
       note: createAttendanceDto.note || "",
     } as any);
 
-    // Handle teacher payment if status is 'present' (per student)
+    // Handle teacher payment and create attendance log
     await this.handleTeacherPayment(
       createAttendanceDto.teacher_id,
       createAttendanceDto.status,
       createAttendanceDto.student_id,
-      createAttendanceDto.date
+      createAttendanceDto.date,
+      attendance.id,
+      createAttendanceDto.teacher_id
     );
 
     return attendance;
@@ -149,12 +172,14 @@ export class AttendanceService {
 
         createdAttendances.push(attendance);
 
-        // Handle teacher payment if status is 'present' (per student)
+        // Handle teacher payment and create attendance log
         await this.handleTeacherPayment(
           dto.teacher_id,
           dto.status,
           dto.student_id,
-          dto.date
+          dto.date,
+          attendance.id,
+          dto.teacher_id
         );
       } catch (error) {
         errors.push({
@@ -270,9 +295,9 @@ export class AttendanceService {
     // Update the attendance record
     await attendance.update(updateAttendanceDto);
 
-    // Handle teacher payment if status is being updated to 'present' and wasn't 'present' before
+    // Handle teacher payment and create attendance log if status changed
     const newStatus = updateAttendanceDto.status || attendance.status;
-    if (newStatus === "present" && previousStatus !== "present") {
+    if (updateAttendanceDto.status && newStatus !== previousStatus) {
       const teacherId = updateAttendanceDto.teacher_id || attendance.teacher_id;
       const studentId = updateAttendanceDto.student_id || attendance.student_id;
       const attendanceDate = updateAttendanceDto.date || attendance.date;
@@ -280,7 +305,10 @@ export class AttendanceService {
         teacherId,
         newStatus,
         studentId,
-        attendanceDate
+        attendanceDate,
+        attendance.id,
+        teacherId,
+        previousStatus
       );
     }
 

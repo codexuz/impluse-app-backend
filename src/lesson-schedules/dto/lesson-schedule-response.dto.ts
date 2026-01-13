@@ -1,11 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export enum DayTimeType {
-  ODD = "odd",
-  EVEN = "even",
-  BOTH = "both",
-}
-
 export class LessonScheduleResponseDto {
   @ApiProperty({
     description: "The unique identifier for the lesson schedule",
@@ -27,29 +21,17 @@ export class LessonScheduleResponseDto {
   group?: any;
 
   @ApiProperty({
-    description: "The room number where the lesson will take place",
-    example: "Room 101",
+    description: "The name of the lesson",
+    example: "Introduction to English Grammar",
   })
-  room_number: string;
+  lesson_name: string;
 
   @ApiProperty({
-    description: "The day time pattern (odd weeks, even weeks, or both)",
-    example: "both",
-    enum: DayTimeType,
+    description: "The date of the lesson",
+    example: "2026-01-15",
+    required: false,
   })
-  day_time: DayTimeType;
-
-  @ApiProperty({
-    description: "The start time of the lesson",
-    example: "09:00 AM",
-  })
-  start_time?: string;
-
-  @ApiProperty({
-    description: "The end time of the lesson",
-    example: "10:30 AM",
-  })
-  end_time?: string;
+  date?: Date;
 
   @ApiProperty({
     description: "When the lesson schedule was created",

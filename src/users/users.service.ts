@@ -18,9 +18,12 @@ import { StudentProfile } from "../student_profiles/entities/student_profile.ent
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { UserSession } from "./entities/user-session.model.js";
 import { StudentPayment } from "../student-payment/entities/student-payment.entity.js";
+import { MinioService } from "../minio/minio.service.js";
 
 @Injectable()
 export class UsersService {
+  private readonly minioBucket = process.env.MINIO_BUCKET || "impulse";
+
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
@@ -28,7 +31,8 @@ export class UsersService {
     private roleModel: typeof Role,
     @InjectModel(StudentProfile)
     private studentProfileModel: typeof StudentProfile,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private minioService: MinioService
   ) {}
 
   private async checkExistingUser(
@@ -512,9 +516,53 @@ export class UsersService {
   }
 
   /**
-   * Update user avatar after uploading a file
+   * Upload avatar to MinIO and update user
    * @param userId The user's ID
-   * @param filename The uploaded file name
+   * @param file The uploaded file
+   * @returns The updated user object with the new avatar URL
+   */
+  async uploadAvatarToMinio(userId: string, file: Express.Multer.File): Promise<User> {
+    const user = await this.userModel.findByPk(userId);
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = file.originalname.split('.').pop();
+    const filename = `avatar-${uniqueSuffix}.${ext}`;
+    const objectName = `avatars/${filename}`;
+
+    // Upload to MinIO
+    await this.minioService.uploadBuffer(
+      this.minioBucket,
+      objectName,
+      file.buffer,
+      file.size,
+      {
+        'Content-Type': file.mimetype
+      }
+    );
+
+    // Generate presigned URL from MinIO (valid for 7 days)
+    const avatarUrl = await this.minioService.getPresignedUrl(
+      this.minioBucket,
+      objectName,
+      7 * 24 * 60 * 60
+    );
+
+    // Update the user's avatar_url
+    await user.update({ avatar_url: avatarUrl });
+
+    // Return updated user without password_hash
+    return this.findOne(userId);
+  }
+
+  /**
+   * Update user avatar after uploading a file to MinIO
+   * @param userId The user's ID
+   * @param filename The uploaded file name in MinIO
    * @returns The updated user object with the new avatar URL
    */
   async updateAvatar(userId: string, filename: string): Promise<User> {
@@ -524,9 +572,12 @@ export class UsersService {
       throw new NotFoundException(`User with ID "${userId}" not found`);
     }
 
-    // Generate the full avatar URL
-    const baseUrl = this.configService.get('APP_URL') || 'https://backend.impulselc.uz';
-    const avatarUrl = `${baseUrl}/uploads/avatars/${filename}`;
+    // Generate presigned URL from MinIO (valid for 7 days)
+    const avatarUrl = await this.minioService.getPresignedUrl(
+      this.minioBucket,
+      `avatars/${filename}`,
+      7 * 24 * 60 * 60
+    );
 
     // Update the user's avatar_url
     await user.update({ avatar_url: avatarUrl });

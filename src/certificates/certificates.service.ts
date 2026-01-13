@@ -4,17 +4,14 @@ import { CreateCertificateDto } from "./dto/create-certificate.dto.js";
 import { UpdateCertificateDto } from "./dto/update-certificate.dto.js";
 import { Certificate } from "./entities/certificate.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { MinioService } from "../minio/minio.service.js";
 import { createCanvas, loadImage, registerFont } from "canvas";
 import * as fs from "fs";
 import * as path from "path";
 
 @Injectable()
 export class CertificatesService {
-  private readonly certificatesDir = path.join(
-    process.cwd(),
-    "uploads",
-    "certificates"
-  );
+  private readonly bucketName = "certificates";
   private readonly templatesDir = path.join(
     process.cwd(),
     "public",
@@ -25,12 +22,11 @@ export class CertificatesService {
     @InjectModel(Certificate)
     private certificateModel: typeof Certificate,
     @InjectModel(User)
-    private userModel: typeof User
+    private userModel: typeof User,
+    private minioService: MinioService
   ) {
-    // Ensure certificates directory exists
-    if (!fs.existsSync(this.certificatesDir)) {
-      fs.mkdirSync(this.certificatesDir, { recursive: true });
-    }
+    // Ensure bucket exists
+    this.initializeBucket();
 
     // Register Poppins font
     try {
@@ -49,6 +45,18 @@ export class CertificatesService {
       }
     } catch (error) {
       console.error("Font registration error:", error);
+    }
+  }
+
+  private async initializeBucket() {
+    try {
+      const exists = await this.minioService.bucketExists(this.bucketName);
+      if (!exists) {
+        await this.minioService.makeBucket(this.bucketName);
+        console.log(`Bucket ${this.bucketName} created successfully`);
+      }
+    } catch (error) {
+      console.error(`Error initializing bucket ${this.bucketName}:`, error);
     }
   }
 
@@ -113,14 +121,26 @@ export class CertificatesService {
       ctx.textAlign = "left";
       ctx.fillText(`${certificatedId}`, 181, 389);
 
-      // Save the image
+      // Save the image to MinIO
       const fileName = `certificate-${certificatedId}.png`;
-      const filePath = path.join(this.certificatesDir, fileName);
       const buffer = canvas.toBuffer("image/png");
-      fs.writeFileSync(filePath, buffer);
 
-      // Return full URL
-      return `https://backend.impulselc.uz/uploads/certificates/${fileName}`;
+      await this.minioService.uploadBuffer(
+        this.bucketName,
+        fileName,
+        buffer,
+        buffer.length,
+        { "Content-Type": "image/png" }
+      );
+
+      // Generate presigned URL (valid for 7 days)
+      const url = await this.minioService.getPresignedUrl(
+        this.bucketName,
+        fileName,
+        7 * 24 * 60 * 60
+      );
+
+      return url;
     } catch (error) {
       throw new Error(`Failed to generate certificate image: ${error.message}`);
     }
@@ -221,15 +241,16 @@ export class CertificatesService {
   async remove(id: string): Promise<void> {
     const certificate = await this.findOne(id);
 
-    // Delete certificate image if exists
+    // Delete certificate image from MinIO if exists
     if (certificate.certificate_url) {
-      const filePath = path.join(
-        process.cwd(),
-        "uploads",
-        certificate.certificate_url
-      );
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      try {
+        // Extract filename from URL (last part after /)
+        const urlParts = certificate.certificate_url.split("/");
+        const fileName = urlParts[urlParts.length - 1].split("?")[0]; // Remove query params
+
+        await this.minioService.deleteFile(this.bucketName, fileName);
+      } catch (error) {
+        console.error("Error deleting certificate from MinIO:", error);
       }
     }
 

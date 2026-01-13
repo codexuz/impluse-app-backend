@@ -14,8 +14,6 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiOperation, ApiResponse, ApiConsumes, ApiBody } from "@nestjs/swagger";
-import { diskStorage } from "multer";
-import { extname } from "path";
 import { UsersService } from "./users.service.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
@@ -175,7 +173,7 @@ export class UsersController {
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
   @ApiOperation({
     summary: "Upload user avatar image",
-    description: "Upload an avatar image for the user. The image will be stored and the avatar_url will be updated."
+    description: "Upload an avatar image for the user. The image will be stored in MinIO and the avatar_url will be updated."
   })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
@@ -195,15 +193,6 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "User not found" })
   @UseInterceptors(
     FileInterceptor("file", {
-      storage: diskStorage({
-        destination: "./uploads/avatars",
-        filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          const filename = `avatar-${uniqueSuffix}${ext}`;
-          callback(null, filename);
-        },
-      }),
       limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
       fileFilter: (req, file, callback) => {
         const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
@@ -219,7 +208,7 @@ export class UsersController {
     @Param("id") id: string,
     @UploadedFile() file: Express.Multer.File
   ) {
-    return this.usersService.updateAvatar(id, file.filename);
+    return this.usersService.uploadAvatarToMinio(id, file);
   }
 
   @Patch(":id/avatar")

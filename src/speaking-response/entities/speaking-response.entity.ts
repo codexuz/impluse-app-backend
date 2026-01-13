@@ -28,7 +28,7 @@ export class SpeakingResponse extends Model {
   response_type: 'part1' | 'part2' | 'part3' | 'pronunciation';
 
   @Column({
-    type: DataType.ARRAY(DataType.STRING),
+    type: DataType.JSON,
     allowNull: true,
     comment: 'URLs to the audio recordings',
     defaultValue: []

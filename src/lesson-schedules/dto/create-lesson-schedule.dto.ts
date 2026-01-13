@@ -2,16 +2,10 @@ import {
   IsString,
   IsNotEmpty,
   IsUUID,
-  IsEnum,
   IsOptional,
+  IsDateString,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-
-export enum DayTimeType {
-  ODD = "odd",
-  EVEN = "even",
-  BOTH = "both",
-}
 
 export class CreateLessonScheduleDto {
   @ApiProperty({
@@ -24,35 +18,19 @@ export class CreateLessonScheduleDto {
   group_id: string;
 
   @ApiProperty({
-    description: "The room number where the lesson will take place",
-    example: "Room 101",
+    description: "The name of the lesson",
+    example: "Introduction to English Grammar",
   })
   @IsString()
   @IsNotEmpty()
-  room_number: string;
+  lesson_name: string;
 
   @ApiProperty({
-    description: "The day time pattern (odd weeks, even weeks, or both)",
-    example: "both",
-    enum: DayTimeType,
-  })
-  @IsEnum(DayTimeType)
-  @IsNotEmpty()
-  day_time: DayTimeType;
-
-  @ApiProperty({
-    description: "The start time of the lesson (Date format)",
-    example: "2025-09-13T09:00:00Z",
+    description: "The date of the lesson (YYYY-MM-DD)",
+    example: "2026-01-15",
     required: false,
   })
+  @IsDateString()
   @IsOptional()
-  start_time?: Date;
-
-  @ApiProperty({
-    description: "The end time of the lesson (Date format)",
-    example: "2025-09-13T10:30:00Z",
-    required: false,
-  })
-  @IsOptional()
-  end_time?: Date;
+  date?: string;
 }

@@ -55,10 +55,6 @@ export class LessonSchedulesController {
     status: 403,
     description: "Forbidden - Insufficient permissions.",
   })
-  @ApiResponse({
-    status: 409,
-    description: "Conflict - Overlapping schedule exists.",
-  })
   async create(@Body() createLessonScheduleDto: CreateLessonScheduleDto) {
     return await this.lessonSchedulesService.create(createLessonScheduleDto);
   }
@@ -141,10 +137,6 @@ export class LessonSchedulesController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 404, description: "Lesson schedule not found." })
-  @ApiResponse({
-    status: 409,
-    description: "Conflict - Overlapping schedule exists.",
-  })
   async update(
     @Param("id") id: string,
     @Body() updateLessonScheduleDto: UpdateLessonScheduleDto

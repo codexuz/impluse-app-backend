@@ -2,9 +2,11 @@ import { IsUUID, IsNotEmpty, IsInt, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum TeacherTransactionType {
+  KIRIM = 'kirim',
   OYLIK = 'oylik',
   BONUS = 'bonus',
   AVANS = 'avans',
+  JARIMA = 'jarima'
 }
 
 export class CreateTeacherTransactionDto {

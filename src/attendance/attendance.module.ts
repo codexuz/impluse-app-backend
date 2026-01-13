@@ -3,6 +3,7 @@ import { SequelizeModule } from "@nestjs/sequelize";
 import { AttendanceService } from "./attendance.service.js";
 import { AttendanceController } from "./attendance.controller.js";
 import { Attendance } from "./entities/attendance.entity.js";
+import { AttendanceLog } from "./entities/attendance-log.entity.js";
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
@@ -11,6 +12,7 @@ import { TeacherTransaction } from "../teacher-transaction/entities/teacher-tran
   imports: [
     SequelizeModule.forFeature([
       Attendance,
+      AttendanceLog,
       TeacherProfile,
       TeacherWallet,
       TeacherTransaction,

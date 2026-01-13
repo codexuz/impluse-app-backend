@@ -6,6 +6,7 @@ import { User } from './entities/user.entity.js';
 import { Role } from './entities/role.model.js';
 import { UserRole } from './entities/user-role.model.js';
 import { StudentProfile } from '../student_profiles/entities/student_profile.entity.js';
+import { MinioModule } from '../minio/minio.module.js';
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { StudentProfile } from '../student_profiles/entities/student_profile.ent
       Role,
       UserRole,
       StudentProfile
-    ])
+    ]),
+    MinioModule
   ],
   controllers: [UsersController],
   providers: [UsersService],

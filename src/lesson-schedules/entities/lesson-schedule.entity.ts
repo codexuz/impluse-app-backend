@@ -31,25 +31,13 @@ export class LessonSchedule extends Model<LessonSchedule> {
     type: DataType.TEXT,
     allowNull: false,
   })
-  room_number: string;
+  lesson_name: string;
 
   @Column({
-    type: DataType.ENUM("odd", "even", "both"),
-    allowNull: false,
-  })
-  day_time: string;
-
-  @Column({
-    type: DataType.DATE,
+    type: DataType.DATEONLY,
     allowNull: true,
   })
-  start_time: Date;
-
-  @Column({
-    type: DataType.DATE,
-    allowNull: true,
-  })
-  end_time: Date;
+  date: Date;
 
   @CreatedAt
   created_at: Date;

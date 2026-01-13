@@ -29,6 +29,7 @@ import { StudentProfile } from "../student_profiles/entities/student_profile.ent
 import { Notifications } from "../notifications/entities/notification.entity.js";
 import { LessonProgress } from "./../lesson_progress/entities/lesson_progress.entity.js";
 import { Attendance } from "../attendance/entities/attendance.entity.js";
+import { AttendanceLog } from "../attendance/entities/attendance-log.entity.js";
 
 import { Writing } from "../writing/entities/writing.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
@@ -109,6 +110,7 @@ export const Models = [
   Group,
   GroupStudent,
   Attendance,
+  AttendanceLog,
   VocabularySet,
   VocabularyItem,
   UnitVocabularySet,
@@ -398,6 +400,26 @@ export function initializeAssociations() {
   Attendance.belongsTo(Group, { foreignKey: "group_id", as: "group" });
   Attendance.belongsTo(User, { foreignKey: "student_id", as: "student" });
   Attendance.belongsTo(User, { foreignKey: "teacher_id", as: "teacher" });
+  Attendance.hasMany(AttendanceLog, {
+    foreignKey: "attendance_id",
+    as: "logs",
+  });
+
+  // AttendanceLog Associations
+  AttendanceLog.belongsTo(Attendance, {
+    foreignKey: "attendance_id",
+    as: "attendance",
+  });
+  AttendanceLog.belongsTo(User, { foreignKey: "student_id", as: "student" });
+  AttendanceLog.belongsTo(User, { foreignKey: "marked_by", as: "marker" });
+  User.hasMany(AttendanceLog, {
+    foreignKey: "marked_by",
+    as: "attendance_logs_marked",
+  });
+  User.hasMany(AttendanceLog, {
+    foreignKey: "student_id",
+    as: "attendance_logs",
+  });
 
   //VocabularySet Associations
   Course.hasMany(VocabularySet, {
@@ -972,6 +994,14 @@ export function initializeAssociations() {
   TeacherTransaction.belongsTo(User, {
     foreignKey: "teacher_id",
     as: "teacher",
+  });
+  User.hasMany(TeacherTransaction, {
+    foreignKey: "student_id",
+    as: "related_teacher_transactions",
+  });
+  TeacherTransaction.belongsTo(User, {
+    foreignKey: "student_id",
+    as: "student",
   });
 
   // PaymentAction associations
