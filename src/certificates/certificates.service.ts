@@ -11,7 +11,8 @@ import * as path from "path";
 
 @Injectable()
 export class CertificatesService {
-  private readonly bucketName = "certificates";
+  private readonly bucketName = "speakup";
+  private readonly folderPrefix = "certificates/";
   private readonly templatesDir = path.join(
     process.cwd(),
     "public",
@@ -25,9 +26,6 @@ export class CertificatesService {
     private userModel: typeof User,
     private awsStorageService: AwsStorageService
   ) {
-    // Ensure bucket exists
-    this.initializeBucket();
-
     // Register Poppins font
     try {
       const fontPath = path.join(
@@ -45,18 +43,6 @@ export class CertificatesService {
       }
     } catch (error) {
       console.error("Font registration error:", error);
-    }
-  }
-
-  private async initializeBucket() {
-    try {
-      const exists = await this.awsStorageService.bucketExists(this.bucketName);
-      if (!exists) {
-        await this.awsStorageService.makeBucket(this.bucketName);
-        console.log(`Bucket ${this.bucketName} created successfully`);
-      }
-    } catch (error) {
-      console.error(`Error initializing bucket ${this.bucketName}:`, error);
     }
   }
 
@@ -122,7 +108,7 @@ export class CertificatesService {
       ctx.fillText(`${certificatedId}`, 181, 389);
 
       // Save the image to AWS S3
-      const fileName = `certificate-${certificatedId}.png`;
+      const fileName = `${this.folderPrefix}certificate-${certificatedId}.png`;
       const buffer = canvas.toBuffer("image/png");
 
       await this.awsStorageService.uploadBuffer(

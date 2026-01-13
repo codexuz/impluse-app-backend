@@ -25,20 +25,7 @@ export class UploadService {
     private configService: ConfigService,
     private awsStorageService: AwsStorageService
   ) {
-    this.ensureBucket();
-  }
-
-  private async ensureBucket() {
-    try {
-      const exists = await this.awsStorageService.bucketExists(
-        this.storageBucket
-      );
-      if (!exists) {
-        await this.awsStorageService.makeBucket(this.storageBucket);
-      }
-    } catch (error) {
-      console.error("Error ensuring AWS S3 bucket:", error);
-    }
+    // Using existing 'speakup' bucket - no need to create
   }
 
   // Public accessors for controller usage

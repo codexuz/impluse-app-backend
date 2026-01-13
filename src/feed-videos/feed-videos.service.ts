@@ -210,8 +210,8 @@ export class FeedVideosService {
     if (video.videoUrl) {
       try {
         // Extract object name from URL or use video ID as object name
-        const objectName = `videos/${video.id}.mp4`;
-        await this.awsStorageService.deleteFile("feed-videos", objectName);
+        const objectName = `feed-videos/videos/${video.id}.mp4`;
+        await this.awsStorageService.deleteFile("speakup", objectName);
       } catch (error) {
         console.error("Error deleting video file from AWS S3:", error);
         // Continue with database deletion even if AWS S3 deletion fails
@@ -1031,18 +1031,11 @@ export class FeedVideosService {
     }
 
     try {
-      // Ensure feed-videos bucket exists
-      const bucketExists =
-        await this.awsStorageService.bucketExists("feed-videos");
-      if (!bucketExists) {
-        await this.awsStorageService.makeBucket("feed-videos");
-      }
-
       // Upload compressed video to AWS S3
-      const objectName = `videos/${videoId}.mp4`;
+      const objectName = `feed-videos/videos/${videoId}.mp4`;
       const fileBuffer = await fs.readFile(outputPath);
       await this.awsStorageService.uploadBuffer(
-        "feed-videos",
+        "speakup",
         objectName,
         fileBuffer,
         "video/mp4"
@@ -1050,7 +1043,7 @@ export class FeedVideosService {
 
       // Generate presigned URL (valid for 7 days)
       const presignedUrl = await this.awsStorageService.getPresignedUrl(
-        "feed-videos",
+        "speakup",
         objectName,
         7 * 24 * 60 * 60 // 7 days
       );
@@ -1108,9 +1101,9 @@ export class FeedVideosService {
       throw new NotFoundException("Video not found");
     }
 
-    const objectName = `videos/${videoId}.mp4`;
+    const objectName = `feed-videos/videos/${videoId}.mp4`;
     const newPresignedUrl = await this.awsStorageService.getPresignedUrl(
-      "feed-videos",
+      "speakup",
       objectName,
       7 * 24 * 60 * 60 // 7 days
     );
