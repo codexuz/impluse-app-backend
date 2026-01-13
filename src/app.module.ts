@@ -94,11 +94,11 @@ import { StudentParentsModule } from './student-parents/student-parents.module.j
     }),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
-    BullModule.forRoot({
-      connection: {
-        url: process.env.REDIS_URL,
-      },
-    }),
+    // BullModule.forRoot({
+    //   connection: {
+    //     url: process.env.REDIS_URL,
+    //   },
+    // }),
     SequelizeModule.forRoot({
       dialect: "mysql",
       uri: process.env.DATABASE_URL,
