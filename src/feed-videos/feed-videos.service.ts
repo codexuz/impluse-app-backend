@@ -4,8 +4,6 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
-import { InjectQueue } from "@nestjs/bullmq";
-import { Queue, Job } from "bullmq";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   CreateFeedVideoDto,
@@ -26,11 +24,11 @@ import { StudentProfileService } from "../student_profiles/student-profile.servi
 import { FirebaseServiceService } from "../notifications/firebase-service.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
-import { VideoCompressionJobData } from "./video-compression.processor.js";
 import { MinioService } from "../minio/minio.service.js";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { existsSync } from "fs";
+import ffmpeg from "fluent-ffmpeg";
 
 @Injectable()
 export class FeedVideosService {
@@ -53,8 +51,6 @@ export class FeedVideosService {
     private userModel: typeof User,
     private studentProfileService: StudentProfileService,
     private firebaseService: FirebaseServiceService,
-    @InjectQueue("video-compression")
-    private videoCompressionQueue: Queue<VideoCompressionJobData>,
     private eventEmitter: EventEmitter2,
     private minioService: MinioService
   ) {}
@@ -138,14 +134,6 @@ export class FeedVideosService {
       status: "processing", // Processing status until compression and upload complete
     });
 
-    // Add to compression queue (file is in temp folder)
-    const job = await this.addVideoToCompressionQueue(
-      file.path,
-      file.originalname,
-      parseInt(studentId),
-      video.id
-    );
-
     // Increment task submission count if taskId provided
     if (createVideoDto.taskId) {
       await this.feedVideoTaskModel.increment("submissionCount", {
@@ -153,11 +141,21 @@ export class FeedVideosService {
       });
     }
 
+    // Process video compression asynchronously in the background
+    // Don't await this to avoid blocking the response
+    this.compressAndUploadVideo(
+      file.path,
+      file.originalname,
+      parseInt(studentId),
+      video.id
+    ).catch((error) => {
+      console.error(`Error processing video ${video.id}:`, error);
+    });
+
     return {
       videoId: video.id,
-      jobId: job.id,
       status: "processing",
-      message: "Video uploaded to temp folder and queued for compression",
+      message: "Video uploaded and is being processed",
     };
   }
 
@@ -878,12 +876,12 @@ export class FeedVideosService {
   }
 
   // ========== VIDEO COMPRESSION QUEUE METHODS ==========
-  async addVideoToCompressionQueue(
+  private async compressAndUploadVideo(
     inputPath: string,
     originalFilename: string,
     userId: number,
-    videoId?: number
-  ): Promise<Job<VideoCompressionJobData>> {
+    videoId: number
+  ) {
     const timestamp = Date.now();
     const ext = path.extname(originalFilename);
     const outputFilename = `compressed_${timestamp}${ext}`;
@@ -897,57 +895,129 @@ export class FeedVideosService {
       outputFilename
     );
 
-    // Ensure output directory exists
-    const outputDir = path.dirname(outputPath);
-    if (!existsSync(outputDir)) {
-      await fs.mkdir(outputDir, { recursive: true });
-    }
-
-    const jobData: VideoCompressionJobData = {
-      inputPath: normalizedInputPath,
-      outputPath,
-      userId,
-      videoId,
-      originalFilename,
-    };
-
-    const job = await this.videoCompressionQueue.add(
-      "compress-video",
-      jobData,
-      {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 5000,
-        },
-        removeOnComplete: 100, // Keep last 100 completed jobs
-        removeOnFail: 50, // Keep last 50 failed jobs
+    try {
+      // Ensure output directory exists
+      const outputDir = path.dirname(outputPath);
+      if (!existsSync(outputDir)) {
+        await fs.mkdir(outputDir, { recursive: true });
       }
-    );
 
-    return job;
+      // Get video metadata first
+      const metadata = await this.getVideoMetadata(normalizedInputPath);
+
+      // Compress video with Instagram-like settings
+      await this.compressVideo(normalizedInputPath, outputPath, metadata);
+
+      // Clean up input file
+      if (existsSync(normalizedInputPath)) {
+        await fs.unlink(normalizedInputPath);
+      }
+
+      const compressedSize = (await fs.stat(outputPath)).size;
+
+      // Update video record after compression
+      await this.updateVideoAfterCompression(
+        videoId,
+        outputPath,
+        compressedSize
+      );
+    } catch (error) {
+      console.error(`Compression failed for video ${videoId}:`, error);
+
+      // Clean up files on error
+      try {
+        if (existsSync(normalizedInputPath)) {
+          await fs.unlink(normalizedInputPath);
+        }
+        if (existsSync(outputPath)) {
+          await fs.unlink(outputPath);
+        }
+      } catch (cleanupError) {
+        console.error("Error cleaning up files:", cleanupError);
+      }
+
+      // Update video status to failed
+      try {
+        const video = await this.feedVideoModel.findByPk(videoId);
+        if (video) {
+          await video.update({ status: "draft" });
+        }
+      } catch (updateError) {
+        console.error("Error updating video status:", updateError);
+      }
+    }
   }
 
-  async getCompressionJobStatus(jobId: string): Promise<any> {
-    const job = await this.videoCompressionQueue.getJob(jobId);
+  private getVideoMetadata(inputPath: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(inputPath, (err, metadata) => {
+        if (err) {
+          reject(err);
+        } else {
+          const videoStream = metadata.streams.find(
+            (stream) => stream.codec_type === "video"
+          );
+          resolve({
+            duration: metadata.format.duration,
+            size: metadata.format.size,
+            width: videoStream?.width,
+            height: videoStream?.height,
+            bitrate: metadata.format.bit_rate,
+          });
+        }
+      });
+    });
+  }
 
-    if (!job) {
-      throw new NotFoundException("Job not found");
-    }
+  private compressVideo(
+    inputPath: string,
+    outputPath: string,
+    metadata: any
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Instagram-like compression settings
+      const command = ffmpeg(inputPath)
+        .outputOptions([
+          // Video codec settings
+          "-vcodec libx264",
+          "-preset medium", // Balance between speed and compression
+          "-crf 23", // Instagram-like quality (18-28, lower = better quality)
 
-    const state = await job.getState();
-    const progress = job.progress;
-    const result = job.returnvalue;
+          // Audio codec settings
+          "-acodec aac",
+          "-b:a 128k", // Audio bitrate
+          "-ar 44100", // Audio sample rate
 
-    return {
-      id: job.id,
-      state,
-      progress,
-      result,
-      failedReason: job.failedReason,
-      finishedOn: job.finishedOn,
-      processedOn: job.processedOn,
-    };
+          // Profile and level for compatibility
+          "-profile:v main",
+          "-level 4.0",
+
+          // Optimize for web streaming
+          "-movflags +faststart",
+
+          // Pixel format for compatibility
+          "-pix_fmt yuv420p",
+
+          // Max resolution (1080p like Instagram)
+          "-vf scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease",
+
+          // Frame rate limit
+          "-r 30",
+
+          // Max video bitrate (Instagram uses ~3.5 Mbps for 1080p)
+          "-maxrate 3500k",
+          "-bufsize 7000k",
+        ])
+        .on("end", () => {
+          resolve();
+        })
+        .on("error", (err, stdout, stderr) => {
+          console.error("FFmpeg error:", err);
+          console.error("FFmpeg stderr:", stderr);
+          reject(err);
+        })
+        .save(outputPath);
+    });
   }
 
   async updateVideoAfterCompression(

@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 import { SequelizeModule } from "@nestjs/sequelize";
-import { BullModule } from "@nestjs/bullmq";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { FeedVideosService } from "./feed-videos.service.js";
 import { FeedVideosController } from "./feed-videos.controller.js";
@@ -14,7 +13,6 @@ import { StudentProfileModule } from "../student_profiles/student-profile.module
 import { FirebaseServiceService } from "../notifications/firebase-service.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
-import { VideoCompressionProcessor } from "./video-compression.processor.js";
 import { MinioModule } from "../minio/minio.module.js";
 
 @Module({
@@ -29,9 +27,6 @@ import { MinioModule } from "../minio/minio.module.js";
       NotificationToken,
       User,
     ]),
-    BullModule.registerQueue({
-      name: "video-compression",
-    }),
     EventEmitterModule,
     StudentProfileModule,
     MinioModule,
@@ -44,7 +39,6 @@ import { MinioModule } from "../minio/minio.module.js";
       useExisting: FeedVideosService,
     },
     FirebaseServiceService,
-    VideoCompressionProcessor,
   ],
   exports: [FeedVideosService],
 })
