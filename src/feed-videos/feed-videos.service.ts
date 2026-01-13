@@ -24,7 +24,7 @@ import { StudentProfileService } from "../student_profiles/student-profile.servi
 import { FirebaseServiceService } from "../notifications/firebase-service.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
-import { MinioService } from "../minio/minio.service.js";
+import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { existsSync } from "fs";
@@ -52,7 +52,7 @@ export class FeedVideosService {
     private studentProfileService: StudentProfileService,
     private firebaseService: FirebaseServiceService,
     private eventEmitter: EventEmitter2,
-    private minioService: MinioService
+    private awsStorageService: AwsStorageService
   ) {}
 
   // ========== TASK MANAGEMENT (Admin) ==========
@@ -206,15 +206,15 @@ export class FeedVideosService {
       throw new BadRequestException("You can only delete your own videos");
     }
 
-    // Delete the video file from MinIO
+    // Delete the video file from AWS S3
     if (video.videoUrl) {
       try {
-        // Extract object name from MinIO URL or use video ID as object name
+        // Extract object name from URL or use video ID as object name
         const objectName = `videos/${video.id}.mp4`;
-        await this.minioService.deleteFile("feed-videos", objectName);
+        await this.awsStorageService.deleteFile("feed-videos", objectName);
       } catch (error) {
-        console.error("Error deleting video file from MinIO:", error);
-        // Continue with database deletion even if MinIO deletion fails
+        console.error("Error deleting video file from AWS S3:", error);
+        // Continue with database deletion even if AWS S3 deletion fails
       }
     }
 
@@ -1032,31 +1032,30 @@ export class FeedVideosService {
 
     try {
       // Ensure feed-videos bucket exists
-      const bucketExists = await this.minioService.bucketExists("feed-videos");
+      const bucketExists =
+        await this.awsStorageService.bucketExists("feed-videos");
       if (!bucketExists) {
-        await this.minioService.makeBucket("feed-videos");
+        await this.awsStorageService.makeBucket("feed-videos");
       }
 
-      // Upload compressed video to MinIO
+      // Upload compressed video to AWS S3
       const objectName = `videos/${videoId}.mp4`;
-      await this.minioService.uploadFile(
+      const fileBuffer = await fs.readFile(outputPath);
+      await this.awsStorageService.uploadBuffer(
         "feed-videos",
         objectName,
-        outputPath,
-        {
-          "Content-Type": "video/mp4",
-          "Original-Size": compressedSize.toString(),
-        }
+        fileBuffer,
+        "video/mp4"
       );
 
       // Generate presigned URL (valid for 7 days)
-      const presignedUrl = await this.minioService.getPresignedUrl(
+      const presignedUrl = await this.awsStorageService.getPresignedUrl(
         "feed-videos",
         objectName,
         7 * 24 * 60 * 60 // 7 days
       );
 
-      // Update video record with MinIO URL
+      // Update video record with AWS S3 URL
       await video.update({
         videoUrl: presignedUrl,
         thumbnailUrl: presignedUrl, // Can be updated with actual thumbnail later
@@ -1110,7 +1109,7 @@ export class FeedVideosService {
     }
 
     const objectName = `videos/${videoId}.mp4`;
-    const newPresignedUrl = await this.minioService.getPresignedUrl(
+    const newPresignedUrl = await this.awsStorageService.getPresignedUrl(
       "feed-videos",
       objectName,
       7 * 24 * 60 * 60 // 7 days

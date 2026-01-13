@@ -4,7 +4,7 @@ import { CreateCertificateDto } from "./dto/create-certificate.dto.js";
 import { UpdateCertificateDto } from "./dto/update-certificate.dto.js";
 import { Certificate } from "./entities/certificate.entity.js";
 import { User } from "../users/entities/user.entity.js";
-import { MinioService } from "../minio/minio.service.js";
+import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 import { createCanvas, loadImage, registerFont } from "canvas";
 import * as fs from "fs";
 import * as path from "path";
@@ -23,7 +23,7 @@ export class CertificatesService {
     private certificateModel: typeof Certificate,
     @InjectModel(User)
     private userModel: typeof User,
-    private minioService: MinioService
+    private awsStorageService: AwsStorageService
   ) {
     // Ensure bucket exists
     this.initializeBucket();
@@ -50,9 +50,9 @@ export class CertificatesService {
 
   private async initializeBucket() {
     try {
-      const exists = await this.minioService.bucketExists(this.bucketName);
+      const exists = await this.awsStorageService.bucketExists(this.bucketName);
       if (!exists) {
-        await this.minioService.makeBucket(this.bucketName);
+        await this.awsStorageService.makeBucket(this.bucketName);
         console.log(`Bucket ${this.bucketName} created successfully`);
       }
     } catch (error) {
@@ -121,20 +121,19 @@ export class CertificatesService {
       ctx.textAlign = "left";
       ctx.fillText(`${certificatedId}`, 181, 389);
 
-      // Save the image to MinIO
+      // Save the image to AWS S3
       const fileName = `certificate-${certificatedId}.png`;
       const buffer = canvas.toBuffer("image/png");
 
-      await this.minioService.uploadBuffer(
+      await this.awsStorageService.uploadBuffer(
         this.bucketName,
         fileName,
         buffer,
-        buffer.length,
-        { "Content-Type": "image/png" }
+        "image/png"
       );
 
       // Generate presigned URL (valid for 7 days)
-      const url = await this.minioService.getPresignedUrl(
+      const url = await this.awsStorageService.getPresignedUrl(
         this.bucketName,
         fileName,
         7 * 24 * 60 * 60
@@ -241,16 +240,16 @@ export class CertificatesService {
   async remove(id: string): Promise<void> {
     const certificate = await this.findOne(id);
 
-    // Delete certificate image from MinIO if exists
+    // Delete certificate image from AWS S3 if exists
     if (certificate.certificate_url) {
       try {
         // Extract filename from URL (last part after /)
         const urlParts = certificate.certificate_url.split("/");
         const fileName = urlParts[urlParts.length - 1].split("?")[0]; // Remove query params
 
-        await this.minioService.deleteFile(this.bucketName, fileName);
+        await this.awsStorageService.deleteFile(this.bucketName, fileName);
       } catch (error) {
-        console.error("Error deleting certificate from MinIO:", error);
+        console.error("Error deleting certificate from AWS S3:", error);
       }
     }
 

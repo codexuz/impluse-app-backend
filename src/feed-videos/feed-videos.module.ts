@@ -30,6 +30,7 @@ import { MinioModule } from "../minio/minio.module.js";
     EventEmitterModule,
     StudentProfileModule,
     MinioModule,
+    AwsStorageModule,
   ],
   controllers: [FeedVideosController],
   providers: [

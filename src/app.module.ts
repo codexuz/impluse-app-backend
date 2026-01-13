@@ -83,7 +83,8 @@ import { ArticlesModule } from "./articles/articles.module.js";
 import { CertificatesModule } from "./certificates/certificates.module.js";
 import { FeedVideosModule } from "./feed-videos/feed-videos.module.js";
 import { MinioModule } from "./minio/minio.module.js";
-import { StudentParentsModule } from './student-parents/student-parents.module.js';
+import { AwsStorageModule } from "./aws-storage/aws-storage.module.js";
+import { StudentParentsModule } from "./student-parents/student-parents.module.js";
 
 @Module({
   imports: [
@@ -168,6 +169,7 @@ import { StudentParentsModule } from './student-parents/student-parents.module.j
     CertificatesModule,
     FeedVideosModule,
     MinioModule,
+    AwsStorageModule,
     StudentParentsModule,
   ],
   controllers: [AppController],

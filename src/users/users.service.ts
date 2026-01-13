@@ -18,11 +18,11 @@ import { StudentProfile } from "../student_profiles/entities/student_profile.ent
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { UserSession } from "./entities/user-session.model.js";
 import { StudentPayment } from "../student-payment/entities/student-payment.entity.js";
-import { MinioService } from "../minio/minio.service.js";
+import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 
 @Injectable()
 export class UsersService {
-  private readonly minioBucket = process.env.MINIO_BUCKET || "impulse";
+  private readonly storageBucket = process.env.AWS_BUCKET || "speakup";
 
   constructor(
     @InjectModel(User)
@@ -32,7 +32,7 @@ export class UsersService {
     @InjectModel(StudentProfile)
     private studentProfileModel: typeof StudentProfile,
     private configService: ConfigService,
-    private minioService: MinioService
+    private awsStorageService: AwsStorageService
   ) {}
 
   private async checkExistingUser(
@@ -86,10 +86,7 @@ export class UsersService {
 
   async createAdmin(createAdminDto: CreateAdminDto): Promise<User> {
     // Check if user already exists
-    await this.checkExistingUser(
-      createAdminDto.username,
-      createAdminDto.phone
-    );
+    await this.checkExistingUser(createAdminDto.username, createAdminDto.phone);
 
     // Hash password
     const hashedPassword = await this.hashPassword(createAdminDto.password);
@@ -344,11 +341,13 @@ export class UsersService {
    */
   async archiveStudent(studentId: string): Promise<User> {
     const user = await this.findOne(studentId);
-    
+
     // Verify user has student role
-    const hasStudentRole = user.roles?.some(role => role.name === 'student');
+    const hasStudentRole = user.roles?.some((role) => role.name === "student");
     if (!hasStudentRole) {
-      throw new NotFoundException(`User with ID "${studentId}" is not a student`);
+      throw new NotFoundException(
+        `User with ID "${studentId}" is not a student`
+      );
     }
 
     await user.update({ is_active: false });
@@ -362,11 +361,13 @@ export class UsersService {
    */
   async restoreStudent(studentId: string): Promise<User> {
     const user = await this.findOne(studentId);
-    
+
     // Verify user has student role
-    const hasStudentRole = user.roles?.some(role => role.name === 'student');
+    const hasStudentRole = user.roles?.some((role) => role.name === "student");
     if (!hasStudentRole) {
-      throw new NotFoundException(`User with ID "${studentId}" is not a student`);
+      throw new NotFoundException(
+        `User with ID "${studentId}" is not a student`
+      );
     }
 
     await user.update({ is_active: true });
@@ -376,7 +377,7 @@ export class UsersService {
   async getAllTeachers(): Promise<User[]> {
     return this.userModel.findAll({
       where: {
-        is_active: true
+        is_active: true,
       },
       attributes: {
         exclude: ["password_hash"],
@@ -399,7 +400,7 @@ export class UsersService {
   async getAllAdmins(): Promise<User[]> {
     return this.userModel.findAll({
       where: {
-        is_active: true
+        is_active: true,
       },
       attributes: {
         exclude: ["password_hash"],
@@ -418,7 +419,7 @@ export class UsersService {
   async getAllStudents(): Promise<User[]> {
     return this.userModel.findAll({
       where: {
-        is_active: true
+        is_active: true,
       },
       attributes: {
         exclude: ["password_hash"],
@@ -441,7 +442,7 @@ export class UsersService {
   async getArchivedStudents(): Promise<User[]> {
     return this.userModel.findAll({
       where: {
-        is_active: false
+        is_active: false,
       },
       attributes: {
         exclude: ["password_hash"],
@@ -521,7 +522,10 @@ export class UsersService {
    * @param file The uploaded file
    * @returns The updated user object with the new avatar URL
    */
-  async uploadAvatarToMinio(userId: string, file: Express.Multer.File): Promise<User> {
+  async uploadAvatarToMinio(
+    userId: string,
+    file: Express.Multer.File
+  ): Promise<User> {
     const user = await this.userModel.findByPk(userId);
 
     if (!user) {
@@ -530,24 +534,21 @@ export class UsersService {
 
     // Generate unique filename
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = file.originalname.split('.').pop();
+    const ext = file.originalname.split(".").pop();
     const filename = `avatar-${uniqueSuffix}.${ext}`;
     const objectName = `avatars/${filename}`;
 
-    // Upload to MinIO
-    await this.minioService.uploadBuffer(
-      this.minioBucket,
+    // Upload to AWS S3
+    await this.awsStorageService.uploadBuffer(
+      this.storageBucket,
       objectName,
       file.buffer,
-      file.size,
-      {
-        'Content-Type': file.mimetype
-      }
+      file.mimetype
     );
 
-    // Generate presigned URL from MinIO (valid for 7 days)
-    const avatarUrl = await this.minioService.getPresignedUrl(
-      this.minioBucket,
+    // Generate presigned URL from AWS S3 (valid for 7 days)
+    const avatarUrl = await this.awsStorageService.getPresignedUrl(
+      this.storageBucket,
       objectName,
       7 * 24 * 60 * 60
     );
@@ -560,9 +561,9 @@ export class UsersService {
   }
 
   /**
-   * Update user avatar after uploading a file to MinIO
+   * Update user avatar after uploading a file to AWS S3
    * @param userId The user's ID
-   * @param filename The uploaded file name in MinIO
+   * @param filename The uploaded file name in AWS S3
    * @returns The updated user object with the new avatar URL
    */
   async updateAvatar(userId: string, filename: string): Promise<User> {
@@ -572,9 +573,9 @@ export class UsersService {
       throw new NotFoundException(`User with ID "${userId}" not found`);
     }
 
-    // Generate presigned URL from MinIO (valid for 7 days)
-    const avatarUrl = await this.minioService.getPresignedUrl(
-      this.minioBucket,
+    // Generate presigned URL from AWS S3 (valid for 7 days)
+    const avatarUrl = await this.awsStorageService.getPresignedUrl(
+      this.storageBucket,
       `avatars/${filename}`,
       7 * 24 * 60 * 60
     );
