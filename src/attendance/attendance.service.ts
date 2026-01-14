@@ -324,6 +324,63 @@ export class AttendanceService {
       }
     }
 
+    // Handle status change to absent - deduct wallet and delete transaction
+    if (
+      updateAttendanceDto.status === "absent" &&
+      previousStatus === "present"
+    ) {
+      const teacherId = updateAttendanceDto.teacher_id || attendance.teacher_id;
+      const studentId = updateAttendanceDto.student_id || attendance.student_id;
+
+      try {
+        // Get teacher profile to check payment type
+        const teacherProfile = await TeacherProfile.findOne({
+          where: { user_id: teacherId },
+        });
+
+        if (
+          teacherProfile &&
+          teacherProfile.payment_type === "percentage" &&
+          teacherProfile.payment_value
+        ) {
+          // Deduct from teacher wallet
+          const teacherWallet = await TeacherWallet.findOne({
+            where: { teacher_id: teacherId },
+          });
+
+          if (teacherWallet) {
+            await teacherWallet.update({
+              amount: teacherWallet.amount - teacherProfile.payment_value,
+            });
+            console.log(
+              `Deducted ${teacherProfile.payment_value} from teacher ${teacherId} wallet for absent student ${studentId}`
+            );
+          }
+
+          // Delete teacher transaction for this student (most recent one)
+          const transactionToDelete = await TeacherTransaction.findOne({
+            where: {
+              teacher_id: teacherId,
+              student_id: studentId,
+            },
+            order: [["createdAt", "DESC"]],
+          });
+
+          if (transactionToDelete) {
+            await transactionToDelete.destroy();
+            console.log(
+              `Deleted transaction for teacher ${teacherId}, student ${studentId}`
+            );
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Error deducting wallet/deleting transaction for teacher ${teacherId}:`,
+          error.message
+        );
+      }
+    }
+
     // Update the attendance record
     await attendance.update(updateAttendanceDto);
 
@@ -350,6 +407,58 @@ export class AttendanceService {
 
   async remove(id: string) {
     const attendance = await this.findOne(id);
+
+    // If the attendance status was 'present', deduct from wallet and delete transaction
+    if (attendance.status === "present") {
+      try {
+        // Get teacher profile to check payment type
+        const teacherProfile = await TeacherProfile.findOne({
+          where: { user_id: attendance.teacher_id },
+        });
+
+        if (
+          teacherProfile &&
+          teacherProfile.payment_type === "percentage" &&
+          teacherProfile.payment_value
+        ) {
+          // Deduct from teacher wallet
+          const teacherWallet = await TeacherWallet.findOne({
+            where: { teacher_id: attendance.teacher_id },
+          });
+
+          if (teacherWallet) {
+            await teacherWallet.update({
+              amount: teacherWallet.amount - teacherProfile.payment_value,
+            });
+            console.log(
+              `Deducted ${teacherProfile.payment_value} from teacher ${attendance.teacher_id} wallet for removed attendance`
+            );
+          }
+
+          // Delete teacher transaction for this student (most recent one)
+          const transactionToDelete = await TeacherTransaction.findOne({
+            where: {
+              teacher_id: attendance.teacher_id,
+              student_id: attendance.student_id,
+            },
+            order: [["createdAt", "DESC"]],
+          });
+
+          if (transactionToDelete) {
+            await transactionToDelete.destroy();
+            console.log(
+              `Deleted transaction for teacher ${attendance.teacher_id}, student ${attendance.student_id}`
+            );
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Error deducting wallet/deleting transaction for teacher ${attendance.teacher_id}:`,
+          error.message
+        );
+      }
+    }
+
     await attendance.destroy();
     return { id, deleted: true };
   }

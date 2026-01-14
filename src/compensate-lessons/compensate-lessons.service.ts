@@ -8,7 +8,9 @@ import { UpdateCompensateLessonDto } from "./dto/update-compensate-lesson.dto.js
 import { CreateCompensateTeacherWalletDto } from "./dto/create-compensate-teacher-wallet.dto.js";
 import { CompensateLesson } from "./entities/compensate-lesson.entity.js";
 import { CompensateTeacherWallet } from "./entities/compensate-teacher-wallet.entity.js";
+import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { InjectModel } from "@nestjs/sequelize";
+import { Op } from "sequelize";
 
 @Injectable()
 export class CompensateLessonsService {
@@ -62,6 +64,10 @@ export class CompensateLessonsService {
     if (filters?.compensated !== undefined)
       where.compensated = filters.compensated;
 
+    // Only return lessons where valid_until has not expired
+    const today = new Date().toISOString().split("T")[0];
+    where.valid_until = { [Op.gte]: today };
+
     const { count, rows } = await this.compensateLessonModel.findAndCountAll({
       where,
       limit,
@@ -92,6 +98,60 @@ export class CompensateLessonsService {
     updateCompensateLessonDto: UpdateCompensateLessonDto
   ) {
     const compensateLesson = await this.findOne(id);
+
+    // Check if the lesson is being marked as compensated
+    if (
+      updateCompensateLessonDto.compensated === true &&
+      !compensateLesson.compensated
+    ) {
+      // Check if valid_until has not expired
+      const today = new Date().toISOString().split("T")[0];
+      const validUntil = compensateLesson.valid_until;
+
+      if (validUntil >= today) {
+        // Get compensated_by from update or existing record
+        const compensatedBy =
+          updateCompensateLessonDto.compensated_by ||
+          compensateLesson.compensated_by;
+
+        // Only create wallet entry if compensated by main_teacher
+        if (compensatedBy === "main_teacher") {
+          try {
+            // Get teacher profile to get payment amount
+            const teacherProfile = await TeacherProfile.findOne({
+              where: { user_id: compensateLesson.teacher_id },
+            });
+
+            if (teacherProfile && teacherProfile.payment_value) {
+              // Create wallet entry for the teacher
+              await this.compensateTeacherWalletModel.create({
+                teacher_id: compensateLesson.teacher_id,
+                compensate_lesson_id: compensateLesson.id,
+                amount: teacherProfile.payment_value,
+              } as any);
+
+              console.log(
+                `Compensate wallet entry created for teacher ${compensateLesson.teacher_id}, amount ${teacherProfile.payment_value}`
+              );
+            }
+          } catch (error) {
+            console.error(
+              `Error creating wallet entry for compensate lesson ${id}:`,
+              error.message
+            );
+            // Don't throw error - wallet creation failure shouldn't block update
+          }
+        } else if (compensatedBy === "support_teacher") {
+          console.log(
+            `Lesson ${id} compensated by support_teacher - no wallet entry created`
+          );
+        }
+      } else {
+        console.warn(
+          `Lesson ${id} valid_until has expired (${validUntil}) - no wallet entry created`
+        );
+      }
+    }
 
     await compensateLesson.update(updateCompensateLessonDto as any);
 
