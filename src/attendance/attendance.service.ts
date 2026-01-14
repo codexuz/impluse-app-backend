@@ -484,6 +484,14 @@ export class AttendanceService {
       }
     }
 
+    // Delete all attendance logs for this attendance
+    await AttendanceLog.destroy({
+      where: {
+        attendance_id: attendance.id,
+      },
+    });
+    console.log(`Deleted attendance logs for attendance ${attendance.id}`);
+
     await attendance.destroy();
     return { id, deleted: true };
   }
