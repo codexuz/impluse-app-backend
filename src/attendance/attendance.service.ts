@@ -363,7 +363,7 @@ export class AttendanceService {
               teacher_id: teacherId,
               student_id: studentId,
             },
-            order: [["createdAt", "DESC"]],
+            order: [["created_at", "DESC"]],
           });
 
           if (transactionToDelete) {
@@ -466,7 +466,7 @@ export class AttendanceService {
               teacher_id: attendance.teacher_id,
               student_id: attendance.student_id,
             },
-            order: [["createdAt", "DESC"]],
+            order: [["created_at", "DESC"]],
           });
 
           if (transactionToDelete) {
