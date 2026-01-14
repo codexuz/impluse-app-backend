@@ -372,6 +372,31 @@ export class AttendanceService {
               `Deleted transaction for teacher ${teacherId}, student ${studentId}`
             );
           }
+
+          // Create compensate lesson for absent student
+          try {
+            // Calculate valid_until date (10 days from now)
+            const validUntil = new Date();
+            validUntil.setDate(validUntil.getDate() + 10);
+
+            await this.compensateLessonsService.create({
+              teacher_id: teacherId,
+              student_id: studentId,
+              attendance_id: attendance.id,
+              compensated: false,
+              compensated_by: null as any,
+              valid_until: validUntil.toISOString().split("T")[0],
+            });
+
+            console.log(
+              `Compensate lesson created for absent student ${studentId}, teacher ${teacherId}, attendance ${attendance.id}`
+            );
+          } catch (compensateError) {
+            console.error(
+              `Error creating compensate lesson for attendance ${attendance.id}:`,
+              compensateError.message
+            );
+          }
         }
       } catch (error) {
         console.error(
