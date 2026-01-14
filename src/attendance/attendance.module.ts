@@ -7,6 +7,7 @@ import { AttendanceLog } from "./entities/attendance-log.entity.js";
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
+import { CompensateLessonsModule } from "../compensate-lessons/compensate-lessons.module.js";
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { TeacherTransaction } from "../teacher-transaction/entities/teacher-tran
       TeacherWallet,
       TeacherTransaction,
     ]),
+    CompensateLessonsModule,
   ],
   controllers: [AttendanceController],
   providers: [AttendanceService],

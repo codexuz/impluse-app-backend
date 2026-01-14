@@ -14,10 +14,13 @@ import {
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
+import { CompensateLessonsService } from "../compensate-lessons/compensate-lessons.service.js";
 import { Op } from "sequelize";
 
 @Injectable()
 export class AttendanceService {
+  constructor(private compensateLessonsService: CompensateLessonsService) {}
+
   private async handleTeacherPayment(
     teacherId: string,
     status: string,
@@ -40,11 +43,6 @@ export class AttendanceService {
           : AttendanceAction.STATUS_CREATED,
       });
 
-      // Only process payment if status is 'present'
-      if (status !== "present") {
-        return;
-      }
-
       // Get teacher profile with payment information
       const teacherProfile = await TeacherProfile.findOne({
         where: { user_id: teacherId },
@@ -53,6 +51,40 @@ export class AttendanceService {
       if (!teacherProfile) {
         console.warn(`Teacher profile not found for teacher ID ${teacherId}`);
         return; // Don't throw error, just skip payment processing
+      }
+
+      // Handle absent students with percentage-based payment
+      if (status === "absent" && teacherProfile.payment_type === "percentage") {
+        try {
+          // Calculate valid_until date (10 days from now)
+          const validUntil = new Date();
+          validUntil.setDate(validUntil.getDate() + 10);
+
+          await this.compensateLessonsService.create({
+            teacher_id: teacherId,
+            student_id: studentId,
+            attendance_id: attendanceId,
+            compensated: false,
+            compensated_by: null as any,
+            valid_until: validUntil.toISOString().split("T")[0],
+          });
+
+          console.log(
+            `Compensate lesson created for absent student ${studentId}, teacher ${teacherId}, attendance ${attendanceId}`
+          );
+        } catch (error) {
+          // Log error but don't throw - compensate lesson creation shouldn't block attendance
+          console.error(
+            `Error creating compensate lesson for attendance ${attendanceId}:`,
+            error.message
+          );
+        }
+        return;
+      }
+
+      // Only process payment if status is 'present'
+      if (status !== "present") {
+        return;
       }
 
       // Business logic:
