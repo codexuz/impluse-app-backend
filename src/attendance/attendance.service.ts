@@ -232,8 +232,22 @@ export class AttendanceService {
     };
   }
 
-  async findAll() {
-    return await Attendance.findAll({
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: Attendance[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {};
+
+    const { count, rows } = await Attendance.findAndCountAll({
+      where: whereClause,
       order: [
         ["date", "DESC"],
         ["createdAt", "DESC"],
@@ -248,6 +262,15 @@ export class AttendanceService {
             "last_name",
             "avatar_url",
           ],
+          where: query
+            ? {
+                [Op.or]: [
+                  { first_name: { [Op.iLike]: `%${query}%` } },
+                  { last_name: { [Op.iLike]: `%${query}%` } },
+                  { username: { [Op.iLike]: `%${query}%` } },
+                ],
+              }
+            : undefined,
         },
         {
           association: "teacher",
@@ -261,7 +284,18 @@ export class AttendanceService {
         },
         { association: "group" },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findOne(id: string) {
@@ -496,8 +530,21 @@ export class AttendanceService {
     return { id, deleted: true };
   }
 
-  async findByGroupId(group_id: string) {
-    return await Attendance.findAll({
+  async findByGroupId(
+    group_id: string,
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: Attendance[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Attendance.findAndCountAll({
       where: { group_id },
       order: [
         ["date", "DESC"],
@@ -513,6 +560,15 @@ export class AttendanceService {
             "last_name",
             "avatar_url",
           ],
+          where: query
+            ? {
+                [Op.or]: [
+                  { first_name: { [Op.iLike]: `%${query}%` } },
+                  { last_name: { [Op.iLike]: `%${query}%` } },
+                  { username: { [Op.iLike]: `%${query}%` } },
+                ],
+              }
+            : undefined,
         },
         {
           association: "teacher",
@@ -526,12 +582,42 @@ export class AttendanceService {
         },
         { association: "group" },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
-  async findByStudentId(student_id: string) {
-    return await Attendance.findAll({
-      where: { student_id },
+  async findByStudentId(
+    student_id: string,
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: Attendance[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = { student_id };
+
+    // Add search on status or date if query is provided
+    if (query) {
+      whereClause[Op.or] = [{ status: { [Op.iLike]: `%${query}%` } }];
+    }
+
+    const { count, rows } = await Attendance.findAndCountAll({
+      where: whereClause,
       order: [
         ["date", "DESC"],
         ["createdAt", "DESC"],
@@ -559,11 +645,35 @@ export class AttendanceService {
         },
         { association: "group" },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
-  async findByTeacherId(teacher_id: string) {
-    return await Attendance.findAll({
+  async findByTeacherId(
+    teacher_id: string,
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: Attendance[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Attendance.findAndCountAll({
       where: { teacher_id },
       order: [
         ["date", "DESC"],
@@ -579,6 +689,15 @@ export class AttendanceService {
             "last_name",
             "avatar_url",
           ],
+          where: query
+            ? {
+                [Op.or]: [
+                  { first_name: { [Op.iLike]: `%${query}%` } },
+                  { last_name: { [Op.iLike]: `%${query}%` } },
+                  { username: { [Op.iLike]: `%${query}%` } },
+                ],
+              }
+            : undefined,
         },
         {
           association: "teacher",
@@ -592,7 +711,18 @@ export class AttendanceService {
         },
         { association: "group" },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findByDateRange(startDate: string, endDate: string) {

@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Query,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -46,8 +47,14 @@ export class NotificationsController {
     description: "Returns all notifications",
     type: [NotificationResponseDto],
   })
-  async getAllNotifications() {
-    return await this.notificationsService.getAllNotifications();
+  async getAllNotifications(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number
+  ) {
+    return await this.notificationsService.getAllNotifications(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10
+    );
   }
 
   @Get(":id")

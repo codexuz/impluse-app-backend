@@ -163,13 +163,37 @@ export class StudentPaymentService {
     }
   }
 
-  async findAll(): Promise<StudentPayment[]> {
-    return this.studentPaymentModel.findAll({
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: StudentPayment[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {};
+
+    const { count, rows } = await this.studentPaymentModel.findAndCountAll({
+      where: whereClause,
       include: [
         {
           model: User,
           as: "student",
           attributes: { exclude: ["password_hash"] },
+          where: query
+            ? {
+                [Op.or]: [
+                  { first_name: { [Op.iLike]: `%${query}%` } },
+                  { last_name: { [Op.iLike]: `%${query}%` } },
+                  { username: { [Op.iLike]: `%${query}%` } },
+                  { phone: { [Op.iLike]: `%${query}%` } },
+                ],
+              }
+            : undefined,
         },
         {
           model: User,
@@ -177,7 +201,19 @@ export class StudentPaymentService {
           attributes: { exclude: ["password_hash"] },
         },
       ],
+      limit,
+      offset,
+      order: [["payment_date", "DESC"]],
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findOne(id: string): Promise<StudentPayment> {
@@ -201,9 +237,31 @@ export class StudentPaymentService {
     return payment;
   }
 
-  async findByStudent(studentId: string): Promise<StudentPayment[]> {
-    return this.studentPaymentModel.findAll({
-      where: { student_id: studentId },
+  async findByStudent(
+    studentId: string,
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: StudentPayment[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = { student_id: studentId };
+
+    // Add search on payment-specific fields if query is provided
+    if (query) {
+      whereClause[Op.or] = [
+        { status: { [Op.iLike]: `%${query}%` } },
+        { payment_method: { [Op.iLike]: `%${query}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.studentPaymentModel.findAndCountAll({
+      where: whereClause,
       include: [
         {
           model: User,
@@ -216,7 +274,19 @@ export class StudentPaymentService {
           attributes: { exclude: ["password_hash"] },
         },
       ],
+      limit,
+      offset,
+      order: [["payment_date", "DESC"]],
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findByDateRange(
@@ -244,14 +314,37 @@ export class StudentPaymentService {
     });
   }
 
-  async findByStatus(status: PaymentStatus): Promise<StudentPayment[]> {
-    return this.studentPaymentModel.findAll({
+  async findByStatus(
+    status: PaymentStatus,
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: StudentPayment[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await this.studentPaymentModel.findAndCountAll({
       where: { status },
       include: [
         {
           model: User,
           as: "student",
           attributes: { exclude: ["password_hash"] },
+          where: query
+            ? {
+                [Op.or]: [
+                  { first_name: { [Op.iLike]: `%${query}%` } },
+                  { last_name: { [Op.iLike]: `%${query}%` } },
+                  { username: { [Op.iLike]: `%${query}%` } },
+                  { phone: { [Op.iLike]: `%${query}%` } },
+                ],
+              }
+            : undefined,
         },
         {
           model: User,
@@ -259,7 +352,19 @@ export class StudentPaymentService {
           attributes: { exclude: ["password_hash"] },
         },
       ],
+      limit,
+      offset,
+      order: [["payment_date", "DESC"]],
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findUpcomingPayments(days: number = 7): Promise<StudentPayment[]> {
@@ -381,8 +486,9 @@ export class StudentPaymentService {
   async calculateStudentPaymentStatus(
     studentId: string
   ): Promise<StudentPaymentStatusDto> {
-    // Get all payments for this student
-    const payments = await this.findByStudent(studentId);
+    // Get all payments for this student (fetch all with high limit)
+    const paymentsResponse = await this.findByStudent(studentId, 1, 1000);
+    const payments = paymentsResponse.data;
 
     if (!payments.length) {
       return {

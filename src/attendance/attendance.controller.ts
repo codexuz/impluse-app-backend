@@ -137,8 +137,16 @@ export class AttendanceController {
     status: 403,
     description: "Forbidden - Admin access required.",
   })
-  async findAll() {
-    return await this.attendanceService.findAll();
+  async findAll(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return await this.attendanceService.findAll(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("group/:groupId")
@@ -151,8 +159,18 @@ export class AttendanceController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 404, description: "Group not found." })
-  async findByGroup(@Param("groupId") groupId: string) {
-    return await this.attendanceService.findByGroupId(groupId);
+  async findByGroup(
+    @Param("groupId") groupId: string,
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return await this.attendanceService.findByGroupId(
+      groupId,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("student/:studentId")
@@ -165,8 +183,18 @@ export class AttendanceController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 404, description: "Student not found." })
-  async findByStudent(@Param("studentId") studentId: string) {
-    return await this.attendanceService.findByStudentId(studentId);
+  async findByStudent(
+    @Param("studentId") studentId: string,
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return await this.attendanceService.findByStudentId(
+      studentId,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("teacher/:teacherId")
@@ -179,8 +207,18 @@ export class AttendanceController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 404, description: "Teacher not found." })
-  async findByTeacher(@Param("teacherId") teacherId: string) {
-    return await this.attendanceService.findByTeacherId(teacherId);
+  async findByTeacher(
+    @Param("teacherId") teacherId: string,
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return await this.attendanceService.findByTeacherId(
+      teacherId,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("status/:status")

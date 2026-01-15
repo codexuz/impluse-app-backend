@@ -19,6 +19,7 @@ import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.enti
 import { UserSession } from "./entities/user-session.model.js";
 import { StudentPayment } from "../student-payment/entities/student-payment.entity.js";
 import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
+import { Course } from "../courses/entities/course.entity.js";
 
 @Injectable()
 export class UsersService {
@@ -374,11 +375,34 @@ export class UsersService {
     return this.findOne(studentId);
   }
 
-  async getAllTeachers(): Promise<User[]> {
-    return this.userModel.findAll({
-      where: {
-        is_active: true,
-      },
+  async getAllTeachers(
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {
+      is_active: true,
+    };
+
+    // Add search query if provided
+    if (query) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.iLike]: `%${query}%` } },
+        { last_name: { [Op.iLike]: `%${query}%` } },
+        { username: { [Op.iLike]: `%${query}%` } },
+        { phone: { [Op.iLike]: `%${query}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.userModel.findAndCountAll({
+      where: whereClause,
       attributes: {
         exclude: ["password_hash"],
       },
@@ -394,14 +418,48 @@ export class UsersService {
           as: "teacher_profile",
         },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
-  async getAllAdmins(): Promise<User[]> {
-    return this.userModel.findAll({
-      where: {
-        is_active: true,
-      },
+  async getAllAdmins(
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {
+      is_active: true,
+    };
+
+    // Add search query if provided
+    if (query) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.iLike]: `%${query}%` } },
+        { last_name: { [Op.iLike]: `%${query}%` } },
+        { username: { [Op.iLike]: `%${query}%` } },
+        { phone: { [Op.iLike]: `%${query}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.userModel.findAndCountAll({
+      where: whereClause,
       attributes: {
         exclude: ["password_hash"],
       },
@@ -413,14 +471,111 @@ export class UsersService {
           through: { attributes: [] },
         },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
-  async getAllStudents(): Promise<User[]> {
-    return this.userModel.findAll({
-      where: {
-        is_active: true,
+  async getAllStudents(
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {
+      is_active: true,
+    };
+
+    // Add search query if provided
+    if (query) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.iLike]: `%${query}%` } },
+        { last_name: { [Op.iLike]: `%${query}%` } },
+        { username: { [Op.iLike]: `%${query}%` } },
+        { phone: { [Op.iLike]: `%${query}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.userModel.findAndCountAll({
+      where: whereClause,
+      attributes: {
+        exclude: ["password_hash"],
       },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          where: { name: "student" },
+          through: { attributes: [] },
+        },
+        {
+          model: StudentProfile,
+          as: "student_profile",
+        },
+        {
+          model: Course,
+          as: "level",
+          required: false,
+        },
+      ],
+      limit,
+      offset,
+      distinct: true,
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  async getArchivedStudents(
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {
+      is_active: false,
+    };
+
+    // Add search query if provided
+    if (query) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.iLike]: `%${query}%` } },
+        { last_name: { [Op.iLike]: `%${query}%` } },
+        { username: { [Op.iLike]: `%${query}%` } },
+        { email: { [Op.iLike]: `%${query}%` } },
+        { phone: { [Op.iLike]: `%${query}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.userModel.findAndCountAll({
+      where: whereClause,
       attributes: {
         exclude: ["password_hash"],
       },
@@ -436,34 +591,47 @@ export class UsersService {
           as: "student_profile",
         },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
-  async getArchivedStudents(): Promise<User[]> {
-    return this.userModel.findAll({
-      where: {
-        is_active: false,
-      },
-      attributes: {
-        exclude: ["password_hash"],
-      },
-      include: [
-        {
-          model: Role,
-          as: "roles",
-          where: { name: "student" },
-          through: { attributes: [] },
-        },
-        {
-          model: StudentProfile,
-          as: "student_profile",
-        },
-      ],
-    });
-  }
+  async getAllSupportTeachers(
+    page: number = 1,
+    limit: number = 10,
+    query?: string
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {};
 
-  async getAllSupportTeachers(): Promise<User[]> {
-    return this.userModel.findAll({
+    // Add search query if provided
+    if (query) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.iLike]: `%${query}%` } },
+        { last_name: { [Op.iLike]: `%${query}%` } },
+        { username: { [Op.iLike]: `%${query}%` } },
+        { email: { [Op.iLike]: `%${query}%` } },
+        { phone: { [Op.iLike]: `%${query}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.userModel.findAndCountAll({
+      where: whereClause,
       attributes: {
         exclude: ["password_hash"],
       },
@@ -475,7 +643,18 @@ export class UsersService {
           through: { attributes: [] },
         },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   /**

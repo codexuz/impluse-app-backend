@@ -11,9 +11,15 @@ import {
   HttpStatus,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ApiOperation, ApiResponse, ApiConsumes, ApiBody } from "@nestjs/swagger";
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+  ApiBody,
+} from "@nestjs/swagger";
 import { UsersService } from "./users.service.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
@@ -56,40 +62,83 @@ export class UsersController {
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Get all teachers" })
   @ApiResponse({ status: 200, description: "List of all teachers" })
-  getAllTeachers() {
-    return this.usersService.getAllTeachers();
+  getAllTeachers(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return this.usersService.getAllTeachers(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("admins")
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Get all admins" })
   @ApiResponse({ status: 200, description: "List of all admin users" })
-  getAllAdmins() {
-    return this.usersService.getAllAdmins();
+  getAllAdmins(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return this.usersService.getAllAdmins(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("students")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Get all students" })
   @ApiResponse({ status: 200, description: "List of all students" })
-  getAllStudents() {
-    return this.usersService.getAllStudents();
+  getAllStudents(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return this.usersService.getAllStudents(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("students/archived")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Get all archived students" })
-  @ApiResponse({ status: 200, description: "List of all archived students (is_active = false)" })
-  getArchivedStudents() {
-    return this.usersService.getArchivedStudents();
+  @ApiResponse({
+    status: 200,
+    description: "List of all archived students (is_active = false)",
+  })
+  getArchivedStudents(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return this.usersService.getArchivedStudents(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("support-teachers")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all support teachers" })
   @ApiResponse({ status: 200, description: "List of all support teachers" })
-  getAllSupportTeachers() {
-    return this.usersService.getAllSupportTeachers();
+  getAllSupportTeachers(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return this.usersService.getAllSupportTeachers(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get()
@@ -132,7 +181,10 @@ export class UsersController {
   @Patch("students/:id/archive")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Archive a student" })
-  @ApiResponse({ status: 200, description: "Student archived successfully (is_active = false)" })
+  @ApiResponse({
+    status: 200,
+    description: "Student archived successfully (is_active = false)",
+  })
   @ApiResponse({ status: 404, description: "Student not found" })
   archiveStudent(@Param("id") id: string) {
     return this.usersService.archiveStudent(id);
@@ -141,7 +193,10 @@ export class UsersController {
   @Patch("students/:id/restore")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Restore an archived student to active status" })
-  @ApiResponse({ status: 200, description: "Student restored successfully (is_active = true)" })
+  @ApiResponse({
+    status: 200,
+    description: "Student restored successfully (is_active = true)",
+  })
   @ApiResponse({ status: 404, description: "Student not found" })
   restoreStudent(@Param("id") id: string) {
     return this.usersService.restoreStudent(id);
@@ -149,14 +204,18 @@ export class UsersController {
 
   @Patch(":id/update-password")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: "Update user password",
-    description: "Updates a user's password by their ID. Admins can update any user's password, while regular users can only update their own."
+    description:
+      "Updates a user's password by their ID. Admins can update any user's password, while regular users can only update their own.",
   })
   @ApiResponse({ status: 200, description: "Password updated successfully" })
   @ApiResponse({ status: 400, description: "Invalid input" })
   @ApiResponse({ status: 401, description: "Current password is incorrect" })
-  @ApiResponse({ status: 403, description: "Forbidden - insufficient permissions" })
+  @ApiResponse({
+    status: 403,
+    description: "Forbidden - insufficient permissions",
+  })
   @ApiResponse({ status: 404, description: "User not found" })
   async updatePassword(
     @Param("id") id: string,
@@ -173,7 +232,8 @@ export class UsersController {
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
   @ApiOperation({
     summary: "Upload user avatar image",
-    description: "Upload an avatar image for the user. The image will be stored in MinIO and the avatar_url will be updated."
+    description:
+      "Upload an avatar image for the user. The image will be stored in MinIO and the avatar_url will be updated.",
   })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
@@ -195,11 +255,19 @@ export class UsersController {
     FileInterceptor("file", {
       limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
       fileFilter: (req, file, callback) => {
-        const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+        const allowedMimeTypes = [
+          "image/jpeg",
+          "image/jpg",
+          "image/png",
+          "image/gif",
+        ];
         if (allowedMimeTypes.includes(file.mimetype)) {
           callback(null, true);
         } else {
-          callback(new Error("Only image files are allowed (jpg, jpeg, png, gif)"), false);
+          callback(
+            new Error("Only image files are allowed (jpg, jpeg, png, gif)"),
+            false
+          );
         }
       },
     })
@@ -215,7 +283,8 @@ export class UsersController {
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
   @ApiOperation({
     summary: "Update user avatar URL",
-    description: "Update the user's avatar URL directly (if you already have the URL)"
+    description:
+      "Update the user's avatar URL directly (if you already have the URL)",
   })
   @ApiResponse({ status: 200, description: "Avatar URL updated successfully" })
   @ApiResponse({ status: 404, description: "User not found" })

@@ -19,12 +19,31 @@ import { Op } from "sequelize";
 export class NotificationsService {
   constructor(private readonly firebaseService: FirebaseServiceService) {}
 
-  async getAllNotifications(): Promise<NotificationResponseDto[]> {
-    const notifications = await Notifications.findAll({
+  async getAllNotifications(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{
+    data: NotificationResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Notifications.findAndCountAll({
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
     });
 
-    return notifications;
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async createNotificationForAllUsers(
@@ -34,7 +53,7 @@ export class NotificationsService {
 
     // Get all users
     const users = await User.findAll();
-    
+
     // Create user notification records
     const records = users.map((user) => ({
       user_id: user.user_id,
@@ -43,31 +62,31 @@ export class NotificationsService {
     }));
 
     await UserNotification.bulkCreate(records);
-    console.log(records)
+    console.log(records);
     try {
       // Get all user tokens
       const notificationTokens = await NotificationToken.findAll({
         where: {
-          user_id: users.map(user => user.user_id)
-        }
+          user_id: users.map((user) => user.user_id),
+        },
       });
 
       if (notificationTokens.length > 0) {
         // Extract tokens and send push notifications
-        const tokens = notificationTokens.map(nt => nt.token);
+        const tokens = notificationTokens.map((nt) => nt.token);
         await this.notifyMultipleUsers(
           tokens,
-          createNotificationDto.title || 'New Notification',
+          createNotificationDto.title || "New Notification",
           createNotificationDto.message,
-          { 
+          {
             notification_id: notification.id,
             img_url: createNotificationDto.img_url,
-            type: 'global'
+            type: "global",
           }
         );
       }
     } catch (error) {
-      console.error('Error sending push notifications:', error);
+      console.error("Error sending push notifications:", error);
       // Continue even if push notification fails
     }
 
@@ -202,12 +221,20 @@ export class NotificationsService {
   async findAllNotificationTokens() {
     try {
       return await NotificationToken.findAll({
-        include: [{
-          model: User,
-          as: 'user',
-          attributes: ['user_id', 'username', 'first_name', 'last_name', 'level_id']
-        }],
-        order: [['createdAt', 'DESC']]
+        include: [
+          {
+            model: User,
+            as: "user",
+            attributes: [
+              "user_id",
+              "username",
+              "first_name",
+              "last_name",
+              "level_id",
+            ],
+          },
+        ],
+        order: [["createdAt", "DESC"]],
       });
     } catch (error) {
       console.error("Error fetching notification tokens:", error);
@@ -224,31 +251,45 @@ export class NotificationsService {
     });
   }
 
-
-  async notifyUser(deviceToken: string, title?: string, body?: string, data?: Record<string, string>) {
+  async notifyUser(
+    deviceToken: string,
+    title?: string,
+    body?: string,
+    data?: Record<string, string>
+  ) {
     return this.firebaseService.sendNotification(
       deviceToken,
-      title || 'Hello!',
-      body || 'This is a test push notification 🚀',
-      data || { customData: '12345' },
+      title || "Hello!",
+      body || "This is a test push notification 🚀",
+      data || { customData: "12345" }
     );
   }
 
-  async notifyMultipleUsers(tokens: string[], title?: string, body?: string, data?: Record<string, string>) {
+  async notifyMultipleUsers(
+    tokens: string[],
+    title?: string,
+    body?: string,
+    data?: Record<string, string>
+  ) {
     return this.firebaseService.sendMulticastNotification(
       tokens,
-      title || 'Hello!',
-      body || 'This is a test push notification 🚀',
-      data || { customData: '12345' },
+      title || "Hello!",
+      body || "This is a test push notification 🚀",
+      data || { customData: "12345" }
     );
   }
 
-  async notifyTopic(topic: string, title?: string, body?: string, data?: Record<string, string>) {
+  async notifyTopic(
+    topic: string,
+    title?: string,
+    body?: string,
+    data?: Record<string, string>
+  ) {
     return this.firebaseService.sendToTopic(
       topic,
-      title || 'Hello!',
-      body || 'This is a test push notification 🚀',
-      data || { customData: '12345' },
+      title || "Hello!",
+      body || "This is a test push notification 🚀",
+      data || { customData: "12345" }
     );
   }
 
@@ -265,13 +306,13 @@ export class NotificationsService {
       // Get all user tokens
       const notificationTokens = await NotificationToken.findAll({
         where: {
-          user_id: { [Op.not]: null } // Only get tokens associated with users
-        }
+          user_id: { [Op.not]: null }, // Only get tokens associated with users
+        },
       });
-      const tokens = notificationTokens.map(nt => nt.token);
+      const tokens = notificationTokens.map((nt) => nt.token);
 
       if (tokens.length === 0) {
-        console.log('No tokens found to send app update notification');
+        console.log("No tokens found to send app update notification");
         return;
       }
 
@@ -281,11 +322,11 @@ export class NotificationsService {
         options?.playStoreUrl
       );
     } catch (error) {
-      console.error('Error sending app update notification:', error);
+      console.error("Error sending app update notification:", error);
       throw error;
     }
   }
-  
+
   async findNotificationTokenById(
     id: string
   ): Promise<NotificationTokenResponseDto> {
@@ -349,4 +390,3 @@ export class NotificationsService {
     });
   }
 }
-

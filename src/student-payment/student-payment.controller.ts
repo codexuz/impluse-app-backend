@@ -64,14 +64,25 @@ export class StudentPaymentController {
   @ApiResponse({ status: 200, description: "List of all payments." })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 403, description: "Forbidden." })
-  findAll() {
-    return this.studentPaymentService.findAll();
+  findAll(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return this.studentPaymentService.findAll(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("date-range")
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Get all student payments within a date range" })
-  @ApiResponse({ status: 200, description: "List of payments within date range." })
+  @ApiResponse({
+    status: 200,
+    description: "List of payments within date range.",
+  })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 403, description: "Forbidden." })
   findByDateRange(
@@ -92,8 +103,18 @@ export class StudentPaymentController {
   @ApiResponse({ status: 200, description: "List of student's payments." })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 403, description: "Forbidden." })
-  findByStudent(@Param("studentId", ParseUUIDPipe) studentId: string) {
-    return this.studentPaymentService.findByStudent(studentId);
+  findByStudent(
+    @Param("studentId", ParseUUIDPipe) studentId: string,
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return this.studentPaymentService.findByStudent(
+      studentId,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get("student/:studentId/status")
@@ -136,8 +157,18 @@ export class StudentPaymentController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 403, description: "Forbidden." })
-  findByStatus(@Param("status") status: string) {
-    return this.studentPaymentService.findByStatus(status as PaymentStatus);
+  findByStatus(
+    @Param("status") status: string,
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string
+  ) {
+    return this.studentPaymentService.findByStatus(
+      status as PaymentStatus,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query
+    );
   }
 
   @Get(":id")
