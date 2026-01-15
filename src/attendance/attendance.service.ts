@@ -265,9 +265,9 @@ export class AttendanceService {
           where: query
             ? {
                 [Op.or]: [
-                  { first_name: { [Op.iLike]: `%${query}%` } },
-                  { last_name: { [Op.iLike]: `%${query}%` } },
-                  { username: { [Op.iLike]: `%${query}%` } },
+                  { first_name: { [Op.like]: `%${query}%` } },
+                  { last_name: { [Op.like]: `%${query}%` } },
+                  { username: { [Op.like]: `%${query}%` } },
                 ],
               }
             : undefined,
@@ -563,9 +563,9 @@ export class AttendanceService {
           where: query
             ? {
                 [Op.or]: [
-                  { first_name: { [Op.iLike]: `%${query}%` } },
-                  { last_name: { [Op.iLike]: `%${query}%` } },
-                  { username: { [Op.iLike]: `%${query}%` } },
+                  { first_name: { [Op.like]: `%${query}%` } },
+                  { last_name: { [Op.like]: `%${query}%` } },
+                  { username: { [Op.like]: `%${query}%` } },
                 ],
               }
             : undefined,
@@ -613,7 +613,7 @@ export class AttendanceService {
 
     // Add search on status or date if query is provided
     if (query) {
-      whereClause[Op.or] = [{ status: { [Op.iLike]: `%${query}%` } }];
+      whereClause[Op.or] = [{ status: { [Op.like]: `%${query}%` } }];
     }
 
     const { count, rows } = await Attendance.findAndCountAll({
@@ -692,9 +692,9 @@ export class AttendanceService {
           where: query
             ? {
                 [Op.or]: [
-                  { first_name: { [Op.iLike]: `%${query}%` } },
-                  { last_name: { [Op.iLike]: `%${query}%` } },
-                  { username: { [Op.iLike]: `%${query}%` } },
+                  { first_name: { [Op.like]: `%${query}%` } },
+                  { last_name: { [Op.like]: `%${query}%` } },
+                  { username: { [Op.like]: `%${query}%` } },
                 ],
               }
             : undefined,

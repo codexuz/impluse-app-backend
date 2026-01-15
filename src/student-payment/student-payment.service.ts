@@ -187,10 +187,10 @@ export class StudentPaymentService {
           where: query
             ? {
                 [Op.or]: [
-                  { first_name: { [Op.iLike]: `%${query}%` } },
-                  { last_name: { [Op.iLike]: `%${query}%` } },
-                  { username: { [Op.iLike]: `%${query}%` } },
-                  { phone: { [Op.iLike]: `%${query}%` } },
+                  { first_name: { [Op.like]: `%${query}%` } },
+                  { last_name: { [Op.like]: `%${query}%` } },
+                  { username: { [Op.like]: `%${query}%` } },
+                  { phone: { [Op.like]: `%${query}%` } },
                 ],
               }
             : undefined,
@@ -255,8 +255,8 @@ export class StudentPaymentService {
     // Add search on payment-specific fields if query is provided
     if (query) {
       whereClause[Op.or] = [
-        { status: { [Op.iLike]: `%${query}%` } },
-        { payment_method: { [Op.iLike]: `%${query}%` } },
+        { status: { [Op.like]: `%${query}%` } },
+        { payment_method: { [Op.like]: `%${query}%` } },
       ];
     }
 
@@ -338,10 +338,10 @@ export class StudentPaymentService {
           where: query
             ? {
                 [Op.or]: [
-                  { first_name: { [Op.iLike]: `%${query}%` } },
-                  { last_name: { [Op.iLike]: `%${query}%` } },
-                  { username: { [Op.iLike]: `%${query}%` } },
-                  { phone: { [Op.iLike]: `%${query}%` } },
+                  { first_name: { [Op.like]: `%${query}%` } },
+                  { last_name: { [Op.like]: `%${query}%` } },
+                  { username: { [Op.like]: `%${query}%` } },
+                  { phone: { [Op.like]: `%${query}%` } },
                 ],
               }
             : undefined,

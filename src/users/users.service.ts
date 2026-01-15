@@ -394,10 +394,10 @@ export class UsersService {
     // Add search query if provided
     if (query) {
       whereClause[Op.or] = [
-        { first_name: { [Op.iLike]: `%${query}%` } },
-        { last_name: { [Op.iLike]: `%${query}%` } },
-        { username: { [Op.iLike]: `%${query}%` } },
-        { phone: { [Op.iLike]: `%${query}%` } },
+        { first_name: { [Op.like]: `%${query}%` } },
+        { last_name: { [Op.like]: `%${query}%` } },
+        { username: { [Op.like]: `%${query}%` } },
+        { phone: { [Op.like]: `%${query}%` } },
       ];
     }
 
@@ -451,10 +451,10 @@ export class UsersService {
     // Add search query if provided
     if (query) {
       whereClause[Op.or] = [
-        { first_name: { [Op.iLike]: `%${query}%` } },
-        { last_name: { [Op.iLike]: `%${query}%` } },
-        { username: { [Op.iLike]: `%${query}%` } },
-        { phone: { [Op.iLike]: `%${query}%` } },
+        { first_name: { [Op.like]: `%${query}%` } },
+        { last_name: { [Op.like]: `%${query}%` } },
+        { username: { [Op.like]: `%${query}%` } },
+        { phone: { [Op.like]: `%${query}%` } },
       ];
     }
 
@@ -504,10 +504,10 @@ export class UsersService {
     // Add search query if provided
     if (query) {
       whereClause[Op.or] = [
-        { first_name: { [Op.iLike]: `%${query}%` } },
-        { last_name: { [Op.iLike]: `%${query}%` } },
-        { username: { [Op.iLike]: `%${query}%` } },
-        { phone: { [Op.iLike]: `%${query}%` } },
+        { first_name: { [Op.like]: `%${query}%` } },
+        { last_name: { [Op.like]: `%${query}%` } },
+        { username: { [Op.like]: `%${query}%` } },
+        { phone: { [Op.like]: `%${query}%` } },
       ];
     }
 
@@ -566,11 +566,11 @@ export class UsersService {
     // Add search query if provided
     if (query) {
       whereClause[Op.or] = [
-        { first_name: { [Op.iLike]: `%${query}%` } },
-        { last_name: { [Op.iLike]: `%${query}%` } },
-        { username: { [Op.iLike]: `%${query}%` } },
-        { email: { [Op.iLike]: `%${query}%` } },
-        { phone: { [Op.iLike]: `%${query}%` } },
+        { first_name: { [Op.like]: `%${query}%` } },
+        { last_name: { [Op.like]: `%${query}%` } },
+        { username: { [Op.like]: `%${query}%` } },
+        { email: { [Op.like]: `%${query}%` } },
+        { phone: { [Op.like]: `%${query}%` } },
       ];
     }
 
@@ -622,11 +622,11 @@ export class UsersService {
     // Add search query if provided
     if (query) {
       whereClause[Op.or] = [
-        { first_name: { [Op.iLike]: `%${query}%` } },
-        { last_name: { [Op.iLike]: `%${query}%` } },
-        { username: { [Op.iLike]: `%${query}%` } },
-        { email: { [Op.iLike]: `%${query}%` } },
-        { phone: { [Op.iLike]: `%${query}%` } },
+        { first_name: { [Op.like]: `%${query}%` } },
+        { last_name: { [Op.like]: `%${query}%` } },
+        { username: { [Op.like]: `%${query}%` } },
+        { email: { [Op.like]: `%${query}%` } },
+        { phone: { [Op.like]: `%${query}%` } },
       ];
     }
 

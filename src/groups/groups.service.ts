@@ -32,8 +32,8 @@ export class GroupsService {
 
     if (query) {
       whereClause[Op.or] = [
-        { name: { [Op.iLike]: `%${query}%` } },
-        { group_code: { [Op.iLike]: `%${query}%` } },
+        { name: { [Op.like]: `%${query}%` } },
+        { group_code: { [Op.like]: `%${query}%` } },
       ];
     }
 
@@ -114,8 +114,8 @@ export class GroupsService {
 
     if (query) {
       whereClause[Op.or] = [
-        { name: { [Op.iLike]: `%${query}%` } },
-        { group_code: { [Op.iLike]: `%${query}%` } },
+        { name: { [Op.like]: `%${query}%` } },
+        { group_code: { [Op.like]: `%${query}%` } },
       ];
     }
 
@@ -162,8 +162,8 @@ export class GroupsService {
 
     if (query) {
       whereClause[Op.or] = [
-        { name: { [Op.iLike]: `%${query}%` } },
-        { group_code: { [Op.iLike]: `%${query}%` } },
+        { name: { [Op.like]: `%${query}%` } },
+        { group_code: { [Op.like]: `%${query}%` } },
       ];
     }
 
