@@ -569,7 +569,6 @@ export class UsersService {
         { first_name: { [Op.like]: `%${query}%` } },
         { last_name: { [Op.like]: `%${query}%` } },
         { username: { [Op.like]: `%${query}%` } },
-        { email: { [Op.like]: `%${query}%` } },
         { phone: { [Op.like]: `%${query}%` } },
       ];
     }
@@ -625,7 +624,6 @@ export class UsersService {
         { first_name: { [Op.like]: `%${query}%` } },
         { last_name: { [Op.like]: `%${query}%` } },
         { username: { [Op.like]: `%${query}%` } },
-        { email: { [Op.like]: `%${query}%` } },
         { phone: { [Op.like]: `%${query}%` } },
       ];
     }
