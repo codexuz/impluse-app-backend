@@ -26,6 +26,12 @@ export class StudentPayment extends Model {
   manager_id!: string;
 
   @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  branch_id: string;
+
+  @Column({
     type: DataType.INTEGER,
   })
   amount!: number;

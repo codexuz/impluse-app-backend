@@ -45,6 +45,12 @@ export class Group extends Model {
   level_id: string; // FK to Level
 
   @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  branch_id: string; // FK to Branch
+
+  @Column({
     type: DataType.ENUM("odd", "even", "every_day", "other_day"),
     allowNull: true,
   })

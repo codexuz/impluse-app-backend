@@ -76,6 +76,12 @@ export class Lead extends Model {
   admin_id: string;
 
   @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  branch_id: string;
+
+  @Column({
     type: DataType.TEXT,
     allowNull: false,
   })

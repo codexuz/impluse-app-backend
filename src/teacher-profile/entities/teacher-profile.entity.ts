@@ -23,6 +23,11 @@ export class TeacherProfile extends Model<TeacherProfile> {
   @Column(DataType.UUID)
   user_id!: string;
 
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  branch_id: string;
 
   @Column({
     type: DataType.ENUM("percentage", "fixed"),
@@ -30,7 +35,7 @@ export class TeacherProfile extends Model<TeacherProfile> {
   })
   payment_type!: "percentage" | "fixed";
 
-    @Column({
+  @Column({
     type: DataType.INTEGER,
     allowNull: true,
   })

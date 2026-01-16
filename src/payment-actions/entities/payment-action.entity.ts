@@ -31,6 +31,12 @@ export class PaymentAction extends Model {
   manager_id!: string;
 
   @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  branch_id: string;
+
+  @Column({
     type: DataType.ENUM("upcoming", "debitor"),
   })
   stage!: string;

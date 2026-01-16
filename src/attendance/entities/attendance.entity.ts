@@ -29,6 +29,9 @@ export class Attendance extends Model {
   @Column({ type: DataType.UUID, allowNull: false })
   teacher_id: string;
 
+  @Column({ type: DataType.UUID, allowNull: true })
+  branch_id: string;
+
   @Column({
     type: DataType.ENUM("present", "absent", "late"),
     allowNull: false,

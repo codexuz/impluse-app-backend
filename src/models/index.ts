@@ -85,6 +85,7 @@ import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { StudentTransaction } from "../student-transaction/entities/student-transaction.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
+import { Branch } from "../branches/entities/branch.entity.js";
 
 export const Models = [
   User,
@@ -163,6 +164,7 @@ export const Models = [
   VideoLike,
   VideoJudge,
   FeedVideoTask,
+  Branch,
 ];
 
 // Define associations after all models are loaded
@@ -347,6 +349,8 @@ export function initializeAssociations() {
 
   Group.belongsTo(User, { foreignKey: "teacher_id", as: "teacher" });
 
+  Group.belongsTo(Branch, { foreignKey: "branch_id", as: "branch" });
+
   User.belongsToMany(Group, {
     through: GroupStudent,
     foreignKey: "student_id",
@@ -400,6 +404,7 @@ export function initializeAssociations() {
   Attendance.belongsTo(Group, { foreignKey: "group_id", as: "group" });
   Attendance.belongsTo(User, { foreignKey: "student_id", as: "student" });
   Attendance.belongsTo(User, { foreignKey: "teacher_id", as: "teacher" });
+  Attendance.belongsTo(Branch, { foreignKey: "branch_id", as: "branch" });
   Attendance.hasMany(AttendanceLog, {
     foreignKey: "attendance_id",
     as: "logs",
@@ -674,6 +679,8 @@ export function initializeAssociations() {
   });
   StudentPayment.belongsTo(User, { foreignKey: "manager_id", as: "manager" });
 
+  StudentPayment.belongsTo(Branch, { foreignKey: "branch_id", as: "branch" });
+
   // StudentBook Associations
   Course.hasMany(StudentBook, { foreignKey: "level_id", as: "student_books" });
   StudentBook.belongsTo(Course, { foreignKey: "level_id", as: "level" });
@@ -702,6 +709,11 @@ export function initializeAssociations() {
   Lead.belongsTo(Course, {
     foreignKey: "course_id",
     as: "course",
+  });
+
+  Lead.belongsTo(Branch, {
+    foreignKey: "branch_id",
+    as: "branch",
   });
 
   // Lead to User through LeadTrialLesson
@@ -735,12 +747,74 @@ export function initializeAssociations() {
     as: "user",
   });
 
+  // Branch associations
+  User.hasMany(Branch, {
+    foreignKey: "owner_id",
+    as: "branches",
+  });
+
+  User.belongsTo(Branch, {
+    foreignKey: "branch_id",
+    as: "branch",
+  });
+
+  Branch.belongsTo(User, {
+    foreignKey: "owner_id",
+    as: "owner",
+  });
+
+  Branch.hasMany(User, {
+    foreignKey: "branch_id",
+    as: "users",
+  });
+
+  Branch.hasMany(Attendance, {
+    foreignKey: "branch_id",
+    as: "attendances",
+  });
+
+  Branch.hasMany(Exam, {
+    foreignKey: "branch_id",
+    as: "exams",
+  });
+
+  Branch.hasMany(Group, {
+    foreignKey: "branch_id",
+    as: "groups",
+  });
+
+  Branch.hasMany(Lead, {
+    foreignKey: "branch_id",
+    as: "leads",
+  });
+
+  Branch.hasMany(PaymentAction, {
+    foreignKey: "branch_id",
+    as: "payment_actions",
+  });
+
+  Branch.hasMany(StudentPayment, {
+    foreignKey: "branch_id",
+    as: "student_payments",
+  });
+
+  Branch.hasMany(TeacherProfile, {
+    foreignKey: "branch_id",
+    as: "teacher_profiles",
+  });
+
+  Branch.hasMany(TeacherTransaction, {
+    foreignKey: "branch_id",
+    as: "teacher_transactions",
+  });
+
   // Exam associations
   Group.hasMany(Exam, {
     foreignKey: "group_id",
     as: "exams",
   });
   Exam.belongsTo(Group, { foreignKey: "group_id", as: "group" });
+  Exam.belongsTo(Branch, { foreignKey: "branch_id", as: "branch" });
 
   Exam.hasMany(ExamResult, {
     foreignKey: "exam_id",
@@ -976,6 +1050,11 @@ export function initializeAssociations() {
     as: "teacher",
   });
 
+  TeacherProfile.belongsTo(Branch, {
+    foreignKey: "branch_id",
+    as: "branch",
+  });
+
   // StudentTransaction associations
   User.hasMany(StudentTransaction, {
     foreignKey: "student_id",
@@ -1004,6 +1083,11 @@ export function initializeAssociations() {
     as: "student",
   });
 
+  TeacherTransaction.belongsTo(Branch, {
+    foreignKey: "branch_id",
+    as: "branch",
+  });
+
   // PaymentAction associations
   StudentPayment.hasMany(PaymentAction, {
     foreignKey: "payment_id",
@@ -1021,6 +1105,11 @@ export function initializeAssociations() {
   PaymentAction.belongsTo(User, {
     foreignKey: "manager_id",
     as: "manager",
+  });
+
+  PaymentAction.belongsTo(Branch, {
+    foreignKey: "branch_id",
+    as: "branch",
   });
 
   // FeedVideo associations

@@ -34,6 +34,12 @@ export class TeacherTransaction extends Model<TeacherTransaction> {
   student_id: string;
 
   @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  branch_id: string;
+
+  @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })

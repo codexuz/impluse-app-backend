@@ -86,6 +86,7 @@ import { MinioModule } from "./minio/minio.module.js";
 import { AwsStorageModule } from "./aws-storage/aws-storage.module.js";
 import { StudentParentsModule } from "./student-parents/student-parents.module.js";
 import { CompensateLessonsModule } from './compensate-lessons/compensate-lessons.module.js';
+import { BranchesModule } from './branches/branches.module.js';
 
 @Module({
   imports: [
@@ -173,6 +174,7 @@ import { CompensateLessonsModule } from './compensate-lessons/compensate-lessons
     AwsStorageModule,
     StudentParentsModule,
     CompensateLessonsModule,
+    BranchesModule,
   ],
   controllers: [AppController],
   providers: [

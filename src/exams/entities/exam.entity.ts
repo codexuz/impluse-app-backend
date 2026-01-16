@@ -27,11 +27,17 @@ export class Exam extends Model<Exam> {
   })
   title: string;
 
-   @Column({
+  @Column({
     type: DataType.UUID,
     allowNull: false,
   })
   group_id: string;
+
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  branch_id: string;
 
   @Column({
     type: DataType.DATE,
@@ -53,11 +59,16 @@ export class Exam extends Model<Exam> {
   is_online: boolean;
 
   @Column({
-    type: DataType.ENUM("beginner", 'elementary', "pre-intermediate", "intermediate"),
+    type: DataType.ENUM(
+      "beginner",
+      "elementary",
+      "pre-intermediate",
+      "intermediate"
+    ),
     allowNull: false,
     defaultValue: "beginner",
   })
-  level: "beginner"| 'elementary'| "pre-intermediate"| "intermediate";
+  level: "beginner" | "elementary" | "pre-intermediate" | "intermediate";
 
   @CreatedAt
   created_at: Date;

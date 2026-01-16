@@ -325,6 +325,20 @@ export class UsersService {
 
   async deactivate(id: string): Promise<User> {
     const user = await this.findOne(id);
+
+    // Check if user is a student
+    const hasStudentRole = user.roles?.some((role) => role.name === "student");
+
+    if (hasStudentRole) {
+      // Remove student from all groups
+      const models = this.userModel.sequelize.models;
+      if (models.GroupStudent) {
+        await models.GroupStudent.destroy({
+          where: { student_id: id },
+        });
+      }
+    }
+
     await user.update({ is_active: false });
     return user;
   }

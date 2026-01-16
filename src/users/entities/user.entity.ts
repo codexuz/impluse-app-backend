@@ -8,21 +8,18 @@ import {
   Default,
   BeforeCreate,
   BeforeUpdate,
-} from 'sequelize-typescript';
-import * as bcrypt from 'bcrypt';
+} from "sequelize-typescript";
+import * as bcrypt from "bcrypt";
 
-import { Role } from './role.model.js';
-import { UserSession } from './user-session.model.js';
-
-
-
+import { Role } from "./role.model.js";
+import { UserSession } from "./user-session.model.js";
 
 @Table({
-  tableName: 'users',
+  tableName: "users",
   timestamps: false,
 })
 export class User extends Model<User> {
- @Column({
+  @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,
     primaryKey: true,
@@ -46,6 +43,10 @@ export class User extends Model<User> {
   @AllowNull(true)
   @Column(DataType.UUID)
   level_id?: string;
+
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  branch_id?: string;
 
   @AllowNull(true)
   @Unique
@@ -78,7 +79,7 @@ export class User extends Model<User> {
 
   @Column({
     type: DataType.STRING,
-    allowNull: true
+    allowNull: true,
   })
   currentSessionId: string;
 
