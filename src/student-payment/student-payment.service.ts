@@ -166,7 +166,15 @@ export class StudentPaymentService {
   async findAll(
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
+    status?: string,
+    payment_method?: string,
+    startDate?: Date,
+    endDate?: Date,
+    paymentStartDate?: Date,
+    paymentEndDate?: Date,
+    nextPaymentStartDate?: Date,
+    nextPaymentEndDate?: Date
   ): Promise<{
     data: StudentPayment[];
     total: number;
@@ -176,6 +184,61 @@ export class StudentPaymentService {
   }> {
     const offset = (page - 1) * limit;
     const whereClause: any = {};
+
+    // Filter by status
+    if (status) {
+      whereClause.status = status;
+    }
+
+    // Filter by payment method
+    if (payment_method) {
+      whereClause.payment_method = payment_method;
+    }
+
+    // Filter by createdAt date range
+    if (startDate && endDate) {
+      whereClause.createdAt = {
+        [Op.between]: [startDate, endDate],
+      };
+    } else if (startDate) {
+      whereClause.createdAt = {
+        [Op.gte]: startDate,
+      };
+    } else if (endDate) {
+      whereClause.createdAt = {
+        [Op.lte]: endDate,
+      };
+    }
+
+    // Filter by payment_date range
+    if (paymentStartDate && paymentEndDate) {
+      whereClause.payment_date = {
+        [Op.between]: [paymentStartDate, paymentEndDate],
+      };
+    } else if (paymentStartDate) {
+      whereClause.payment_date = {
+        [Op.gte]: paymentStartDate,
+      };
+    } else if (paymentEndDate) {
+      whereClause.payment_date = {
+        [Op.lte]: paymentEndDate,
+      };
+    }
+
+    // Filter by next_payment_date range
+    if (nextPaymentStartDate && nextPaymentEndDate) {
+      whereClause.next_payment_date = {
+        [Op.between]: [nextPaymentStartDate, nextPaymentEndDate],
+      };
+    } else if (nextPaymentStartDate) {
+      whereClause.next_payment_date = {
+        [Op.gte]: nextPaymentStartDate,
+      };
+    } else if (nextPaymentEndDate) {
+      whereClause.next_payment_date = {
+        [Op.lte]: nextPaymentEndDate,
+      };
+    }
 
     const { count, rows } = await this.studentPaymentModel.findAndCountAll({
       where: whereClause,

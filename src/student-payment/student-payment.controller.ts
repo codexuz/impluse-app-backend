@@ -67,12 +67,41 @@ export class StudentPaymentController {
   findAll(
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
+    @Query("status") status?: string,
+    @Query("payment_method") payment_method?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("paymentStartDate") paymentStartDate?: string,
+    @Query("paymentEndDate") paymentEndDate?: string,
+    @Query("nextPaymentStartDate") nextPaymentStartDate?: string,
+    @Query("nextPaymentEndDate") nextPaymentEndDate?: string
   ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    const paymentStart = paymentStartDate
+      ? new Date(paymentStartDate)
+      : undefined;
+    const paymentEnd = paymentEndDate ? new Date(paymentEndDate) : undefined;
+    const nextPaymentStart = nextPaymentStartDate
+      ? new Date(nextPaymentStartDate)
+      : undefined;
+    const nextPaymentEnd = nextPaymentEndDate
+      ? new Date(nextPaymentEndDate)
+      : undefined;
+
     return this.studentPaymentService.findAll(
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
+      status,
+      payment_method,
+      start,
+      end,
+      paymentStart,
+      paymentEnd,
+      nextPaymentStart,
+      nextPaymentEnd
     );
   }
 
