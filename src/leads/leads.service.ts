@@ -9,7 +9,7 @@ import { Op } from "sequelize";
 export class LeadsService {
   constructor(
     @InjectModel(Lead)
-    private leadModel: typeof Lead
+    private leadModel: typeof Lead,
   ) {}
 
   async create(createLeadDto: CreateLeadDto): Promise<Lead> {
@@ -27,7 +27,7 @@ export class LeadsService {
     status?: string,
     source?: string,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<{
     leads: Lead[];
     total: number;
@@ -35,7 +35,9 @@ export class LeadsService {
     currentPage: number;
   }> {
     const offset = (page - 1) * limit;
-    const whereClause: any = {};
+    const whereClause: any = {
+      isarchived: false,
+    };
 
     if (search) {
       whereClause[Op.or] = [
@@ -115,6 +117,11 @@ export class LeadsService {
     await lead.destroy();
   }
 
+  async archive(id: string): Promise<Lead> {
+    const lead = await this.findOne(id);
+    return await lead.update({ isarchived: true });
+  }
+
   async getLeadStats(): Promise<{
     totalLeads: number;
     leadsByStatus: { [key: string]: number };
@@ -146,7 +153,7 @@ export class LeadsService {
         [
           this.leadModel.sequelize.fn(
             "COUNT",
-            this.leadModel.sequelize.col("status")
+            this.leadModel.sequelize.col("status"),
           ),
           "count",
         ],
@@ -161,7 +168,7 @@ export class LeadsService {
         [
           this.leadModel.sequelize.fn(
             "COUNT",
-            this.leadModel.sequelize.col("source")
+            this.leadModel.sequelize.col("source"),
           ),
           "count",
         ],
@@ -320,8 +327,8 @@ export class LeadsService {
           sequelize.fn(
             "SUM",
             sequelize.literal(
-              `CASE WHEN status = 'O\\'qishga yozildi' THEN 1 ELSE 0 END`
-            )
+              `CASE WHEN status = 'O\\'qishga yozildi' THEN 1 ELSE 0 END`,
+            ),
           ),
           "converted",
         ],
@@ -368,10 +375,10 @@ export class LeadsService {
 
       // Find counts
       const currentStatusObj = statusTransitions.find(
-        (s: any) => s.status === currentStatus
+        (s: any) => s.status === currentStatus,
       );
       const nextStatusObj = statusTransitions.find(
-        (s: any) => s.status === nextStatus
+        (s: any) => s.status === nextStatus,
       );
       const currentCount = currentStatusObj
         ? parseInt(currentStatusObj["count"])
@@ -418,8 +425,8 @@ export class LeadsService {
           sequelize.fn(
             "SUM",
             sequelize.literal(
-              `CASE WHEN status = 'O\\'qishga yozildi' THEN 1 ELSE 0 END`
-            )
+              `CASE WHEN status = 'O\\'qishga yozildi' THEN 1 ELSE 0 END`,
+            ),
           ),
           "converted",
         ],
@@ -461,8 +468,8 @@ export class LeadsService {
               "DATEDIFF",
               "day",
               sequelize.col("createdAt"),
-              sequelize.col("updatedAt")
-            )
+              sequelize.col("updatedAt"),
+            ),
           ),
           "avgTime",
         ],
@@ -482,7 +489,7 @@ export class LeadsService {
    */
   async getLeadStatsByDateRange(
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<{
     totalLeads: number;
     leadsByStatus: { [key: string]: number };

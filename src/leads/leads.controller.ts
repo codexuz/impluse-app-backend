@@ -125,7 +125,7 @@ export class LeadsController {
     @Query("status") status?: string,
     @Query("source") source?: string,
     @Query("startDate") startDate?: string,
-    @Query("endDate") endDate?: string
+    @Query("endDate") endDate?: string,
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
@@ -136,7 +136,7 @@ export class LeadsController {
       status,
       source,
       start,
-      end
+      end,
     );
   }
 
@@ -398,5 +398,24 @@ export class LeadsController {
   })
   remove(@Param("id") id: string) {
     return this.leadsService.remove(id);
+  }
+
+  @Patch(":id/archive")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Archive a lead by ID" })
+  @ApiParam({ name: "id", description: "Lead ID" })
+  @ApiResponse({
+    status: 200,
+    description: "Lead archived successfully",
+    type: LeadResponseDto,
+  })
+  @ApiResponse({ status: 404, description: "Lead not found" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({
+    status: 403,
+    description: "Forbidden - Admin role required",
+  })
+  archive(@Param("id") id: string) {
+    return this.leadsService.archive(id);
   }
 }

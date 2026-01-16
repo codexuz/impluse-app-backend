@@ -42,7 +42,7 @@ export class Lead extends Model {
       "Sinovda qatnashdi",
       "Sinovdan ketdi",
       "O'qishga yozildi",
-      "Yo'qotildi"
+      "Yo'qotildi",
     ),
     allowNull: false,
   })
@@ -57,7 +57,7 @@ export class Lead extends Model {
       "Flayer",
       "Banner(yondagi)",
       "Banner(ko'chadagi)",
-      "Boshqa"
+      "Boshqa",
     ),
     allowNull: false,
   })
@@ -80,6 +80,12 @@ export class Lead extends Model {
     allowNull: true,
   })
   branch_id: string;
+
+   @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+  })
+  isarchived: boolean;
 
   @Column({
     type: DataType.TEXT,
