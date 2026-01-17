@@ -57,7 +57,10 @@ export class GroupsController {
   async findAll(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
-    @Query("query") query?: string
+    @Query("query") query?: string,
+    @Query("level_id") level_id?: string,
+    @Query("teacher_id") teacher_id?: string,
+    @Query("days") days?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -68,7 +71,10 @@ export class GroupsController {
     return await this.groupsService.findAll(
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 10,
-      query
+      query,
+      level_id,
+      teacher_id,
+      days,
     );
   }
 
@@ -136,7 +142,7 @@ export class GroupsController {
     @Param("teacherId") teacherId: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -148,7 +154,7 @@ export class GroupsController {
       teacherId,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 10,
-      query
+      query,
     );
   }
 
@@ -165,7 +171,7 @@ export class GroupsController {
     @Param("levelId") levelId: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -177,7 +183,7 @@ export class GroupsController {
       levelId,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 10,
-      query
+      query,
     );
   }
 
@@ -194,7 +200,7 @@ export class GroupsController {
   @ApiResponse({ status: 404, description: "Group not found." })
   async update(
     @Param("id") id: string,
-    @Body() updateGroupDto: UpdateGroupDto
+    @Body() updateGroupDto: UpdateGroupDto,
   ): Promise<Group> {
     return await this.groupsService.update(id, updateGroupDto);
   }

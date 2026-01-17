@@ -9,7 +9,7 @@ import { Group } from "./entities/group.entity.js";
 export class GroupsService {
   constructor(
     @InjectModel(Group)
-    private groupModel: typeof Group
+    private groupModel: typeof Group,
   ) {}
 
   async create(createGroupDto: CreateGroupDto): Promise<Group> {
@@ -19,7 +19,10 @@ export class GroupsService {
   async findAll(
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
+    level_id?: string,
+    teacher_id?: string,
+    days?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -31,10 +34,19 @@ export class GroupsService {
     const whereClause: any = {};
 
     if (query) {
-      whereClause[Op.or] = [
-        { name: { [Op.like]: `%${query}%` } },
-        { group_code: { [Op.like]: `%${query}%` } },
-      ];
+      whereClause[Op.or] = [{ name: { [Op.like]: `%${query}%` } }];
+    }
+
+    if (level_id) {
+      whereClause.level_id = level_id;
+    }
+
+    if (teacher_id) {
+      whereClause.teacher_id = teacher_id;
+    }
+
+    if (days) {
+      whereClause.days = days;
     }
 
     const { count, rows } = await this.groupModel.findAndCountAll({
@@ -101,7 +113,7 @@ export class GroupsService {
     teacherId: string,
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -113,10 +125,7 @@ export class GroupsService {
     const whereClause: any = { teacher_id: teacherId };
 
     if (query) {
-      whereClause[Op.or] = [
-        { name: { [Op.like]: `%${query}%` } },
-        { group_code: { [Op.like]: `%${query}%` } },
-      ];
+      whereClause[Op.or] = [{ name: { [Op.like]: `%${query}%` } }];
     }
 
     const { count, rows } = await this.groupModel.findAndCountAll({
@@ -149,7 +158,7 @@ export class GroupsService {
     levelId: string,
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -161,10 +170,7 @@ export class GroupsService {
     const whereClause: any = { level_id: levelId };
 
     if (query) {
-      whereClause[Op.or] = [
-        { name: { [Op.like]: `%${query}%` } },
-        { group_code: { [Op.like]: `%${query}%` } },
-      ];
+      whereClause[Op.or] = [{ name: { [Op.like]: `%${query}%` } }];
     }
 
     const { count, rows } = await this.groupModel.findAndCountAll({
