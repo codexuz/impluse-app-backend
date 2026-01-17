@@ -126,7 +126,55 @@ export class AttendanceController {
 
   @Get()
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Get all attendance records" })
+  @ApiOperation({ summary: "Get all attendance records with optional filters" })
+  @ApiQuery({
+    name: "page",
+    description: "Page number",
+    type: "number",
+    required: false,
+  })
+  @ApiQuery({
+    name: "limit",
+    description: "Number of records per page",
+    type: "number",
+    required: false,
+  })
+  @ApiQuery({
+    name: "query",
+    description: "Search query",
+    type: "string",
+    required: false,
+  })
+  @ApiQuery({
+    name: "teacherId",
+    description: "Filter by teacher ID",
+    type: "string",
+    required: false,
+  })
+  @ApiQuery({
+    name: "groupId",
+    description: "Filter by group ID",
+    type: "string",
+    required: false,
+  })
+  @ApiQuery({
+    name: "status",
+    description: "Filter by attendance status (present, absent, late)",
+    enum: ["present", "absent", "late"],
+    required: false,
+  })
+  @ApiQuery({
+    name: "startDate",
+    description: "Filter by start date (YYYY-MM-DD)",
+    type: "string",
+    required: false,
+  })
+  @ApiQuery({
+    name: "endDate",
+    description: "Filter by end date (YYYY-MM-DD)",
+    type: "string",
+    required: false,
+  })
   @ApiResponse({
     status: 200,
     description: "Returns all attendance records.",
@@ -140,12 +188,22 @@ export class AttendanceController {
   async findAll(
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
+    @Query("teacherId") teacherId?: string,
+    @Query("groupId") groupId?: string,
+    @Query("status") status?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
   ) {
     return await this.attendanceService.findAll(
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
+      teacherId,
+      groupId,
+      status,
+      startDate,
+      endDate,
     );
   }
 
@@ -163,13 +221,13 @@ export class AttendanceController {
     @Param("groupId") groupId: string,
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return await this.attendanceService.findByGroupId(
       groupId,
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -187,13 +245,13 @@ export class AttendanceController {
     @Param("studentId") studentId: string,
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return await this.attendanceService.findByStudentId(
       studentId,
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -211,13 +269,13 @@ export class AttendanceController {
     @Param("teacherId") teacherId: string,
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return await this.attendanceService.findByTeacherId(
       teacherId,
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -262,7 +320,7 @@ export class AttendanceController {
   @ApiResponse({ status: 401, description: "Unauthorized." })
   async findByDateRange(
     @Query("startDate") startDate: string,
-    @Query("endDate") endDate: string
+    @Query("endDate") endDate: string,
   ) {
     return await this.attendanceService.findByDateRange(startDate, endDate);
   }
@@ -297,12 +355,12 @@ export class AttendanceController {
   async findByGroupAndDateRange(
     @Param("groupId") groupId: string,
     @Query("startDate") startDate: string,
-    @Query("endDate") endDate: string
+    @Query("endDate") endDate: string,
   ) {
     return await this.attendanceService.findByGroupAndDateRange(
       groupId,
       startDate,
-      endDate
+      endDate,
     );
   }
 
@@ -343,13 +401,13 @@ export class AttendanceController {
     @Param("studentId") studentId: string,
     @Query("startDate") startDate: string,
     @Query("endDate") endDate: string,
-    @Query("teacherId") teacherId?: string
+    @Query("teacherId") teacherId?: string,
   ) {
     return await this.attendanceService.findByStudentAndDateRange(
       studentId,
       startDate,
       endDate,
-      teacherId
+      teacherId,
     );
   }
 
@@ -390,13 +448,13 @@ export class AttendanceController {
     @Query("groupId") groupId?: string,
     @Query("studentId") studentId?: string,
     @Query("startDate") startDate?: string,
-    @Query("endDate") endDate?: string
+    @Query("endDate") endDate?: string,
   ) {
     return await this.attendanceService.getAttendanceStats(
       groupId,
       studentId,
       startDate,
-      endDate
+      endDate,
     );
   }
 
@@ -437,7 +495,7 @@ export class AttendanceController {
   })
   async update(
     @Param("id") id: string,
-    @Body() updateAttendanceDto: UpdateAttendanceDto
+    @Body() updateAttendanceDto: UpdateAttendanceDto,
   ) {
     return await this.attendanceService.update(id, updateAttendanceDto);
   }
@@ -486,10 +544,10 @@ export class AttendanceController {
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 404, description: "Student not found." })
   async getStudentCurrentMonthAttendance(
-    @Param("studentId") studentId: string
+    @Param("studentId") studentId: string,
   ) {
     return await this.attendanceService.getStudentCurrentMonthAttendance(
-      studentId
+      studentId,
     );
   }
 }

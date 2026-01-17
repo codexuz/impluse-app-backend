@@ -28,7 +28,7 @@ export class AttendanceService {
     date: string,
     attendanceId: string,
     markedBy: string,
-    oldStatus?: string
+    oldStatus?: string,
   ) {
     try {
       // Create attendance log
@@ -70,13 +70,13 @@ export class AttendanceService {
           });
 
           console.log(
-            `Compensate lesson created for absent student ${studentId}, teacher ${teacherId}, attendance ${attendanceId}`
+            `Compensate lesson created for absent student ${studentId}, teacher ${teacherId}, attendance ${attendanceId}`,
           );
         } catch (error) {
           // Log error but don't throw - compensate lesson creation shouldn't block attendance
           console.error(
             `Error creating compensate lesson for attendance ${attendanceId}:`,
-            error.message
+            error.message,
           );
         }
         return;
@@ -121,18 +121,18 @@ export class AttendanceService {
           });
 
           console.log(
-            `Teacher payment processed: ${paymentAmount} for teacher ${teacherId}, student ${studentId}, date ${date}`
+            `Teacher payment processed: ${paymentAmount} for teacher ${teacherId}, student ${studentId}, date ${date}`,
           );
         }
       } else {
         console.log(
-          `Teacher ${teacherId} has fixed payment type - no wallet update needed`
+          `Teacher ${teacherId} has fixed payment type - no wallet update needed`,
         );
       }
     } catch (error) {
       console.error(
         `Error processing teacher payment for ${teacherId}:`,
-        error
+        error,
       );
       // Don't throw error to prevent attendance creation from failing
       // Payment processing failure shouldn't block attendance recording
@@ -150,7 +150,7 @@ export class AttendanceService {
 
     if (existingAttendance) {
       throw new ConflictException(
-        "Attendance record already exists for this student, group, and date"
+        "Attendance record already exists for this student, group, and date",
       );
     }
 
@@ -166,7 +166,7 @@ export class AttendanceService {
       createAttendanceDto.student_id,
       createAttendanceDto.date,
       attendance.id,
-      createAttendanceDto.teacher_id
+      createAttendanceDto.teacher_id,
     );
 
     return attendance;
@@ -211,7 +211,7 @@ export class AttendanceService {
           dto.student_id,
           dto.date,
           attendance.id,
-          dto.teacher_id
+          dto.teacher_id,
         );
       } catch (error) {
         errors.push({
@@ -236,11 +236,11 @@ export class AttendanceService {
     page: number = 1,
     limit: number = 10,
     query?: string,
-    teacher_id?: string,
-    group_id?: string,
+    teacherId?: string,
+    groupId?: string,
+    status?: string,
     startDate?: string,
     endDate?: string,
-    status?: string
   ): Promise<{
     data: Attendance[];
     total: number;
@@ -252,12 +252,12 @@ export class AttendanceService {
     const whereClause: any = {};
 
     // Add filters to where clause
-    if (teacher_id) {
-      whereClause.teacher_id = teacher_id;
+    if (teacherId) {
+      whereClause.teacher_id = teacherId;
     }
 
-    if (group_id) {
-      whereClause.group_id = group_id;
+    if (groupId) {
+      whereClause.group_id = groupId;
     }
 
     if (status) {
@@ -377,7 +377,7 @@ export class AttendanceService {
 
       if (existingAttendance) {
         throw new ConflictException(
-          "Attendance record already exists for this student, group, and date"
+          "Attendance record already exists for this student, group, and date",
         );
       }
     }
@@ -411,7 +411,7 @@ export class AttendanceService {
               amount: teacherWallet.amount - teacherProfile.payment_value,
             });
             console.log(
-              `Deducted ${teacherProfile.payment_value} from teacher ${teacherId} wallet for absent student ${studentId}`
+              `Deducted ${teacherProfile.payment_value} from teacher ${teacherId} wallet for absent student ${studentId}`,
             );
           }
 
@@ -427,7 +427,7 @@ export class AttendanceService {
           if (transactionToDelete) {
             await transactionToDelete.destroy();
             console.log(
-              `Deleted transaction for teacher ${teacherId}, student ${studentId}`
+              `Deleted transaction for teacher ${teacherId}, student ${studentId}`,
             );
           }
 
@@ -447,19 +447,19 @@ export class AttendanceService {
             });
 
             console.log(
-              `Compensate lesson created for absent student ${studentId}, teacher ${teacherId}, attendance ${attendance.id}`
+              `Compensate lesson created for absent student ${studentId}, teacher ${teacherId}, attendance ${attendance.id}`,
             );
           } catch (compensateError) {
             console.error(
               `Error creating compensate lesson for attendance ${attendance.id}:`,
-              compensateError.message
+              compensateError.message,
             );
           }
         }
       } catch (error) {
         console.error(
           `Error deducting wallet/deleting transaction for teacher ${teacherId}:`,
-          error.message
+          error.message,
         );
       }
     }
@@ -480,7 +480,7 @@ export class AttendanceService {
         attendanceDate,
         attendance.id,
         teacherId,
-        previousStatus
+        previousStatus,
       );
     }
 
@@ -514,7 +514,7 @@ export class AttendanceService {
               amount: teacherWallet.amount - teacherProfile.payment_value,
             });
             console.log(
-              `Deducted ${teacherProfile.payment_value} from teacher ${attendance.teacher_id} wallet for removed attendance`
+              `Deducted ${teacherProfile.payment_value} from teacher ${attendance.teacher_id} wallet for removed attendance`,
             );
           }
 
@@ -530,14 +530,14 @@ export class AttendanceService {
           if (transactionToDelete) {
             await transactionToDelete.destroy();
             console.log(
-              `Deleted transaction for teacher ${attendance.teacher_id}, student ${attendance.student_id}`
+              `Deleted transaction for teacher ${attendance.teacher_id}, student ${attendance.student_id}`,
             );
           }
         }
       } catch (error) {
         console.error(
           `Error deducting wallet/deleting transaction for teacher ${attendance.teacher_id}:`,
-          error.message
+          error.message,
         );
       }
     }
@@ -558,7 +558,7 @@ export class AttendanceService {
     group_id: string,
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: Attendance[];
     total: number;
@@ -624,7 +624,7 @@ export class AttendanceService {
     student_id: string,
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: Attendance[];
     total: number;
@@ -687,7 +687,7 @@ export class AttendanceService {
     teacher_id: string,
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: Attendance[];
     total: number;
@@ -789,7 +789,7 @@ export class AttendanceService {
   async findByGroupAndDateRange(
     group_id: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ) {
     return await Attendance.findAll({
       where: {
@@ -832,7 +832,7 @@ export class AttendanceService {
     student_id: string,
     startDate: string,
     endDate: string,
-    teacher_id?: string
+    teacher_id?: string,
   ) {
     const whereClause: any = {
       student_id,
@@ -914,7 +914,7 @@ export class AttendanceService {
     group_id?: string,
     student_id?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ) {
     const whereClause: any = {};
 
