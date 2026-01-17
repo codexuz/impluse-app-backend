@@ -235,7 +235,12 @@ export class AttendanceService {
   async findAll(
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
+    teacher_id?: string,
+    group_id?: string,
+    startDate?: string,
+    endDate?: string,
+    status?: string
   ): Promise<{
     data: Attendance[];
     total: number;
@@ -245,6 +250,25 @@ export class AttendanceService {
   }> {
     const offset = (page - 1) * limit;
     const whereClause: any = {};
+
+    // Add filters to where clause
+    if (teacher_id) {
+      whereClause.teacher_id = teacher_id;
+    }
+
+    if (group_id) {
+      whereClause.group_id = group_id;
+    }
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (startDate && endDate) {
+      whereClause.date = {
+        [Op.between]: [startDate, endDate],
+      };
+    }
 
     const { count, rows } = await Attendance.findAndCountAll({
       where: whereClause,
