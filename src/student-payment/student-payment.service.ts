@@ -10,6 +10,7 @@ import { StudentPayment } from "./entities/student-payment.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
 import { StudentTransaction } from "../student-transaction/entities/student-transaction.entity.js";
+import { PaymentAction } from "../payment-actions/entities/payment-action.entity.js";
 import {
   CreateStudentPaymentDto,
   PaymentStatus,
@@ -33,11 +34,11 @@ export class StudentPaymentService {
     private studentTransactionModel: typeof StudentTransaction,
     @InjectModel(User)
     private userModel: typeof User,
-    private readonly smsService: SmsService
+    private readonly smsService: SmsService,
   ) {}
 
   async create(
-    createStudentPaymentDto: CreateStudentPaymentDto
+    createStudentPaymentDto: CreateStudentPaymentDto,
   ): Promise<StudentPayment> {
     // Start a transaction to ensure atomicity
     const transaction = await this.studentPaymentModel.sequelize.transaction();
@@ -46,7 +47,7 @@ export class StudentPaymentService {
       // Create the payment record
       const payment = await this.studentPaymentModel.create(
         { ...createStudentPaymentDto },
-        { transaction }
+        { transaction },
       );
 
       // Only update wallet and create transaction if payment status is "completed"
@@ -64,7 +65,7 @@ export class StudentPaymentService {
               student_id: payment.student_id,
               amount: 0,
             },
-            { transaction }
+            { transaction },
           );
         }
 
@@ -79,11 +80,11 @@ export class StudentPaymentService {
             amount: payment.amount,
             type: "payment",
           },
-          { transaction }
+          { transaction },
         );
 
         this.logger.log(
-          `Payment completed: Added ${payment.amount} to student ${payment.student_id} wallet. New balance: ${newAmount}`
+          `Payment completed: Added ${payment.amount} to student ${payment.student_id} wallet. New balance: ${newAmount}`,
         );
       }
 
@@ -96,7 +97,7 @@ export class StudentPaymentService {
           // Log error but don't throw - SMS failure shouldn't fail payment creation
           this.logger.error(
             `Failed to send SMS for payment ${payment.id}:`,
-            error
+            error,
           );
         });
       }
@@ -121,14 +122,14 @@ export class StudentPaymentService {
 
       if (!student) {
         this.logger.warn(
-          `Student with ID ${payment.student_id} not found for SMS notification`
+          `Student with ID ${payment.student_id} not found for SMS notification`,
         );
         return;
       }
 
       if (!student.phone) {
         this.logger.warn(
-          `Student ${student.first_name} ${student.last_name} has no phone number`
+          `Student ${student.first_name} ${student.last_name} has no phone number`,
         );
         return;
       }
@@ -155,7 +156,7 @@ export class StudentPaymentService {
       });
 
       this.logger.log(
-        `Payment SMS sent successfully to ${student.first_name} ${student.last_name} (${student.phone})`
+        `Payment SMS sent successfully to ${student.first_name} ${student.last_name} (${student.phone})`,
       );
     } catch (error) {
       // Re-throw to be caught by the caller's catch block
@@ -174,7 +175,7 @@ export class StudentPaymentService {
     paymentStartDate?: Date,
     paymentEndDate?: Date,
     nextPaymentStartDate?: Date,
-    nextPaymentEndDate?: Date
+    nextPaymentEndDate?: Date,
   ): Promise<{
     data: StudentPayment[];
     total: number;
@@ -304,7 +305,7 @@ export class StudentPaymentService {
     studentId: string,
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: StudentPayment[];
     total: number;
@@ -354,7 +355,7 @@ export class StudentPaymentService {
 
   async findByDateRange(
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<StudentPayment[]> {
     return this.studentPaymentModel.findAll({
       where: {
@@ -381,7 +382,7 @@ export class StudentPaymentService {
     status: PaymentStatus,
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: StudentPayment[];
     total: number;
@@ -452,6 +453,11 @@ export class StudentPaymentService {
             as: "manager",
             attributes: { exclude: ["password_hash"] },
           },
+          {
+            model: PaymentAction,
+            as: "actions",
+            required: false,
+          },
         ],
         order: [["next_payment_date", "DESC"]],
       });
@@ -520,7 +526,7 @@ export class StudentPaymentService {
 
   async update(
     id: string,
-    updateStudentPaymentDto: UpdateStudentPaymentDto
+    updateStudentPaymentDto: UpdateStudentPaymentDto,
   ): Promise<StudentPayment> {
     const payment = await this.findOne(id);
     await payment.update(updateStudentPaymentDto);
@@ -534,7 +540,7 @@ export class StudentPaymentService {
 
   async updateStatus(
     id: string,
-    status: PaymentStatus
+    status: PaymentStatus,
   ): Promise<StudentPayment> {
     const payment = await this.findOne(id);
     await payment.update({ status });
@@ -547,7 +553,7 @@ export class StudentPaymentService {
    * @returns Payment status information including amounts and upcoming payment details
    */
   async calculateStudentPaymentStatus(
-    studentId: string
+    studentId: string,
   ): Promise<StudentPaymentStatusDto> {
     // Get all payments for this student (fetch all with high limit)
     const paymentsResponse = await this.findByStudent(studentId, 1, 1000);
@@ -570,14 +576,14 @@ export class StudentPaymentService {
     // Calculate total paid amount (all payments are completed)
     const totalPaid = payments.reduce(
       (sum, payment) => sum + Number(payment.amount),
-      0
+      0,
     );
 
     // Get the most recent payment (sorted by next_payment_date in descending order)
     const sortedPayments = [...payments].sort(
       (a, b) =>
         new Date(b.next_payment_date).getTime() -
-        new Date(a.next_payment_date).getTime()
+        new Date(a.next_payment_date).getTime(),
     );
 
     const lastPayment = sortedPayments[0];
@@ -599,13 +605,13 @@ export class StudentPaymentService {
       pendingAmount = Number(lastPayment.amount);
       daysUntilNextPayment =
         Math.floor(
-          (today.getTime() - nextPaymentDate.getTime()) / (1000 * 60 * 60 * 24)
+          (today.getTime() - nextPaymentDate.getTime()) / (1000 * 60 * 60 * 24),
         ) * -1; // Negative number of days (overdue)
     } else {
       // Payment is still valid
       paymentStatus = "upcoming";
       daysUntilNextPayment = Math.floor(
-        (nextPaymentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        (nextPaymentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       // If payment is due within 3 days, it's still marked as upcoming
@@ -644,7 +650,7 @@ export class StudentPaymentService {
    */
   async checkDuePayments(): Promise<{ count: number; payments: any[] }> {
     this.logger.log(
-      "Checking for debitor students with passed next_payment_date"
+      "Checking for debitor students with passed next_payment_date",
     );
 
     try {
@@ -665,6 +671,11 @@ export class StudentPaymentService {
             model: User,
             as: "manager",
             attributes: { exclude: ["password_hash"] },
+          },
+          {
+            model: PaymentAction,
+            as: "actions",
+            required: false,
           },
         ],
         order: [["next_payment_date", "DESC"]],
@@ -708,7 +719,7 @@ export class StudentPaymentService {
           if (nextPaymentDate < today) {
             overduePayments.push(pendingPayment);
             this.logger.log(
-              `Found pending overdue payment ${pendingPayment.id} for student ${pendingPayment.student_id}`
+              `Found pending overdue payment ${pendingPayment.id} for student ${pendingPayment.student_id}`,
             );
             break; // Only add one payment per student
           }
@@ -729,7 +740,7 @@ export class StudentPaymentService {
             if (latestCompleted.status !== PaymentStatus.COMPLETED) {
               await latestCompleted.update({ status: PaymentStatus.PENDING });
               this.logger.log(
-                `Updated payment ${latestCompleted.id} status to PENDING for debitor student ${latestCompleted.student_id}`
+                `Updated payment ${latestCompleted.id} status to PENDING for debitor student ${latestCompleted.student_id}`,
               );
             }
           }
@@ -753,6 +764,8 @@ export class StudentPaymentService {
             amount: payment.amount,
             payment_date: payment.payment_date,
             next_payment_date: payment.next_payment_date,
+            // Include any related payment actions
+            actions: (studentInfo.actions as any[]) || [],
             payment_method: payment.payment_method,
             would_create_new_payment: true,
             new_payment_date: new Date(payment.next_payment_date),
@@ -768,7 +781,7 @@ export class StudentPaymentService {
             days_overdue: Math.floor(
               (today.getTime() -
                 new Date(payment.next_payment_date).getTime()) /
-                (1000 * 60 * 60 * 24)
+                (1000 * 60 * 60 * 24),
             ),
             student_name: studentName,
             student_phone: student?.phone || null,
@@ -784,7 +797,7 @@ export class StudentPaymentService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleAutomaticPaymentCreation() {
     this.logger.log(
-      "Running automatic payment creation job for debitor students"
+      "Running automatic payment creation job for debitor students",
     );
 
     try {
@@ -832,7 +845,7 @@ export class StudentPaymentService {
       }
 
       this.logger.log(
-        `Found ${overdueStudents.length} students with passed payment dates (debitors)`
+        `Found ${overdueStudents.length} students with passed payment dates (debitors)`,
       );
 
       // Process each overdue student's latest payment
@@ -872,22 +885,22 @@ export class StudentPaymentService {
             });
 
             this.logger.log(
-              `Created new payment record for debitor student ${payment.student_id} (${studentName}) with next payment date ${nextPaymentDate.toISOString().split("T")[0]}`
+              `Created new payment record for debitor student ${payment.student_id} (${studentName}) with next payment date ${nextPaymentDate.toISOString().split("T")[0]}`,
             );
           } catch (error) {
             this.logger.error(
-              `Failed to create payment record for debitor student ${payment.student_id} (${studentName}): ${error.message}`
+              `Failed to create payment record for debitor student ${payment.student_id} (${studentName}): ${error.message}`,
             );
           }
         }
       }
 
       this.logger.log(
-        "Automatic payment processing for debitor students completed"
+        "Automatic payment processing for debitor students completed",
       );
     } catch (error) {
       this.logger.error(
-        `Error in automatic payment creation job: ${error.message}`
+        `Error in automatic payment creation job: ${error.message}`,
       );
     }
   }
