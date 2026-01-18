@@ -7,6 +7,9 @@ import { CreateCdIeltDto } from "./dto/create-cd-ielt.dto.js";
 import { UpdateCdIeltDto } from "./dto/update-cd-ielt.dto.js";
 import { CreateCdRegisterDto } from "./dto/create-cd-register.dto.js";
 import { UpdateCdRegisterDto } from "./dto/update-cd-register.dto.js";
+import { PaginationDto } from "./dto/pagination.dto.js";
+import { FilterTestsDto } from "./dto/filter-tests.dto.js";
+import { FilterRegistrationsDto } from "./dto/filter-registrations.dto.js";
 import { User } from "../users/entities/user.entity.js";
 
 @Injectable()
@@ -17,7 +20,7 @@ export class CdIeltsService {
     @InjectModel(CdRegister)
     private cdRegisterModel: typeof CdRegister,
     @InjectModel(User)
-    private userModel: typeof User
+    private userModel: typeof User,
   ) {}
 
   // CD IELTS Test Services
@@ -25,19 +28,85 @@ export class CdIeltsService {
     return this.cdIeltsModel.create({ ...createCdIeltDto });
   }
 
-  async findAllTests(): Promise<any[]> {
-    const tests = await this.cdIeltsModel.findAll();
-    return tests.map((test) => {
+  async findAllTests(
+    filters?: FilterTestsDto,
+    pagination?: PaginationDto,
+  ): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const whereCondition: any = {};
+
+    // Apply filters
+    if (filters?.status) {
+      whereCondition.status = filters.status;
+    }
+
+    if (filters?.location) {
+      whereCondition.location = { [Op.like]: `%${filters.location}%` };
+    }
+
+    if (filters?.start_date || filters?.end_date) {
+      whereCondition.exam_date = {};
+      if (filters.start_date) {
+        whereCondition.exam_date[Op.gte] = new Date(filters.start_date);
+      }
+      if (filters.end_date) {
+        whereCondition.exam_date[Op.lte] = new Date(filters.end_date);
+      }
+    }
+
+    // Apply search query
+    if (filters?.search) {
+      whereCondition[Op.or] = [
+        { title: { [Op.like]: `%${filters.search}%` } },
+        { location: { [Op.like]: `%${filters.search}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.cdIeltsModel.findAndCountAll({
+      where: whereCondition,
+      limit,
+      offset,
+      order: [["exam_date", "ASC"]],
+    });
+
+    const data = rows.map((test) => {
       const rawTest = test.toJSON();
       return {
         ...rawTest,
         available_seats: test.seats > 0 ? test.seats : "Fully booked",
       };
     });
+
+    return {
+      data,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
-  async findActiveTests(): Promise<any[]> {
-    const tests = await this.cdIeltsModel.findAll({
+  async findActiveTests(pagination?: PaginationDto): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await this.cdIeltsModel.findAndCountAll({
       where: {
         status: "active",
         exam_date: {
@@ -45,15 +114,25 @@ export class CdIeltsService {
         },
       },
       order: [["exam_date", "ASC"]], // Closest tests first
+      limit,
+      offset,
     });
 
-    return tests.map((test) => {
+    const data = rows.map((test) => {
       const rawTest = test.toJSON();
       return {
         ...rawTest,
         available_seats: test.seats > 0 ? test.seats : "Fully booked",
       };
     });
+
+    return {
+      data,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findOneTest(id: string): Promise<any> {
@@ -96,21 +175,21 @@ export class CdIeltsService {
 
   // CD IELTS Registration Services
   async registerForTest(
-    createCdRegisterDto: CreateCdRegisterDto
+    createCdRegisterDto: CreateCdRegisterDto,
   ): Promise<CdRegister> {
     // Get the raw model directly from the database
     const testModel = await this.cdIeltsModel.findByPk(
-      createCdRegisterDto.cd_test_id
+      createCdRegisterDto.cd_test_id,
     );
     if (!testModel) {
       throw new NotFoundException(
-        `IELTS test with ID "${createCdRegisterDto.cd_test_id}" not found`
+        `IELTS test with ID "${createCdRegisterDto.cd_test_id}" not found`,
       );
     }
 
     if (testModel.status !== "active") {
       throw new NotFoundException(
-        `IELTS test with ID "${createCdRegisterDto.cd_test_id}" is not available for registration`
+        `IELTS test with ID "${createCdRegisterDto.cd_test_id}" is not available for registration`,
       );
     }
 
@@ -119,7 +198,7 @@ export class CdIeltsService {
       // Update test status to full if no seats are left
       await testModel.update({ status: "full" });
       throw new NotFoundException(
-        `IELTS test with ID "${createCdRegisterDto.cd_test_id}" has no available seats`
+        `IELTS test with ID "${createCdRegisterDto.cd_test_id}" has no available seats`,
       );
     }
 
@@ -133,7 +212,7 @@ export class CdIeltsService {
 
     if (existingRegistration) {
       throw new NotFoundException(
-        "Student is already registered for this test"
+        "Student is already registered for this test",
       );
     }
 
@@ -149,13 +228,58 @@ export class CdIeltsService {
     return this.cdRegisterModel.create({ ...createCdRegisterDto });
   }
 
-  async findAllRegistrations(): Promise<any[]> {
-    const registrations = await this.cdRegisterModel.findAll();
+  async findAllRegistrations(
+    filters?: FilterRegistrationsDto,
+    pagination?: PaginationDto,
+  ): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const whereCondition: any = {};
+
+    // Apply filters
+    if (filters?.student_id) {
+      whereCondition.student_id = filters.student_id;
+    }
+
+    if (filters?.cd_test_id) {
+      whereCondition.cd_test_id = filters.cd_test_id;
+    }
+
+    if (filters?.status) {
+      whereCondition.status = filters.status;
+    }
+
+    const { count, rows } = await this.cdRegisterModel.findAndCountAll({
+      where: whereCondition,
+      limit,
+      offset,
+      order: [["created_at", "DESC"]],
+    });
 
     // Get all student data in one query
-    const studentIds = registrations.map((reg) => reg.student_id);
+    const studentIds = rows.map((reg) => reg.student_id);
+
+    const studentWhereCondition: any = { user_id: studentIds };
+
+    // Apply search filter for students
+    if (filters?.search) {
+      studentWhereCondition[Op.or] = [
+        { first_name: { [Op.like]: `%${filters.search}%` } },
+        { last_name: { [Op.like]: `%${filters.search}%` } },
+        { phone: { [Op.like]: `%${filters.search}%` } },
+      ];
+    }
+
     const students = await this.userModel.findAll({
-      where: { user_id: studentIds },
+      where: studentWhereCondition,
       attributes: ["user_id", "first_name", "last_name", "phone", "username"],
     });
 
@@ -165,8 +289,14 @@ export class CdIeltsService {
       studentMap.set(student.user_id, student);
     });
 
+    // Filter registrations based on student search if applied
+    let filteredRows = rows;
+    if (filters?.search) {
+      filteredRows = rows.filter((reg) => studentMap.has(reg.student_id));
+    }
+
     // Combine registration data with student data
-    return registrations.map((registration) => {
+    const data = filteredRows.map((registration) => {
       const student = studentMap.get(registration.student_id);
       return {
         ...registration.toJSON(),
@@ -176,20 +306,46 @@ export class CdIeltsService {
               first_name: student.first_name,
               last_name: student.last_name,
               phone: student.phone,
-              username: student.username, // Assuming username is email
+              username: student.username,
             }
           : null,
       };
     });
+
+    return {
+      data,
+      total: filters?.search ? filteredRows.length : count,
+      page,
+      limit,
+      totalPages: Math.ceil(
+        (filters?.search ? filteredRows.length : count) / limit,
+      ),
+    };
   }
 
-  async findRegistrationsByTest(testId: string): Promise<any[]> {
-    const registrations = await this.cdRegisterModel.findAll({
+  async findRegistrationsByTest(
+    testId: string,
+    pagination?: PaginationDto,
+  ): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await this.cdRegisterModel.findAndCountAll({
       where: { cd_test_id: testId },
+      limit,
+      offset,
+      order: [["created_at", "DESC"]],
     });
 
     // Get all student data in one query
-    const studentIds = registrations.map((reg) => reg.student_id);
+    const studentIds = rows.map((reg) => reg.student_id);
     const students = await this.userModel.findAll({
       where: { user_id: studentIds },
       attributes: ["user_id", "first_name", "last_name", "phone", "username"],
@@ -202,7 +358,7 @@ export class CdIeltsService {
     });
 
     // Combine registration data with student data
-    return registrations.map((registration) => {
+    const data = rows.map((registration) => {
       const student = studentMap.get(registration.student_id);
       return {
         ...registration.toJSON(),
@@ -212,16 +368,40 @@ export class CdIeltsService {
               first_name: student.first_name,
               last_name: student.last_name,
               phone: student.phone,
-              username: student.username, // Assuming username is email
+              username: student.username,
             }
           : null,
       };
     });
+
+    return {
+      data,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
-  async findRegistrationsByStudent(studentId: string): Promise<any[]> {
-    const registrations = await this.cdRegisterModel.findAll({
+  async findRegistrationsByStudent(
+    studentId: string,
+    pagination?: PaginationDto,
+  ): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await this.cdRegisterModel.findAndCountAll({
       where: { student_id: studentId },
+      limit,
+      offset,
+      order: [["created_at", "DESC"]],
     });
 
     // Get the student data
@@ -236,12 +416,12 @@ export class CdIeltsService {
           first_name: student.first_name,
           last_name: student.last_name,
           phone: student.phone,
-          username: student.username, // Assuming username is email
+          username: student.username,
         }
       : null;
 
     // Get test data for each registration
-    const testIds = registrations.map((reg) => reg.cd_test_id);
+    const testIds = rows.map((reg) => reg.cd_test_id);
     const tests = await this.cdIeltsModel.findAll({
       where: { id: testIds },
     });
@@ -253,7 +433,7 @@ export class CdIeltsService {
     });
 
     // Combine registration data with student and test data
-    return registrations.map((registration) => {
+    const data = rows.map((registration) => {
       const test = testMap.get(registration.cd_test_id);
       return {
         ...registration.toJSON(),
@@ -261,6 +441,14 @@ export class CdIeltsService {
         test: test ? test.toJSON() : null,
       };
     });
+
+    return {
+      data,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findOneRegistration(id: string): Promise<any> {
@@ -295,7 +483,7 @@ export class CdIeltsService {
 
   async updateRegistration(
     id: string,
-    updateCdRegisterDto: UpdateCdRegisterDto
+    updateCdRegisterDto: UpdateCdRegisterDto,
   ): Promise<CdRegister> {
     const registration = await this.cdRegisterModel.findByPk(id);
     if (!registration) {
@@ -315,7 +503,7 @@ export class CdIeltsService {
     const testModel = await this.cdIeltsModel.findByPk(registration.cd_test_id);
     if (!testModel) {
       throw new NotFoundException(
-        `IELTS test with ID "${registration.cd_test_id}" not found`
+        `IELTS test with ID "${registration.cd_test_id}" not found`,
       );
     }
 

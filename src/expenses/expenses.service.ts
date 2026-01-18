@@ -9,6 +9,7 @@ import { CreateExpenseDto } from "./dto/create-expense.dto.js";
 import { UpdateExpenseDto } from "./dto/update-expense.dto.js";
 import { CreateExpenseCategoryDto } from "./dto/create-expense-category.dto.js";
 import { UpdateExpenseCategoryDto } from "./dto/update-expense-category.dto.js";
+import { PaginationDto } from "./dto/pagination.dto.js";
 import { Expense } from "./entities/expense.entity.js";
 import { ExpensesCategory } from "./entities/expenses-category.entity.js";
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
@@ -169,8 +170,15 @@ export class ExpensesService {
   async findAll(
     categoryId?: string,
     teacherId?: string,
-    reportedBy?: string
-  ): Promise<Expense[]> {
+    reportedBy?: string,
+    pagination?: PaginationDto
+  ): Promise<{
+    data: Expense[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const whereCondition: any = {};
 
     if (categoryId) {
@@ -185,7 +193,11 @@ export class ExpensesService {
       whereCondition.reported_by = reportedBy;
     }
 
-    return await this.expenseModel.findAll({
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await this.expenseModel.findAndCountAll({
       where: whereCondition,
       include: [
         {
@@ -194,7 +206,17 @@ export class ExpensesService {
         },
       ],
       order: [["created_at", "DESC"]],
+      limit,
+      offset,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findOne(id: string): Promise<Expense> {
@@ -231,8 +253,22 @@ export class ExpensesService {
     await expense.destroy(); // Soft delete since paranoid is enabled
   }
 
-  async findByDateRange(startDate: Date, endDate: Date): Promise<Expense[]> {
-    return await this.expenseModel.findAll({
+  async findByDateRange(
+    startDate: Date,
+    endDate: Date,
+    pagination?: PaginationDto
+  ): Promise<{
+    data: Expense[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await this.expenseModel.findAndCountAll({
       where: {
         expense_date: {
           [Op.between]: [startDate, endDate],
@@ -245,14 +281,30 @@ export class ExpensesService {
         },
       ],
       order: [["expense_date", "DESC"]],
+      limit,
+      offset,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async getTotalExpensesByDateRange(
     startDate: Date,
     endDate: Date
   ): Promise<{ total: number; count: number }> {
-    const expenses = await this.findByDateRange(startDate, endDate);
+    const expenses = await this.expenseModel.findAll({
+      where: {
+        expense_date: {
+          [Op.between]: [startDate, endDate],
+        },
+      },
+    });
     const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     return {
       total,
@@ -260,11 +312,21 @@ export class ExpensesService {
     };
   }
 
-  async findByMonth(year: number, month: number): Promise<Expense[]> {
+  async findByMonth(
+    year: number,
+    month: number,
+    pagination?: PaginationDto
+  ): Promise<{
+    data: Expense[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const startDate = new Date(year, month - 1, 1); // month is 0-indexed
     const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Last day of the month
 
-    return this.findByDateRange(startDate, endDate);
+    return this.findByDateRange(startDate, endDate, pagination);
   }
 
   // ============= EXPENSE CATEGORIES METHODS =============
@@ -319,8 +381,16 @@ export class ExpensesService {
   async getTeacherSalaryHistory(
     teacherId?: string,
     startDate?: Date,
-    endDate?: Date
-  ): Promise<{ expenses: Expense[]; total: number; count: number }> {
+    endDate?: Date,
+    pagination?: PaginationDto
+  ): Promise<{
+    expenses: Expense[];
+    total: number;
+    count: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     // Set default date range to last 30 days if not provided
     const now = new Date();
     const defaultStartDate = new Date(now);
@@ -354,7 +424,11 @@ export class ExpensesService {
     }
 
     // Find all expenses with oylik category in date range
-    const expenses = await this.expenseModel.findAll({
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await this.expenseModel.findAndCountAll({
       where: whereClause,
       include: [
         {
@@ -363,14 +437,19 @@ export class ExpensesService {
         },
       ],
       order: [["expense_date", "DESC"]],
+      limit,
+      offset,
     });
 
-    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const total = rows.reduce((sum, expense) => sum + expense.amount, 0);
 
     return {
-      expenses,
+      expenses: rows,
       total,
-      count: expenses.length,
+      count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
     };
   }
 }

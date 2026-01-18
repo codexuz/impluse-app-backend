@@ -14,6 +14,7 @@ import {
 import { ExpensesService } from "./expenses.service.js";
 import { CreateExpenseDto } from "./dto/create-expense.dto.js";
 import { UpdateExpenseDto } from "./dto/update-expense.dto.js";
+import { PaginationDto } from "./dto/pagination.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -61,12 +62,30 @@ export class ExpensesController {
     required: false,
     description: "Filter by reporter user ID",
   })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number (default: 1)",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Items per page (default: 10, max: 100)",
+    type: Number,
+  })
   findAll(
     @Query("category_id") categoryId?: string,
     @Query("teacher_id") teacherId?: string,
-    @Query("reported_by") reportedBy?: string
+    @Query("reported_by") reportedBy?: string,
+    @Query() pagination?: PaginationDto,
   ) {
-    return this.expensesService.findAll(categoryId, teacherId, reportedBy);
+    return this.expensesService.findAll(
+      categoryId,
+      teacherId,
+      reportedBy,
+      pagination,
+    );
   }
 
   @Get("reports/date-range")
@@ -84,16 +103,35 @@ export class ExpensesController {
     description: "End date (YYYY-MM-DD)",
     type: "string",
   })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number (default: 1)",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Items per page (default: 10, max: 100)",
+    type: Number,
+  })
   findByDateRange(
     @Query("start_date") startDate?: string,
-    @Query("end_date") endDate?: string
+    @Query("end_date") endDate?: string,
+    @Query() pagination?: PaginationDto,
   ) {
     if (!startDate || !endDate) {
-      return [];
+      return {
+        data: [],
+        total: 0,
+        page: pagination?.page || 1,
+        limit: pagination?.limit || 10,
+        totalPages: 0,
+      };
     }
     const start = new Date(startDate);
     const end = new Date(endDate);
-    return this.expensesService.findByDateRange(start, end);
+    return this.expensesService.findByDateRange(start, end, pagination);
   }
 
   @Get("reports/monthly/:year/:month")
@@ -101,8 +139,28 @@ export class ExpensesController {
   @ApiOperation({ summary: "Get expenses by month" })
   @ApiParam({ name: "year", description: "Year (YYYY)", type: "number" })
   @ApiParam({ name: "month", description: "Month (1-12)", type: "number" })
-  findByMonth(@Param("year") year: number, @Param("month") month: number) {
-    return this.expensesService.findByMonth(Number(year), Number(month));
+  @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number (default: 1)",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Items per page (default: 10, max: 100)",
+    type: Number,
+  })
+  findByMonth(
+    @Param("year") year: number,
+    @Param("month") month: number,
+    @Query() pagination?: PaginationDto,
+  ) {
+    return this.expensesService.findByMonth(
+      Number(year),
+      Number(month),
+      pagination,
+    );
   }
 
   @Get("reports/total")
@@ -122,7 +180,7 @@ export class ExpensesController {
   })
   getTotalExpensesByDateRange(
     @Query("start_date") startDate?: string,
-    @Query("end_date") endDate?: string
+    @Query("end_date") endDate?: string,
   ) {
     if (!startDate || !endDate) {
       return { total: 0, count: 0 };
@@ -183,13 +241,31 @@ export class ExpensesController {
     description: "End date (YYYY-MM-DD) - optional, defaults to today",
     type: "string",
   })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number (default: 1)",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Items per page (default: 10, max: 100)",
+    type: Number,
+  })
   getTeacherSalaryHistory(
     @Query("teacher_id") teacherId?: string,
     @Query("start_date") startDate?: string,
-    @Query("end_date") endDate?: string
+    @Query("end_date") endDate?: string,
+    @Query() pagination?: PaginationDto,
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
-    return this.expensesService.getTeacherSalaryHistory(teacherId, start, end);
+    return this.expensesService.getTeacherSalaryHistory(
+      teacherId,
+      start,
+      end,
+      pagination,
+    );
   }
 }
