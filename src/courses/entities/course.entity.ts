@@ -25,7 +25,7 @@ export class Course extends Model {
   description: string;
 
   @Column({
-    type: DataType.ENUM('A1', 'A2', 'B1', 'B2'),
+    type: DataType.ENUM('A1', 'A2', 'B1', 'B2', 'C1'),
     allowNull: true,
   })
   level: string;
