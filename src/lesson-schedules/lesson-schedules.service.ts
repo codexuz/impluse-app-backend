@@ -73,6 +73,27 @@ export class LessonSchedulesService {
     });
   }
 
+  async findByTeacherId(teacherId: string) {
+    return await LessonSchedule.findAll({
+      order: [["created_at", "DESC"]],
+      include: [
+        {
+          association: "group",
+          where: { teacher_id: teacherId },
+          required: true,
+          include: [
+            {
+              association: "teacher",
+              attributes: {
+                exclude: ["password_hash"],
+              },
+            },
+          ],
+        },
+      ],
+    });
+  }
+
   async update(id: string, updateLessonScheduleDto: UpdateLessonScheduleDto) {
     const lessonSchedule = await this.findOne(id);
     await lessonSchedule.update(updateLessonScheduleDto as any);

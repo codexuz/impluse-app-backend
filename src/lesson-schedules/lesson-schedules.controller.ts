@@ -34,7 +34,7 @@ import { Role } from "../roles/role.enum.js";
 @Controller("lesson-schedules")
 export class LessonSchedulesController {
   constructor(
-    private readonly lessonSchedulesService: LessonSchedulesService
+    private readonly lessonSchedulesService: LessonSchedulesService,
   ) {}
 
   @Post()
@@ -106,6 +106,20 @@ export class LessonSchedulesController {
     return await this.lessonSchedulesService.findByGroupId(groupId);
   }
 
+  @Get("teacher/:teacherId")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Get lesson schedules by teacher ID" })
+  @ApiParam({ name: "teacherId", description: "Teacher ID", type: "string" })
+  @ApiResponse({
+    status: 200,
+    description: "Returns lesson schedules for the specified teacher.",
+    type: [LessonScheduleResponseDto],
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  async findByTeacher(@Param("teacherId") teacherId: string) {
+    return await this.lessonSchedulesService.findByTeacherId(teacherId);
+  }
+
   @Get(":id")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get lesson schedule by ID" })
@@ -139,11 +153,11 @@ export class LessonSchedulesController {
   @ApiResponse({ status: 404, description: "Lesson schedule not found." })
   async update(
     @Param("id") id: string,
-    @Body() updateLessonScheduleDto: UpdateLessonScheduleDto
+    @Body() updateLessonScheduleDto: UpdateLessonScheduleDto,
   ) {
     return await this.lessonSchedulesService.update(
       id,
-      updateLessonScheduleDto
+      updateLessonScheduleDto,
     );
   }
 
