@@ -41,7 +41,6 @@ export class CompensateLessonsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Get all compensate lessons for current teacher" })
   @ApiQuery({
     name: "page",
@@ -55,17 +54,18 @@ export class CompensateLessonsController {
     type: Number,
     description: "Items per page (default: 10)",
   })
+  @ApiQuery({ name: "teacher_id", required: false, type: String })
   @ApiQuery({ name: "student_id", required: false, type: String })
   @ApiQuery({ name: "compensated", required: false, type: Boolean })
   findAll(
-    @CurrentUser() user: any,
     @Query("page") page = 1,
     @Query("limit") limit = 10,
+    @Query("teacher_id") teacher_id?: string,
     @Query("student_id") student_id?: string,
     @Query("compensated") compensated?: string,
   ) {
     return this.compensateLessonsService.findAll(+page, +limit, {
-      teacher_id: user.userId,
+      teacher_id,
       student_id,
       compensated: compensated ? compensated === "true" : undefined,
     });
@@ -146,13 +146,8 @@ export class CompensateLessonsController {
     description: "Wallet entry created successfully",
   })
   createWalletEntry(
-    @CurrentUser() user: any,
     @Body() createCompensateTeacherWalletDto: CreateCompensateTeacherWalletDto,
   ) {
-    // Set teacher_id from current user if not provided
-    if (!createCompensateTeacherWalletDto.teacher_id) {
-      createCompensateTeacherWalletDto.teacher_id = user.userId;
-    }
     return this.compensateLessonsService.createWalletEntry(
       createCompensateTeacherWalletDto,
     );
@@ -172,15 +167,16 @@ export class CompensateLessonsController {
     type: Number,
     description: "Items per page (default: 10)",
   })
+  @ApiQuery({ name: "teacher_id", required: false, type: String })
   @ApiQuery({ name: "compensate_lesson_id", required: false, type: String })
   findAllWalletEntries(
-    @CurrentUser() user: any,
     @Query("page") page = 1,
     @Query("limit") limit = 10,
+    @Query("teacher_id") teacher_id?: string,
     @Query("compensate_lesson_id") compensate_lesson_id?: string,
   ) {
     return this.compensateLessonsService.findAllWalletEntries(+page, +limit, {
-      teacher_id: user.userId,
+      teacher_id,
       compensate_lesson_id,
     });
   }
