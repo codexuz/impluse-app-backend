@@ -86,6 +86,8 @@ import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.
 import { StudentTransaction } from "../student-transaction/entities/student-transaction.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 import { Branch } from "../branches/entities/branch.entity.js";
+import { CompensateLesson } from "../compensate-lessons/entities/compensate-lesson.entity.js";
+import { CompensateTeacherWallet } from "../compensate-lessons/entities/compensate-teacher-wallet.entity.js";
 
 export const Models = [
   User,
@@ -165,6 +167,8 @@ export const Models = [
   VideoJudge,
   FeedVideoTask,
   Branch,
+  CompensateLesson,
+  CompensateTeacherWallet,
 ];
 
 // Define associations after all models are loaded
@@ -424,6 +428,46 @@ export function initializeAssociations() {
   User.hasMany(AttendanceLog, {
     foreignKey: "student_id",
     as: "attendance_logs",
+  });
+
+  // CompensateLesson Associations
+  CompensateLesson.belongsTo(User, { foreignKey: "teacher_id", as: "teacher" });
+  CompensateLesson.belongsTo(User, { foreignKey: "student_id", as: "student" });
+  CompensateLesson.belongsTo(Attendance, {
+    foreignKey: "attendance_id",
+    as: "attendance",
+  });
+
+  User.hasMany(CompensateLesson, {
+    foreignKey: "teacher_id",
+    as: "teacher_compensate_lessons",
+  });
+  User.hasMany(CompensateLesson, {
+    foreignKey: "student_id",
+    as: "student_compensate_lessons",
+  });
+  Attendance.hasMany(CompensateLesson, {
+    foreignKey: "attendance_id",
+    as: "compensate_lessons",
+  });
+
+  // CompensateTeacherWallet Associations
+  CompensateTeacherWallet.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "teacher",
+  });
+  CompensateTeacherWallet.belongsTo(CompensateLesson, {
+    foreignKey: "compensate_lesson_id",
+    as: "compensateLesson",
+  });
+
+  User.hasMany(CompensateTeacherWallet, {
+    foreignKey: "teacher_id",
+    as: "compensate_teacher_wallets",
+  });
+  CompensateLesson.hasMany(CompensateTeacherWallet, {
+    foreignKey: "compensate_lesson_id",
+    as: "teacher_wallets",
   });
 
   //VocabularySet Associations

@@ -9,6 +9,8 @@ import { CreateCompensateTeacherWalletDto } from "./dto/create-compensate-teache
 import { CompensateLesson } from "./entities/compensate-lesson.entity.js";
 import { CompensateTeacherWallet } from "./entities/compensate-teacher-wallet.entity.js";
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
+import { User } from "../users/entities/user.entity.js";
+import { Attendance } from "../attendance/entities/attendance.entity.js";
 import { InjectModel } from "@nestjs/sequelize";
 import { Op } from "sequelize";
 
@@ -73,6 +75,22 @@ export class CompensateLessonsService {
       limit,
       offset,
       order: [["created_at", "DESC"]],
+      include: [
+        {
+          model: User,
+          as: "teacher",
+          attributes: ["user_id", "first_name", "last_name", "phone"],
+        },
+        {
+          model: User,
+          as: "student",
+          attributes: ["user_id", "first_name", "last_name", "phone"],
+        },
+        {
+          model: Attendance,
+          as: "attendance",
+        },
+      ],
     });
 
     return {
