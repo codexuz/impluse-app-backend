@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 import { CompensateLessonsService } from "./compensate-lessons.service.js";
@@ -16,6 +17,7 @@ import { CreateCompensateTeacherWalletDto } from "./dto/create-compensate-teache
 import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { Role } from "../roles/role.enum.js";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 
 @ApiTags("compensate-lessons")
 @Controller("compensate-lessons")
@@ -39,6 +41,7 @@ export class CompensateLessonsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Get all compensate lessons for current teacher" })
   @ApiQuery({
     name: "page",
