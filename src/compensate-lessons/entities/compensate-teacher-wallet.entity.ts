@@ -4,11 +4,7 @@ import {
   Model,
   DataType,
   CreatedAt,
-  ForeignKey,
-  BelongsTo,
 } from "sequelize-typescript";
-import { User } from "../../users/entities/user.entity.js";
-import { CompensateLesson } from "./compensate-lesson.entity.js";
 
 @Table({
   tableName: "compensate_teacher_wallet",
@@ -22,25 +18,17 @@ export class CompensateTeacherWallet extends Model<CompensateTeacherWallet> {
   })
   id: string;
 
-  @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
   teacher_id: string;
 
-  @BelongsTo(() => User, "teacher_id")
-  teacher: User;
-
-  @ForeignKey(() => CompensateLesson)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
   compensate_lesson_id: string;
-
-  @BelongsTo(() => CompensateLesson, "compensate_lesson_id")
-  compensateLesson: CompensateLesson;
 
   @Column({
     type: DataType.DECIMAL(10, 2),
