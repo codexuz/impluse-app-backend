@@ -21,7 +21,7 @@ import { Role } from "../roles/role.enum.js";
 @Controller("compensate-lessons")
 export class CompensateLessonsController {
   constructor(
-    private readonly compensateLessonsService: CompensateLessonsService
+    private readonly compensateLessonsService: CompensateLessonsService,
   ) {}
 
   @Post()
@@ -59,7 +59,7 @@ export class CompensateLessonsController {
     @Query("page") page = 1,
     @Query("limit") limit = 10,
     @Query("student_id") student_id?: string,
-    @Query("compensated") compensated?: string
+    @Query("compensated") compensated?: string,
   ) {
     return this.compensateLessonsService.findAll(+page, +limit, {
       teacher_id: user.userId,
@@ -93,7 +93,7 @@ export class CompensateLessonsController {
     @Query("limit") limit = 10,
     @Query("teacher_id") teacher_id?: string,
     @Query("student_id") student_id?: string,
-    @Query("compensated") compensated?: string
+    @Query("compensated") compensated?: string,
   ) {
     return this.compensateLessonsService.findAll(+page, +limit, {
       teacher_id,
@@ -119,7 +119,7 @@ export class CompensateLessonsController {
   @ApiResponse({ status: 404, description: "Compensate lesson not found" })
   update(
     @Param("id") id: string,
-    @Body() updateCompensateLessonDto: UpdateCompensateLessonDto
+    @Body() updateCompensateLessonDto: UpdateCompensateLessonDto,
   ) {
     return this.compensateLessonsService.update(id, updateCompensateLessonDto);
   }
@@ -144,14 +144,14 @@ export class CompensateLessonsController {
   })
   createWalletEntry(
     @CurrentUser() user: any,
-    @Body() createCompensateTeacherWalletDto: CreateCompensateTeacherWalletDto
+    @Body() createCompensateTeacherWalletDto: CreateCompensateTeacherWalletDto,
   ) {
     // Set teacher_id from current user if not provided
     if (!createCompensateTeacherWalletDto.teacher_id) {
       createCompensateTeacherWalletDto.teacher_id = user.userId;
     }
     return this.compensateLessonsService.createWalletEntry(
-      createCompensateTeacherWalletDto
+      createCompensateTeacherWalletDto,
     );
   }
 
@@ -174,7 +174,7 @@ export class CompensateLessonsController {
     @CurrentUser() user: any,
     @Query("page") page = 1,
     @Query("limit") limit = 10,
-    @Query("compensate_lesson_id") compensate_lesson_id?: string
+    @Query("compensate_lesson_id") compensate_lesson_id?: string,
   ) {
     return this.compensateLessonsService.findAllWalletEntries(+page, +limit, {
       teacher_id: user.userId,
@@ -205,12 +205,63 @@ export class CompensateLessonsController {
     @Query("page") page = 1,
     @Query("limit") limit = 10,
     @Query("teacher_id") teacher_id?: string,
-    @Query("compensate_lesson_id") compensate_lesson_id?: string
+    @Query("compensate_lesson_id") compensate_lesson_id?: string,
   ) {
     return this.compensateLessonsService.findAllWalletEntries(+page, +limit, {
       teacher_id,
       compensate_lesson_id,
     });
+  }
+
+  @Get("wallet/teacher/:teacherId")
+  @ApiOperation({
+    summary: "Get wallet entries for a specific teacher with date range",
+  })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    type: Number,
+    description: "Page number (default: 1)",
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Items per page (default: 10)",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: false,
+    type: String,
+    description: "Filter by start date (ISO format)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: false,
+    type: String,
+    description: "Filter by end date (ISO format)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Teacher wallet entries retrieved successfully",
+  })
+  @ApiResponse({ status: 404, description: "Teacher not found" })
+  getTeacherWalletWithDateRange(
+    @Param("teacherId") teacherId: string,
+    @Query("page") page = 1,
+    @Query("limit") limit = 10,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.compensateLessonsService.getTeacherWalletWithDateRange(
+      teacherId,
+      +page,
+      +limit,
+      start,
+      end,
+    );
   }
 
   @Get("wallet/:id")

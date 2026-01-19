@@ -18,7 +18,7 @@ export class CompensateLessonsService {
     @InjectModel(CompensateLesson)
     private compensateLessonModel: typeof CompensateLesson,
     @InjectModel(CompensateTeacherWallet)
-    private compensateTeacherWalletModel: typeof CompensateTeacherWallet
+    private compensateTeacherWalletModel: typeof CompensateTeacherWallet,
   ) {}
 
   async create(createCompensateLessonDto: CreateCompensateLessonDto) {
@@ -31,12 +31,12 @@ export class CompensateLessonsService {
 
     if (existingCompensateLesson) {
       throw new ConflictException(
-        "Compensate lesson already exists for this attendance record"
+        "Compensate lesson already exists for this attendance record",
       );
     }
 
     const compensateLesson = await this.compensateLessonModel.create(
-      createCompensateLessonDto as any
+      createCompensateLessonDto as any,
     );
 
     return compensateLesson;
@@ -49,7 +49,7 @@ export class CompensateLessonsService {
       teacher_id?: string;
       student_id?: string;
       compensated?: boolean;
-    }
+    },
   ): Promise<{
     lessons: CompensateLesson[];
     total: number;
@@ -95,7 +95,7 @@ export class CompensateLessonsService {
 
   async update(
     id: string,
-    updateCompensateLessonDto: UpdateCompensateLessonDto
+    updateCompensateLessonDto: UpdateCompensateLessonDto,
   ) {
     const compensateLesson = await this.findOne(id);
 
@@ -131,24 +131,24 @@ export class CompensateLessonsService {
               } as any);
 
               console.log(
-                `Compensate wallet entry created for teacher ${compensateLesson.teacher_id}, amount ${teacherProfile.payment_value}`
+                `Compensate wallet entry created for teacher ${compensateLesson.teacher_id}, amount ${teacherProfile.payment_value}`,
               );
             }
           } catch (error) {
             console.error(
               `Error creating wallet entry for compensate lesson ${id}:`,
-              error.message
+              error.message,
             );
             // Don't throw error - wallet creation failure shouldn't block update
           }
         } else if (compensatedBy === "support_teacher") {
           console.log(
-            `Lesson ${id} compensated by support_teacher - no wallet entry created`
+            `Lesson ${id} compensated by support_teacher - no wallet entry created`,
           );
         }
       } else {
         console.warn(
-          `Lesson ${id} valid_until has expired (${validUntil}) - no wallet entry created`
+          `Lesson ${id} valid_until has expired (${validUntil}) - no wallet entry created`,
         );
       }
     }
@@ -168,10 +168,10 @@ export class CompensateLessonsService {
 
   // Compensate Teacher Wallet methods
   async createWalletEntry(
-    createCompensateTeacherWalletDto: CreateCompensateTeacherWalletDto
+    createCompensateTeacherWalletDto: CreateCompensateTeacherWalletDto,
   ) {
     const walletEntry = await this.compensateTeacherWalletModel.create(
-      createCompensateTeacherWalletDto as any
+      createCompensateTeacherWalletDto as any,
     );
 
     return walletEntry;
@@ -183,7 +183,7 @@ export class CompensateLessonsService {
     filters?: {
       teacher_id?: string;
       compensate_lesson_id?: string;
-    }
+    },
   ): Promise<{
     walletEntries: CompensateTeacherWallet[];
     total: number;
@@ -213,12 +213,67 @@ export class CompensateLessonsService {
     };
   }
 
+  async getTeacherWalletWithDateRange(
+    teacherId: string,
+    page = 1,
+    limit = 10,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<{
+    walletEntries: CompensateTeacherWallet[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    totalAmount: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const where: any = {
+      teacher_id: teacherId,
+    };
+
+    if (startDate && endDate) {
+      where.created_at = {
+        [Op.between]: [startDate, endDate],
+      };
+    } else if (startDate) {
+      where.created_at = {
+        [Op.gte]: startDate,
+      };
+    } else if (endDate) {
+      where.created_at = {
+        [Op.lte]: endDate,
+      };
+    }
+
+    const { count, rows } =
+      await this.compensateTeacherWalletModel.findAndCountAll({
+        where,
+        limit,
+        offset,
+        order: [["created_at", "DESC"]],
+      });
+
+    // Calculate total amount
+    const totalAmount = rows.reduce(
+      (sum, entry) => sum + (entry.amount || 0),
+      0,
+    );
+
+    return {
+      walletEntries: rows,
+      total: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalAmount,
+    };
+  }
+
   async findOneWalletEntry(id: string) {
     const walletEntry = await this.compensateTeacherWalletModel.findByPk(id);
 
     if (!walletEntry) {
       throw new NotFoundException(
-        `Compensate teacher wallet entry with ID ${id} not found`
+        `Compensate teacher wallet entry with ID ${id} not found`,
       );
     }
 

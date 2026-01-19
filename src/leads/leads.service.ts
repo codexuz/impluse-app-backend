@@ -85,6 +85,71 @@ export class LeadsService {
     };
   }
 
+  async findAllArchived(
+    page = 1,
+    limit = 10,
+    search?: string,
+    status?: string,
+    source?: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<{
+    leads: Lead[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {
+      isarchived: true,
+    };
+
+    if (search) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.like]: `%${search}%` } },
+        { last_name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+        { question: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (source) {
+      whereClause.source = source;
+    }
+
+    if (startDate && endDate) {
+      whereClause.createdAt = {
+        [Op.between]: [startDate, endDate],
+      };
+    } else if (startDate) {
+      whereClause.createdAt = {
+        [Op.gte]: startDate,
+      };
+    } else if (endDate) {
+      whereClause.createdAt = {
+        [Op.lte]: endDate,
+      };
+    }
+
+    const { count, rows } = await this.leadModel.findAndCountAll({
+      where: whereClause,
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]],
+    });
+
+    return {
+      leads: rows,
+      total: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+    };
+  }
+
   async findOne(id: string): Promise<Lead> {
     const lead = await this.leadModel.findByPk(id);
     if (!lead) {

@@ -140,6 +140,85 @@ export class LeadsController {
     );
   }
 
+  @Get("archived")
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "Get all archived leads with pagination and filtering",
+  })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    type: Number,
+    description: "Page number (default: 1)",
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Items per page (default: 10)",
+  })
+  @ApiQuery({
+    name: "search",
+    required: false,
+    type: String,
+    description: "Search in name, phone, or question",
+  })
+  @ApiQuery({
+    name: "status",
+    required: false,
+    type: String,
+    description: "Filter by status",
+  })
+  @ApiQuery({
+    name: "source",
+    required: false,
+    type: String,
+    description: "Filter by source",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: false,
+    type: String,
+    description: "Filter by start date (ISO format)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: false,
+    type: String,
+    description: "Filter by end date (ISO format)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Archived leads retrieved successfully",
+    type: LeadListResponseDto,
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({
+    status: 403,
+    description: "Forbidden - Admin role required",
+  })
+  findAllArchived(
+    @Query("page") page = 1,
+    @Query("limit") limit = 10,
+    @Query("search") search?: string,
+    @Query("status") status?: string,
+    @Query("source") source?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.leadsService.findAllArchived(
+      +page,
+      +limit,
+      search,
+      status,
+      source,
+      start,
+      end,
+    );
+  }
+
   @Get("stats")
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Get comprehensive lead statistics" })
