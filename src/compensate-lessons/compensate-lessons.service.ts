@@ -51,7 +51,7 @@ export class CompensateLessonsService {
       compensated?: boolean;
     },
   ): Promise<{
-    lessons: CompensateLesson[];
+    data: CompensateLesson[];
     total: number;
     totalPages: number;
     currentPage: number;
@@ -76,7 +76,7 @@ export class CompensateLessonsService {
     });
 
     return {
-      lessons: rows,
+      data: rows,
       total: count,
       totalPages: Math.ceil(count / limit),
       currentPage: page,
