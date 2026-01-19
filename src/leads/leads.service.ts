@@ -187,6 +187,11 @@ export class LeadsService {
     return await lead.update({ isarchived: true });
   }
 
+  async unarchive(id: string): Promise<Lead> {
+    const lead = await this.findOne(id);
+    return await lead.update({ isarchived: false });
+  }
+
   async getLeadStats(): Promise<{
     totalLeads: number;
     leadsByStatus: { [key: string]: number };

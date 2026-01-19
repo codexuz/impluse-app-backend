@@ -497,4 +497,23 @@ export class LeadsController {
   archive(@Param("id") id: string) {
     return this.leadsService.archive(id);
   }
+
+  @Patch(":id/unarchive")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Unarchive a lead by ID" })
+  @ApiParam({ name: "id", description: "Lead ID" })
+  @ApiResponse({
+    status: 200,
+    description: "Lead unarchived successfully",
+    type: LeadResponseDto,
+  })
+  @ApiResponse({ status: 404, description: "Lead not found" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({
+    status: 403,
+    description: "Forbidden - Admin role required",
+  })
+  unarchive(@Param("id") id: string) {
+    return this.leadsService.unarchive(id);
+  }
 }
