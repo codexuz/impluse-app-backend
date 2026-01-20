@@ -32,6 +32,7 @@ export class TeacherTransactionService {
       total: number;
       totalPages: number;
     };
+    totalAmount: number;
   }> {
     const {
       page = 1,
@@ -111,6 +112,18 @@ export class TeacherTransactionService {
       distinct: true,
     });
 
+    // Calculate total amount for filtered transactions
+    const allFilteredTransactions = await this.teacherTransactionModel.findAll({
+      where: whereCondition,
+      include,
+      attributes: ["amount"],
+    });
+
+    const totalAmount = allFilteredTransactions.reduce(
+      (sum, transaction) => sum + transaction.amount,
+      0,
+    );
+
     // Get paginated data
     const data = await this.teacherTransactionModel.findAll({
       where: whereCondition,
@@ -130,6 +143,7 @@ export class TeacherTransactionService {
         total,
         totalPages,
       },
+      totalAmount,
     };
   }
 
