@@ -18,7 +18,7 @@ export class LeadTrialLessonsService {
     private trialLessonModel: typeof LeadTrialLesson,
     @InjectModel(Lead)
     private leadModel: typeof Lead,
-    private readonly smsService: SmsService
+    private readonly smsService: SmsService,
   ) {}
 
   private getIncludeOptions() {
@@ -39,7 +39,7 @@ export class LeadTrialLessonsService {
   }
 
   async create(
-    createLeadTrialLessonDto: CreateLeadTrialLessonDto
+    createLeadTrialLessonDto: CreateLeadTrialLessonDto,
   ): Promise<LeadTrialLesson> {
     try {
       return await this.trialLessonModel.create({
@@ -55,7 +55,7 @@ export class LeadTrialLessonsService {
     limit = 10,
     search?: string,
     status?: string,
-    teacherId?: string
+    teacherId?: string,
   ): Promise<{
     trialLessons: LeadTrialLesson[];
     total: number;
@@ -65,6 +65,23 @@ export class LeadTrialLessonsService {
     const offset = (page - 1) * limit;
     const whereClause: any = {};
     const includeOptions = this.getIncludeOptions();
+
+    // Filter by current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    whereClause.scheduledAt = {
+      [Op.between]: [startOfMonth, endOfMonth],
+    };
 
     if (search) {
       whereClause[Op.or] = [
@@ -154,7 +171,7 @@ export class LeadTrialLessonsService {
 
   async update(
     id: string,
-    updateLeadTrialLessonDto: UpdateLeadTrialLessonDto
+    updateLeadTrialLessonDto: UpdateLeadTrialLessonDto,
   ): Promise<LeadTrialLesson> {
     const trialLesson = await this.findOne(id);
     return await trialLesson.update(updateLeadTrialLessonDto);
@@ -181,7 +198,7 @@ export class LeadTrialLessonsService {
         [
           this.trialLessonModel.sequelize.fn(
             "COUNT",
-            this.trialLessonModel.sequelize.col("status")
+            this.trialLessonModel.sequelize.col("status"),
           ),
           "count",
         ],
@@ -196,7 +213,7 @@ export class LeadTrialLessonsService {
         [
           this.trialLessonModel.sequelize.fn(
             "COUNT",
-            this.trialLessonModel.sequelize.col("teacher_id")
+            this.trialLessonModel.sequelize.col("teacher_id"),
           ),
           "count",
         ],
@@ -253,9 +270,9 @@ export class LeadTrialLessonsService {
 
   /**
    * Cron job to send SMS reminders for trial lessons scheduled today
-   * Runs every day at 7:00 AM
+   * Runs every day at 8:00 AM
    */
-  @Cron("0 7 * * *", {
+  @Cron("0 8 * * *", {
     name: "trial-lesson-sms-reminder",
     timeZone: "Asia/Tashkent",
   })
@@ -288,7 +305,7 @@ export class LeadTrialLessonsService {
       });
 
       this.logger.log(
-        `Found ${todayTrialLessons.length} trial lessons scheduled for today`
+        `Found ${todayTrialLessons.length} trial lessons scheduled for today`,
       );
 
       // Send SMS to each student
@@ -299,7 +316,7 @@ export class LeadTrialLessonsService {
           // Log error but continue with other students
           this.logger.error(
             `Failed to send SMS for trial lesson ${lesson.id}:`,
-            error
+            error,
           );
         }
       }
@@ -314,14 +331,10 @@ export class LeadTrialLessonsService {
    * Send trial lesson reminder SMS to a student
    * @param lesson - The trial lesson record
    */
-  private async sendTrialLessonSms(
-    lesson: LeadTrialLesson
-  ): Promise<void> {
+  private async sendTrialLessonSms(lesson: LeadTrialLesson): Promise<void> {
     try {
       if (!lesson.leadInfo) {
-        this.logger.warn(
-          `Lead info not found for trial lesson ${lesson.id}`
-        );
+        this.logger.warn(`Lead info not found for trial lesson ${lesson.id}`);
         return;
       }
 
@@ -329,7 +342,7 @@ export class LeadTrialLessonsService {
 
       if (!lead.phone) {
         this.logger.warn(
-          `Lead ${lead.first_name} ${lead.last_name} has no phone number`
+          `Lead ${lead.first_name} ${lead.last_name} has no phone number`,
         );
         return;
       }
@@ -354,7 +367,7 @@ export class LeadTrialLessonsService {
       });
 
       this.logger.log(
-        `Trial lesson SMS sent successfully to ${lead.first_name} ${lead.last_name} (${lead.phone}) for lesson at ${lessonTime}`
+        `Trial lesson SMS sent successfully to ${lead.first_name} ${lead.last_name} (${lead.phone}) for lesson at ${lessonTime}`,
       );
     } catch (error) {
       // Re-throw to be caught by the caller's catch block
