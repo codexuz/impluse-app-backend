@@ -48,4 +48,11 @@ export class CompensateTeacherWallet extends Model<CompensateTeacherWallet> {
     allowNull: true,
   })
   paid_at: Date;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+  })
+  isPaid: boolean;
 }

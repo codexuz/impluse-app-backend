@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsDateString,
+  IsBoolean,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -43,4 +44,14 @@ export class CreateCompensateTeacherWalletDto {
   @IsDateString()
   @IsOptional()
   paid_at?: string;
+
+  @ApiProperty({
+    description: "Whether the payment has been made",
+    example: false,
+    required: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isPaid?: boolean;
 }
