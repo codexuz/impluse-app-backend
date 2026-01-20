@@ -273,7 +273,7 @@ export class CompensateLessonsService {
 
     // Calculate total amount
     const totalAmount = rows.reduce(
-      (sum, entry) => sum + (entry.amount || 0),
+      (sum, entry) => sum + (Number(entry.amount) || 0),
       0,
     );
 
