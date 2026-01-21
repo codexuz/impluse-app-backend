@@ -262,7 +262,7 @@ export class CompensateLessonsService {
         include: [
           {
             model: CompensateLesson,
-            as: "compensate_lesson",
+            as: "compensateLesson",
             attributes: [
               "id",
               "attendance_id",
