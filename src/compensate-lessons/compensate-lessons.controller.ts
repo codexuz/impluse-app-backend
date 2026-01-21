@@ -57,17 +57,41 @@ export class CompensateLessonsController {
   @ApiQuery({ name: "teacher_id", required: false, type: String })
   @ApiQuery({ name: "student_id", required: false, type: String })
   @ApiQuery({ name: "compensated", required: false, type: Boolean })
+  @ApiQuery({
+    name: "start_date",
+    required: false,
+    type: String,
+    description: "Filter by start date (ISO format)",
+  })
+  @ApiQuery({
+    name: "end_date",
+    required: false,
+    type: String,
+    description: "Filter by end date (ISO format)",
+  })
+  @ApiQuery({
+    name: "student_search",
+    required: false,
+    type: String,
+    description: "Search student by first name, last name, phone, or username",
+  })
   findAll(
     @Query("page") page = 1,
     @Query("limit") limit = 10,
     @Query("teacher_id") teacher_id?: string,
     @Query("student_id") student_id?: string,
     @Query("compensated") compensated?: string,
+    @Query("start_date") start_date?: string,
+    @Query("end_date") end_date?: string,
+    @Query("student_search") student_search?: string,
   ) {
     return this.compensateLessonsService.findAll(+page, +limit, {
       teacher_id,
       student_id,
       compensated: compensated ? compensated === "true" : undefined,
+      start_date: start_date ? new Date(start_date) : undefined,
+      end_date: end_date ? new Date(end_date) : undefined,
+      student_search,
     });
   }
 
@@ -91,17 +115,41 @@ export class CompensateLessonsController {
   @ApiQuery({ name: "teacher_id", required: false, type: String })
   @ApiQuery({ name: "student_id", required: false, type: String })
   @ApiQuery({ name: "compensated", required: false, type: Boolean })
+  @ApiQuery({
+    name: "start_date",
+    required: false,
+    type: String,
+    description: "Filter by start date (ISO format)",
+  })
+  @ApiQuery({
+    name: "end_date",
+    required: false,
+    type: String,
+    description: "Filter by end date (ISO format)",
+  })
+  @ApiQuery({
+    name: "student_search",
+    required: false,
+    type: String,
+    description: "Search student by first name, last name, phone, or username",
+  })
   findAllTeachers(
     @Query("page") page = 1,
     @Query("limit") limit = 10,
     @Query("teacher_id") teacher_id?: string,
     @Query("student_id") student_id?: string,
     @Query("compensated") compensated?: string,
+    @Query("start_date") start_date?: string,
+    @Query("end_date") end_date?: string,
+    @Query("student_search") student_search?: string,
   ) {
     return this.compensateLessonsService.findAll(+page, +limit, {
       teacher_id,
       student_id,
       compensated: compensated ? compensated === "true" : undefined,
+      start_date: start_date ? new Date(start_date) : undefined,
+      end_date: end_date ? new Date(end_date) : undefined,
+      student_search,
     });
   }
 

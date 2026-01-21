@@ -51,6 +51,9 @@ export class CompensateLessonsService {
       teacher_id?: string;
       student_id?: string;
       compensated?: boolean;
+      start_date?: Date;
+      end_date?: Date;
+      student_search?: string;
     },
   ): Promise<{
     data: CompensateLesson[];
@@ -66,9 +69,35 @@ export class CompensateLessonsService {
     if (filters?.compensated !== undefined)
       where.compensated = filters.compensated;
 
+    // Filter by created_at date range
+    if (filters?.start_date && filters?.end_date) {
+      where.created_at = {
+        [Op.between]: [filters.start_date, filters.end_date],
+      };
+    } else if (filters?.start_date) {
+      where.created_at = {
+        [Op.gte]: filters.start_date,
+      };
+    } else if (filters?.end_date) {
+      where.created_at = {
+        [Op.lte]: filters.end_date,
+      };
+    }
+
     // Only return lessons where valid_until has not expired
     const today = new Date().toISOString().split("T")[0];
     where.valid_until = { [Op.gte]: today };
+
+    // Build student where clause for searching across multiple fields
+    const studentWhere: any = {};
+    if (filters?.student_search) {
+      studentWhere[Op.or] = [
+        { first_name: { [Op.like]: `%${filters.student_search}%` } },
+        { last_name: { [Op.like]: `%${filters.student_search}%` } },
+        { phone: { [Op.like]: `%${filters.student_search}%` } },
+        { username: { [Op.like]: `%${filters.student_search}%` } },
+      ];
+    }
 
     const { count, rows } = await this.compensateLessonModel.findAndCountAll({
       where,
@@ -84,7 +113,16 @@ export class CompensateLessonsService {
         {
           model: User,
           as: "student",
-          attributes: ["user_id", "first_name", "last_name", "phone"],
+          attributes: [
+            "user_id",
+            "first_name",
+            "last_name",
+            "phone",
+            "username",
+          ],
+          where:
+            Object.keys(studentWhere).length > 0 ? studentWhere : undefined,
+          required: Object.keys(studentWhere).length > 0,
         },
         {
           model: Attendance,
