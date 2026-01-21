@@ -259,6 +259,40 @@ export class CompensateLessonsService {
         limit,
         offset,
         order: [["created_at", "DESC"]],
+        include: [
+          {
+            model: CompensateLesson,
+            as: "compensate_lesson",
+            attributes: [
+              "id",
+              "attendance_id",
+              "teacher_id",
+              "student_id",
+              "compensated",
+              "compensated_by",
+              "valid_until",
+            ],
+            include: [
+              {
+                model: Attendance,
+                as: "attendance",
+                include: [
+                  {
+                    model: User,
+                    as: "student",
+                    attributes: [
+                      "user_id",
+                      "first_name",
+                      "last_name",
+                      "phone",
+                      "username",
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
       });
 
     return {
