@@ -141,8 +141,8 @@ export class AudioController {
   })
   @ApiResponse({ status: 200, description: "Return all tasks with pagination" })
   getAllTasks(
-    @Query("page") page?: number,
-    @Query("limit") limit?: number,
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 20,
     @Query("status") status?: string,
     @Query("difficulty") difficulty?: string,
   ) {
