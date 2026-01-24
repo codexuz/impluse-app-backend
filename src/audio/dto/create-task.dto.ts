@@ -30,9 +30,9 @@ export class CreateTaskDto {
     example: "easy",
     enum: ["easy", "medium", "hard"],
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(["easy", "medium", "hard"])
-  difficulty: "easy" | "medium" | "hard";
+  difficulty?: "easy" | "medium" | "hard";
 
   @ApiPropertyOptional({
     description: "Maximum video duration in seconds",
