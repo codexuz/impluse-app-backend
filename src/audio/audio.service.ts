@@ -17,6 +17,7 @@ import { AudioTask } from "./entities/audio-task.entity.js";
 import { AudioLike } from "./entities/likes.js";
 import { AudioComment } from "./entities/comments.js";
 import { AudioJudge } from "./entities/judge.js";
+import { Course } from "../courses/entities/course.entity.js";
 import { Op } from "sequelize";
 import { REWARDS, NotificationType } from "./constants/rewards.js";
 import { StudentProfileService } from "../student_profiles/student-profile.service.js";
@@ -274,6 +275,14 @@ export class AudioService {
             "last_name",
             "username",
             "avatar_url",
+            "level_id",
+          ],
+          include: [
+            {
+              model: Course,
+              as: "level",
+              attributes: ["id", "title", "level"],
+            },
           ],
         },
       ],
@@ -399,6 +408,20 @@ export class AudioService {
                     "last_name",
                     "username",
                     "avatar_url",
+                    "level_id",
+                  ],
+                  include: [
+                    {
+                      model: Course,
+                      as: "level",
+                      attributes: [
+                        "id",
+                        "title",
+                        "description",
+                        "level",
+                        "isActive",
+                      ],
+                    },
                   ],
                 },
               ],
