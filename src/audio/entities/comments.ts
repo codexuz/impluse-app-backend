@@ -5,21 +5,22 @@ import {
   DataType,
   AllowNull,
   ForeignKey,
+  Default,
 } from "sequelize-typescript";
-import { FeedVideo } from "./feed-video.js";
+import { Audio } from "./audio.entity.js";
 import { User } from "../../users/entities/user.entity.js";
 
 @Table({
-  tableName: "video_comments",
+  tableName: "audio_comments",
   timestamps: true,
 })
-export class VideoComment extends Model<VideoComment> {
+export class AudioComment extends Model<AudioComment> {
   @AllowNull(false)
-  @ForeignKey(() => FeedVideo)
+  @ForeignKey(() => Audio)
   @Column({
     type: DataType.INTEGER,
   })
-  videoId: number;
+  audioId: number;
 
   @AllowNull(false)
   @ForeignKey(() => User)
@@ -33,4 +34,11 @@ export class VideoComment extends Model<VideoComment> {
     type: DataType.TEXT,
   })
   comment: string;
+
+  @AllowNull(false)
+  @Default(0)
+  @Column({
+    type: DataType.INTEGER,
+  })
+  likeCount: number; // Track likes on comments
 }

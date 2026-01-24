@@ -5,27 +5,33 @@ import {
   DataType,
   AllowNull,
   ForeignKey,
-  Unique,
+  Default,
 } from "sequelize-typescript";
-import { FeedVideo } from "./feed-video.js";
+import { Audio } from "./audio.entity.js";
 import { User } from "../../users/entities/user.entity.js";
 
 @Table({
-  tableName: "video_likes",
+  tableName: "audio_judges",
   timestamps: true,
 })
-export class VideoLike extends Model<VideoLike> {
+export class AudioJudge extends Model<AudioJudge> {
   @AllowNull(false)
-  @ForeignKey(() => FeedVideo)
+  @ForeignKey(() => Audio)
   @Column({
     type: DataType.INTEGER,
   })
-  videoId: number;
+  audioId: number;
 
   @AllowNull(false)
   @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
   })
-  userId: string;
+  judgeUserId: string; // Student who is judging
+
+  @AllowNull(false)
+  @Column({
+    type: DataType.INTEGER,
+  })
+  rating: number; // 0-5
 }

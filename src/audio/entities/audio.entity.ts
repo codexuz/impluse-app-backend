@@ -7,14 +7,14 @@ import {
   Default,
   ForeignKey,
 } from "sequelize-typescript";
-import { FeedVideoTask } from "./feed-video-task.entity.js";
+import { AudioTask } from "./audio-task.entity.js";
 import { User } from "../../users/entities/user.entity.js";
 
 @Table({
-  tableName: "feed_videos",
+  tableName: "audios",
   timestamps: true,
 })
-export class FeedVideo extends Model<FeedVideo> {
+export class Audio extends Model<Audio> {
   @AllowNull(false)
   @ForeignKey(() => User)
   @Column({
@@ -23,7 +23,7 @@ export class FeedVideo extends Model<FeedVideo> {
   studentId: string;
 
   @AllowNull(true)
-  @ForeignKey(() => FeedVideoTask)
+  @ForeignKey(() => AudioTask)
   @Column({
     type: DataType.INTEGER,
   })
@@ -33,13 +33,7 @@ export class FeedVideo extends Model<FeedVideo> {
   @Column({
     type: DataType.TEXT, // Changed from STRING to handle long presigned URLs
   })
-  videoUrl: string;
-
-  @AllowNull(true)
-  @Column({
-    type: DataType.TEXT, // Changed from STRING to handle long presigned URLs
-  })
-  thumbnailUrl: string;
+  audioUrl: string;
 
   @AllowNull(true)
   @Column({
@@ -93,14 +87,7 @@ export class FeedVideo extends Model<FeedVideo> {
   @Column({
     type: DataType.FLOAT,
   })
-  averageFluencyScore: number;
-
-  @AllowNull(false)
-  @Default(0)
-  @Column({
-    type: DataType.FLOAT,
-  })
-  averageClarityScore: number;
+  averageRating: number;
 
   @AllowNull(false)
   @Default("published")
@@ -110,7 +97,7 @@ export class FeedVideo extends Model<FeedVideo> {
       "published",
       "archived",
       "processing",
-      "completed"
+      "completed",
     ),
   })
   status: "draft" | "published" | "archived" | "processing" | "completed";

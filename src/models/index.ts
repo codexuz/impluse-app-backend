@@ -73,11 +73,11 @@ import { CdRegister } from "../cd-ielts/entities/cd-register.entity.js";
 import { Form } from "../forms/entities/form.entity.js";
 import { Response as FormResponse } from "../forms/entities/response.entity.js";
 import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
-import { FeedVideo } from "../feed-videos/entities/feed-video.js";
-import { VideoComment } from "../feed-videos/entities/comments.js";
-import { VideoLike } from "../feed-videos/entities/likes.js";
-import { VideoJudge } from "../feed-videos/entities/judge.js";
-import { FeedVideoTask } from "../feed-videos/entities/feed-video-task.entity.js";
+import { Audio } from "../audio/entities/audio.entity.js";
+import { AudioComment } from "../audio/entities/comments.js";
+import { AudioLike } from "../audio/entities/likes.js";
+import { AudioJudge } from "../audio/entities/judge.js";
+import { AudioTask } from "../audio/entities/audio-task.entity.js";
 // Export the models array for Sequelize registration
 import { Expense } from "../expenses/entities/expense.entity.js";
 import { ExpensesCategory } from "../expenses/entities/expenses-category.entity.js";
@@ -163,11 +163,11 @@ export const Models = [
   TeacherWallet,
   StudentTransaction,
   TeacherTransaction,
-  FeedVideo,
-  VideoComment,
-  VideoLike,
-  VideoJudge,
-  FeedVideoTask,
+  Audio,
+  AudioComment,
+  AudioLike,
+  AudioJudge,
+  AudioTask,
   Branch,
   CompensateLesson,
   CompensateTeacherWallet,
@@ -1165,78 +1165,78 @@ export function initializeAssociations() {
     as: "branch",
   });
 
-  // FeedVideo associations
-  User.hasMany(FeedVideo, {
+  // Audio associations
+  User.hasMany(Audio, {
     foreignKey: "studentId",
-    as: "feed_videos",
+    as: "audios",
   });
-  FeedVideo.belongsTo(User, {
+  Audio.belongsTo(User, {
     foreignKey: "studentId",
     as: "student",
   });
 
-  FeedVideoTask.hasMany(FeedVideo, {
+  AudioTask.hasMany(Audio, {
     foreignKey: "taskId",
-    as: "videos",
+    as: "audios",
   });
-  FeedVideo.belongsTo(FeedVideoTask, {
+  Audio.belongsTo(AudioTask, {
     foreignKey: "taskId",
     as: "task",
   });
 
-  // VideoComment associations
-  FeedVideo.hasMany(VideoComment, {
-    foreignKey: "videoId",
+  // AudioComment associations
+  Audio.hasMany(AudioComment, {
+    foreignKey: "audioId",
     as: "comments",
   });
-  VideoComment.belongsTo(FeedVideo, {
-    foreignKey: "videoId",
-    as: "video",
+  AudioComment.belongsTo(Audio, {
+    foreignKey: "audioId",
+    as: "audio",
   });
 
-  User.hasMany(VideoComment, {
+  User.hasMany(AudioComment, {
     foreignKey: "userId",
-    as: "video_comments",
+    as: "audio_comments",
   });
-  VideoComment.belongsTo(User, {
+  AudioComment.belongsTo(User, {
     foreignKey: "userId",
     as: "user",
   });
 
-  // VideoLike associations
-  FeedVideo.hasMany(VideoLike, {
-    foreignKey: "videoId",
+  // AudioLike associations
+  Audio.hasMany(AudioLike, {
+    foreignKey: "audioId",
     as: "likes",
   });
-  VideoLike.belongsTo(FeedVideo, {
-    foreignKey: "videoId",
-    as: "video",
+  AudioLike.belongsTo(Audio, {
+    foreignKey: "audioId",
+    as: "audio",
   });
 
-  User.hasMany(VideoLike, {
+  User.hasMany(AudioLike, {
     foreignKey: "userId",
-    as: "video_likes",
+    as: "audio_likes",
   });
-  VideoLike.belongsTo(User, {
+  AudioLike.belongsTo(User, {
     foreignKey: "userId",
     as: "user",
   });
 
-  // VideoJudge associations
-  FeedVideo.hasMany(VideoJudge, {
-    foreignKey: "videoId",
+  // AudioJudge associations
+  Audio.hasMany(AudioJudge, {
+    foreignKey: "audioId",
     as: "judges",
   });
-  VideoJudge.belongsTo(FeedVideo, {
-    foreignKey: "videoId",
-    as: "video",
+  AudioJudge.belongsTo(Audio, {
+    foreignKey: "audioId",
+    as: "audio",
   });
 
-  User.hasMany(VideoJudge, {
+  User.hasMany(AudioJudge, {
     foreignKey: "judgeUserId",
-    as: "video_judgments",
+    as: "audio_judgments",
   });
-  VideoJudge.belongsTo(User, {
+  AudioJudge.belongsTo(User, {
     foreignKey: "judgeUserId",
     as: "judge",
   });

@@ -10,10 +10,10 @@ import {
 import { User } from "../../users/entities/user.entity.js";
 
 @Table({
-  tableName: "feed_video_tasks",
+  tableName: "audio_tasks",
   timestamps: true,
 })
-export class FeedVideoTask extends Model<FeedVideoTask> {
+export class AudioTask extends Model<AudioTask> {
   @AllowNull(false)
   @Column({
     type: DataType.STRING,

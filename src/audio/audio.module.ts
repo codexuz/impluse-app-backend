@@ -1,14 +1,13 @@
 import { Module } from "@nestjs/common";
 import { SequelizeModule } from "@nestjs/sequelize";
 import { EventEmitterModule } from "@nestjs/event-emitter";
-import { FeedVideosService } from "./feed-videos.service.js";
-import { FeedVideosController } from "./feed-videos.controller.js";
-import { FeedVideo } from "./entities/feed-video.js";
-import { FeedVideoTask } from "./entities/feed-video-task.entity.js";
-import { VideoLike } from "./entities/likes.js";
-import { VideoComment } from "./entities/comments.js";
-import { VideoJudge } from "./entities/judge.js";
-import { FeedVideoNotification } from "./entities/feed-video-notification.entity.js";
+import { AudioService } from "./audio.service.js";
+import { AudioController } from "./audio.controller.js";
+import { Audio } from "./entities/audio.entity.js";
+import { AudioTask } from "./entities/audio-task.entity.js";
+import { AudioLike } from "./entities/likes.js";
+import { AudioComment } from "./entities/comments.js";
+import { AudioJudge } from "./entities/judge.js";
 import { StudentProfileModule } from "../student_profiles/student-profile.module.js";
 import { FirebaseServiceService } from "../notifications/firebase-service.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
@@ -18,12 +17,11 @@ import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
 @Module({
   imports: [
     SequelizeModule.forFeature([
-      FeedVideo,
-      FeedVideoTask,
-      VideoLike,
-      VideoComment,
-      VideoJudge,
-      FeedVideoNotification,
+      Audio,
+      AudioTask,
+      AudioLike,
+      AudioComment,
+      AudioJudge,
       NotificationToken,
       User,
     ]),
@@ -32,15 +30,15 @@ import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
     MinioModule,
     AwsStorageModule,
   ],
-  controllers: [FeedVideosController],
+  controllers: [AudioController],
   providers: [
-    FeedVideosService,
+    AudioService,
     {
-      provide: "FeedVideosService",
-      useExisting: FeedVideosService,
+      provide: "AudioService",
+      useExisting: AudioService,
     },
     FirebaseServiceService,
   ],
-  exports: [FeedVideosService],
+  exports: [AudioService],
 })
-export class FeedVideosModule {}
+export class AudioModule {}

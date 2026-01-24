@@ -37,33 +37,33 @@ import {
   ApiConsumes,
   ApiBody,
 } from "@nestjs/swagger";
-import { FeedVideosService } from "./feed-videos.service.js";
+import { AudioService } from "./audio.service.js";
 import {
-  CreateFeedVideoDto,
+  CreateAudioDto,
   CreateTaskDto,
   CreateCommentDto,
   CreateJudgeDto,
-} from "./dto/create-feed-video.dto.js";
-import { UpdateFeedVideoDto } from "./dto/update-feed-video.dto.js";
+} from "./dto/create-audio-barrel.dto.js";
+import { UpdateAudioDto } from "./dto/update-audio.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { Role } from "../roles/role.enum.js";
 import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 
-@ApiTags("Feed Videos")
-@Controller("feed-videos")
+@ApiTags("Audio")
+@Controller("audio")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
-export class FeedVideosController {
-  constructor(private readonly feedVideosService: FeedVideosService) {}
+export class AudioController {
+  constructor(private readonly audioService: AudioService) {}
 
   // ========== SSE EVENTS ==========
-  @Sse("new-videos/stream")
+  @Sse("new-audios/stream")
   @ApiOperation({
-    summary: "Server-Sent Events stream for new video uploads",
+    summary: "Server-Sent Events stream for new audio uploads",
     description:
-      "Subscribe to real-time notifications when new videos are uploaded",
+      "Subscribe to real-time notifications when new audios are uploaded",
   })
   @ApiResponse({
     status: 200,
@@ -74,30 +74,30 @@ export class FeedVideosController {
       Connection: { description: "keep-alive" },
     },
   })
-  streamNewVideos(
+  streamNewAudios(
     @Headers() headers: any,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ): Observable<MessageEvent> {
-    // Create an observable that listens for video upload events
+    // Create an observable that listens for audio upload events
     return new Observable<MessageEvent>((observer) => {
       const eventHandler = (data: any) => {
         // Don't send notification to the uploader themselves
         if (data.uploader.id !== user.userId) {
           const event: MessageEvent = {
             data: JSON.stringify(data),
-            type: "new-video",
+            type: "new-audio",
             id: Date.now().toString(),
           };
           observer.next(event);
         }
       };
 
-      // Listen for video upload events
-      this.feedVideosService.onVideoUploaded(eventHandler);
+      // Listen for audio upload events
+      this.audioService.onAudioUploaded(eventHandler);
 
       // Cleanup when client disconnects
       return () => {
-        this.feedVideosService.removeVideoUploadListener(eventHandler);
+        this.audioService.removeAudioUploadListener(eventHandler);
       };
     });
   }
@@ -105,17 +105,17 @@ export class FeedVideosController {
   // ========== TASK MANAGEMENT (Admin) ==========
   @Post("tasks")
   @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Create a new video task for students" })
+  @ApiOperation({ summary: "Create a new audio task for students" })
   @ApiResponse({ status: 201, description: "Task created successfully" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
   createTask(@Body() createTaskDto: CreateTaskDto, @CurrentUser() user: any) {
     const adminId = user.userId;
-    return this.feedVideosService.createTask(createTaskDto, adminId);
+    return this.audioService.createTask(createTaskDto, adminId);
   }
 
   @Get("tasks")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get all video tasks" })
+  @ApiOperation({ summary: "Get all audio tasks" })
   @ApiQuery({
     name: "status",
     required: false,
@@ -123,7 +123,7 @@ export class FeedVideosController {
   })
   @ApiResponse({ status: 200, description: "Return all tasks" })
   getAllTasks(@Query("status") status?: string) {
-    return this.feedVideosService.getAllTasks(status);
+    return this.audioService.getAllTasks(status);
   }
 
   @Get("tasks/:id")
@@ -137,7 +137,7 @@ export class FeedVideosController {
     if (isNaN(taskId) || taskId <= 0) {
       throw new BadRequestException("Invalid task ID");
     }
-    return this.feedVideosService.getTaskById(taskId);
+    return this.audioService.getTaskById(taskId);
   }
 
   @Patch("tasks/:id")
@@ -148,31 +148,31 @@ export class FeedVideosController {
   @ApiResponse({ status: 404, description: "Task not found" })
   updateTask(
     @Param("id") id: string,
-    @Body() updateTaskDto: Partial<CreateTaskDto>
+    @Body() updateTaskDto: Partial<CreateTaskDto>,
   ) {
     const taskId = parseInt(id);
     if (isNaN(taskId) || taskId <= 0) {
       throw new BadRequestException("Invalid task ID");
     }
-    return this.feedVideosService.updateTask(taskId, updateTaskDto);
+    return this.audioService.updateTask(taskId, updateTaskDto);
   }
 
-  @Get("tasks/:taskId/videos")
+  @Get("tasks/:taskId/audios")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get all videos for a specific task" })
+  @ApiOperation({ summary: "Get all audios for a specific task" })
   @ApiParam({ name: "taskId", description: "Task ID" })
   @ApiQuery({ name: "page", required: false, description: "Page number" })
   @ApiQuery({ name: "limit", required: false, description: "Items per page" })
-  @ApiResponse({ status: 200, description: "Return videos for task" })
-  getTaskVideos(
+  @ApiResponse({ status: 200, description: "Return audios for task" })
+  getTaskAudios(
     @Param("taskId") taskId: string,
     @Query("page") page?: string,
-    @Query("limit") limit?: string
+    @Query("limit") limit?: string,
   ) {
-    return this.feedVideosService.getTaskVideos(
+    return this.audioService.getTaskAudios(
       +taskId,
       page ? +page : 1,
-      limit ? +limit : 20
+      limit ? +limit : 20,
     );
   }
 
@@ -195,16 +195,16 @@ export class FeedVideosController {
   @ApiResponse({ status: 400, description: "Invalid task ID" })
   async isTaskDoneByUser(
     @Param("taskId") taskId: string,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ) {
     const taskIdNum = parseInt(taskId);
     if (isNaN(taskIdNum) || taskIdNum <= 0) {
       throw new BadRequestException("Invalid task ID");
     }
 
-    const isDone = await this.feedVideosService.isTaskDoneByUser(
+    const isDone = await this.audioService.isTaskDoneByUser(
       taskIdNum,
-      user.userId
+      user.userId,
     );
 
     return {
@@ -214,29 +214,29 @@ export class FeedVideosController {
     };
   }
 
-  // ========== VIDEO MANAGEMENT (Student) ==========
+  // ========== AUDIO MANAGEMENT (Student) ==========
   @Post("upload")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
   @ApiOperation({
-    summary: "Upload a video file",
+    summary: "Upload an audio file",
     description:
-      "Uploads a video and queues it for compression. Returns job ID for tracking progress via SSE.",
+      "Uploads an audio file and queues it for processing. Returns job ID for tracking progress via SSE.",
   })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
-    description: "Video upload with file and metadata",
+    description: "Audio upload with file and metadata",
     schema: {
       type: "object",
       properties: {
         file: {
           type: "string",
           format: "binary",
-          description: "Video file",
+          description: "Audio file",
         },
         caption: {
           type: "string",
-          description: "Video caption",
-          example: "My speaking practice video",
+          description: "Audio caption",
+          example: "My speaking practice audio",
         },
         taskId: {
           type: "number",
@@ -249,16 +249,16 @@ export class FeedVideosController {
   })
   @ApiResponse({
     status: 201,
-    description: "Video uploaded and queued for compression",
+    description: "Audio uploaded and queued for processing",
     schema: {
       type: "object",
       properties: {
-        videoId: { type: "number", example: 123 },
+        audioId: { type: "number", example: 123 },
         jobId: { type: "string", example: "1" },
         status: { type: "string", example: "processing" },
         message: {
           type: "string",
-          example: "Video uploaded and queued for compression",
+          example: "Audio uploaded and queued for processing",
         },
       },
     },
@@ -271,26 +271,39 @@ export class FeedVideosController {
   @UseInterceptors(
     FileInterceptor("file", {
       storage: diskStorage({
-        destination: "./uploads/temp",
+        destination: "./uploads/audios",
         filename: (req, file, cb) => {
           const uniqueName = `${Date.now()}-${file.originalname.replace(/\s+/g, "-")}`;
           cb(null, uniqueName);
         },
       }),
       limits: {
-        fileSize: 1000 * 1024 * 1024, // 1000MB limit
+        fileSize: 100 * 1024 * 1024, // 100MB limit
       },
       fileFilter: (req, file, cb) => {
-        // Allow video files including .mov for iOS
+        // Allow audio files
         const allowedMimeTypes = [
-          "video/mp4",
-          "video/mpeg",
-          "video/quicktime", // .mov files
-          "video/x-msvideo",
-          "video/webm",
+          "audio/mpeg",
+          "audio/mp3",
+          "audio/wav",
+          "audio/wave",
+          "audio/x-wav",
+          "audio/m4a",
+          "audio/x-m4a",
+          "audio/mp4",
+          "audio/aac",
+          "audio/ogg",
+          "audio/webm",
         ];
         const ext = extname(file.originalname).toLowerCase();
-        const allowedExtensions = [".mp4", ".mpeg", ".mov", ".avi", ".webm"];
+        const allowedExtensions = [
+          ".mp3",
+          ".wav",
+          ".m4a",
+          ".aac",
+          ".ogg",
+          ".webm",
+        ];
 
         if (
           allowedMimeTypes.includes(file.mimetype) ||
@@ -300,53 +313,59 @@ export class FeedVideosController {
         } else {
           cb(
             new BadRequestException(
-              "Invalid file type. Only video files are allowed (mp4, mov, mpeg, avi, webm)."
+              "Invalid file type. Only audio files are allowed (mp3, wav, m4a, aac, ogg, webm).",
             ),
-            false
+            false,
           );
         }
       },
-    })
+    }),
   )
-  async uploadVideo(
+  async uploadAudio(
     @UploadedFile() file: Express.Multer.File,
     @Body("caption") caption: string,
     @Body("taskId") taskId: string,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ) {
     if (!file) {
-      throw new BadRequestException("Video file is required");
+      throw new BadRequestException("Audio file is required");
     }
 
     if (!caption) {
-      throw new BadRequestException("Video caption is required");
+      throw new BadRequestException("Audio caption is required");
     }
 
-    // Validate file type (video only)
+    // Validate file type (audio only)
     const allowedMimeTypes = [
-      "video/mp4",
-      "video/mpeg",
-      "video/quicktime",
-      "video/x-msvideo",
-      "video/webm",
+      "audio/mpeg",
+      "audio/mp3",
+      "audio/wav",
+      "audio/wave",
+      "audio/x-wav",
+      "audio/m4a",
+      "audio/x-m4a",
+      "audio/mp4",
+      "audio/aac",
+      "audio/ogg",
+      "audio/webm",
     ];
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        "Invalid file type. Only video files are allowed."
+        "Invalid file type. Only audio files are allowed.",
       );
     }
 
     const studentId = user.userId;
-    const createVideoDto: CreateFeedVideoDto = {
+    const createAudioDto: CreateAudioDto = {
       caption,
       taskId: taskId ? +taskId : undefined,
     };
-    return this.feedVideosService.uploadVideo(file, createVideoDto, studentId);
+    return this.audioService.uploadAudio(file, createAudioDto, studentId);
   }
 
   @Get("trending")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Get trending videos feed" })
+  @ApiOperation({ summary: "Get trending audios feed" })
   @ApiQuery({
     name: "page",
     required: false,
@@ -361,105 +380,105 @@ export class FeedVideosController {
   })
   @ApiResponse({
     status: 200,
-    description: "Return trending videos sorted by engagement",
+    description: "Return trending audios sorted by engagement",
   })
   getTrendingFeed(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
-    @CurrentUser() user?: any
+    @CurrentUser() user?: any,
   ) {
     const userId = user?.userId;
-    return this.feedVideosService.getTrendingFeed(
+    return this.audioService.getTrendingFeed(
       page ? +page : 1,
       limit ? +limit : 20,
-      userId
+      userId,
     );
   }
 
-  @Get("my-videos")
+  @Get("my-audios")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Get my uploaded videos" })
-  @ApiResponse({ status: 200, description: "Return user's videos" })
-  getMyVideos(@CurrentUser() user: any) {
+  @ApiOperation({ summary: "Get my uploaded audios" })
+  @ApiResponse({ status: 200, description: "Return user's audios" })
+  getMyAudios(@CurrentUser() user: any) {
     const studentId = user.userId;
-    return this.feedVideosService.getMyVideos(studentId);
+    return this.audioService.getMyAudios(studentId);
   }
 
   @Get(":id")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Get video by ID with full details" })
-  @ApiParam({ name: "id", description: "Video ID" })
-  @ApiResponse({ status: 200, description: "Return video details" })
-  @ApiResponse({ status: 404, description: "Video not found" })
-  getVideoById(@Param("id") id: string) {
-    const videoId = parseInt(id);
-    if (isNaN(videoId) || videoId <= 0) {
-      throw new BadRequestException("Invalid video ID");
+  @ApiOperation({ summary: "Get audio by ID with full details" })
+  @ApiParam({ name: "id", description: "Audio ID" })
+  @ApiResponse({ status: 200, description: "Return audio details" })
+  @ApiResponse({ status: 404, description: "Audio not found" })
+  getAudioById(@Param("id") id: string) {
+    const audioId = parseInt(id);
+    if (isNaN(audioId) || audioId <= 0) {
+      throw new BadRequestException("Invalid audio ID");
     }
-    return this.feedVideosService.getVideoById(videoId);
+    return this.audioService.getAudioById(audioId);
   }
 
   @Get(":id/stream")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Stream video file with range support" })
-  @ApiParam({ name: "id", description: "Video ID" })
+  @ApiOperation({ summary: "Stream audio file with range support" })
+  @ApiParam({ name: "id", description: "Audio ID" })
   @Header("Accept-Ranges", "bytes")
-  @Header("Content-Type", "video/mp4")
+  @Header("Content-Type", "audio/mpeg")
   @ApiResponse({
     status: 206,
-    description: "Partial content - video streaming with range support",
+    description: "Partial content - audio streaming with range support",
   })
-  @ApiResponse({ status: 200, description: "Full video content" })
-  @ApiResponse({ status: 404, description: "Video not found" })
-  async streamVideo(
+  @ApiResponse({ status: 200, description: "Full audio content" })
+  @ApiResponse({ status: 404, description: "Audio not found" })
+  async streamAudio(
     @Param("id") id: string,
     @Headers() headers,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
-    const videoId = parseInt(id);
-    if (isNaN(videoId) || videoId <= 0) {
-      throw new BadRequestException("Invalid video ID");
+    const audioId = parseInt(id);
+    if (isNaN(audioId) || audioId <= 0) {
+      throw new BadRequestException("Invalid audio ID");
     }
 
-    // Get video details from database
-    const video = await this.feedVideosService.getVideoById(videoId);
-    if (!video) {
-      throw new NotFoundException("Video not found");
+    // Get audio details from database
+    const audio = await this.audioService.getAudioById(audioId);
+    if (!audio) {
+      throw new NotFoundException("Audio not found");
     }
 
-    // Extract file path from video URL
-    let videoPath: string;
+    // Extract file path from audio URL
+    let audioPath: string;
     if (
-      video.videoUrl.startsWith("http://") ||
-      video.videoUrl.startsWith("https://")
+      audio.audioUrl.startsWith("http://") ||
+      audio.audioUrl.startsWith("https://")
     ) {
-      // Parse URL to get path (e.g., /uploads/videos/filename.mp4)
-      const url = new URL(video.videoUrl);
-      videoPath = `.${url.pathname}`; // Convert to relative path: ./uploads/videos/filename.mp4
-    } else if (video.videoUrl.startsWith("/")) {
+      // Parse URL to get path (e.g., /uploads/audios/filename.mp3)
+      const url = new URL(audio.audioUrl);
+      audioPath = `.${url.pathname}`; // Convert to relative path: ./uploads/audios/filename.mp3
+    } else if (audio.audioUrl.startsWith("/")) {
       // Absolute path from root
-      videoPath = `.${video.videoUrl}`;
+      audioPath = `.${audio.audioUrl}`;
     } else {
       // Already a relative path
-      videoPath = video.videoUrl;
+      audioPath = audio.audioUrl;
     }
 
     // Check if file exists
-    if (!existsSync(videoPath)) {
-      throw new NotFoundException("Video file not found on server");
+    if (!existsSync(audioPath)) {
+      throw new NotFoundException("Audio file not found on server");
     }
 
-    const { size } = statSync(videoPath);
-    const videoRange = headers.range;
+    const { size } = statSync(audioPath);
+    const audioRange = headers.range;
 
-    if (videoRange) {
+    if (audioRange) {
       // Handle range request (for seeking/progressive download)
-      const parts = videoRange.replace(/bytes=/, "").split("-");
+      const parts = audioRange.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : size - 1;
       const chunkSize = end - start + 1;
 
-      const readStreamfile = createReadStream(videoPath, {
+      const readStreamfile = createReadStream(audioPath, {
         start,
         end,
         highWaterMark: 60,
@@ -468,99 +487,99 @@ export class FeedVideosController {
       const head = {
         "Content-Range": `bytes ${start}-${end}/${size}`,
         "Content-Length": chunkSize,
-        "Content-Type": "video/mp4",
+        "Content-Type": "audio/mpeg",
       };
 
       res.writeHead(HttpStatus.PARTIAL_CONTENT, head); // 206
       readStreamfile.pipe(res);
     } else {
-      // Send full video
+      // Send full audio
       const head = {
         "Content-Length": size,
-        "Content-Type": "video/mp4",
+        "Content-Type": "audio/mpeg",
       };
 
       res.writeHead(HttpStatus.OK, head); // 200
-      createReadStream(videoPath).pipe(res);
+      createReadStream(audioPath).pipe(res);
     }
   }
 
   @Post(":id/view")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Increment video view count" })
-  @ApiParam({ name: "id", description: "Video ID" })
+  @ApiOperation({ summary: "Increment audio view count" })
+  @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({ status: 200, description: "View count incremented" })
   incrementViewCount(@Param("id") id: string) {
-    const videoId = parseInt(id);
-    if (isNaN(videoId) || videoId <= 0) {
-      throw new BadRequestException("Invalid video ID");
+    const audioId = parseInt(id);
+    if (isNaN(audioId) || audioId <= 0) {
+      throw new BadRequestException("Invalid audio ID");
     }
-    return this.feedVideosService.incrementViewCount(videoId);
+    return this.audioService.incrementViewCount(audioId);
   }
 
   @Delete(":id")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Delete my video" })
-  @ApiParam({ name: "id", description: "Video ID" })
-  @ApiResponse({ status: 200, description: "Video deleted successfully" })
-  @ApiResponse({ status: 403, description: "Can only delete your own videos" })
-  @ApiResponse({ status: 404, description: "Video not found" })
-  deleteVideo(@Param("id") id: string, @CurrentUser() user: any) {
-    const videoId = parseInt(id);
-    if (isNaN(videoId) || videoId <= 0) {
-      throw new BadRequestException("Invalid video ID");
+  @ApiOperation({ summary: "Delete my audio" })
+  @ApiParam({ name: "id", description: "Audio ID" })
+  @ApiResponse({ status: 200, description: "Audio deleted successfully" })
+  @ApiResponse({ status: 403, description: "Can only delete your own audios" })
+  @ApiResponse({ status: 404, description: "Audio not found" })
+  deleteAudio(@Param("id") id: string, @CurrentUser() user: any) {
+    const audioId = parseInt(id);
+    if (isNaN(audioId) || audioId <= 0) {
+      throw new BadRequestException("Invalid audio ID");
     }
     const studentId = user.userId;
-    return this.feedVideosService.deleteVideo(videoId, studentId);
+    return this.audioService.deleteAudio(audioId, studentId);
   }
 
   // ========== LIKES ==========
   @Post(":id/like")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Like or unlike a video" })
-  @ApiParam({ name: "id", description: "Video ID" })
+  @ApiOperation({ summary: "Like or unlike an audio" })
+  @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({
     status: 200,
-    description: "Video liked/unliked. Rewards: +1 coin, +2 points",
+    description: "Audio liked/unliked. Rewards: +1 coin, +2 points",
   })
-  @ApiResponse({ status: 404, description: "Video not found" })
+  @ApiResponse({ status: 404, description: "Audio not found" })
   toggleLike(@Param("id") id: string, @CurrentUser() user: any) {
-    const videoId = parseInt(id);
-    if (isNaN(videoId) || videoId <= 0) {
-      throw new BadRequestException("Invalid video ID");
+    const audioId = parseInt(id);
+    if (isNaN(audioId) || audioId <= 0) {
+      throw new BadRequestException("Invalid audio ID");
     }
     const userId = user.userId;
-    return this.feedVideosService.toggleLike(videoId, userId);
+    return this.audioService.toggleLike(audioId, userId);
   }
 
   // ========== COMMENTS ==========
   @Post("comments")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Add a comment to a video" })
+  @ApiOperation({ summary: "Add a comment to an audio" })
   @ApiResponse({
     status: 201,
     description: "Comment added. Rewards: +2 coins, +4 points",
   })
-  @ApiResponse({ status: 404, description: "Video not found" })
+  @ApiResponse({ status: 404, description: "Audio not found" })
   addComment(
     @Body() createCommentDto: CreateCommentDto,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ) {
     const userId = user.userId;
-    return this.feedVideosService.addComment(createCommentDto, userId);
+    return this.audioService.addComment(createCommentDto, userId);
   }
 
   @Get(":id/comments")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Get all comments for a video" })
-  @ApiParam({ name: "id", description: "Video ID" })
-  @ApiResponse({ status: 200, description: "Return video comments" })
-  getVideoComments(@Param("id") id: string) {
-    const videoId = parseInt(id);
-    if (isNaN(videoId) || videoId <= 0) {
-      throw new BadRequestException("Invalid video ID");
+  @ApiOperation({ summary: "Get all comments for an audio" })
+  @ApiParam({ name: "id", description: "Audio ID" })
+  @ApiResponse({ status: 200, description: "Return audio comments" })
+  getAudioComments(@Param("id") id: string) {
+    const audioId = parseInt(id);
+    if (isNaN(audioId) || audioId <= 0) {
+      throw new BadRequestException("Invalid audio ID");
     }
-    return this.feedVideosService.getVideoComments(videoId);
+    return this.audioService.getAudioComments(audioId);
   }
 
   @Delete("comments/:commentId")
@@ -575,89 +594,40 @@ export class FeedVideosController {
   @ApiResponse({ status: 404, description: "Comment not found" })
   deleteComment(
     @Param("commentId") commentId: string,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ) {
     const userId = user.userId;
-    return this.feedVideosService.deleteComment(+commentId, userId);
+    return this.audioService.deleteComment(+commentId, userId);
   }
 
   // ========== JUDGE ==========
   @Post("judge")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Judge a video with fluency and clarity scores" })
+  @ApiOperation({ summary: "Judge an audio with rating (0-5)" })
   @ApiResponse({
     status: 201,
     description: "Judge rating added. Rewards: +5 coins, +10 points",
   })
-  @ApiResponse({ status: 400, description: "Already judged this video" })
-  @ApiResponse({ status: 404, description: "Video not found" })
+  @ApiResponse({ status: 400, description: "Already judged this audio" })
+  @ApiResponse({ status: 404, description: "Audio not found" })
   addJudge(@Body() createJudgeDto: CreateJudgeDto, @CurrentUser() user: any) {
     const judgeUserId = user.userId;
-    return this.feedVideosService.addJudge(createJudgeDto, judgeUserId);
+    return this.audioService.addJudge(createJudgeDto, judgeUserId);
   }
 
   @Get(":id/judges")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Get all judge ratings for a video" })
-  @ApiParam({ name: "id", description: "Video ID" })
+  @ApiOperation({ summary: "Get all judge ratings for an audio" })
+  @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({
     status: 200,
-    description: "Return video judges sorted by helpfulness",
+    description: "Return audio judges sorted by helpfulness",
   })
-  getVideoJudges(@Param("id") id: string) {
-    const videoId = parseInt(id);
-    if (isNaN(videoId) || videoId <= 0) {
-      throw new BadRequestException("Invalid video ID");
+  getAudioJudges(@Param("id") id: string) {
+    const audioId = parseInt(id);
+    if (isNaN(audioId) || audioId <= 0) {
+      throw new BadRequestException("Invalid audio ID");
     }
-    return this.feedVideosService.getVideoJudges(videoId);
+    return this.audioService.getAudioJudges(audioId);
   }
-
-  @Post("judge/:judgeId/helpful")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Mark a judge rating as helpful" })
-  @ApiParam({ name: "judgeId", description: "Judge ID" })
-  @ApiResponse({ status: 200, description: "Judge marked as helpful" })
-  @ApiResponse({ status: 404, description: "Judge not found" })
-  markJudgeHelpful(@Param("judgeId") judgeId: string) {
-    return this.feedVideosService.markJudgeHelpful(+judgeId);
-  }
-
-  // ========== NOTIFICATIONS ==========
-  @Get("notifications/me")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Get my notifications" })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    description: "Number of notifications to retrieve",
-    example: 20,
-  })
-  @ApiResponse({ status: 200, description: "Return user notifications" })
-  getMyNotifications(@CurrentUser() user: any, @Query("limit") limit?: string) {
-    const userId = user.userId;
-    return this.feedVideosService.getMyNotifications(
-      userId,
-      limit ? +limit : 20
-    );
-  }
-
-  @Patch("notifications/:id/read")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: "Mark notification as read" })
-  @ApiParam({ name: "id", description: "Notification ID" })
-  @ApiResponse({ status: 200, description: "Notification marked as read" })
-  @ApiResponse({ status: 404, description: "Notification not found" })
-  markNotificationAsRead(@Param("id") id: string, @CurrentUser() user: any) {
-    const notificationId = parseInt(id);
-    if (isNaN(notificationId) || notificationId <= 0) {
-      throw new BadRequestException("Invalid notification ID");
-    }
-    const userId = user.userId;
-    return this.feedVideosService.markNotificationAsRead(
-      notificationId,
-      userId
-    );
-  }
-
-
 }

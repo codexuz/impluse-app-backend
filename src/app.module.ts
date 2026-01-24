@@ -81,12 +81,12 @@ import { TeacherProfileModule } from "./teacher-profile/teacher-profile.module.j
 import { SmsModule } from "./sms/sms.module.js";
 import { ArticlesModule } from "./articles/articles.module.js";
 import { CertificatesModule } from "./certificates/certificates.module.js";
-import { FeedVideosModule } from "./feed-videos/feed-videos.module.js";
+import { AudioModule } from "./audio/audio.module.js";
 import { MinioModule } from "./minio/minio.module.js";
 import { AwsStorageModule } from "./aws-storage/aws-storage.module.js";
 import { StudentParentsModule } from "./student-parents/student-parents.module.js";
-import { CompensateLessonsModule } from './compensate-lessons/compensate-lessons.module.js';
-import { BranchesModule } from './branches/branches.module.js';
+import { CompensateLessonsModule } from "./compensate-lessons/compensate-lessons.module.js";
+import { BranchesModule } from "./branches/branches.module.js";
 
 @Module({
   imports: [
@@ -169,7 +169,7 @@ import { BranchesModule } from './branches/branches.module.js';
     SmsModule,
     ArticlesModule,
     CertificatesModule,
-    FeedVideosModule,
+    AudioModule,
     MinioModule,
     AwsStorageModule,
     StudentParentsModule,
