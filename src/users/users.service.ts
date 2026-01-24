@@ -33,12 +33,12 @@ export class UsersService {
     @InjectModel(StudentProfile)
     private studentProfileModel: typeof StudentProfile,
     private configService: ConfigService,
-    private awsStorageService: AwsStorageService
+    private awsStorageService: AwsStorageService,
   ) {}
 
   private async checkExistingUser(
     username: string,
-    phone: string
+    phone: string,
   ): Promise<void> {
     const existingUser = await this.userModel.findOne({
       where: {
@@ -60,7 +60,7 @@ export class UsersService {
     // Check if user already exists
     await this.checkExistingUser(
       createTeacherDto.username,
-      createTeacherDto.phone
+      createTeacherDto.phone,
     );
 
     // Hash password
@@ -194,7 +194,7 @@ export class UsersService {
       const saltRounds = 10;
       updateUserDto.password = await bcrypt.hash(
         updateUserDto.password,
-        saltRounds
+        saltRounds,
       );
     }
 
@@ -244,14 +244,14 @@ export class UsersService {
       }
 
       // Delete student payments
-      if (models.StudentPayment) {
-        await models.StudentPayment.destroy({
-          where: {
-            [Op.or]: [{ student_id: id }, { manager_id: id }],
-          },
-          transaction,
-        });
-      }
+      // if (models.StudentPayment) {
+      //   await models.StudentPayment.destroy({
+      //     where: {
+      //       [Op.or]: [{ student_id: id }, { manager_id: id }],
+      //     },
+      //     transaction,
+      //   });
+      // }
 
       // Delete user notifications
       if (models.UserNotification) {
@@ -361,7 +361,7 @@ export class UsersService {
     const hasStudentRole = user.roles?.some((role) => role.name === "student");
     if (!hasStudentRole) {
       throw new NotFoundException(
-        `User with ID "${studentId}" is not a student`
+        `User with ID "${studentId}" is not a student`,
       );
     }
 
@@ -381,7 +381,7 @@ export class UsersService {
     const hasStudentRole = user.roles?.some((role) => role.name === "student");
     if (!hasStudentRole) {
       throw new NotFoundException(
-        `User with ID "${studentId}" is not a student`
+        `User with ID "${studentId}" is not a student`,
       );
     }
 
@@ -392,7 +392,7 @@ export class UsersService {
   async getAllTeachers(
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: User[];
     total: number;
@@ -449,7 +449,7 @@ export class UsersService {
   async getAllAdmins(
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: User[];
     total: number;
@@ -502,7 +502,7 @@ export class UsersService {
   async getAllStudents(
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: User[];
     total: number;
@@ -546,6 +546,11 @@ export class UsersService {
           as: "level",
           required: false,
         },
+        {
+          model: this.userModel.sequelize.models.StudentParent,
+          as: "student_parents",
+          required: false,
+        },
       ],
       limit,
       offset,
@@ -564,7 +569,7 @@ export class UsersService {
   async getArchivedStudents(
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: User[];
     total: number;
@@ -621,7 +626,7 @@ export class UsersService {
   async getAllSupportTeachers(
     page: number = 1,
     limit: number = 10,
-    query?: string
+    query?: string,
   ): Promise<{
     data: User[];
     total: number;
@@ -679,7 +684,7 @@ export class UsersService {
   async updatePassword(
     userId: string,
     currentPassword: string,
-    newPassword: string
+    newPassword: string,
   ): Promise<User> {
     // Find the user with password_hash included for verification
     const user = await this.userModel.findByPk(userId);
@@ -691,7 +696,7 @@ export class UsersService {
     // Verify current password
     const isPasswordValid = await bcrypt.compare(
       currentPassword,
-      user.password_hash
+      user.password_hash,
     );
     if (!isPasswordValid) {
       throw new UnauthorizedException("Current password is incorrect");
@@ -715,7 +720,7 @@ export class UsersService {
    */
   async uploadAvatarToMinio(
     userId: string,
-    file: Express.Multer.File
+    file: Express.Multer.File,
   ): Promise<User> {
     const user = await this.userModel.findByPk(userId);
 
@@ -734,14 +739,14 @@ export class UsersService {
       this.storageBucket,
       objectName,
       file.buffer,
-      file.mimetype
+      file.mimetype,
     );
 
     // Generate presigned URL from AWS S3 (valid for 7 days)
     const avatarUrl = await this.awsStorageService.getPresignedUrl(
       this.storageBucket,
       objectName,
-      7 * 24 * 60 * 60
+      7 * 24 * 60 * 60,
     );
 
     // Update the user's avatar_url
@@ -768,7 +773,7 @@ export class UsersService {
     const avatarUrl = await this.awsStorageService.getPresignedUrl(
       this.storageBucket,
       `avatars/${filename}`,
-      7 * 24 * 60 * 60
+      7 * 24 * 60 * 60,
     );
 
     // Update the user's avatar_url
