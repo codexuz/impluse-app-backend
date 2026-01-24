@@ -117,13 +117,36 @@ export class AudioController {
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all audio tasks" })
   @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number (default: 1)",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Items per page (default: 20)",
+    type: Number,
+  })
+  @ApiQuery({
     name: "status",
     required: false,
     description: "Filter by status",
   })
-  @ApiResponse({ status: 200, description: "Return all tasks" })
-  getAllTasks(@Query("status") status?: string) {
-    return this.audioService.getAllTasks(status);
+  @ApiQuery({
+    name: "difficulty",
+    required: false,
+    description: "Filter by difficulty (easy|medium|hard)",
+    enum: ["easy", "medium", "hard"],
+  })
+  @ApiResponse({ status: 200, description: "Return all tasks with pagination" })
+  getAllTasks(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("status") status?: string,
+    @Query("difficulty") difficulty?: string,
+  ) {
+    return this.audioService.getAllTasks(page, limit, status, difficulty);
   }
 
   @Get("tasks/:id")
