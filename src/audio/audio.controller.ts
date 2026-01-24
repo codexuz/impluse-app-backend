@@ -146,7 +146,9 @@ export class AudioController {
     @Query("status") status?: string,
     @Query("difficulty") difficulty?: string,
   ) {
-    return this.audioService.getAllTasks(page, limit, status, difficulty);
+    const pageNum = page ? +page : 1;
+    const limitNum = limit ? +limit : 20;
+    return this.audioService.getAllTasks(pageNum, limitNum, status, difficulty);
   }
 
   @Get("tasks/:id")
