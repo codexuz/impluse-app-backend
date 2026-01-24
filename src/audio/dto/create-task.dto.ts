@@ -4,7 +4,7 @@ import {
   IsString,
   IsInt,
   IsArray,
-  IsDateString,
+  IsEnum,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
@@ -25,10 +25,14 @@ export class CreateTaskDto {
   @IsString()
   instructions?: string;
 
-  @ApiPropertyOptional({ description: "Task due date", example: "2025-12-31" })
-  @IsOptional()
-  @IsDateString()
-  dueDate?: string;
+  @ApiProperty({
+    description: "Task difficulty level",
+    example: "easy",
+    enum: ["easy", "medium", "hard"],
+  })
+  @IsNotEmpty()
+  @IsEnum(["easy", "medium", "hard"])
+  difficulty: "easy" | "medium" | "hard";
 
   @ApiPropertyOptional({
     description: "Maximum video duration in seconds",

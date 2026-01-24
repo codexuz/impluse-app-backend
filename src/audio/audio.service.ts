@@ -57,31 +57,45 @@ export class AudioService {
     const task = await this.audioTaskModel.create({
       ...createTaskDto,
       createdBy: adminId,
-      dueDate: createTaskDto.dueDate
-        ? new Date(createTaskDto.dueDate)
-        : undefined,
     });
     return task;
   }
 
-  async getAllTasks(status?: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
-
-    const where: any = {
-      dueDate: {
-        [Op.gte]: today, // Greater than or equal to today (active tasks only)
-      },
-    };
+  async getAllTasks(
+    page: number = 1,
+    limit: number = 20,
+    status?: string,
+    difficulty?: string,
+  ) {
+    const offset = (page - 1) * limit;
+    const where: any = {};
 
     if (status) {
       where.status = status;
     }
 
-    return await this.audioTaskModel.findAll({
+    if (difficulty) {
+      where.difficulty = difficulty;
+    }
+
+    const tasks = await this.audioTaskModel.findAll({
       where,
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
     });
+
+    const total = await this.audioTaskModel.count({ where });
+
+    return {
+      tasks,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getTaskById(taskId: number) {
@@ -107,11 +121,7 @@ export class AudioService {
 
   async updateTask(taskId: number, updateData: Partial<CreateTaskDto>) {
     const task = await this.getTaskById(taskId);
-    const processedData = {
-      ...updateData,
-      dueDate: updateData.dueDate ? new Date(updateData.dueDate) : undefined,
-    };
-    await task.update(processedData);
+    await task.update(updateData);
     return task;
   }
 

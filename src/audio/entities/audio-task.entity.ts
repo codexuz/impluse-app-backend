@@ -40,11 +40,12 @@ export class AudioTask extends Model<AudioTask> {
   })
   status: "active" | "inactive" | "archived";
 
-  @AllowNull(true)
+  @AllowNull(false)
+  @Default("easy")
   @Column({
-    type: DataType.DATE,
+    type: DataType.ENUM("easy", "medium", "hard"),
   })
-  dueDate: Date;
+  difficulty: "easy" | "medium" | "hard";
 
   @AllowNull(true)
   @Column({
