@@ -20,6 +20,18 @@ export class Lead extends Model {
     type: DataType.TEXT,
     allowNull: true,
   })
+  phone_number!: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  additional_number!: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
   question: string;
 
   @Column({
@@ -81,7 +93,7 @@ export class Lead extends Model {
   })
   branch_id: string;
 
-   @Column({
+  @Column({
     type: DataType.BOOLEAN,
     allowNull: true,
   })
@@ -89,7 +101,7 @@ export class Lead extends Model {
 
   @Column({
     type: DataType.TEXT,
-    allowNull: false,
+    allowNull: true,
   })
   notes: string;
 }
