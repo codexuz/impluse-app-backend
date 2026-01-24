@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -16,10 +17,13 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from "@nestjs/swagger";
 import { StudentParentsService } from "./student-parents.service.js";
 import { CreateStudentParentDto } from "./dto/create-student-parent.dto.js";
 import { UpdateStudentParentDto } from "./dto/update-student-parent.dto.js";
+import { QueryStudentParentDto } from "./dto/query-student-parent.dto.js";
+import { StudentParentListResponseDto } from "./dto/student-parent-list-response.dto.js";
 import { StudentParent } from "./entities/student_parents.entity.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 
@@ -45,15 +49,47 @@ export class StudentParentsController {
   }
 
   @Get()
-  @ApiOperation({ summary: "Retrieve all student parents" })
+  @ApiOperation({
+    summary: "Retrieve all student parents with pagination and filters",
+  })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number (starts from 1)",
+    example: 1,
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Number of items per page",
+    example: 10,
+  })
+  @ApiQuery({
+    name: "parent_name",
+    required: false,
+    description: "Search by parent full name",
+    example: "John Doe",
+  })
+  @ApiQuery({
+    name: "parent_phone",
+    required: false,
+    description: "Search by parent phone number",
+    example: "+998901234567",
+  })
+  @ApiQuery({
+    name: "student_name",
+    required: false,
+    description: "Search by student full name",
+    example: "Jane Doe",
+  })
   @ApiResponse({
     status: 200,
-    description: "List of all student parents",
-    type: [StudentParent],
+    description: "Paginated list of student parents",
+    type: StudentParentListResponseDto,
   })
   @ApiResponse({ status: 401, description: "Unauthorized" })
-  findAll() {
-    return this.studentParentsService.findAll();
+  findAll(@Query() queryDto: QueryStudentParentDto) {
+    return this.studentParentsService.findAll(queryDto);
   }
 
   @Get("student/:student_id")
@@ -109,7 +145,7 @@ export class StudentParentsController {
   @ApiResponse({ status: 404, description: "Student parent not found" })
   update(
     @Param("id") id: string,
-    @Body() updateStudentParentDto: UpdateStudentParentDto
+    @Body() updateStudentParentDto: UpdateStudentParentDto,
   ) {
     return this.studentParentsService.update(id, updateStudentParentDto);
   }

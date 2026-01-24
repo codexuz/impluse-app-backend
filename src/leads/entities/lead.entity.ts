@@ -26,6 +26,12 @@ export class Lead extends Model {
     type: DataType.TEXT,
     allowNull: true,
   })
+  parent_name: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
   additional_number!: string;
 
   @Column({

@@ -47,6 +47,15 @@ export class CreateLeadDto {
   parent_phone_number: string;
 
   @ApiProperty({
+    description: "Parent name",
+    example: "Jane Doe",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  parent_name: string;
+
+  @ApiProperty({
     description: "Additional phone number",
     example: "+998901234568",
     required: false,

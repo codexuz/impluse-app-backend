@@ -5,7 +5,10 @@ import {
   DataType,
   CreatedAt,
   UpdatedAt,
+  ForeignKey,
+  BelongsTo,
 } from "sequelize-typescript";
+import { User } from "../../users/entities/user.entity.js";
 
 @Table({
   tableName: "student_parents",
@@ -19,8 +22,12 @@ export class StudentParent extends Model {
   })
   id!: string;
 
+  @ForeignKey(() => User)
   @Column(DataType.UUID)
   student_id!: string;
+
+  @BelongsTo(() => User, "student_id")
+  student?: User;
 
   @Column({
     type: DataType.TEXT,

@@ -21,6 +21,13 @@ export class LeadResponseDto {
   parent_phone_number: string;
 
   @ApiProperty({
+    description: "Parent name",
+    example: "Jane Doe",
+    required: false,
+  })
+  parent_name: string;
+
+  @ApiProperty({
     description: "Additional phone number",
     example: "+998901234568",
     required: false,
