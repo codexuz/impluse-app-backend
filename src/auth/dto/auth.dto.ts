@@ -68,6 +68,30 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   level_id: string;
+
+  @ApiProperty({
+    description: "Parent's full name (optional)",
+    example: "John Doe",
+    required: false,
+  })
+  @IsString()
+  full_name?: string;
+
+  @ApiProperty({
+    description: "Parent's phone number (optional)",
+    example: "+1 (555) 123-4567",
+    required: false,
+  })
+  @IsString()
+  phone_number?: string;
+
+  @ApiProperty({
+    description: "Parent's additional phone number (optional)",
+    example: "+1 (555) 987-6543",
+    required: false,
+  })
+  @IsString()
+  additional_number?: string;
 }
 
 export class JwtPayload {

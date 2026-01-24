@@ -1,16 +1,22 @@
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/sequelize';
-import { LoginDto, RegisterDto, JwtPayload } from './dto/auth.dto.js';
-import { RefreshTokenDto } from './dto/refresh-token.dto.js';
-import { AuthResponse, SessionInfo } from './interfaces/auth.interface.js';
-import { v4 as uuidv4 } from 'uuid';
-import { Op } from 'sequelize';
-import { User } from '../users/entities/user.entity.js';
-import { Role } from '../users/entities/role.model.js';
-import { UserSession } from '../users/entities/user-session.model.js';
-import { StudentWallet } from '../student-wallet/entities/student-wallet.entity.js';
-import * as bcrypt from 'bcrypt';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { InjectModel } from "@nestjs/sequelize";
+import { LoginDto, RegisterDto, JwtPayload } from "./dto/auth.dto.js";
+import { RefreshTokenDto } from "./dto/refresh-token.dto.js";
+import { AuthResponse, SessionInfo } from "./interfaces/auth.interface.js";
+import { v4 as uuidv4 } from "uuid";
+import { Op } from "sequelize";
+import { User } from "../users/entities/user.entity.js";
+import { Role } from "../users/entities/role.model.js";
+import { UserSession } from "../users/entities/user-session.model.js";
+import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
+import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class AuthService {
@@ -21,22 +27,24 @@ export class AuthService {
     private userSessionModel: typeof UserSession,
     @InjectModel(StudentWallet)
     private studentWalletModel: typeof StudentWallet,
-    private jwtService: JwtService
+    @InjectModel(StudentParent)
+    private studentParentModel: typeof StudentParent,
+    private jwtService: JwtService,
   ) {}
 
   async validateUser(username: string, pass: string): Promise<User | null> {
     const user = await this.userModel.findOne({
       where: {
         username,
-        is_active: true
+        is_active: true,
       },
       include: [
         {
           model: Role,
-          as: 'roles',
-          include: ['permissions']
-        }
-      ]
+          as: "roles",
+          include: ["permissions"],
+        },
+      ],
     });
     if (!user) {
       return null;
@@ -49,7 +57,7 @@ export class AuthService {
       }
       return user;
     } catch (error) {
-      console.error('Password comparison error:', error);
+      console.error("Password comparison error:", error);
       return null;
     }
   }
@@ -58,64 +66,76 @@ export class AuthService {
     loginDto: LoginDto,
     userAgent?: string,
     ipAddress?: string,
-    requiredRole?: 'student' | 'teacher' | 'admin'
+    requiredRole?: "student" | "teacher" | "admin",
   ): Promise<AuthResponse> {
-    console.log('Login attempt for username:', loginDto.username);
-    console.log('Required role:', requiredRole);
-    
+    console.log("Login attempt for username:", loginDto.username);
+    console.log("Required role:", requiredRole);
+
     const user = await this.userModel.findOne({
       where: {
         username: loginDto.username,
-        is_active: true
+        is_active: true,
       },
       include: [
         {
           model: Role,
-          as: 'roles',
-          include: ['permissions']
-        }
-      ]
+          as: "roles",
+          include: ["permissions"],
+        },
+      ],
     });
 
     if (!user) {
-      console.log('User not found or inactive:', loginDto.username);
-      throw new UnauthorizedException('Invalid username or password');
+      console.log("User not found or inactive:", loginDto.username);
+      throw new UnauthorizedException("Invalid username or password");
     }
 
-    console.log('User found:', user.username);
-    console.log('User roles:', user.roles?.map(role => role.name));
+    console.log("User found:", user.username);
+    console.log(
+      "User roles:",
+      user.roles?.map((role) => role.name),
+    );
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password_hash,
+    );
     if (!isPasswordValid) {
-      console.log('Password validation failed for user:', loginDto.username);
-      throw new UnauthorizedException('Invalid username or password');
+      console.log("Password validation failed for user:", loginDto.username);
+      throw new UnauthorizedException("Invalid username or password");
     }
-    
-    console.log('Password validation successful for user:', loginDto.username);
+
+    console.log("Password validation successful for user:", loginDto.username);
 
     // Check if user has the required role
     if (requiredRole) {
-      const userRoles = user.roles.map(role => role.name.toLowerCase());
-      console.log('User roles (lowercase):', userRoles);
-      console.log('Required role (lowercase):', requiredRole.toLowerCase());
-      
+      const userRoles = user.roles.map((role) => role.name.toLowerCase());
+      console.log("User roles (lowercase):", userRoles);
+      console.log("Required role (lowercase):", requiredRole.toLowerCase());
+
       if (!userRoles.includes(requiredRole.toLowerCase())) {
-        console.log(`Access denied. User ${loginDto.username} is not a ${requiredRole}`);
-        throw new UnauthorizedException(`Access denied. User is not a ${requiredRole}`);
+        console.log(
+          `Access denied. User ${loginDto.username} is not a ${requiredRole}`,
+        );
+        throw new UnauthorizedException(
+          `Access denied. User is not a ${requiredRole}`,
+        );
       }
     }
 
-    console.log('Role validation successful for user:', loginDto.username);
+    console.log("Role validation successful for user:", loginDto.username);
 
     // Ensure maximum 2 sessions per user
     await this.limitUserSessions(user.user_id, 2);
-    
+
     // Create new session
     const sessionId = uuidv4();
-    const roles = user.roles.map(role => role.name);
+    const roles = user.roles.map((role) => role.name);
     const permissions = user.roles.reduce((acc, role) => {
-      const rolePermissions = role.permissions.map(p => `${p.resource}:${p.action}`);
+      const rolePermissions = role.permissions.map(
+        (p) => `${p.resource}:${p.action}`,
+      );
       return [...acc, ...rolePermissions];
     }, []);
 
@@ -125,11 +145,11 @@ export class AuthService {
       phone: user.phone,
       sessionId,
       roles,
-      permissions
+      permissions,
     };
 
     // Generate access token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '30d' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: "30d" });
     const decodedToken = this.jwtService.decode(accessToken) as any;
     const expiresAt = new Date(decodedToken.exp * 1000);
 
@@ -149,13 +169,13 @@ export class AuthService {
       isActive: true,
       lastAccessedAt: new Date(),
       refreshToken,
-      refreshTokenExpiresAt: refreshExpiresAt
+      refreshTokenExpiresAt: refreshExpiresAt,
     });
 
     // Update user's current session
     await user.update({
       currentSessionId: sessionId,
-      last_login: new Date()
+      last_login: new Date(),
     });
 
     return {
@@ -167,11 +187,11 @@ export class AuthService {
         phone: user.phone,
         first_name: user.first_name,
         last_name: user.last_name,
-        roles
+        roles,
       },
       sessionId,
       expiresAt,
-      refreshExpiresAt
+      refreshExpiresAt,
     };
   }
 
@@ -180,32 +200,35 @@ export class AuthService {
       where: {
         [Op.or]: [
           { phone: registerDto.phone },
-          { username: registerDto.username }
-        ]
-      }
+          { username: registerDto.username },
+        ],
+      },
     });
 
     if (existingUser) {
-      throw new ConflictException('User already exists');
+      throw new ConflictException("User already exists");
     }
 
     try {
       // Hash the password
       const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(registerDto.password, saltRounds);
+      const hashedPassword = await bcrypt.hash(
+        registerDto.password,
+        saltRounds,
+      );
 
       // Create user with hashed password
       const { password, ...userDataWithoutPassword } = registerDto;
       const user = await this.userModel.create({
         ...userDataWithoutPassword,
         password_hash: hashedPassword,
-        is_active: true
+        is_active: true,
       });
 
       // Assign student role
-      const studentRole = await Role.findOne({ where: { name: 'student' } });
+      const studentRole = await Role.findOne({ where: { name: "student" } });
       if (studentRole) {
-        await user.$add('roles', studentRole);
+        await user.$add("roles", studentRole);
       }
 
       // Create student profile
@@ -213,31 +236,45 @@ export class AuthService {
         user_id: user.user_id,
         points: 0,
         coins: 0,
-        streaks: 0
+        streaks: 0,
       });
 
       // Create student wallet with initial balance of 0
       await this.studentWalletModel.create({
         student_id: user.user_id,
-        amount: 0
+        amount: 0,
       });
+
+      // Create parent record if parent data is provided
+      if (
+        registerDto.full_name ||
+        registerDto.phone_number ||
+        registerDto.additional_number
+      ) {
+        await this.studentParentModel.create({
+          student_id: user.user_id,
+          full_name: registerDto.full_name || "",
+          phone_number: registerDto.phone_number || "",
+          additional_number: registerDto.additional_number || "",
+        });
+      }
 
       // Return user with roles and profile included
       return this.userModel.findByPk(user.user_id, {
         include: [
           {
             model: Role,
-            as: 'roles',
-            through: { attributes: [] }
+            as: "roles",
+            through: { attributes: [] },
           },
           {
             model: this.userModel.sequelize.models.StudentProfile,
-            as: 'student_profile'
-          }
-        ]
+            as: "student_profile",
+          },
+        ],
       });
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error("Error creating user:", error);
       throw error;
     }
   }
@@ -245,13 +282,13 @@ export class AuthService {
   async logout(sessionId: string): Promise<void> {
     await this.userSessionModel.update(
       { isActive: false },
-      { where: { id: sessionId } }
+      { where: { id: sessionId } },
     );
 
     // Clear user's current session if it matches
     await this.userModel.update(
       { currentSessionId: null },
-      { where: { currentSessionId: sessionId } }
+      { where: { currentSessionId: sessionId } },
     );
   }
 
@@ -261,8 +298,8 @@ export class AuthService {
         id: sessionId,
         userId,
         isActive: true,
-        expiresAt: { [Op.gt]: new Date() }
-      }
+        expiresAt: { [Op.gt]: new Date() },
+      },
     });
 
     if (!session) {
@@ -274,27 +311,33 @@ export class AuthService {
     return true;
   }
 
-  async limitUserSessions(userId: string, maxSessions: number = 2): Promise<void> {
+  async limitUserSessions(
+    userId: string,
+    maxSessions: number = 2,
+  ): Promise<void> {
     // Get all active sessions for the user, ordered by last accessed (oldest first)
     const activeSessions = await this.userSessionModel.findAll({
-      where: { 
-        userId, 
+      where: {
+        userId,
         isActive: true,
-        expiresAt: { [Op.gt]: new Date() }
+        expiresAt: { [Op.gt]: new Date() },
       },
-      order: [['lastAccessedAt', 'ASC']]
+      order: [["lastAccessedAt", "ASC"]],
     });
 
     // If we have reached the limit, deactivate the oldest sessions
     if (activeSessions.length >= maxSessions) {
-      const sessionsToDeactivate = activeSessions.slice(0, activeSessions.length - maxSessions + 1);
-      
+      const sessionsToDeactivate = activeSessions.slice(
+        0,
+        activeSessions.length - maxSessions + 1,
+      );
+
       for (const session of sessionsToDeactivate) {
         await session.update({ isActive: false });
       }
 
       // Clear current session if any of the deactivated sessions was the current one
-      const deactivatedSessionIds = sessionsToDeactivate.map(s => s.id);
+      const deactivatedSessionIds = sessionsToDeactivate.map((s) => s.id);
       const user = await this.userModel.findByPk(userId);
       if (user && deactivatedSessionIds.includes(user.currentSessionId)) {
         await user.update({ currentSessionId: null });
@@ -305,46 +348,53 @@ export class AuthService {
   async terminateUserSessions(userId: string): Promise<void> {
     await this.userSessionModel.update(
       { isActive: false },
-      { where: { userId, isActive: true } }
+      { where: { userId, isActive: true } },
     );
 
     await this.userModel.update(
       { currentSessionId: null },
-      { where: { user_id: userId } }
+      { where: { user_id: userId } },
     );
   }
 
   async getUserSessions(userId: string): Promise<SessionInfo[]> {
     const sessions = await this.userSessionModel.findAll({
       where: { userId, isActive: true },
-      attributes: ['id', 'userId', 'userAgent', 'ipAddress', 'expiresAt', 'isActive'],
-      order: [['createdAt', 'DESC']]
+      attributes: [
+        "id",
+        "userId",
+        "userAgent",
+        "ipAddress",
+        "expiresAt",
+        "isActive",
+      ],
+      order: [["createdAt", "DESC"]],
     });
 
-    return sessions.map(session => ({
+    return sessions.map((session) => ({
       sessionId: session.id,
       userId: session.userId,
       userAgent: session.userAgent,
       ipAddress: session.ipAddress,
       expiresAt: session.expiresAt,
-      isActive: session.isActive
+      isActive: session.isActive,
     }));
   }
 
   async getActiveSessionCount(userId: string): Promise<number> {
     return await this.userSessionModel.count({
-      where: { 
-        userId, 
+      where: {
+        userId,
         isActive: true,
-        expiresAt: { [Op.gt]: new Date() }
-      }
+        expiresAt: { [Op.gt]: new Date() },
+      },
     });
   }
 
   async cleanupExpiredSessions(): Promise<void> {
     await this.userSessionModel.update(
       { isActive: false },
-      { where: { expiresAt: { [Op.lt]: new Date() } } }
+      { where: { expiresAt: { [Op.lt]: new Date() } } },
     );
   }
 
@@ -353,32 +403,33 @@ export class AuthService {
     const timestamp = new Date().getTime().toString();
     const randomStr = uuidv4();
     const baseString = `${timestamp}.${randomStr}`;
-    
+
     // Hash the string using bcrypt (will be used as refresh token)
     // We're using sync version here as this is only called during auth operations
     const salt = bcrypt.genSaltSync(10);
     const hash = bcrypt.hashSync(baseString, salt);
-    
+
     // Return a URL-safe token without the bcrypt format markers
-    return hash.replace(/[/+=]/g, '')
-      .substring(7, 64); // Remove bcrypt format markers and limit length
+    return hash.replace(/[/+=]/g, "").substring(7, 64); // Remove bcrypt format markers and limit length
   }
 
-  async refreshAccessToken(refreshTokenDto: RefreshTokenDto): Promise<AuthResponse> {
+  async refreshAccessToken(
+    refreshTokenDto: RefreshTokenDto,
+  ): Promise<AuthResponse> {
     const { refreshToken, sessionId } = refreshTokenDto;
-    
+
     // Find the session with the given refresh token and session ID
     const session = await this.userSessionModel.findOne({
       where: {
         id: sessionId,
         refreshToken,
         isActive: true,
-        refreshTokenExpiresAt: { [Op.gt]: new Date() }
-      }
+        refreshTokenExpiresAt: { [Op.gt]: new Date() },
+      },
     });
 
     if (!session) {
-      throw new UnauthorizedException('Invalid refresh token or session');
+      throw new UnauthorizedException("Invalid refresh token or session");
     }
 
     // Get the user associated with this session
@@ -386,20 +437,22 @@ export class AuthService {
       include: [
         {
           model: Role,
-          as: 'roles',
-          include: ['permissions']
-        }
-      ]
+          as: "roles",
+          include: ["permissions"],
+        },
+      ],
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     // Generate new tokens
-    const roles = user.roles.map(role => role.name);
+    const roles = user.roles.map((role) => role.name);
     const permissions = user.roles.reduce((acc, role) => {
-      const rolePermissions = role.permissions.map(p => `${p.resource}:${p.action}`);
+      const rolePermissions = role.permissions.map(
+        (p) => `${p.resource}:${p.action}`,
+      );
       return [...acc, ...rolePermissions];
     }, []);
 
@@ -409,11 +462,11 @@ export class AuthService {
       phone: user.phone,
       sessionId: session.id,
       roles,
-      permissions
+      permissions,
     };
 
     // Generate new access token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: "1h" });
     const decodedToken = this.jwtService.decode(accessToken) as any;
     const expiresAt = new Date(decodedToken.exp * 1000);
 
@@ -428,7 +481,7 @@ export class AuthService {
       refreshToken: newRefreshToken,
       expiresAt,
       refreshTokenExpiresAt: refreshExpiresAt,
-      lastAccessedAt: new Date()
+      lastAccessedAt: new Date(),
     });
 
     return {
@@ -440,11 +493,11 @@ export class AuthService {
         phone: user.phone,
         first_name: user.first_name,
         last_name: user.last_name,
-        roles
+        roles,
       },
       sessionId: session.id,
       expiresAt,
-      refreshExpiresAt
+      refreshExpiresAt,
     };
   }
 }
