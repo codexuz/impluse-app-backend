@@ -47,14 +47,14 @@ export class StudentParentsService {
       // Filter by parent details
       if (queryDto?.parent_name) {
         where.full_name = {
-          [Op.iLike]: `%${queryDto.parent_name}%`,
+          [Op.like]: `%${queryDto.parent_name}%`,
         };
       }
 
       if (queryDto?.parent_phone) {
         where[Op.or] = [
-          { phone_number: { [Op.iLike]: `%${queryDto.parent_phone}%` } },
-          { additional_number: { [Op.iLike]: `%${queryDto.parent_phone}%` } },
+          { phone_number: { [Op.like]: `%${queryDto.parent_phone}%` } },
+          { additional_number: { [Op.like]: `%${queryDto.parent_phone}%` } },
         ];
       }
 
@@ -63,12 +63,12 @@ export class StudentParentsService {
         studentWhere[Op.or] = [
           {
             [Op.and]: [
-              { first_name: { [Op.iLike]: `%${queryDto.student_name}%` } },
+              { first_name: { [Op.like]: `%${queryDto.student_name}%` } },
             ],
           },
           {
             [Op.and]: [
-              { last_name: { [Op.iLike]: `%${queryDto.student_name}%` } },
+              { last_name: { [Op.like]: `%${queryDto.student_name}%` } },
             ],
           },
         ];
