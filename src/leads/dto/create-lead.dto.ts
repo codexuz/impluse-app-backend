@@ -44,7 +44,7 @@ export class CreateLeadDto {
   })
   @IsString()
   @IsOptional()
-  phone_number: string;
+  parent_phone_number: string;
 
   @ApiProperty({
     description: "Additional phone number",

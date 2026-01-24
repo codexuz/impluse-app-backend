@@ -18,7 +18,7 @@ export class LeadResponseDto {
     example: "+998901234567",
     required: false,
   })
-  phone_number: string;
+  parent_phone_number: string;
 
   @ApiProperty({
     description: "Additional phone number",

@@ -26,6 +26,7 @@ import { HomeworkSubmission } from "../homework_submissions/entities/homework_su
 import { HomeworkSection } from "../homework_submissions/entities/homework_sections.entity.js";
 import { GroupAssignedUnit } from "../group_assigned_units/entities/group_assigned_unit.entity.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
+import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
 import { Notifications } from "../notifications/entities/notification.entity.js";
 import { LessonProgress } from "./../lesson_progress/entities/lesson_progress.entity.js";
 import { Attendance } from "../attendance/entities/attendance.entity.js";
@@ -124,6 +125,7 @@ export const Models = [
   HomeworkSection,
   GroupAssignedUnit,
   StudentProfile,
+  StudentParent,
   Notifications,
   LessonProgress,
   Writing,
@@ -713,6 +715,13 @@ export function initializeAssociations() {
   //StudentProfile Associations
   User.hasOne(StudentProfile, { foreignKey: "user_id", as: "student_profile" });
   StudentProfile.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+  //StudentParent Associations
+  User.hasMany(StudentParent, {
+    foreignKey: "student_id",
+    as: "student_parents",
+  });
+  StudentParent.belongsTo(User, { foreignKey: "student_id", as: "student" });
 
   // StudentPayment Associations
   User.hasMany(StudentPayment, { foreignKey: "student_id", as: "payments" });

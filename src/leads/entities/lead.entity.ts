@@ -20,7 +20,7 @@ export class Lead extends Model {
     type: DataType.TEXT,
     allowNull: true,
   })
-  phone_number!: string;
+  parent_phone_number!: string;
 
   @Column({
     type: DataType.TEXT,
