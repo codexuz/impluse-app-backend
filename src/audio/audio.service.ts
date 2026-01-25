@@ -265,6 +265,13 @@ export class AudioService {
       }
     }
 
+    // Delete related records
+    await Promise.all([
+      this.audioCommentModel.destroy({ where: { audioId } }),
+      this.audioJudgeModel.destroy({ where: { audioId } }),
+      this.audioLikeModel.destroy({ where: { audioId } }),
+    ]);
+
     await audio.destroy();
     return { message: "Audio deleted successfully" };
   }
