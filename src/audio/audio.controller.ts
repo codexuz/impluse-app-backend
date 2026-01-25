@@ -425,10 +425,33 @@ export class AudioController {
   @Get("my-audios")
   @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
   @ApiOperation({ summary: "Get my uploaded audios" })
-  @ApiResponse({ status: 200, description: "Return user's audios" })
-  getMyAudios(@CurrentUser() user: any) {
+  @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number",
+    example: 1,
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Items per page",
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Return user's audios with pagination",
+  })
+  getMyAudios(
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @CurrentUser() user?: any,
+  ) {
     const studentId = user.userId;
-    return this.audioService.getMyAudios(studentId);
+    return this.audioService.getMyAudios(
+      studentId,
+      page ? +page : 1,
+      limit ? +limit : 20,
+    );
   }
 
   @Get(":id")

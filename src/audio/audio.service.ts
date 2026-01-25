@@ -229,12 +229,91 @@ export class AudioService {
     return audio;
   }
 
-  async getMyAudios(studentId: string) {
-    return await this.audioModel.findAll({
-      where: { studentId },
-      include: [{ model: AudioTask, as: "task" }],
-      order: [["createdAt", "DESC"]],
+  async getMyAudios(studentId: string, page: number = 1, limit: number = 20) {
+    const offset = (page - 1) * limit;
+
+    const audios = await this.audioModel.findAll({
+      where: { studentId, status: "completed" },
+      include: [
+        { model: AudioTask, as: "task" },
+        {
+          model: User,
+          as: "student",
+          attributes: [
+            "user_id",
+            "first_name",
+            "last_name",
+            "username",
+            "avatar_url",
+            "level_id",
+          ],
+          include: [
+            {
+              model: Course,
+              as: "level",
+              attributes: ["id", "title", "level"],
+            },
+          ],
+        },
+      ],
+      order: [
+        ["trendingScore", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      limit,
+      offset,
     });
+
+    // Process audios with fresh URLs in batches to handle large datasets
+    const audiosWithFreshUrls = await this.processAudiosWithFreshUrls(audios);
+
+    // Check if user has liked and judged each audio
+    const audioIds = audiosWithFreshUrls.map((v) => v.id);
+
+    // Fetch user likes and judges in parallel
+    const [userLikes, userJudges] = await Promise.all([
+      this.audioLikeModel.findAll({
+        where: {
+          audioId: audioIds,
+          userId: studentId,
+        },
+        attributes: ["audioId"],
+      }),
+      this.audioJudgeModel.findAll({
+        where: {
+          audioId: audioIds,
+          judgeUserId: studentId,
+        },
+        attributes: ["audioId"],
+      }),
+    ]);
+
+    const likedAudioIds = new Set(userLikes.map((like) => like.audioId));
+    const judgedAudioIds = new Set(userJudges.map((judge) => judge.audioId));
+
+    const audiosWithStatus = audiosWithFreshUrls.map((audio) => {
+      const audioJson =
+        typeof audio.toJSON === "function" ? audio.toJSON() : audio;
+      return {
+        ...audioJson,
+        isLiked: likedAudioIds.has(audio.id),
+        isJudged: judgedAudioIds.has(audio.id),
+      };
+    });
+
+    const total = await this.audioModel.count({
+      where: { studentId, status: "completed" },
+    });
+
+    return {
+      audios: audiosWithStatus,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async deleteAudio(audioId: number, studentId: string) {
