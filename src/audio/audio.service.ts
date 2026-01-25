@@ -307,19 +307,31 @@ export class AudioService {
     // Process audios with fresh URLs in batches to handle large datasets
     const audiosWithFreshUrls = await this.processAudiosWithFreshUrls(audios);
 
-    // Check if user has liked each audio
+    // Check if user has liked and judged each audio
     let audiosWithLikeStatus: any[] = audiosWithFreshUrls;
     if (userId) {
       const audioIds = audiosWithFreshUrls.map((v) => v.id);
-      const userLikes = await this.audioLikeModel.findAll({
-        where: {
-          audioId: audioIds,
-          userId: userId,
-        },
-        attributes: ["audioId"],
-      });
+
+      // Fetch user likes and judges in parallel
+      const [userLikes, userJudges] = await Promise.all([
+        this.audioLikeModel.findAll({
+          where: {
+            audioId: audioIds,
+            userId: userId,
+          },
+          attributes: ["audioId"],
+        }),
+        this.audioJudgeModel.findAll({
+          where: {
+            audioId: audioIds,
+            judgeUserId: userId,
+          },
+          attributes: ["audioId"],
+        }),
+      ]);
 
       const likedAudioIds = new Set(userLikes.map((like) => like.audioId));
+      const judgedAudioIds = new Set(userJudges.map((judge) => judge.audioId));
 
       audiosWithLikeStatus = audiosWithFreshUrls.map((audio) => {
         const audioJson =
@@ -327,6 +339,7 @@ export class AudioService {
         return {
           ...audioJson,
           isLiked: likedAudioIds.has(audio.id),
+          isJudged: judgedAudioIds.has(audio.id),
         };
       });
     } else {
@@ -336,6 +349,7 @@ export class AudioService {
         return {
           ...audioJson,
           isLiked: false,
+          isJudged: false,
         };
       });
     }
@@ -619,34 +633,50 @@ export class AudioService {
       where: { audioId: createJudgeDto.audioId, judgeUserId },
     });
 
+    let judge;
+    let isNewJudge = false;
+
     if (existingJudge) {
-      throw new BadRequestException("You have already judged this audio");
+      // Update existing judge rating
+      await existingJudge.update({
+        rating: createJudgeDto.rating,
+      });
+      judge = existingJudge;
+    } else {
+      // Create new judge
+      judge = await this.audioJudgeModel.create({
+        ...createJudgeDto,
+        judgeUserId,
+      });
+      isNewJudge = true;
+
+      // Only increment judge count for new judges
+      await audio.increment("judgeCount");
+
+      // Only reward for new judges, not updates
+      await this.rewardUser(
+        judgeUserId,
+        REWARDS.JUDGE.coins,
+        REWARDS.JUDGE.points,
+      );
     }
 
-    const judge = await this.audioJudgeModel.create({
-      ...createJudgeDto,
-      judgeUserId,
-    });
-
-    await audio.increment("judgeCount");
+    // Always update average rating and trending score
     await this.updateAudioAverageRating(createJudgeDto.audioId);
     await this.updateTrendingScore(createJudgeDto.audioId);
 
-    // Reward the judge
-    await this.rewardUser(
-      judgeUserId,
-      REWARDS.JUDGE.coins,
-      REWARDS.JUDGE.points,
-    );
-
-    // Notify audio owner
+    // Notify audio owner (for both new and updated ratings)
     if (audio.studentId !== judgeUserId) {
+      const notificationMessage = isNewJudge
+        ? `Someone judged your audio! Rating: ${createJudgeDto.rating}/5`
+        : `Someone updated their rating on your audio! New rating: ${createJudgeDto.rating}/5`;
+
       await this.sendNotification({
         userId: audio.studentId,
         fromUserId: judgeUserId,
         audioId: createJudgeDto.audioId,
         type: NotificationType.JUDGE,
-        message: `Someone judged your audio! Rating: ${createJudgeDto.rating}/5`,
+        message: notificationMessage,
       });
     }
 
