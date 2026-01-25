@@ -150,9 +150,10 @@ export class AudioService {
       );
 
       // Create audio record with completed status
-      const { audioUrl: _, ...audioData } = createAudioDto;
       const audio = await this.audioModel.create({
-        ...audioData,
+        taskId: createAudioDto.taskId,
+        caption: createAudioDto.caption,
+        durationSeconds: createAudioDto.durationSeconds,
         audioUrl: presignedUrl,
         studentId,
         status: "completed",

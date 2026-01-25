@@ -350,6 +350,7 @@ export class AudioController {
     @UploadedFile() file: Express.Multer.File,
     @Body("caption") caption: string,
     @Body("taskId") taskId: string,
+    @Body("durationSeconds") durationSeconds: string,
     @CurrentUser() user: any,
   ) {
     if (!file) {
@@ -384,6 +385,7 @@ export class AudioController {
     const createAudioDto: CreateAudioDto = {
       caption,
       taskId: taskId ? +taskId : undefined,
+      durationSeconds: durationSeconds ? +durationSeconds : undefined,
     };
     return this.audioService.uploadAudio(file, createAudioDto, studentId);
   }
