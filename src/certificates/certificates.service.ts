@@ -16,7 +16,7 @@ export class CertificatesService {
   private readonly templatesDir = path.join(
     process.cwd(),
     "public",
-    "templates"
+    "templates",
   );
 
   constructor(
@@ -24,7 +24,7 @@ export class CertificatesService {
     private certificateModel: typeof Certificate,
     @InjectModel(User)
     private userModel: typeof User,
-    private awsStorageService: AwsStorageService
+    private awsStorageService: AwsStorageService,
   ) {
     // Register Poppins font
     try {
@@ -32,7 +32,7 @@ export class CertificatesService {
         process.cwd(),
         "public",
         "fonts",
-        "Poppins-Bold.ttf"
+        "Poppins-Bold.ttf",
       );
 
       if (fs.existsSync(fontPath)) {
@@ -76,7 +76,7 @@ export class CertificatesService {
     firstName: string,
     lastName: string,
     certificatedId: number,
-    courseName: string
+    courseName: string,
   ): Promise<string> {
     try {
       // Extract level and get appropriate template
@@ -115,14 +115,14 @@ export class CertificatesService {
         this.bucketName,
         fileName,
         buffer,
-        "image/png"
+        "image/png",
       );
 
       // Generate presigned URL (valid for 7 days)
       const url = await this.awsStorageService.getPresignedUrl(
         this.bucketName,
         fileName,
-        7 * 24 * 60 * 60
+        7 * 24 * 60 * 60,
       );
 
       return url;
@@ -132,11 +132,11 @@ export class CertificatesService {
   }
 
   async create(
-    createCertificateDto: CreateCertificateDto
+    createCertificateDto: CreateCertificateDto,
   ): Promise<Certificate> {
     // Find student
     const student = await this.userModel.findByPk(
-      createCertificateDto.student_id
+      createCertificateDto.student_id,
     );
     if (!student) {
       throw new NotFoundException("Student not found");
@@ -161,7 +161,7 @@ export class CertificatesService {
       student.first_name,
       student.last_name,
       certificatedId,
-      createCertificateDto.course_name
+      createCertificateDto.course_name,
     );
 
     // Create certificate record
@@ -216,7 +216,7 @@ export class CertificatesService {
 
   async update(
     id: string,
-    updateCertificateDto: UpdateCertificateDto
+    updateCertificateDto: UpdateCertificateDto,
   ): Promise<Certificate> {
     const certificate = await this.findOne(id);
     await certificate.update(updateCertificateDto);

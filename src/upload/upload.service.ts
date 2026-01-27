@@ -23,7 +23,7 @@ export class UploadService {
     @InjectModel(Upload)
     private uploadModel: typeof Upload,
     private configService: ConfigService,
-    private awsStorageService: AwsStorageService
+    private awsStorageService: AwsStorageService,
   ) {
     // Using existing 'speakup' bucket - no need to create
   }
@@ -39,16 +39,21 @@ export class UploadService {
 
   async getFileUrl(objectName: string): Promise<string> {
     try {
+      // Ensure objectName includes uploads/ prefix
+      const fullObjectName = objectName.startsWith("uploads/")
+        ? objectName
+        : `uploads/${objectName}`;
+
       // Generate a presigned URL valid for 7 days
       const url = await this.awsStorageService.getPresignedUrl(
         this.storageBucket,
-        objectName,
-        7 * 24 * 60 * 60
+        fullObjectName,
+        7 * 24 * 60 * 60,
       );
       return url;
     } catch (error) {
       throw new BadRequestException(
-        `Failed to generate file URL: ${error.message}`
+        `Failed to generate file URL: ${error.message}`,
       );
     }
   }
@@ -57,7 +62,7 @@ export class UploadService {
   async create(createUploadDto: CreateUploadDto): Promise<UploadResponseDto> {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const extension = this.getExtensionFromMimeType(createUploadDto.mime_type);
-    const filename = `file-${uniqueSuffix}${extension}`;
+    const filename = `uploads/file-${uniqueSuffix}${extension}`;
 
     const upload = await this.uploadModel.create({
       ...createUploadDto,
@@ -120,7 +125,7 @@ export class UploadService {
 
   async update(
     id: string,
-    updateUploadDto: UpdateUploadDto
+    updateUploadDto: UpdateUploadDto,
   ): Promise<UploadResponseDto> {
     const upload = await this.uploadModel.findOne({
       where: {
@@ -154,9 +159,14 @@ export class UploadService {
 
     // Delete the actual file from AWS S3
     try {
+      // Ensure filename includes uploads/ prefix
+      const fullObjectName = upload.filename.startsWith("uploads/")
+        ? upload.filename
+        : `uploads/${upload.filename}`;
+
       await this.awsStorageService.deleteFile(
         this.storageBucket,
-        upload.filename
+        fullObjectName,
       );
     } catch (error) {
       console.error("Error deleting file from AWS S3:", error);
@@ -167,7 +177,10 @@ export class UploadService {
   // File system operations
   async getAllFiles(): Promise<FileListItemDto[]> {
     try {
-      const files = await this.awsStorageService.listFiles(this.storageBucket);
+      const files = await this.awsStorageService.listFiles(
+        this.storageBucket,
+        "uploads/",
+      );
       const fileList: FileListItemDto[] = [];
 
       for (const file of files) {
@@ -188,7 +201,15 @@ export class UploadService {
 
   async deleteFile(filename: string) {
     try {
-      await this.awsStorageService.deleteFile(this.storageBucket, filename);
+      // Ensure filename includes uploads/ prefix
+      const fullObjectName = filename.startsWith("uploads/")
+        ? filename
+        : `uploads/${filename}`;
+
+      await this.awsStorageService.deleteFile(
+        this.storageBucket,
+        fullObjectName,
+      );
       return { success: true, message: "File deleted successfully" };
     } catch (error) {
       throw new NotFoundException("File not found");
@@ -203,7 +224,7 @@ export class UploadService {
    */
   async saveBase64File(
     base64Data: string,
-    customFilename?: string
+    customFilename?: string,
   ): Promise<any> {
     try {
       // Decode the base64 data
@@ -218,15 +239,15 @@ export class UploadService {
         }
       }
 
-      // Generate a random filename
+      // Generate a random filename with uploads/ prefix
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const filename = `file-${uniqueSuffix}${extension}`;
+      const filename = `uploads/file-${uniqueSuffix}${extension}`;
 
       // Upload to AWS S3
       await this.awsStorageService.uploadBuffer(
         this.storageBucket,
         filename,
-        buffer
+        buffer,
       );
 
       // Generate presigned URL
@@ -242,7 +263,7 @@ export class UploadService {
         throw error;
       }
       throw new BadRequestException(
-        `Failed to save base64 file: ${error.message}`
+        `Failed to save base64 file: ${error.message}`,
       );
     }
   }
