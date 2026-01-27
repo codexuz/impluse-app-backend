@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getMessaging, Message, MulticastMessage, Messaging } from 'firebase-admin/messaging';
 import { cert } from 'firebase-admin/app';
-import * as path from 'path';
+
 @Injectable()
 export class FirebaseServiceService {
     private readonly messaging: Messaging;
@@ -10,17 +10,27 @@ export class FirebaseServiceService {
 
     constructor() {
         if (!getApps().length) {
-            // Use the service account JSON file
-            const serviceAccountPath = path.join(process.cwd(), 'impulse-lc-firebase-adminsdk-fbsvc-4f28538148.json');
-            
+            // Use environment variables for Firebase credentials
             try {
                 initializeApp({
-                    credential: cert(serviceAccountPath),
+                    credential: cert({
+                        type: process.env.FIREBASE_TYPE,
+                        projectId: process.env.FIREBASE_PROJECT_ID,
+                        privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,
+                        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                        clientId: process.env.FIREBASE_CLIENT_ID,
+                        authUri: process.env.FIREBASE_AUTH_URI,
+                        tokenUri: process.env.FIREBASE_TOKEN_URI,
+                        authProviderX509CertUrl: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+                        clientC509CertUrl: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+                        universeDomain: process.env.FIREBASE_UNIVERSE_DOMAIN,
+                    } as any),
                 });
             } catch (error) {
                 console.error('Failed to initialize Firebase:', error);
                 throw new Error(
-                    'Failed to initialize Firebase. Please ensure the service account file exists and is valid.'
+                    'Failed to initialize Firebase. Please ensure the environment variables are set correctly.'
                 );
             }
         }
