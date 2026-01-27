@@ -45,7 +45,7 @@ export class TeacherTransactionController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({
     summary:
       "Get all teacher transactions with pagination, filters, and student data",
