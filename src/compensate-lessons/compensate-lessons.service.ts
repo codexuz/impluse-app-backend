@@ -247,7 +247,10 @@ export class CompensateLessonsService {
     currentPage: number;
   }> {
     const offset = (page - 1) * limit;
-    const where: any = {};
+    const where: any = {
+      paid_at: null, // Only return unpaid entries
+      isPaid: false,
+    };
 
     if (filters?.teacher_id) where.teacher_id = filters.teacher_id;
     if (filters?.compensate_lesson_id)
