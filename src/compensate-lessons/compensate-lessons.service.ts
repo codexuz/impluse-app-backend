@@ -322,6 +322,8 @@ export class CompensateLessonsService {
     const offset = (page - 1) * limit;
     const where: any = {
       teacher_id: teacherId,
+      isPaid: false,
+      paid_at: null,
     };
 
     if (startDate && endDate) {
@@ -346,8 +348,13 @@ export class CompensateLessonsService {
         order: [["created_at", "DESC"]],
       });
 
-    // Calculate total amount
-    const totalAmount = rows.reduce(
+    // Calculate total amount from all unpaid entries (not just paginated rows)
+    const allUnpaidEntries = await this.compensateTeacherWalletModel.findAll({
+      where,
+      attributes: ["amount"],
+    });
+
+    const totalAmount = allUnpaidEntries.reduce(
       (sum, entry) => sum + (Number(entry.amount) || 0),
       0,
     );
