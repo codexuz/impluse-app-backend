@@ -12,6 +12,7 @@ import {
   Query,
   ParseIntPipe,
   ParseBoolPipe,
+  DefaultValuePipe,
 } from "@nestjs/common";
 import { CoursesService } from "./courses.service.js";
 import { CreateCourseDto } from "./dto/create-course.dto.js";
@@ -36,8 +37,8 @@ export class CoursesController {
   @Get()
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   async findAll(
-    @Query("page", new ParseIntPipe({ optional: true })) page: number = 1,
-    @Query("limit", new ParseIntPipe({ optional: true })) limit: number = 10,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query("status", new ParseBoolPipe({ optional: true })) status?: boolean,
     @Query("search") search?: string,
     @Query("level") level?: string,
