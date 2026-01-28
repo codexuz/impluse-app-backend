@@ -36,15 +36,15 @@ export class CoursesController {
   @Get()
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   async findAll(
-    @Query("page", new ParseIntPipe({ optional: true })) page?: number,
-    @Query("limit", new ParseIntPipe({ optional: true })) limit?: number,
+    @Query("page", new ParseIntPipe({ optional: true })) page: number = 1,
+    @Query("limit", new ParseIntPipe({ optional: true })) limit: number = 10,
     @Query("status", new ParseBoolPipe({ optional: true })) status?: boolean,
     @Query("search") search?: string,
     @Query("level") level?: string,
   ) {
     return await this.coursesService.findAll(
-      page || 1,
-      limit || 10,
+      page,
+      limit,
       status,
       search,
       level,
