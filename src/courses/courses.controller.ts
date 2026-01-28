@@ -40,12 +40,14 @@ export class CoursesController {
     @Query("limit", new ParseIntPipe({ optional: true })) limit?: number,
     @Query("status", new ParseBoolPipe({ optional: true })) status?: boolean,
     @Query("search") search?: string,
+    @Query("level") level?: string,
   ) {
     return await this.coursesService.findAll(
       page || 1,
       limit || 10,
       status,
       search,
+      level,
     );
   }
 

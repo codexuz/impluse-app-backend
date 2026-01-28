@@ -31,6 +31,7 @@ export class CoursesService {
     limit: number = 10,
     status?: boolean,
     search?: string,
+    level?: string,
   ): Promise<{
     data: Course[];
     total: number;
@@ -44,6 +45,11 @@ export class CoursesService {
     // Filter by status if provided, otherwise show all
     if (status !== undefined) {
       where.isActive = status;
+    }
+
+    // Filter by level if provided
+    if (level) {
+      where.level = level;
     }
 
     // Search functionality
