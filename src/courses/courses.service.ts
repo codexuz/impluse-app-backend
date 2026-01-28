@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { Op } from "sequelize";
 import { Unit } from "../units/entities/units.entity.js";
 import { Course } from "./entities/course.entity.js";
 import { CreateCourseDto } from "./dto/create-course.dto.js";
@@ -25,20 +26,55 @@ export class CoursesService {
     });
   }
 
-  async findAll(): Promise<Course[]> {
-    return await this.courseModel.findAll({
-      where: {
-        isActive: true,
-      },
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    status?: boolean,
+    search?: string,
+  ): Promise<{
+    data: Course[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const where: any = {};
+
+    // Filter by status if provided, otherwise show all
+    if (status !== undefined) {
+      where.isActive = status;
+    }
+
+    // Search functionality
+    if (search) {
+      where.title = {
+        [Op.like]: `%${search}%`,
+      };
+    }
+
+    const { count, rows } = await this.courseModel.findAndCountAll({
+      where,
+      limit,
+      offset,
       include: [
         {
           model: Unit,
           as: "units",
           separate: true,
           order: [["order", "ASC"]],
+          include: ["lessons"],
         },
       ],
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async getCourseProgress(student_id: string) {

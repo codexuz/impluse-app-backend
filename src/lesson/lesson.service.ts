@@ -1,15 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Lesson } from './entities/lesson.entity.js';
-import { Exercise } from '../exercise/entities/exercise.entity.js';
-import { LessonContent } from '../lesson-content/entities/lesson-content.entity.js';
-import { Speaking } from '../speaking/entities/speaking.entity.js';
-import { CreateLessonDto } from './dto/create-lesson.dto.js';
-import { UpdateLessonDto } from './dto/update-lesson.dto.js';
-import { LessonVocabularySet } from '../lesson_vocabulary_sets/entities/lesson_vocabulary_set.entity.js';
-import { VocabularySet } from '../vocabulary_sets/entities/vocabulary_set.entity.js';
-import { VocabularyItem } from '../vocabulary_items/entities/vocabulary_item.entity.js';
-import { GroupAssignedLesson } from '../group_assigned_lessons/entities/group_assigned_lesson.entity.js';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectModel } from "@nestjs/sequelize";
+import { Lesson } from "./entities/lesson.entity.js";
+import { Exercise } from "../exercise/entities/exercise.entity.js";
+import { LessonContent } from "../lesson-content/entities/lesson-content.entity.js";
+import { Speaking } from "../speaking/entities/speaking.entity.js";
+import { CreateLessonDto } from "./dto/create-lesson.dto.js";
+import { UpdateLessonDto } from "./dto/update-lesson.dto.js";
+import { LessonVocabularySet } from "../lesson_vocabulary_sets/entities/lesson_vocabulary_set.entity.js";
+import { VocabularySet } from "../vocabulary_sets/entities/vocabulary_set.entity.js";
+import { VocabularyItem } from "../vocabulary_items/entities/vocabulary_item.entity.js";
+import { GroupAssignedLesson } from "../group_assigned_lessons/entities/group_assigned_lesson.entity.js";
 
 @Injectable()
 export class LessonService {
@@ -23,7 +23,7 @@ export class LessonService {
   async create(createLessonDto: CreateLessonDto): Promise<Lesson> {
     const lesson = await this.lessonModel.create({
       ...createLessonDto,
-      isActive: true
+      isActive: true,
     });
 
     return lesson;
@@ -34,7 +34,7 @@ export class LessonService {
       where: {
         isActive: true,
       },
-      order: [['createdAt', 'ASC']]
+      order: [["createdAt", "ASC"]],
     });
   }
 
@@ -53,15 +53,16 @@ export class LessonService {
     return lesson;
   }
 
-
   async findMyLessons(student_id: string): Promise<GroupAssignedLesson[]> {
     return await this.groupAssignedLessonModel.findAll({
       where: { student_id },
-      include: [{
-        model: this.lessonModel,
-        as: 'lesson',
-        where: { isActive: true }
-      }]
+      include: [
+        {
+          model: this.lessonModel,
+          as: "lesson",
+          where: { isActive: true },
+        },
+      ],
     });
   }
 
@@ -74,9 +75,9 @@ export class LessonService {
       include: [
         {
           model: LessonContent,
-          as: 'lessonContents',
-        }
-      ]
+          as: "lessonContents",
+        },
+      ],
     });
 
     if (!lesson) {
@@ -95,21 +96,21 @@ export class LessonService {
       include: [
         {
           model: LessonVocabularySet,
-          as: 'lessonVocabularySets',
+          as: "lessonVocabularySets",
           include: [
             {
               model: VocabularySet,
-              as: 'vocabularySet',
+              as: "vocabularySet",
               include: [
                 {
                   model: VocabularyItem,
-                  as: 'vocabularyItems'
-                }
-              ]
-            }
-          ]
-        }
-      ]
+                  as: "vocabularyItems",
+                },
+              ],
+            },
+          ],
+        },
+      ],
     });
 
     if (!lesson) {
@@ -118,7 +119,6 @@ export class LessonService {
 
     return lesson;
   }
-
 
   async findOneWithExercises(id: string): Promise<Lesson> {
     const lesson = await this.lessonModel.findOne({
@@ -129,8 +129,8 @@ export class LessonService {
       include: [
         {
           model: Exercise,
-          as: 'exercises',
-        }
+          as: "exercises",
+        },
       ],
     });
 
@@ -154,24 +154,24 @@ export class LessonService {
       include: [
         {
           model: LessonContent,
-          as: 'theory',
+          as: "theory",
         },
         {
           model: Exercise,
-          as: 'exercises',
+          as: "exercises",
           attributes: ["id", "exercise_type", "lessonId"],
         },
         {
           model: Speaking,
-          as: 'speaking',
+          as: "speaking",
           attributes: ["id", "lessonId"],
         },
         {
           model: LessonVocabularySet,
-          as: 'lesson_vocabulary',
-          attributes: ["id", "lesson_id"]
-        }
-      ]
+          as: "lesson_vocabulary",
+          attributes: ["id", "lesson_id"],
+        },
+      ],
     });
 
     if (!lesson) {
@@ -182,22 +182,15 @@ export class LessonService {
   }
 
   async update(id: string, updateLessonDto: UpdateLessonDto): Promise<Lesson> {
-    const [affectedCount, [updatedLesson]] = await this.lessonModel.update(updateLessonDto, {
-      where: { id, isActive: true },
-      returning: true
-    });
-
-    if (affectedCount === 0) {
-      throw new NotFoundException(`Lesson with ID ${id} not found`);
-    }
-
-    return updatedLesson;
+    const lesson = await this.findOne(id);
+    await lesson.update(updateLessonDto);
+    return lesson;
   }
 
   async remove(id: string): Promise<void> {
     const affected = await this.lessonModel.update(
       { isActive: false },
-      { where: { id, isActive: true } }
+      { where: { id, isActive: true } },
     );
 
     if (affected[0] === 0) {
@@ -205,24 +198,27 @@ export class LessonService {
     }
   }
 
-  async findByUnit(unitId: string, throwIfEmpty: boolean = false): Promise<Lesson[]> {
+  async findByUnit(
+    unitId: string,
+    throwIfEmpty: boolean = false,
+  ): Promise<Lesson[]> {
     if (!unitId) {
-      throw new Error('Unit ID is required');
+      throw new Error("Unit ID is required");
     }
 
     try {
       const lessons = await this.lessonModel.findAll({
-        where: { 
+        where: {
           moduleId: unitId,
-          isActive: true 
+          isActive: true,
         },
-        order: [['order', 'ASC']],
+        order: [["order", "ASC"]],
         include: [
           {
             model: LessonContent,
-            as: 'lessonContents',
-          }
-        ]
+            as: "lessonContents",
+          },
+        ],
       });
 
       if (!lessons.length && throwIfEmpty) {
@@ -234,31 +230,36 @@ export class LessonService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error(`Failed to fetch lessons for unit ${unitId}: ${error.message}`);
+      throw new Error(
+        `Failed to fetch lessons for unit ${unitId}: ${error.message}`,
+      );
     }
   }
 
-  async findByModuleId(moduleId: string, includeContent: boolean = false): Promise<Lesson[]> {
+  async findByModuleId(
+    moduleId: string,
+    includeContent: boolean = false,
+  ): Promise<Lesson[]> {
     if (!moduleId) {
-      throw new Error('Module ID is required');
+      throw new Error("Module ID is required");
     }
 
     const includeOptions = [];
-    
+
     if (includeContent) {
       includeOptions.push({
         model: LessonContent,
-        as: 'lessonContents',
+        as: "lessonContents",
       });
     }
 
     const lessons = await this.lessonModel.findAll({
-      where: { 
+      where: {
         moduleId,
-        isActive: true 
+        isActive: true,
       },
-      order: [['order', 'ASC']],
-      include: includeOptions
+      order: [["order", "ASC"]],
+      include: includeOptions,
     });
 
     return lessons;
@@ -266,21 +267,21 @@ export class LessonService {
 
   async findByModuleIdWithExercises(moduleId: string): Promise<Lesson[]> {
     if (!moduleId) {
-      throw new Error('Module ID is required');
+      throw new Error("Module ID is required");
     }
 
     const lessons = await this.lessonModel.findAll({
-      where: { 
+      where: {
         moduleId,
-        isActive: true 
+        isActive: true,
       },
-      order: [['order', 'ASC']],
+      order: [["order", "ASC"]],
       include: [
         {
           model: Exercise,
-          as: 'exercises',
-        }
-      ]
+          as: "exercises",
+        },
+      ],
     });
 
     return lessons;
@@ -288,33 +289,33 @@ export class LessonService {
 
   async findByModuleIdWithVocabulary(moduleId: string): Promise<Lesson[]> {
     if (!moduleId) {
-      throw new Error('Module ID is required');
+      throw new Error("Module ID is required");
     }
 
     const lessons = await this.lessonModel.findAll({
-      where: { 
+      where: {
         moduleId,
-        isActive: true 
+        isActive: true,
       },
-      order: [['order', 'ASC']],
+      order: [["order", "ASC"]],
       include: [
         {
           model: LessonVocabularySet,
-          as: 'lessonVocabularySets',
+          as: "lessonVocabularySets",
           include: [
             {
               model: VocabularySet,
-              as: 'vocabularySet',
+              as: "vocabularySet",
               include: [
                 {
                   model: VocabularyItem,
-                  as: 'vocabularyItems'
-                }
-              ]
-            }
-          ]
-        }
-      ]
+                  as: "vocabularyItems",
+                },
+              ],
+            },
+          ],
+        },
+      ],
     });
 
     return lessons;
