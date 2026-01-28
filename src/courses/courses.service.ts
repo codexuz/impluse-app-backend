@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { InjectModel } from '@nestjs/sequelize';
+import { InjectModel } from "@nestjs/sequelize";
 import { Unit } from "../units/entities/units.entity.js";
 import { Course } from "./entities/course.entity.js";
 import { CreateCourseDto } from "./dto/create-course.dto.js";
@@ -33,9 +33,9 @@ export class CoursesService {
       include: [
         {
           model: Unit,
-          as: 'units',
+          as: "units",
           separate: true,
-          order: [['order', 'ASC']],
+          order: [["order", "ASC"]],
         },
       ],
     });
@@ -44,10 +44,11 @@ export class CoursesService {
   async getCourseProgress(student_id: string) {
     // First find the user to get their level_id (course_id)
     const user = await this.userModel.findByPk(student_id);
-    
+
     if (!user) throw new NotFoundException("User not found");
-    if (!user.level_id) throw new NotFoundException("User is not assigned to any course");
-    
+    if (!user.level_id)
+      throw new NotFoundException("User is not assigned to any course");
+
     // Get the course using the user's level_id
     const course = (await this.courseModel.findByPk(user.level_id, {
       include: [
@@ -82,7 +83,6 @@ export class CoursesService {
     };
   }
 
-
   async findOne(id: string): Promise<Course> {
     const course = await this.courseModel.findOne({
       where: {
@@ -94,7 +94,8 @@ export class CoursesService {
           model: Unit,
           as: "units",
           separate: true,
-          order: [['order', 'ASC']],
+          order: [["order", "ASC"]],
+          include: ["lessons"],
         },
       ],
     });
