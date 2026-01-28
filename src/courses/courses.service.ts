@@ -27,19 +27,18 @@ export class CoursesService {
   }
 
   async findAll(
-    page: number = 1,
-    limit: number = 10,
+    page?: number,
+    limit?: number,
     status?: boolean,
     search?: string,
     level?: string,
   ): Promise<{
     data: Course[];
     total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
   }> {
-    const offset = (page - 1) * limit;
     const where: any = {};
 
     // Filter by status if provided, otherwise show all
@@ -59,10 +58,8 @@ export class CoursesService {
       };
     }
 
-    const { count, rows } = await this.courseModel.findAndCountAll({
+    const options: any = {
       where,
-      limit,
-      offset,
       include: [
         {
           model: Unit,
@@ -72,15 +69,30 @@ export class CoursesService {
           include: ["lessons"],
         },
       ],
-    });
+    };
 
-    return {
+    // Only apply pagination if both page and limit are provided
+    if (page !== undefined && limit !== undefined) {
+      const offset = (page - 1) * limit;
+      options.limit = limit;
+      options.offset = offset;
+    }
+
+    const { count, rows } = await this.courseModel.findAndCountAll(options);
+
+    const result: any = {
       data: rows,
       total: count,
-      page,
-      limit,
-      totalPages: Math.ceil(count / limit),
     };
+
+    // Include pagination details only if pagination was applied
+    if (page !== undefined && limit !== undefined) {
+      result.page = page;
+      result.limit = limit;
+      result.totalPages = Math.ceil(count / limit);
+    }
+
+    return result;
   }
 
   async getCourseProgress(student_id: string) {

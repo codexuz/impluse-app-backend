@@ -37,8 +37,8 @@ export class CoursesController {
   @Get()
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   async findAll(
-    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query("page", new ParseIntPipe({ optional: true })) page?: number,
+    @Query("limit", new ParseIntPipe({ optional: true })) limit?: number,
     @Query("status", new ParseBoolPipe({ optional: true })) status?: boolean,
     @Query("search") search?: string,
     @Query("level") level?: string,
