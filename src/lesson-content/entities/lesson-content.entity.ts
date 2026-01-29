@@ -26,10 +26,10 @@ export class LessonContent extends Model {
   title: string;
 
   @Column({
-    type: DataType.JSON,
+    type: DataType.TEXT,
     allowNull: true,
   })
-  content: any;
+  content: string;
 
   @Column({
     type: DataType.TEXT,
