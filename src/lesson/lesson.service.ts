@@ -48,10 +48,14 @@ export class LessonService {
         {
           model: LessonContent,
           as: "theory",
+          where: { isActive: true },
+          required: false,
         },
         {
           model: Exercise,
           as: "exercises",
+          where: { isActive: true },
+          required: false,
           order: [["createdAt", "ASC"]],
         },
         {
@@ -92,6 +96,8 @@ export class LessonService {
         {
           model: LessonContent,
           as: "lessonContents",
+          where: { isActive: true },
+          required: false,
         },
       ],
     });
@@ -146,6 +152,8 @@ export class LessonService {
         {
           model: Exercise,
           as: "exercises",
+          where: { isActive: true },
+          required: false,
         },
       ],
     });
@@ -171,10 +179,14 @@ export class LessonService {
         {
           model: LessonContent,
           as: "theory",
+          where: { isActive: true },
+          required: false,
         },
         {
           model: Exercise,
           as: "exercises",
+          where: { isActive: true },
+          required: false,
           attributes: ["id", "exercise_type", "lessonId"],
         },
         {
@@ -233,6 +245,8 @@ export class LessonService {
           {
             model: LessonContent,
             as: "lessonContents",
+            where: { isActive: true },
+            required: false,
           },
         ],
       });
@@ -266,6 +280,8 @@ export class LessonService {
       includeOptions.push({
         model: LessonContent,
         as: "lessonContents",
+        where: { isActive: true },
+        required: false,
       });
     }
 
@@ -296,6 +312,8 @@ export class LessonService {
         {
           model: Exercise,
           as: "exercises",
+          where: { isActive: true },
+          required: false,
         },
       ],
     });
