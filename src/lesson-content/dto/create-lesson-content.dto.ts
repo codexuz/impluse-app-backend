@@ -19,6 +19,10 @@ export class ResourceDto {
   @ApiProperty({ example: "https://example.com/resource1.pdf" })
   @IsString()
   url: string;
+
+  @ApiProperty({ example: "pdf" })
+  @IsString()
+  type: string;
 }
 
 export class CreateLessonContentDto {
@@ -52,8 +56,8 @@ export class CreateLessonContentDto {
 
   @ApiProperty({
     example: [
-      { name: "TypeScript Guide", url: "https://example.com/resource1.pdf" },
-      { name: "Documentation", url: "https://example.com/resource2.docx" },
+      { name: "TypeScript Guide", url: "https://example.com/resource1.pdf", type: "pdf" },
+      { name: "Documentation", url: "https://example.com/resource2.docx", type: "docx" },
     ],
     required: false,
     type: [ResourceDto],
