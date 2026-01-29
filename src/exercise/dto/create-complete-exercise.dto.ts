@@ -1,110 +1,122 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsUUID, IsBoolean, IsEnum, IsInt, IsUrl, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { ApiProperty } from "@nestjs/swagger";
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsUUID,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsUrl,
+  IsArray,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export enum ExerciseType {
-  GRAMMAR = 'grammar',
-  READING = 'reading',
-  LISTENING = 'listening',
-  WRITING = 'writing'
+  GRAMMAR = "grammar",
+  READING = "reading",
+  LISTENING = "listening",
+  WRITING = "writing",
 }
 
 export enum QuestionType {
-  MULTIPLE_CHOICE = 'multiple_choice',
-  FILL_IN_THE_BLANK = 'fill_in_the_blank',
-  TRUE_FALSE = 'true_false',
-  SHORT_ANSWER = 'short_answer',
-  MATCHING = 'matching'
+  MULTIPLE_CHOICE = "multiple_choice",
+  FILL_IN_THE_BLANK = "fill_in_the_blank",
+  TRUE_FALSE = "true_false",
+  SHORT_ANSWER = "short_answer",
+  MATCHING = "matching",
+  SENTENCE_BUILD = "sentence_build",
 }
 // Sentence Build DTO
 export class CreateSentenceBuildDto {
   @ApiProperty({
-    description: 'Text given to the student to build the sentence',
-    example: 'the dog brown quick jumps over the lazy fox',
-    required: true
+    description: "Text given to the student to build the sentence",
+    example: "the dog brown quick jumps over the lazy fox",
+    required: true,
   })
-  @IsString({ message: 'given_text must be a string' })
-  @IsNotEmpty({ message: 'given_text should not be empty' })
+  @IsString({ message: "given_text must be a string" })
+  @IsNotEmpty({ message: "given_text should not be empty" })
   given_text: string;
 
   @ApiProperty({
-    description: 'Correct answer for the sentence build',
-    example: 'The quick brown fox jumps over the lazy dog',
-    required: true
+    description: "Correct answer for the sentence build",
+    example: "The quick brown fox jumps over the lazy dog",
+    required: true,
   })
-  @IsString({ message: 'correct_answer must be a string' })
-  @IsNotEmpty({ message: 'correct_answer should not be empty' })
+  @IsString({ message: "correct_answer must be a string" })
+  @IsNotEmpty({ message: "correct_answer should not be empty" })
   correct_answer: string;
 }
 
 // Base Exercise DTO
 export class CreateExerciseDto {
   @ApiProperty({
-    description: 'Title of the exercise',
-    example: 'Present Simple Grammar Exercise'
+    description: "Title of the exercise",
+    example: "Present Simple Grammar Exercise",
   })
   @IsString()
   @IsNotEmpty()
   title: string;
 
   @ApiProperty({
-    description: 'Type of the exercise',
+    description: "Type of the exercise",
     enum: ExerciseType,
-    example: ExerciseType.GRAMMAR
+    example: ExerciseType.GRAMMAR,
   })
   @IsEnum(ExerciseType)
   @IsNotEmpty()
   exercise_type: ExerciseType;
 
   @ApiProperty({
-    description: 'Audio URL for the exercise',
+    description: "Audio URL for the exercise",
     required: false,
-    example: 'https://example.com/audio.mp3'
+    example: "https://example.com/audio.mp3",
   })
   @IsUrl()
   @IsOptional()
   audio_url?: string;
 
   @ApiProperty({
-    description: 'Image URL for the exercise',
+    description: "Image URL for the exercise",
     required: false,
-    example: 'https://example.com/image.jpg'
+    example: "https://example.com/image.jpg",
   })
   @IsUrl()
   @IsOptional()
   image_url?: string;
 
   @ApiProperty({
-    description: 'Instructions for the exercise',
+    description: "Instructions for the exercise",
     required: false,
-    example: 'Choose the correct answer'
+    example: "Choose the correct answer",
   })
   @IsString()
   @IsOptional()
   instructions?: string;
 
   @ApiProperty({
-    description: 'Content of the exercise',
+    description: "Content of the exercise",
     required: false,
-    example: 'She ___ to school every day.'
+    example: "She ___ to school every day.",
   })
   @IsString()
   @IsOptional()
   content?: string;
 
   @ApiProperty({
-    description: 'Whether the exercise is active',
+    description: "Whether the exercise is active",
     default: true,
-    required: false
+    required: false,
   })
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
 
   @ApiProperty({
-    description: 'ID of the lesson this exercise belongs to',
+    description: "ID of the lesson this exercise belongs to",
     required: false,
-    example: '123e4567-e89b-12d3-a456-426614174000'
+    example: "123e4567-e89b-12d3-a456-426614174000",
   })
   @IsUUID()
   @IsOptional()
@@ -114,43 +126,43 @@ export class CreateExerciseDto {
 // Question DTO
 export class CreateQuestionDto {
   @ApiProperty({
-    description: 'Type of the question',
+    description: "Type of the question",
     enum: QuestionType,
-    example: QuestionType.MULTIPLE_CHOICE
+    example: QuestionType.MULTIPLE_CHOICE,
   })
   @IsEnum(QuestionType)
   @IsNotEmpty()
   question_type: QuestionType;
 
   @ApiProperty({
-    description: 'Question text',
-    example: 'What is the correct form of the verb?'
+    description: "Question text",
+    example: "What is the correct form of the verb?",
   })
   @IsString()
   @IsNotEmpty()
   question_text: string;
 
   @ApiProperty({
-    description: 'Points awarded for this question',
+    description: "Points awarded for this question",
     required: false,
-    example: 10
+    example: 10,
   })
   @IsInt()
   @IsOptional()
   points?: number;
 
   @ApiProperty({
-    description: 'Order number of the question',
-    example: 1
+    description: "Order number of the question",
+    example: 1,
   })
   @IsInt()
   @IsNotEmpty()
   order_number: number;
 
   @ApiProperty({
-    description: 'Sample answer for the question',
+    description: "Sample answer for the question",
     required: false,
-    example: 'The correct answer is "goes" because...'
+    example: 'The correct answer is "goes" because...',
   })
   @IsString()
   @IsOptional()
@@ -160,16 +172,16 @@ export class CreateQuestionDto {
 // Choice DTO for multiple choice questions
 export class CreateChoiceDto {
   @ApiProperty({
-    description: 'Option text',
-    example: 'goes'
+    description: "Option text",
+    example: "goes",
   })
   @IsString()
   @IsNotEmpty()
   option_text: string;
 
   @ApiProperty({
-    description: 'Whether this option is correct',
-    example: true
+    description: "Whether this option is correct",
+    example: true,
   })
   @IsBoolean()
   @IsNotEmpty()
@@ -179,17 +191,17 @@ export class CreateChoiceDto {
 // Gap Filling DTO
 export class CreateGapFillingDto {
   @ApiProperty({
-    description: 'Gap number in the question',
-    example: 1
+    description: "Gap number in the question",
+    example: 1,
   })
   @IsInt()
   @IsNotEmpty()
   gap_number: number;
 
   @ApiProperty({
-    description: 'Correct answers for the gap',
-    example: ['goes', 'is going'],
-    type: [String]
+    description: "Correct answers for the gap",
+    example: ["goes", "is going"],
+    type: [String],
   })
   @IsArray()
   @IsString({ each: true })
@@ -199,16 +211,16 @@ export class CreateGapFillingDto {
 // Matching Exercise DTO
 export class CreateMatchingPairDto {
   @ApiProperty({
-    description: 'Left side item',
-    example: 'cat'
+    description: "Left side item",
+    example: "cat",
   })
   @IsString()
   @IsNotEmpty()
   left_item: string;
 
   @ApiProperty({
-    description: 'Right side item',
-    example: 'animal'
+    description: "Right side item",
+    example: "animal",
   })
   @IsString()
   @IsNotEmpty()
@@ -218,16 +230,16 @@ export class CreateMatchingPairDto {
 // Typing Exercise DTO
 export class CreateTypingExerciseDto {
   @ApiProperty({
-    description: 'Correct answer for typing exercise',
-    example: 'The quick brown fox jumps over the lazy dog'
+    description: "Correct answer for typing exercise",
+    example: "The quick brown fox jumps over the lazy dog",
   })
   @IsString()
   @IsNotEmpty()
   correct_answer: string;
 
   @ApiProperty({
-    description: 'Whether the answer is case sensitive',
-    example: false
+    description: "Whether the answer is case sensitive",
+    example: false,
   })
   @IsBoolean()
   @IsNotEmpty()
@@ -237,9 +249,9 @@ export class CreateTypingExerciseDto {
 // Complete Question DTO that includes all possible question data
 export class CreateCompleteQuestionDto extends CreateQuestionDto {
   @ApiProperty({
-    description: 'Choices for multiple choice questions',
+    description: "Choices for multiple choice questions",
     required: false,
-    type: [CreateChoiceDto]
+    type: [CreateChoiceDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -248,9 +260,9 @@ export class CreateCompleteQuestionDto extends CreateQuestionDto {
   choices?: CreateChoiceDto[];
 
   @ApiProperty({
-    description: 'Gap filling data for fill in the blank questions',
+    description: "Gap filling data for fill in the blank questions",
     required: false,
-    type: [CreateGapFillingDto]
+    type: [CreateGapFillingDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -259,9 +271,9 @@ export class CreateCompleteQuestionDto extends CreateQuestionDto {
   gap_filling?: CreateGapFillingDto[];
 
   @ApiProperty({
-    description: 'Matching pairs for matching questions',
+    description: "Matching pairs for matching questions",
     required: false,
-    type: [CreateMatchingPairDto]
+    type: [CreateMatchingPairDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -270,9 +282,9 @@ export class CreateCompleteQuestionDto extends CreateQuestionDto {
   matching_pairs?: CreateMatchingPairDto[];
 
   @ApiProperty({
-    description: 'Typing exercise data for typing questions',
+    description: "Typing exercise data for typing questions",
     required: false,
-    type: CreateTypingExerciseDto
+    type: CreateTypingExerciseDto,
   })
   @ValidateNested()
   @Type(() => CreateTypingExerciseDto)
@@ -280,10 +292,10 @@ export class CreateCompleteQuestionDto extends CreateQuestionDto {
   typing_exercise?: CreateTypingExerciseDto;
 
   @ApiProperty({
-    description: 'Sentence build data for sentence build questions',
+    description: "Sentence build data for sentence build questions",
     required: false,
     type: CreateSentenceBuildDto,
-    isArray: true
+    isArray: true,
   })
   @ValidateNested({ each: true })
   @Type(() => CreateSentenceBuildDto)
@@ -294,8 +306,8 @@ export class CreateCompleteQuestionDto extends CreateQuestionDto {
 // Complete Exercise Creation DTO
 export class CreateCompleteExerciseDto extends CreateExerciseDto {
   @ApiProperty({
-    description: 'Questions for this exercise',
-    type: [CreateCompleteQuestionDto]
+    description: "Questions for this exercise",
+    type: [CreateCompleteQuestionDto],
   })
   @IsArray()
   @ValidateNested({ each: true })

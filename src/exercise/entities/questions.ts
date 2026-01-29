@@ -33,7 +33,7 @@ export class Questions extends Model {
       "true_false",
       "short_answer",
       "matching",
-      "sentence_build" // Added sentence_build as a question type
+      "sentence_build", // Added sentence_build as a question type
     ),
     allowNull: false,
   })
