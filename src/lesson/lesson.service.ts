@@ -52,10 +52,12 @@ export class LessonService {
         {
           model: Exercise,
           as: "exercises",
+          order: [["createdAt", "ASC"]],
         },
         {
           model: Speaking,
           as: "speaking",
+          order: [["createdAt", "ASC"]],
         },
       ],
     });
