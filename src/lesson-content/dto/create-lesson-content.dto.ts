@@ -56,8 +56,16 @@ export class CreateLessonContentDto {
 
   @ApiProperty({
     example: [
-      { name: "TypeScript Guide", url: "https://example.com/resource1.pdf", type: "pdf" },
-      { name: "Documentation", url: "https://example.com/resource2.docx", type: "docx" },
+      {
+        name: "TypeScript Guide",
+        url: "https://example.com/resource1.pdf",
+        type: "pdf",
+      },
+      {
+        name: "Documentation",
+        url: "https://example.com/resource2.docx",
+        type: "docx",
+      },
     ],
     required: false,
     type: [ResourceDto],
