@@ -9,6 +9,8 @@ import {
   QuestionType,
 } from "./dto/create-complete-exercise.dto.js";
 import { UpdateExerciseDto } from "./dto/update-complete-exercise.dto.js";
+import { CreateExerciseDto } from "./dto/create-exercise.dto.js";
+import { UpdateExerciseDto as UpdateExerciseOnlyDto } from "./dto/update-exercise.dto.js";
 import { Exercise } from "./entities/exercise.entity.js";
 import { Questions } from "./entities/questions.js";
 import { Choices } from "./entities/choices.js";
@@ -404,6 +406,203 @@ export class ExerciseService {
     }
 
     await exercise.update({ isActive: false });
+  }
+
+  /**
+   * Create only the exercise without questions
+   */
+  async createExerciseOnly(
+    createExerciseDto: CreateExerciseDto,
+  ): Promise<Exercise> {
+    const exercise = await this.exerciseModel.create({
+      title: createExerciseDto.title,
+      exercise_type: createExerciseDto.exercise_type,
+      audio_url: createExerciseDto.audio_url,
+      image_url: createExerciseDto.image_url,
+      instructions: createExerciseDto.instructions,
+      content: createExerciseDto.content,
+      isActive: createExerciseDto.isActive ?? true,
+      lessonId: createExerciseDto.lessonId,
+    });
+
+    return exercise;
+  }
+
+  /**
+   * Update only the exercise metadata without touching questions
+   */
+  async updateExerciseOnly(
+    id: string,
+    updateExerciseDto: UpdateExerciseOnlyDto,
+  ): Promise<Exercise> {
+    const exercise = await this.exerciseModel.findOne({
+      where: { id, isActive: true },
+    });
+
+    if (!exercise) {
+      throw new NotFoundException(`Exercise with ID ${id} not found`);
+    }
+
+    await exercise.update({
+      title: updateExerciseDto.title,
+      exercise_type: updateExerciseDto.exercise_type,
+      audio_url: updateExerciseDto.audio_url,
+      image_url: updateExerciseDto.image_url,
+      instructions: updateExerciseDto.instructions,
+      content: updateExerciseDto.content,
+      isActive: updateExerciseDto.isActive,
+      lessonId: updateExerciseDto.lessonId,
+    });
+
+    return exercise;
+  }
+
+  /**
+   * Update exercise and add/replace questions
+   */
+  async updateExerciseWithQuestions(
+    id: string,
+    updateExerciseDto: UpdateExerciseDto,
+  ): Promise<Exercise> {
+    const transaction: Transaction = await this.sequelize.transaction();
+
+    try {
+      const exercise = await this.exerciseModel.findOne({
+        where: { id, isActive: true },
+        transaction,
+      });
+
+      if (!exercise) {
+        throw new NotFoundException(`Exercise with ID ${id} not found`);
+      }
+
+      // Update main exercise metadata if provided
+      if (
+        updateExerciseDto.title ||
+        updateExerciseDto.exercise_type ||
+        updateExerciseDto.audio_url !== undefined ||
+        updateExerciseDto.image_url !== undefined ||
+        updateExerciseDto.instructions !== undefined ||
+        updateExerciseDto.content !== undefined ||
+        updateExerciseDto.isActive !== undefined ||
+        updateExerciseDto.lessonId !== undefined
+      ) {
+        await exercise.update(
+          {
+            title: updateExerciseDto.title ?? exercise.title,
+            exercise_type:
+              updateExerciseDto.exercise_type ?? exercise.exercise_type,
+            audio_url: updateExerciseDto.audio_url ?? exercise.audio_url,
+            image_url: updateExerciseDto.image_url ?? exercise.image_url,
+            instructions:
+              updateExerciseDto.instructions ?? exercise.instructions,
+            content: updateExerciseDto.content ?? exercise.content,
+            isActive: updateExerciseDto.isActive ?? exercise.isActive,
+            lessonId: updateExerciseDto.lessonId ?? exercise.lessonId,
+          },
+          { transaction },
+        );
+      }
+
+      // Add or replace questions if provided
+      if (
+        updateExerciseDto.questions &&
+        updateExerciseDto.questions.length > 0
+      ) {
+        // Delete existing questions and their related data
+        await this.deleteExistingQuestions(id, transaction);
+
+        // Create new questions
+        for (const questionData of updateExerciseDto.questions) {
+          const question = await this.questionsModel.create(
+            {
+              exercise_id: exercise.id,
+              question_type: questionData.question_type,
+              question_text: questionData.question_text,
+              points: questionData.points,
+              order_number: questionData.order_number,
+              sample_answer: questionData.sample_answer,
+            },
+            { transaction },
+          );
+
+          // Create related data based on question type
+          switch (questionData.question_type) {
+            case QuestionType.MULTIPLE_CHOICE:
+              if (questionData.choices && questionData.choices.length > 0) {
+                await this.createChoices(
+                  question.id,
+                  questionData.choices,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.FILL_IN_THE_BLANK:
+              if (
+                questionData.gap_filling &&
+                questionData.gap_filling.length > 0
+              ) {
+                await this.createGapFilling(
+                  question.id,
+                  questionData.gap_filling,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.MATCHING:
+              if (
+                questionData.matching_pairs &&
+                questionData.matching_pairs.length > 0
+              ) {
+                await this.createMatchingPairs(
+                  question.id,
+                  questionData.matching_pairs,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.SHORT_ANSWER:
+              if (questionData.typing_exercise) {
+                await this.createTypingExercise(
+                  question.id,
+                  questionData.typing_exercise,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.TRUE_FALSE:
+              if (questionData.choices && questionData.choices.length > 0) {
+                await this.createChoices(
+                  question.id,
+                  questionData.choices,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.SENTENCE_BUILD:
+              if (questionData.sentence_build) {
+                await this.createSentenceBuild(
+                  question.id,
+                  questionData.sentence_build,
+                  transaction,
+                );
+              }
+              break;
+          }
+        }
+      }
+
+      await transaction.commit();
+      return this.findOne(id);
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   // Private helper methods
