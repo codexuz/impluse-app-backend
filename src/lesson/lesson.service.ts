@@ -44,6 +44,20 @@ export class LessonService {
         id,
         isActive: true,
       },
+      include: [
+        {
+          model: LessonContent,
+          as: "lessonContents",
+        },
+        {
+          model: Exercise,
+          as: "exercises",
+        },
+        {
+          model: Speaking,
+          as: "speaking",
+        },
+      ],
     });
 
     if (!lesson) {
