@@ -643,6 +643,57 @@ export class ExerciseService {
     ];
   }
 
+  async deleteQuestion(exerciseId: string, questionId: string): Promise<void> {
+    const transaction: Transaction = await this.sequelize.transaction();
+
+    try {
+      // Verify the question exists and belongs to the exercise
+      const question = await this.questionsModel.findOne({
+        where: { id: questionId, exercise_id: exerciseId },
+        transaction,
+      });
+
+      if (!question) {
+        throw new NotFoundException(
+          `Question with ID ${questionId} not found in exercise ${exerciseId}`,
+        );
+      }
+
+      // Delete related data
+      await this.choicesModel.destroy({
+        where: { question_id: questionId },
+        transaction,
+      });
+      await this.gapFillingModel.destroy({
+        where: { question_id: questionId },
+        transaction,
+      });
+      await this.matchingExerciseModel.destroy({
+        where: { question_id: questionId },
+        transaction,
+      });
+      await this.typingExerciseModel.destroy({
+        where: { question_id: questionId },
+        transaction,
+      });
+      await this.sentenceBuildModel.destroy({
+        where: { question_id: questionId },
+        transaction,
+      });
+
+      // Delete the question
+      await this.questionsModel.destroy({
+        where: { id: questionId },
+        transaction,
+      });
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
   private async deleteExistingQuestions(
     exerciseId: string,
     transaction: Transaction,

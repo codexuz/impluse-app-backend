@@ -256,4 +256,21 @@ export class ExerciseController {
   async remove(@Param("id") id: string): Promise<void> {
     return await this.exerciseService.remove(id);
   }
+
+  @Delete(":exerciseId/questions/:questionId")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Delete a specific question from an exercise" })
+  @ApiResponse({
+    status: 200,
+    description: "Question has been deleted successfully.",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  @ApiResponse({ status: 404, description: "Question not found." })
+  async deleteQuestion(
+    @Param("exerciseId") exerciseId: string,
+    @Param("questionId") questionId: string,
+  ): Promise<void> {
+    return await this.exerciseService.deleteQuestion(exerciseId, questionId);
+  }
 }
