@@ -69,7 +69,7 @@ export class UploadController {
         fileSize: 1024 * 1024 * 1024, // 1GB limit
         fieldSize: 1024 * 1024 * 1024,
       },
-    })
+    }),
   )
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
@@ -78,7 +78,7 @@ export class UploadController {
 
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = extname(file.originalname);
-    const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
+    const filename = `uploads/${file.fieldname}-${uniqueSuffix}${ext}`;
 
     // Upload to AWS S3
     const storageService = this.uploadService.getStorageService();
@@ -148,7 +148,7 @@ export class UploadController {
           callback(new Error("Only video files are allowed"), false);
         }
       },
-    })
+    }),
   )
   async uploadVideo(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
@@ -157,7 +157,7 @@ export class UploadController {
 
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = extname(file.originalname);
-    const filename = `video-${uniqueSuffix}${ext}`;
+    const filename = `uploads/video-${uniqueSuffix}${ext}`;
 
     // Upload to AWS S3
     const storageService = this.uploadService.getStorageService();
@@ -208,7 +208,7 @@ export class UploadController {
   async uploadBase64File(@Body() base64UploadDto: Base64UploadDto) {
     return this.uploadService.saveBase64File(
       base64UploadDto.base64Data,
-      base64UploadDto.filename
+      base64UploadDto.filename,
     );
   }
 
@@ -222,7 +222,7 @@ export class UploadController {
     type: UploadResponseDto,
   })
   async createUploadRecord(
-    @Body() createUploadDto: CreateUploadDto
+    @Body() createUploadDto: CreateUploadDto,
   ): Promise<UploadResponseDto> {
     return this.uploadService.create(createUploadDto);
   }
@@ -260,7 +260,7 @@ export class UploadController {
     type: [UploadResponseDto],
   })
   async getUploadsByUser(
-    @Param("userId") userId: string
+    @Param("userId") userId: string,
   ): Promise<UploadResponseDto[]> {
     return this.uploadService.findByUploadedBy(userId);
   }
@@ -277,7 +277,7 @@ export class UploadController {
     type: [UploadResponseDto],
   })
   async getUploadsByType(
-    @Param("uploadType") uploadType: string
+    @Param("uploadType") uploadType: string,
   ): Promise<UploadResponseDto[]> {
     return this.uploadService.findByType(uploadType);
   }
@@ -294,7 +294,7 @@ export class UploadController {
   @ApiResponse({ status: 404, description: "Upload record not found" })
   async updateUploadRecord(
     @Param("id") id: string,
-    @Body() updateUploadDto: UpdateUploadDto
+    @Body() updateUploadDto: UpdateUploadDto,
   ): Promise<UploadResponseDto> {
     return this.uploadService.update(id, updateUploadDto);
   }
