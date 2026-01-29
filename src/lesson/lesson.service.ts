@@ -47,7 +47,7 @@ export class LessonService {
       include: [
         {
           model: LessonContent,
-          as: "lessonContents",
+          as: "theory",
         },
         {
           model: Exercise,
