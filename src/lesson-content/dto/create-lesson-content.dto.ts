@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import {
   IsString,
   IsNumber,
@@ -7,7 +8,18 @@ import {
   IsBoolean,
   IsEnum,
   IsArray,
+  ValidateNested,
 } from "class-validator";
+
+export class ResourceDto {
+  @ApiProperty({ example: "TypeScript Guide" })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ example: "https://example.com/resource1.pdf" })
+  @IsString()
+  url: string;
+}
 
 export class CreateLessonContentDto {
   @ApiProperty({ example: "Introduction to TypeScript" })
@@ -15,11 +27,11 @@ export class CreateLessonContentDto {
   title: string;
 
   @ApiProperty({
-    example: { text: "Detailed content about TypeScript...", data: [] },
+    example: "Detailed content about TypeScript...",
     required: false,
   })
   @IsOptional()
-  content?: any;
+  content?: string;
 
   @ApiProperty({
     example: "https://example.com/media/typescript.mp4",
@@ -40,16 +52,17 @@ export class CreateLessonContentDto {
 
   @ApiProperty({
     example: [
-      "https://example.com/resource1.pdf",
-      "https://example.com/resource2.docx",
+      { name: "TypeScript Guide", url: "https://example.com/resource1.pdf" },
+      { name: "Documentation", url: "https://example.com/resource2.docx" },
     ],
     required: false,
-    type: [String],
+    type: [ResourceDto],
   })
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => ResourceDto)
   @IsOptional()
-  resources?: string[];
+  resources?: ResourceDto[];
 
   @ApiProperty({ example: 1 })
   @IsNumber()
