@@ -24,7 +24,7 @@ export class AwsStorageService {
       credentials: {
         accessKeyId: this.configService.get<string>("AWS_ACCESS_KEY_ID"),
         secretAccessKey: this.configService.get<string>(
-          "AWS_SECRET_ACCESS_KEY"
+          "AWS_SECRET_ACCESS_KEY",
         ),
       },
     });
@@ -44,7 +44,7 @@ export class AwsStorageService {
       }
       this.logger.error(
         `Error checking if bucket ${bucketName} exists:`,
-        error
+        error,
       );
       throw error;
     }
@@ -64,7 +64,8 @@ export class AwsStorageService {
     bucketName: string,
     objectName: string,
     buffer: Buffer,
-    contentType?: string
+    contentType?: string,
+    isPublic: boolean = true,
   ): Promise<{ etag: string }> {
     try {
       const command = new PutObjectCommand({
@@ -72,6 +73,7 @@ export class AwsStorageService {
         Key: objectName,
         Body: buffer,
         ContentType: contentType,
+        ...(isPublic && { ACL: "public-read" }),
       });
 
       const result = await this.s3Client.send(command);
@@ -123,7 +125,7 @@ export class AwsStorageService {
 
   async listFiles(
     bucketName: string,
-    prefix?: string
+    prefix?: string,
   ): Promise<Array<{ name: string; size: number; lastModified: Date }>> {
     try {
       const files: Array<{ name: string; size: number; lastModified: Date }> =
@@ -131,7 +133,7 @@ export class AwsStorageService {
 
       const paginator = paginateListObjectsV2(
         { client: this.s3Client },
-        { Bucket: bucketName, Prefix: prefix }
+        { Bucket: bucketName, Prefix: prefix },
       );
 
       for await (const page of paginator) {
@@ -158,7 +160,7 @@ export class AwsStorageService {
   async getPresignedUrl(
     bucketName: string,
     objectName: string,
-    expiresIn: number = 3600
+    expiresIn: number = 3600,
   ): Promise<string> {
     try {
       const command = new GetObjectCommand({
@@ -171,7 +173,7 @@ export class AwsStorageService {
     } catch (error) {
       this.logger.error(
         `Error generating presigned URL for ${objectName}:`,
-        error
+        error,
       );
       throw error;
     }

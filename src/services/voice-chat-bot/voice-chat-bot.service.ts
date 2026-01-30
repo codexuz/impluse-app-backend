@@ -7,8 +7,7 @@ import { AwsStorageService } from "../../aws-storage/aws-storage.service.js";
 @Injectable()
 export class VoiceChatBotService {
   private readonly logger = new Logger(VoiceChatBotService.name);
-  private readonly bucketName =
-    process.env.AWS_BUCKET || "speakup";
+  private readonly bucketName = "impulse-voice-audio";
 
   constructor(
     private readonly openaiService: OpenaiService,
