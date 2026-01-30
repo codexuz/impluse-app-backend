@@ -8,7 +8,6 @@ import { VoiceChatBotService } from "../services/voice-chat-bot/voice-chat-bot.s
 
 @Injectable()
 export class PronunciationExerciseService {
-  private readonly bucketName = "impulse-voice-audio";
 
   constructor(
     @InjectModel(PronunciationExercise)
@@ -33,8 +32,7 @@ export class PronunciationExerciseService {
   }
 
   async findAll(): Promise<PronunciationExercise[]> {
-    const exercises = await this.pronunciationExerciseModel.findAll();
-    return await this.refreshAudioUrls(exercises);
+    return await this.pronunciationExerciseModel.findAll();
   }
 
   async findOne(id: string): Promise<PronunciationExercise> {
@@ -46,16 +44,15 @@ export class PronunciationExerciseService {
       );
     }
 
-    return await this.refreshAudioUrl(exercise);
+    return exercise;
   }
 
   async findBySpeakingId(
     speaking_id: string,
   ): Promise<PronunciationExercise[]> {
-    const exercises = await this.pronunciationExerciseModel.findAll({
+    return await this.pronunciationExerciseModel.findAll({
       where: { speaking_id },
     });
-    return await this.refreshAudioUrls(exercises);
   }
 
   async update(
@@ -90,32 +87,5 @@ export class PronunciationExerciseService {
         `Pronunciation exercise with ID ${id} not found`,
       );
     }
-  }
-
-  /**
-   * Refresh presigned URL for a single exercise
-   */
-  private async refreshAudioUrl(
-    exercise: PronunciationExercise,
-  ): Promise<PronunciationExercise> {
-    if (exercise.audio_key) {
-      exercise.audio_url = await this.awsStorageService.getPresignedUrl(
-        this.bucketName,
-        exercise.audio_key,
-        604800, // 7 days
-      );
-    }
-    return exercise;
-  }
-
-  /**
-   * Refresh presigned URLs for multiple exercises
-   */
-  private async refreshAudioUrls(
-    exercises: PronunciationExercise[],
-  ): Promise<PronunciationExercise[]> {
-    return await Promise.all(
-      exercises.map(async (exercise) => this.refreshAudioUrl(exercise)),
-    );
   }
 }

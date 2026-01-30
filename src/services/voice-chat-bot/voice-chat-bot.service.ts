@@ -220,14 +220,14 @@ export class VoiceChatBotService {
       );
 
       // Generate presigned URL for direct access (valid for 7 days)
-      const presignedUrl = await this.awsStorageService.getPresignedUrl(
-        this.bucketName,
-        objectKey,
-        604800,
-      );
+      // const presignedUrl = await this.awsStorageService.getPresignedUrl(
+      //   this.bucketName,
+      //   objectKey,
+      //   604800,
+      // );
 
       return {
-        url: presignedUrl,
+        url: `https://f50ba41c-af49-4f28-a1bc-022f03019da2.srvstatic.uz/${objectKey}` ,
         filename,
         key: objectKey,
       };

@@ -8,8 +8,6 @@ import { VoiceChatBotService } from "../services/voice-chat-bot/voice-chat-bot.s
 
 @Injectable()
 export class Ieltspart1QuestionService {
-  private readonly bucketName = "impulse-voice-audio";
-
   constructor(
     @InjectModel(Ieltspart1Question)
     private ieltspart1QuestionModel: typeof Ieltspart1Question,
@@ -33,8 +31,7 @@ export class Ieltspart1QuestionService {
   }
 
   async findAll(): Promise<Ieltspart1Question[]> {
-    const questions = await this.ieltspart1QuestionModel.findAll();
-    return await this.refreshAudioUrls(questions);
+    return await this.ieltspart1QuestionModel.findAll();
   }
 
   async findOne(id: string): Promise<Ieltspart1Question> {
@@ -46,14 +43,13 @@ export class Ieltspart1QuestionService {
         `IELTS Part 1 question with ID ${id} not found`,
       );
     }
-    return await this.refreshAudioUrl(question);
+    return question;
   }
 
   async findBySpeakingId(speakingId: string): Promise<Ieltspart1Question[]> {
-    const questions = await this.ieltspart1QuestionModel.findAll({
+    return await this.ieltspart1QuestionModel.findAll({
       where: { speaking_id: speakingId },
     });
-    return await this.refreshAudioUrls(questions);
   }
 
   async update(
@@ -68,32 +64,5 @@ export class Ieltspart1QuestionService {
   async remove(id: string): Promise<void> {
     const question = await this.findOne(id);
     await question.destroy();
-  }
-
-  /**
-   * Refresh presigned URL for a single question
-   */
-  private async refreshAudioUrl(
-    question: Ieltspart1Question,
-  ): Promise<Ieltspart1Question> {
-    if (question.audio_key) {
-      question.audio_url = await this.awsStorageService.getPresignedUrl(
-        this.bucketName,
-        question.audio_key,
-        604800, // 7 days
-      );
-    }
-    return question;
-  }
-
-  /**
-   * Refresh presigned URLs for multiple questions
-   */
-  private async refreshAudioUrls(
-    questions: Ieltspart1Question[],
-  ): Promise<Ieltspart1Question[]> {
-    return await Promise.all(
-      questions.map(async (question) => this.refreshAudioUrl(question)),
-    );
   }
 }
