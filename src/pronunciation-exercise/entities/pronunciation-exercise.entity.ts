@@ -1,12 +1,7 @@
-import {
-  Table,
-  Column,
-  Model,
-  DataType,
-} from 'sequelize-typescript';
+import { Table, Column, Model, DataType } from "sequelize-typescript";
 
 @Table({
-  tableName: 'pronunciation_exercises',
+  tableName: "pronunciation_exercises",
   timestamps: true,
 })
 export class PronunciationExercise extends Model {
@@ -17,7 +12,7 @@ export class PronunciationExercise extends Model {
   })
   id: string;
 
-   @Column(DataType.UUID)
+  @Column(DataType.UUID)
   speaking_id!: string;
 
   @Column({
@@ -26,10 +21,15 @@ export class PronunciationExercise extends Model {
   })
   word_to_pronunce: string;
 
-   @Column({
+  @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
   audio_url: string;
 
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  audio_key: string;
 }
