@@ -43,5 +43,11 @@ export class Ieltspart1Question extends Model {
     type: DataType.TEXT,
     allowNull: true,
   })
+  audio_key: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
   sample_answer: string;
 }

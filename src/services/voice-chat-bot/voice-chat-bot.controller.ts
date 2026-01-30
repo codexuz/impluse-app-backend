@@ -34,7 +34,7 @@ export class VoiceChatBotController {
   async voiceChat(@Body() voiceChatDto: VoiceChatDto) {
     const result = await this.voiceChatBotService.processVoiceChat(
       voiceChatDto.text,
-      voiceChatDto.voice
+      voiceChatDto.voice,
     );
 
     return {
@@ -56,7 +56,7 @@ export class VoiceChatBotController {
     try {
       const result = await this.voiceChatBotService.processVoiceChat(
         voiceChatDto.text,
-        voiceChatDto.voice
+        voiceChatDto.voice,
       );
 
       return {
@@ -80,7 +80,7 @@ export class VoiceChatBotController {
   async generateVoiceResponse(@Body() voiceChatDto: VoiceChatDto) {
     return await this.voiceChatBotService.generateVoiceResponse(
       voiceChatDto.text,
-      voiceChatDto.voice
+      voiceChatDto.voice,
     );
   }
 
@@ -103,14 +103,14 @@ export class VoiceChatBotController {
   async textToVoiceStream(
     @Query("text") text: string,
     @Query("voice") voice: string = "lauren",
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ) {
     try {
       console.log(`Streaming text to voice: "${text}" with voice: "${voice}"`);
 
       const audioBuffer = await this.voiceChatBotService.textToVoice(
         text,
-        voice
+        voice,
       );
 
       // Set headers for audio streaming
@@ -144,11 +144,11 @@ export class VoiceChatBotController {
   async textToVoice(@Body() textToVoiceDto: TextToVoiceDto) {
     try {
       console.log(
-        `Converting text to voice: "${textToVoiceDto.text}" with voice: "${textToVoiceDto.voice}"`
+        `Converting text to voice: "${textToVoiceDto.text}" with voice: "${textToVoiceDto.voice}"`,
       );
       const audioBuffer = await this.voiceChatBotService.textToVoice(
         textToVoiceDto.text,
-        textToVoiceDto.voice
+        textToVoiceDto.voice,
       );
 
       return {
@@ -173,7 +173,7 @@ export class VoiceChatBotController {
       const transcribedText =
         await this.voiceChatBotService.speechToTextFromBase64(
           speechToTextDto.base64Audio,
-          speechToTextDto.mimeType
+          speechToTextDto.mimeType,
         );
 
       return {
@@ -213,7 +213,7 @@ export class VoiceChatBotController {
     try {
       const result = await this.voiceChatBotService.textToVoiceAndSave(
         textToVoiceDto.text,
-        textToVoiceDto.voice || "lauren"
+        textToVoiceDto.voice || "lauren",
       );
 
       return {
@@ -251,12 +251,12 @@ export class VoiceChatBotController {
   })
   async textToVoiceUrlGet(
     @Query("text") text: string,
-    @Query("voice") voice: string = "lauren"
+    @Query("voice") voice: string = "lauren",
   ) {
     try {
       const result = await this.voiceChatBotService.textToVoiceAndSave(
         text,
-        voice
+        voice,
       );
 
       return {
@@ -290,7 +290,7 @@ export class VoiceChatBotController {
   })
   async serveAudio(
     @Param("filename") filename: string,
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ) {
     try {
       const path = await import("path");
@@ -302,7 +302,7 @@ export class VoiceChatBotController {
         process.cwd(),
         "uploads",
         "voice-audio",
-        sanitizedFilename
+        sanitizedFilename,
       );
 
       // Check if file exists
@@ -327,6 +327,53 @@ export class VoiceChatBotController {
       return {
         success: false,
         error: "Audio file not found",
+      };
+    }
+  }
+
+  @Get("tts-audio-files")
+  @ApiOperation({
+    summary: "Get all TTS audio files from S3 storage",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "List of TTS audio files with presigned URLs",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean", example: true },
+        files: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: {
+                type: "string",
+                example: "speaking-tts-audio/tts-1234567890-lauren.mp3",
+              },
+              size: { type: "number", example: 12345 },
+              lastModified: { type: "string", format: "date-time" },
+              url: { type: "string", example: "https://s3.amazonaws.com/..." },
+            },
+          },
+        },
+        count: { type: "number", example: 10 },
+      },
+    },
+  })
+  async getTtsAudioFiles() {
+    try {
+      const files = await this.voiceChatBotService.getAllTtsAudioFiles();
+
+      return {
+        success: true,
+        files,
+        count: files.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
       };
     }
   }

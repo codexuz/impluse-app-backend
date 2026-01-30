@@ -1,13 +1,14 @@
-import { Module } from '@nestjs/common';
-import { VoiceChatBotService } from './voice-chat-bot.service.js';
-import { VoiceChatBotController } from './voice-chat-bot.controller.js';
-import { VoiceChatBotGateway } from './voice-chat-bot.gateway.js';
-import { OpenaiModule } from '../openai/openai.module.js';
-import { SpeechifyModule } from '../speechify/speechify.module.js';
-import { DeepgramModule } from '../deepgram/deepgram.module.js';
+import { Module } from "@nestjs/common";
+import { VoiceChatBotService } from "./voice-chat-bot.service.js";
+import { VoiceChatBotController } from "./voice-chat-bot.controller.js";
+import { VoiceChatBotGateway } from "./voice-chat-bot.gateway.js";
+import { OpenaiModule } from "../openai/openai.module.js";
+import { SpeechifyModule } from "../speechify/speechify.module.js";
+import { DeepgramModule } from "../deepgram/deepgram.module.js";
+import { AwsStorageModule } from "../../aws-storage/aws-storage.module.js";
 
 @Module({
-  imports: [OpenaiModule, SpeechifyModule, DeepgramModule],
+  imports: [OpenaiModule, SpeechifyModule, DeepgramModule, AwsStorageModule],
   controllers: [VoiceChatBotController],
   providers: [VoiceChatBotService, VoiceChatBotGateway],
   exports: [VoiceChatBotService, VoiceChatBotGateway],

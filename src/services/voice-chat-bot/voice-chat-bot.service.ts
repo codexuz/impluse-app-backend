@@ -2,15 +2,19 @@ import { Injectable, Logger } from "@nestjs/common";
 import { OpenaiService } from "../openai/openai.service.js";
 import { SpeechifyService } from "../speechify/speechify.service.js";
 import { DeepgramService } from "../deepgram/deepgram.service.js";
+import { AwsStorageService } from "../../aws-storage/aws-storage.service.js";
 
 @Injectable()
 export class VoiceChatBotService {
   private readonly logger = new Logger(VoiceChatBotService.name);
+  private readonly bucketName =
+    process.env.AWS_BUCKET_NAME || "impulse-voice-audio";
 
   constructor(
     private readonly openaiService: OpenaiService,
     private readonly speechifyService: SpeechifyService,
-    private readonly deepgramService: DeepgramService
+    private readonly deepgramService: DeepgramService,
+    private readonly awsStorageService: AwsStorageService,
   ) {}
 
   /**
@@ -21,7 +25,7 @@ export class VoiceChatBotService {
    */
   async processVoiceChat(
     text: string,
-    voice: string = "lauren"
+    voice: string = "lauren",
   ): Promise<{
     textResponse: string;
     audioStream: Buffer; // audio buffer
@@ -34,7 +38,7 @@ export class VoiceChatBotService {
       // Convert the response to speech using Speechify
       const audioStream = await this.speechifyService.streamTexttoSpeech(
         textResponse,
-        voice
+        voice,
       );
 
       return {
@@ -55,7 +59,7 @@ export class VoiceChatBotService {
    */
   async generateVoiceResponse(
     text: string,
-    voice: string = "lauren"
+    voice: string = "lauren",
   ): Promise<{
     textResponse: string;
     audioData: any;
@@ -67,7 +71,7 @@ export class VoiceChatBotService {
       // Generate audio file using Speechify
       const audioData = await this.speechifyService.generateTexttoSpeech(
         textResponse,
-        voice
+        voice,
       );
 
       return {
@@ -88,15 +92,15 @@ export class VoiceChatBotService {
    */
   async textToVoice(text: string, voice: string = "lauren"): Promise<Buffer> {
     this.logger.log(
-      `Converting text to voice: "${text}" with voice: "${voice}"`
+      `Converting text to voice: "${text}" with voice: "${voice}"`,
     );
     try {
       const audioBuffer = await this.speechifyService.streamTexttoSpeech(
         text,
-        voice
+        voice,
       );
       this.logger.log(
-        `Received audio buffer from Speechify: ${audioBuffer?.length || 0} bytes`
+        `Received audio buffer from Speechify: ${audioBuffer?.length || 0} bytes`,
       );
 
       if (!audioBuffer || audioBuffer.length === 0) {
@@ -118,13 +122,13 @@ export class VoiceChatBotService {
    */
   async speechToText(
     audioBuffer: Buffer,
-    mimeType: string = "audio/mpeg"
+    mimeType: string = "audio/mpeg",
   ): Promise<string> {
     try {
       // Use Deepgram to transcribe the audio buffer
       const transcription = await this.deepgramService.transcribeBuffer(
         audioBuffer,
-        mimeType
+        mimeType,
       );
 
       // Extract the transcript text from the response
@@ -146,7 +150,7 @@ export class VoiceChatBotService {
    */
   async speechToTextFromBase64(
     base64Audio: string,
-    mimeType: string = "audio/mpeg"
+    mimeType: string = "audio/mpeg",
   ): Promise<string> {
     try {
       // Convert base64 to buffer
@@ -161,19 +165,18 @@ export class VoiceChatBotService {
   }
 
   /**
-   * Generate text-to-speech and save to file, returning the file URL
+   * Generate text-to-speech and save to AWS S3, returning the file URL
    * @param text The text to convert to speech
    * @param voice The voice to use
    * @returns Object with file URL and filename
    */
   async textToVoiceAndSave(
     text: string,
-    voice: string = "lauren"
+    voice: string = "lauren",
   ): Promise<{
     url: string;
-    staticUrl?: string;
     filename: string;
-    path: string;
+    key: string;
   }> {
     try {
       // Generate audio buffer
@@ -189,52 +192,92 @@ export class VoiceChatBotService {
       // Create filename with timestamp
       const timestamp = Date.now();
       const filename = `tts-${timestamp}-${voice}.mp3`;
+      const objectKey = `speaking-tts-audio/${filename}`;
 
-      // Use absolute path to ensure files are saved in the correct location
-      const path = await import("path");
-      const uploadDir = path.join(process.cwd(), "uploads", "voice-audio");
-      const filePath = path.join(uploadDir, filename);
-
-      // Ensure directory exists
-      const fs = await import("fs/promises");
-
-      try {
-        await fs.access(uploadDir);
-      } catch {
-        await fs.mkdir(uploadDir, { recursive: true });
-        this.logger.log(`Created directory: ${uploadDir}`);
-      }
-
-      // Ensure audioBuffer is a proper Buffer, not a base64 string
-      const bufferToWrite = Buffer.isBuffer(audioBuffer)
+      // Ensure audioBuffer is a proper Buffer
+      const bufferToUpload = Buffer.isBuffer(audioBuffer)
         ? audioBuffer
         : Buffer.from(audioBuffer);
 
-      // Save file - Buffer is written as binary data by default
-      await fs.writeFile(filePath, bufferToWrite);
-
-      // Verify file was written
-      const stats = await fs.stat(filePath);
-      this.logger.log(`Saved audio file: ${filename} (${stats.size} bytes)`);
-
-      if (stats.size === 0) {
-        throw new Error("Saved file is empty");
+      // Ensure bucket exists
+      const bucketExists = await this.awsStorageService.bucketExists(
+        this.bucketName,
+      );
+      if (!bucketExists) {
+        await this.awsStorageService.makeBucket(this.bucketName);
+        this.logger.log(`Created bucket: ${this.bucketName}`);
       }
 
-      // Generate URLs - provide both static and direct serve options
-      const baseUrl = process.env.APP_URL || "https://backend.impulselc.uz";
-      const staticUrl = `${baseUrl}/uploads/voice-audio/${filename}`;
-      const directUrl = `${baseUrl}/api/voice-chat-bot/serve-audio/${filename}`;
+      // Upload to AWS S3
+      await this.awsStorageService.uploadBuffer(
+        this.bucketName,
+        objectKey,
+        bufferToUpload,
+        "audio/mpeg",
+      );
+
+      this.logger.log(
+        `Uploaded audio file to S3: ${objectKey} (${bufferToUpload.length} bytes)`,
+      );
+
+      // Generate presigned URL for direct access (valid for 7 days)
+      const presignedUrl = await this.awsStorageService.getPresignedUrl(
+        this.bucketName,
+        objectKey,
+        604800,
+      );
 
       return {
-        url: directUrl, // Use direct serve URL to avoid proxy issues
-        staticUrl, // Provide static URL as backup
+        url: presignedUrl,
         filename,
-        path: filePath,
+        key: objectKey,
       };
     } catch (error) {
       this.logger.error(`Text to voice save error: ${error.message}`);
       throw new Error(`Text to voice save error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get all TTS audio files from the speaking-tts-audio folder in S3
+   * @returns Array of file objects with name, size, lastModified, and presigned URL
+   */
+  async getAllTtsAudioFiles(): Promise<
+    Array<{
+      name: string;
+      size: number;
+      lastModified: Date;
+      url: string;
+    }>
+  > {
+    try {
+      const files = await this.awsStorageService.listFiles(
+        this.bucketName,
+        "speaking-tts-audio/",
+      );
+
+      // Generate presigned URLs for each file
+      const filesWithUrls = await Promise.all(
+        files.map(async (file) => ({
+          name: file.name,
+          size: file.size,
+          lastModified: file.lastModified,
+          url: await this.awsStorageService.getPresignedUrl(
+            this.bucketName,
+            file.name,
+            604800,
+          ),
+        })),
+      );
+
+      this.logger.log(
+        `Retrieved ${filesWithUrls.length} files from speaking-tts-audio folder`,
+      );
+
+      return filesWithUrls;
+    } catch (error) {
+      this.logger.error(`Error getting TTS audio files: ${error.message}`);
+      throw new Error(`Error getting TTS audio files: ${error.message}`);
     }
   }
 }
