@@ -8,7 +8,7 @@ import { VoiceChatBotService } from "../services/voice-chat-bot/voice-chat-bot.s
 
 @Injectable()
 export class PronunciationExerciseService {
-  private readonly bucketName = "impulse-voice-audio";
+  private readonly bucketName = "speakup";
 
   constructor(
     @InjectModel(PronunciationExercise)
