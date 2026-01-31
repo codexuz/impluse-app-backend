@@ -460,6 +460,23 @@ export class UsersService {
       distinct: true,
     });
 
+    // Refresh avatar URLs for all users
+    await Promise.all(
+      rows.map(async (user) => {
+        if (user.avatar_url) {
+          try {
+            await this.refreshAvatarUrlIfExpired(user);
+          } catch (error) {
+            console.error(
+              `Error refreshing avatar URL for user ${user.user_id}:`,
+              error,
+            );
+            // Continue without throwing - we'll return the user with potentially expired URL
+          }
+        }
+      }),
+    );
+
     return {
       data: rows,
       total: count,
@@ -512,6 +529,23 @@ export class UsersService {
       offset,
       distinct: true,
     });
+
+    // Refresh avatar URLs for all users
+    await Promise.all(
+      rows.map(async (user) => {
+        if (user.avatar_url) {
+          try {
+            await this.refreshAvatarUrlIfExpired(user);
+          } catch (error) {
+            console.error(
+              `Error refreshing avatar URL for user ${user.user_id}:`,
+              error,
+            );
+            // Continue without throwing - we'll return the user with potentially expired URL
+          }
+        }
+      }),
+    );
 
     return {
       data: rows,
@@ -580,6 +614,23 @@ export class UsersService {
       distinct: true,
     });
 
+    // Refresh avatar URLs for all users
+    await Promise.all(
+      rows.map(async (user) => {
+        if (user.avatar_url) {
+          try {
+            await this.refreshAvatarUrlIfExpired(user);
+          } catch (error) {
+            console.error(
+              `Error refreshing avatar URL for user ${user.user_id}:`,
+              error,
+            );
+            // Continue without throwing - we'll return the user with potentially expired URL
+          }
+        }
+      }),
+    );
+
     return {
       data: rows,
       total: count,
@@ -636,6 +687,23 @@ export class UsersService {
       offset,
       distinct: true,
     });
+
+    // Refresh avatar URLs for all users
+    await Promise.all(
+      rows.map(async (user) => {
+        if (user.avatar_url) {
+          try {
+            await this.refreshAvatarUrlIfExpired(user);
+          } catch (error) {
+            console.error(
+              `Error refreshing avatar URL for user ${user.user_id}:`,
+              error,
+            );
+            // Continue without throwing - we'll return the user with potentially expired URL
+          }
+        }
+      }),
+    );
 
     return {
       data: rows,
