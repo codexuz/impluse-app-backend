@@ -187,6 +187,7 @@ export class AuthService {
         phone: user.phone,
         first_name: user.first_name,
         last_name: user.last_name,
+        avatar_url: user.avatar_url,
         roles,
       },
       sessionId,
@@ -223,6 +224,8 @@ export class AuthService {
         ...userDataWithoutPassword,
         password_hash: hashedPassword,
         is_active: true,
+        avatar_url:
+          "https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/avatars/avatar.png",
       });
 
       // Assign student role
@@ -493,6 +496,7 @@ export class AuthService {
         phone: user.phone,
         first_name: user.first_name,
         last_name: user.last_name,
+        avatar_url: user.avatar_url,
         roles,
       },
       sessionId: session.id,
