@@ -45,11 +45,13 @@ export class UploadService {
         : `uploads/${objectName}`;
 
       // Generate a presigned URL valid for 7 days
-      const url = await this.awsStorageService.getPresignedUrl(
-        this.storageBucket,
-        fullObjectName,
-        7 * 24 * 60 * 60,
-      );
+      // const url = await this.awsStorageService.getPresignedUrl(
+      //   this.storageBucket,
+      //   fullObjectName,
+      //   7 * 24 * 60 * 60,
+      // );
+
+      const url = `https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/${fullObjectName}`;
       return url;
     } catch (error) {
       throw new BadRequestException(
