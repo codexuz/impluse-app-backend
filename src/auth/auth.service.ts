@@ -16,10 +16,13 @@ import { Role } from "../users/entities/role.model.js";
 import { UserSession } from "../users/entities/user-session.model.js";
 import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
 import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
+import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class AuthService {
+  private readonly storageBucket = "speakup";
+
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
@@ -30,6 +33,7 @@ export class AuthService {
     @InjectModel(StudentParent)
     private studentParentModel: typeof StudentParent,
     private jwtService: JwtService,
+    private awsStorageService: AwsStorageService,
   ) {}
 
   async validateUser(username: string, pass: string): Promise<User | null> {
@@ -187,6 +191,7 @@ export class AuthService {
         phone: user.phone,
         first_name: user.first_name,
         last_name: user.last_name,
+        avatar_url: user.avatar_url,
         roles,
       },
       sessionId,
@@ -223,6 +228,8 @@ export class AuthService {
         ...userDataWithoutPassword,
         password_hash: hashedPassword,
         is_active: true,
+        avatar_url:
+          "https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/avatars/avatar.png",
       });
 
       // Assign student role
@@ -493,6 +500,7 @@ export class AuthService {
         phone: user.phone,
         first_name: user.first_name,
         last_name: user.last_name,
+        avatar_url: user.avatar_url,
         roles,
       },
       sessionId: session.id,

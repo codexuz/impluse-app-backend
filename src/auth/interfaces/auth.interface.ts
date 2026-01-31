@@ -7,6 +7,7 @@ export interface AuthResponse {
     phone: string;
     first_name: string;
     last_name: string;
+    avatar_url?: string;
     roles: string[];
   };
   sessionId: string;

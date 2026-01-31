@@ -147,9 +147,18 @@ export class CoursesService {
         {
           model: Unit,
           as: "units",
+          where: { isActive: true },
+          required: false,
           separate: true,
           order: [["order", "ASC"]],
-          include: ["lessons"],
+          include: [
+            {
+              model: Lesson,
+              as: "lessons",
+              where: { isActive: true },
+              required: false,
+            },
+          ],
         },
       ],
     });

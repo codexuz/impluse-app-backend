@@ -633,6 +633,14 @@ export class AudioService {
   async addComment(createCommentDto: CreateCommentDto, userId: string) {
     const audio = await this.getAudioById(createCommentDto.audioId);
 
+    // Check if user has previously commented on this audio
+    const previousCommentCount = await this.audioCommentModel.count({
+      where: {
+        audioId: createCommentDto.audioId,
+        userId,
+      },
+    });
+
     const comment = await this.audioCommentModel.create({
       ...createCommentDto,
       userId,
@@ -641,12 +649,14 @@ export class AudioService {
     await audio.increment("commentCount");
     await this.updateTrendingScore(createCommentDto.audioId);
 
-    // Reward the user who commented
-    await this.rewardUser(
-      userId,
-      REWARDS.COMMENT.coins,
-      REWARDS.COMMENT.points,
-    );
+    // Reward the user who commented only on their first comment on this audio
+    if (previousCommentCount === 0) {
+      await this.rewardUser(
+        userId,
+        REWARDS.COMMENT.coins,
+        REWARDS.COMMENT.points,
+      );
+    }
 
     // Notify audio owner
     if (audio.studentId !== userId) {
