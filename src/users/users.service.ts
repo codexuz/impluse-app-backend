@@ -157,6 +157,16 @@ export class UsersService {
       throw new NotFoundException(`User with ID "${id}" not found`);
     }
 
+    // Refresh avatar URL if expired
+    if (user.avatar_url) {
+      try {
+        await this.refreshAvatarUrlIfExpired(user);
+      } catch (error) {
+        console.error(`Error refreshing avatar URL for user ${id}:`, error);
+        // Continue without throwing - we'll return the user with potentially expired URL
+      }
+    }
+
     return user;
   }
 
@@ -181,6 +191,19 @@ export class UsersService {
 
     if (!user) {
       throw new NotFoundException(`User with username "${username}" not found`);
+    }
+
+    // Refresh avatar URL if expired
+    if (user.avatar_url) {
+      try {
+        await this.refreshAvatarUrlIfExpired(user);
+      } catch (error) {
+        console.error(
+          `Error refreshing avatar URL for user ${username}:`,
+          error,
+        );
+        // Continue without throwing - we'll return the user with potentially expired URL
+      }
     }
 
     return user;
@@ -801,5 +824,45 @@ export class UsersService {
 
     // Return updated user without password_hash
     return this.findOne(userId);
+  }
+
+  /**
+   * Refresh avatar URL if it's older than 6 days
+   * @param user The user object
+   */
+  private async refreshAvatarUrlIfExpired(user: User): Promise<void> {
+    if (!user.avatar_url) return;
+
+    const userAge = Date.now() - new Date(user.updatedAt).getTime();
+    const sixDaysInMs = 6 * 24 * 60 * 60 * 1000;
+
+    if (userAge > sixDaysInMs) {
+      try {
+        // Extract the object name from the avatar URL or construct it from the filename
+        // Avatar files are stored as avatars/{filename}
+        const parts = user.avatar_url.split("/");
+        const filename = parts[parts.length - 1];
+
+        // Remove query params from filename if present
+        const filenameWithoutQuery = filename.split("?")[0];
+        const objectName = `avatars/${filenameWithoutQuery}`;
+
+        // Generate new presigned URL (valid for 7 days)
+        const newAvatarUrl = await this.awsStorageService.getPresignedUrl(
+          this.storageBucket,
+          objectName,
+          7 * 24 * 60 * 60,
+        );
+
+        // Update the user's avatar_url
+        await user.update({ avatar_url: newAvatarUrl });
+      } catch (error) {
+        console.error(
+          `Error refreshing avatar URL for user ${user.user_id}:`,
+          error,
+        );
+        throw error;
+      }
+    }
   }
 }
