@@ -834,11 +834,13 @@ export class UsersService {
     );
 
     // Generate presigned URL from AWS S3 (valid for 7 days)
-    const avatarUrl = await this.awsStorageService.getPresignedUrl(
-      this.storageBucket,
-      objectName,
-      7 * 24 * 60 * 60,
-    );
+    // const avatarUrl = await this.awsStorageService.getPresignedUrl(
+    //   this.storageBucket,
+    //   objectName,
+    //   7 * 24 * 60 * 60,
+    // );
+
+    const avatarUrl = `https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/${objectName}`;
 
     // Update the user's avatar_url
     await user.update({ avatar_url: avatarUrl });
@@ -861,11 +863,14 @@ export class UsersService {
     }
 
     // Generate presigned URL from AWS S3 (valid for 7 days)
-    const avatarUrl = await this.awsStorageService.getPresignedUrl(
-      this.storageBucket,
-      `avatars/${filename}`,
-      7 * 24 * 60 * 60,
-    );
+    // const avatarUrl = await this.awsStorageService.getPresignedUrl(
+    //   this.storageBucket,
+    //   `avatars/${filename}`,
+    //   7 * 24 * 60 * 60,
+    // );
+
+    const avatarUrl = `https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/avatars/${filename}}`;
+
 
     // Update the user's avatar_url
     await user.update({ avatar_url: avatarUrl });
