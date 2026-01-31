@@ -292,6 +292,18 @@ export class GroupsService {
 
   async remove(id: string): Promise<void> {
     const group = await this.findOne(id);
+
+    // Delete all group assigned lessons for this group
+    await this.groupAssignedLessonModel.destroy({
+      where: { group_id: id },
+    });
+
+    // Delete all group assigned units for this group
+    await this.groupAssignedUnitModel.destroy({
+      where: { group_id: id },
+    });
+
+    // Delete the group
     await group.destroy();
   }
 }
