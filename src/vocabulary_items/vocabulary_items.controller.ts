@@ -14,6 +14,7 @@ import {
 import { VocabularyItemsService } from "./vocabulary_items.service.js";
 import { CreateVocabularyItemDto } from "./dto/create-vocabulary_item.dto.js";
 import { UpdateVocabularyItemDto } from "./dto/update-vocabulary_item.dto.js";
+import { QueryVocabularyItemDto } from "./dto/query-vocabulary_item.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -22,7 +23,7 @@ import { Roles } from "../auth/decorators/roles.decorator.js";
 @UseGuards(JwtAuthGuard)
 export class VocabularyItemsController {
   constructor(
-    private readonly vocabularyItemsService: VocabularyItemsService
+    private readonly vocabularyItemsService: VocabularyItemsService,
   ) {}
 
   @Post()
@@ -42,8 +43,22 @@ export class VocabularyItemsController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles("admin", "teacher", "student")
-  findAll() {
-    return this.vocabularyItemsService.findAll();
+  findAll(@Query() query: QueryVocabularyItemDto) {
+    return this.vocabularyItemsService.findAllPaginated(query);
+  }
+
+  @Get("stats")
+  @UseGuards(RolesGuard)
+  @Roles("admin", "teacher")
+  getStats() {
+    return this.vocabularyItemsService.getStats();
+  }
+
+  @Get("set/:setId/stats")
+  @UseGuards(RolesGuard)
+  @Roles("admin", "teacher")
+  getStatsBySetId(@Param("setId") setId: string) {
+    return this.vocabularyItemsService.getStats(setId);
   }
 
   @Get("set/:setId")
@@ -54,16 +69,9 @@ export class VocabularyItemsController {
   @Get("set/:setId/paginated")
   findBySetIdPaginated(
     @Param("setId") setId: string,
-    @Query("page") page?: string,
-    @Query("limit") limit?: string
+    @Query() query: QueryVocabularyItemDto,
   ) {
-    const pageNumber = page ? parseInt(page, 10) : 1;
-    const limitNumber = limit ? parseInt(limit, 10) : 10;
-    return this.vocabularyItemsService.findBySetIdPaginated(
-      setId,
-      pageNumber,
-      limitNumber
-    );
+    return this.vocabularyItemsService.findBySetIdPaginated(setId, query);
   }
 
   @Get("word/:word")
@@ -81,7 +89,7 @@ export class VocabularyItemsController {
   @Roles("admin", "teacher")
   update(
     @Param("id") id: string,
-    @Body() updateVocabularyItemDto: UpdateVocabularyItemDto
+    @Body() updateVocabularyItemDto: UpdateVocabularyItemDto,
   ) {
     return this.vocabularyItemsService.update(id, updateVocabularyItemDto);
   }
