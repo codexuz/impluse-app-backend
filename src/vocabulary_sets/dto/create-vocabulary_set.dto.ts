@@ -1,9 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsUUID, IsEnum } from 'class-validator';
 
 export class CreateVocabularySetDto {
-  @IsUUID()
-  @IsOptional()
-  course_id?: string;
 
   @IsString()
   @IsNotEmpty()
