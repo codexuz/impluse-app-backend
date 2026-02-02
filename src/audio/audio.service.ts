@@ -595,37 +595,79 @@ export class AudioService {
   async toggleLike(audioId: number, userId: string) {
     const audio = await this.getAudioById(audioId);
 
-    const existingLike = await this.audioLikeModel.findOne({
-      where: { audioId, userId },
-    });
+    // Use transaction to prevent race conditions
+    const sequelize = this.audioLikeModel.sequelize;
+    const transaction = await sequelize.transaction();
 
-    if (existingLike) {
-      // Unlike
-      await existingLike.destroy();
-      await audio.decrement("likeCount");
-      await this.updateTrendingScore(audioId);
-      return { liked: false, message: "Audio unliked" };
-    } else {
-      // Like
-      await this.audioLikeModel.create({ audioId, userId });
-      await audio.increment("likeCount");
-      await this.updateTrendingScore(audioId);
+    try {
+      // Lock the audio row for this transaction
+      const existingLike = await this.audioLikeModel.findOne({
+        where: { audioId, userId },
+        lock: transaction.LOCK.UPDATE,
+        transaction,
+      });
 
-      // Reward the user who liked
-      await this.rewardUser(userId, REWARDS.LIKE.coins, REWARDS.LIKE.points);
+      if (existingLike) {
+        // Unlike
+        await existingLike.destroy({ transaction });
+        await audio.decrement("likeCount", { transaction });
+        await transaction.commit();
 
-      // Notify audio owner
-      if (audio.studentId !== userId) {
-        await this.sendNotification({
-          userId: audio.studentId,
-          fromUserId: userId,
-          audioId,
-          type: NotificationType.LIKE,
-          message: "Someone liked your audio!",
-        });
+        // Update trending score after commit
+        await this.updateTrendingScore(audioId);
+        return { liked: false, message: "Audio unliked" };
+      } else {
+        // Like - Try to create, handle duplicate error
+        try {
+          await this.audioLikeModel.create(
+            { audioId, userId },
+            { transaction },
+          );
+          await audio.increment("likeCount", { transaction });
+          await transaction.commit();
+
+          // Update trending score after commit
+          await this.updateTrendingScore(audioId);
+
+          // Reward the user who liked
+          await this.rewardUser(
+            userId,
+            REWARDS.LIKE.coins,
+            REWARDS.LIKE.points,
+          );
+
+          // Notify audio owner
+          if (audio.studentId !== userId) {
+            await this.sendNotification({
+              userId: audio.studentId,
+              fromUserId: userId,
+              audioId,
+              type: NotificationType.LIKE,
+              message: "Someone liked your audio!",
+            });
+          }
+
+          return { liked: true, message: "Audio liked" };
+        } catch (createError) {
+          // If duplicate key error (race condition caught), just rollback and return current state
+          await transaction.rollback();
+
+          // Check actual state after race condition
+          const finalLike = await this.audioLikeModel.findOne({
+            where: { audioId, userId },
+          });
+
+          return {
+            liked: !!finalLike,
+            message: finalLike
+              ? "Audio already liked"
+              : "Like operation failed",
+          };
+        }
       }
-
-      return { liked: true, message: "Audio liked" };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
   }
 
