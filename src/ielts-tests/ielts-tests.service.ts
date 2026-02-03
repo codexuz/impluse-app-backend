@@ -1,0 +1,392 @@
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectModel } from "@nestjs/sequelize";
+import { IeltsTest } from "./entities/ielts-test.entity.js";
+import { IeltsReading } from "./entities/ielts-reading.entity.js";
+import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
+import { IeltsListening } from "./entities/ielts-listening.entity.js";
+import { IeltsListeningPart } from "./entities/ielts-listening-part.entity.js";
+import { IeltsWriting } from "./entities/ielts-writing.entity.js";
+import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
+import { IeltsAudio } from "./entities/ielts-audio.entity.js";
+import { IeltsQuestion } from "./entities/ielts-question.entity.js";
+import { IeltsQuestionContent } from "./entities/ielts-question-content.entity.js";
+import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
+import { IeltsMultipleChoiceQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
+import { IeltsMultipleChoiceOption } from "./entities/ielts-multiple-choice-option.entity.js";
+import { CreateTestDto } from "./dto/create-test.dto.js";
+import { UpdateTestDto } from "./dto/update-test.dto.js";
+import { CreateReadingDto } from "./dto/create-reading.dto.js";
+import { UpdateReadingDto } from "./dto/update-reading.dto.js";
+import { CreateReadingPartDto } from "./dto/create-reading-part.dto.js";
+import { CreateListeningDto } from "./dto/create-listening.dto.js";
+import { CreateListeningPartDto } from "./dto/create-listening-part.dto.js";
+import { CreateWritingDto } from "./dto/create-writing.dto.js";
+import { CreateWritingTaskDto } from "./dto/create-writing-task.dto.js";
+import { CreateAudioDto } from "./dto/create-audio.dto.js";
+import { CreateQuestionDto } from "./dto/create-question.dto.js";
+import { CreateQuestionContentDto } from "./dto/create-question-content.dto.js";
+import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
+import { CreateMultipleChoiceQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
+import { CreateMultipleChoiceOptionDto } from "./dto/create-multiple-choice-option.dto.js";
+import { User } from "../users/entities/user.entity.js";
+
+@Injectable()
+export class IeltsTestsService {
+  constructor(
+    @InjectModel(IeltsTest)
+    private readonly ieltsTestModel: typeof IeltsTest,
+    @InjectModel(IeltsReading)
+    private readonly ieltsReadingModel: typeof IeltsReading,
+    @InjectModel(IeltsReadingPart)
+    private readonly ieltsReadingPartModel: typeof IeltsReadingPart,
+    @InjectModel(IeltsListening)
+    private readonly ieltsListeningModel: typeof IeltsListening,
+    @InjectModel(IeltsListeningPart)
+    private readonly ieltsListeningPartModel: typeof IeltsListeningPart,
+    @InjectModel(IeltsWriting)
+    private readonly ieltsWritingModel: typeof IeltsWriting,
+    @InjectModel(IeltsWritingTask)
+    private readonly ieltsWritingTaskModel: typeof IeltsWritingTask,
+    @InjectModel(IeltsAudio)
+    private readonly ieltsAudioModel: typeof IeltsAudio,
+    @InjectModel(IeltsQuestion)
+    private readonly ieltsQuestionModel: typeof IeltsQuestion,
+    @InjectModel(IeltsQuestionContent)
+    private readonly ieltsQuestionContentModel: typeof IeltsQuestionContent,
+    @InjectModel(IeltsQuestionOption)
+    private readonly ieltsQuestionOptionModel: typeof IeltsQuestionOption,
+    @InjectModel(IeltsMultipleChoiceQuestion)
+    private readonly ieltsMultipleChoiceQuestionModel: typeof IeltsMultipleChoiceQuestion,
+    @InjectModel(IeltsMultipleChoiceOption)
+    private readonly ieltsMultipleChoiceOptionModel: typeof IeltsMultipleChoiceOption,
+  ) {}
+
+  // ========== Tests ==========
+  async createTest(createTestDto: CreateTestDto): Promise<IeltsTest> {
+    return await this.ieltsTestModel.create(createTestDto as any);
+  }
+
+  async findAllTests(): Promise<IeltsTest[]> {
+    return await this.ieltsTestModel.findAll({
+      include: [{ model: User, as: "creator" }],
+      order: [["createdAt", "DESC"]],
+    });
+  }
+
+  async findTestById(id: string): Promise<IeltsTest> {
+    const test = await this.ieltsTestModel.findByPk(id, {
+      include: [{ model: User, as: "creator" }],
+    });
+
+    if (!test) {
+      throw new NotFoundException(`Test with ID ${id} not found`);
+    }
+
+    return test;
+  }
+
+  async updateTest(
+    id: string,
+    updateTestDto: UpdateTestDto,
+  ): Promise<IeltsTest> {
+    const test = await this.findTestById(id);
+    await test.update(updateTestDto);
+    return test;
+  }
+
+  async deleteTest(id: string): Promise<void> {
+    const test = await this.findTestById(id);
+    await test.destroy();
+  }
+
+  // ========== Reading ==========
+  async createReading(
+    createReadingDto: CreateReadingDto,
+  ): Promise<IeltsReading> {
+    return await this.ieltsReadingModel.create(createReadingDto as any);
+  }
+
+  async findAllReadings(): Promise<IeltsReading[]> {
+    return await this.ieltsReadingModel.findAll({
+      include: [
+        { model: IeltsTest, as: "test" },
+        { model: IeltsReadingPart, as: "parts" },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+  }
+
+  async findReadingById(id: string): Promise<IeltsReading> {
+    const reading = await this.ieltsReadingModel.findByPk(id, {
+      include: [
+        { model: IeltsTest, as: "test" },
+        { model: IeltsReadingPart, as: "parts" },
+      ],
+    });
+
+    if (!reading) {
+      throw new NotFoundException(`Reading with ID ${id} not found`);
+    }
+
+    return reading;
+  }
+
+  async updateReading(
+    id: string,
+    updateReadingDto: UpdateReadingDto,
+  ): Promise<IeltsReading> {
+    const reading = await this.findReadingById(id);
+    await reading.update(updateReadingDto);
+    return reading;
+  }
+
+  async deleteReading(id: string): Promise<void> {
+    const reading = await this.findReadingById(id);
+    await reading.destroy();
+  }
+
+  // ========== Reading Parts ==========
+  async createReadingPart(
+    createReadingPartDto: CreateReadingPartDto,
+  ): Promise<IeltsReadingPart> {
+    return await this.ieltsReadingPartModel.create(createReadingPartDto as any);
+  }
+
+  async findReadingPartById(id: string): Promise<IeltsReadingPart> {
+    const part = await this.ieltsReadingPartModel.findByPk(id, {
+      include: [
+        { model: IeltsReading, as: "reading" },
+        { model: IeltsQuestion, as: "questions" },
+      ],
+    });
+
+    if (!part) {
+      throw new NotFoundException(`Reading part with ID ${id} not found`);
+    }
+
+    return part;
+  }
+
+  // ========== Listening ==========
+  async createListening(
+    createListeningDto: CreateListeningDto,
+  ): Promise<IeltsListening> {
+    return await this.ieltsListeningModel.create(createListeningDto as any);
+  }
+
+  async findAllListenings(): Promise<IeltsListening[]> {
+    return await this.ieltsListeningModel.findAll({
+      include: [
+        { model: IeltsTest, as: "test" },
+        { model: IeltsListeningPart, as: "parts" },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+  }
+
+  async findListeningById(id: string): Promise<IeltsListening> {
+    const listening = await this.ieltsListeningModel.findByPk(id, {
+      include: [
+        { model: IeltsTest, as: "test" },
+        { model: IeltsListeningPart, as: "parts" },
+      ],
+    });
+
+    if (!listening) {
+      throw new NotFoundException(`Listening with ID ${id} not found`);
+    }
+
+    return listening;
+  }
+
+  // ========== Listening Parts ==========
+  async createListeningPart(
+    createListeningPartDto: CreateListeningPartDto,
+  ): Promise<IeltsListeningPart> {
+    return await this.ieltsListeningPartModel.create(
+      createListeningPartDto as any,
+    );
+  }
+
+  async findListeningPartById(id: string): Promise<IeltsListeningPart> {
+    const part = await this.ieltsListeningPartModel.findByPk(id, {
+      include: [
+        { model: IeltsListening, as: "listening" },
+        { model: IeltsQuestion, as: "questions" },
+        { model: IeltsAudio, as: "audio" },
+      ],
+    });
+
+    if (!part) {
+      throw new NotFoundException(`Listening part with ID ${id} not found`);
+    }
+
+    return part;
+  }
+
+  // ========== Writing ==========
+  async createWriting(
+    createWritingDto: CreateWritingDto,
+  ): Promise<IeltsWriting> {
+    return await this.ieltsWritingModel.create(createWritingDto as any);
+  }
+
+  async findAllWritings(): Promise<IeltsWriting[]> {
+    return await this.ieltsWritingModel.findAll({
+      include: [
+        { model: IeltsTest, as: "test" },
+        { model: IeltsWritingTask, as: "tasks" },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+  }
+
+  async findWritingById(id: string): Promise<IeltsWriting> {
+    const writing = await this.ieltsWritingModel.findByPk(id, {
+      include: [
+        { model: IeltsTest, as: "test" },
+        { model: IeltsWritingTask, as: "tasks" },
+      ],
+    });
+
+    if (!writing) {
+      throw new NotFoundException(`Writing with ID ${id} not found`);
+    }
+
+    return writing;
+  }
+
+  // ========== Writing Tasks ==========
+  async createWritingTask(
+    createWritingTaskDto: CreateWritingTaskDto,
+  ): Promise<IeltsWritingTask> {
+    return await this.ieltsWritingTaskModel.create(createWritingTaskDto as any);
+  }
+
+  async findWritingTaskById(id: string): Promise<IeltsWritingTask> {
+    const task = await this.ieltsWritingTaskModel.findByPk(id, {
+      include: [{ model: IeltsWriting, as: "writing" }],
+    });
+
+    if (!task) {
+      throw new NotFoundException(`Writing task with ID ${id} not found`);
+    }
+
+    return task;
+  }
+
+  // ========== Audio ==========
+  async createAudio(createAudioDto: CreateAudioDto): Promise<IeltsAudio> {
+    return await this.ieltsAudioModel.create(createAudioDto as any);
+  }
+
+  async findAllAudios(): Promise<IeltsAudio[]> {
+    return await this.ieltsAudioModel.findAll({
+      order: [["createdAt", "DESC"]],
+    });
+  }
+
+  async findAudioById(id: string): Promise<IeltsAudio> {
+    const audio = await this.ieltsAudioModel.findByPk(id);
+
+    if (!audio) {
+      throw new NotFoundException(`Audio with ID ${id} not found`);
+    }
+
+    return audio;
+  }
+
+  // ========== Questions ==========
+  async createQuestion(
+    createQuestionDto: CreateQuestionDto,
+  ): Promise<IeltsQuestion> {
+    return await this.ieltsQuestionModel.create(createQuestionDto as any);
+  }
+
+  async findQuestionById(id: string): Promise<IeltsQuestion> {
+    const question = await this.ieltsQuestionModel.findByPk(id, {
+      include: [
+        { model: IeltsReadingPart, as: "readingPart" },
+        { model: IeltsListeningPart, as: "listeningPart" },
+        { model: IeltsQuestionContent, as: "contents" },
+      ],
+    });
+
+    if (!question) {
+      throw new NotFoundException(`Question with ID ${id} not found`);
+    }
+
+    return question;
+  }
+
+  // ========== Question Contents ==========
+  async createQuestionContent(
+    createQuestionContentDto: CreateQuestionContentDto,
+  ): Promise<IeltsQuestionContent> {
+    return await this.ieltsQuestionContentModel.create(
+      createQuestionContentDto as any,
+    );
+  }
+
+  async findQuestionContentById(id: string): Promise<IeltsQuestionContent> {
+    const content = await this.ieltsQuestionContentModel.findByPk(id, {
+      include: [
+        { model: IeltsQuestion, as: "question" },
+        { model: IeltsQuestionOption, as: "options" },
+        { model: IeltsMultipleChoiceQuestion, as: "multipleChoiceQuestions" },
+      ],
+    });
+
+    if (!content) {
+      throw new NotFoundException(`Question content with ID ${id} not found`);
+    }
+
+    return content;
+  }
+
+  // ========== Question Options ==========
+  async createQuestionOption(
+    createQuestionOptionDto: CreateQuestionOptionDto,
+  ): Promise<IeltsQuestionOption> {
+    return await this.ieltsQuestionOptionModel.create(
+      createQuestionOptionDto as any,
+    );
+  }
+
+  // ========== Multiple Choice Questions ==========
+  async createMultipleChoiceQuestion(
+    createMultipleChoiceQuestionDto: CreateMultipleChoiceQuestionDto,
+  ): Promise<IeltsMultipleChoiceQuestion> {
+    return await this.ieltsMultipleChoiceQuestionModel.create(
+      createMultipleChoiceQuestionDto as any,
+    );
+  }
+
+  async findMultipleChoiceQuestionById(
+    id: string,
+  ): Promise<IeltsMultipleChoiceQuestion> {
+    const mcq = await this.ieltsMultipleChoiceQuestionModel.findByPk(id, {
+      include: [
+        { model: IeltsQuestionContent, as: "questionContent" },
+        { model: IeltsMultipleChoiceOption, as: "options" },
+      ],
+    });
+
+    if (!mcq) {
+      throw new NotFoundException(
+        `Multiple choice question with ID ${id} not found`,
+      );
+    }
+
+    return mcq;
+  }
+
+  // ========== Multiple Choice Options ==========
+  async createMultipleChoiceOption(
+    createMultipleChoiceOptionDto: CreateMultipleChoiceOptionDto,
+  ): Promise<IeltsMultipleChoiceOption> {
+    return await this.ieltsMultipleChoiceOptionModel.create(
+      createMultipleChoiceOptionDto as any,
+    );
+  }
+}

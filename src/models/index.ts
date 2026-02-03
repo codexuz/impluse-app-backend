@@ -89,6 +89,19 @@ import { TeacherTransaction } from "../teacher-transaction/entities/teacher-tran
 import { Branch } from "../branches/entities/branch.entity.js";
 import { CompensateLesson } from "../compensate-lessons/entities/compensate-lesson.entity.js";
 import { CompensateTeacherWallet } from "../compensate-lessons/entities/compensate-teacher-wallet.entity.js";
+import { IeltsTest } from "../ielts-tests/entities/ielts-test.entity.js";
+import { IeltsReading } from "../ielts-tests/entities/ielts-reading.entity.js";
+import { IeltsReadingPart } from "../ielts-tests/entities/ielts-reading-part.entity.js";
+import { IeltsListening } from "../ielts-tests/entities/ielts-listening.entity.js";
+import { IeltsListeningPart } from "../ielts-tests/entities/ielts-listening-part.entity.js";
+import { IeltsWriting } from "../ielts-tests/entities/ielts-writing.entity.js";
+import { IeltsWritingTask } from "../ielts-tests/entities/ielts-writing-task.entity.js";
+import { IeltsAudio } from "../ielts-tests/entities/ielts-audio.entity.js";
+import { IeltsQuestion } from "../ielts-tests/entities/ielts-question.entity.js";
+import { IeltsQuestionContent } from "../ielts-tests/entities/ielts-question-content.entity.js";
+import { IeltsQuestionOption } from "../ielts-tests/entities/ielts-question-option.entity.js";
+import { IeltsMultipleChoiceQuestion } from "../ielts-tests/entities/ielts-multiple-choice-question.entity.js";
+import { IeltsMultipleChoiceOption } from "../ielts-tests/entities/ielts-multiple-choice-option.entity.js";
 
 export const Models = [
   User,
@@ -171,6 +184,21 @@ export const Models = [
   Branch,
   CompensateLesson,
   CompensateTeacherWallet,
+  IeltsTest,
+  IeltsReading,
+  IeltsReadingPart,
+  IeltsListening,
+  IeltsListeningPart,
+  IeltsWriting,
+  IeltsWritingTask,
+  IeltsAudio,
+  IeltsQuestion,
+  IeltsQuestionContent,
+  IeltsQuestionOption,
+  IeltsMultipleChoiceQuestion,
+  IeltsMultipleChoiceOption,
+  SupportSchedule,
+  SupportBooking,
 ];
 
 // Define associations after all models are loaded

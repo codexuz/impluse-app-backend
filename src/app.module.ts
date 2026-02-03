@@ -87,6 +87,7 @@ import { AwsStorageModule } from "./aws-storage/aws-storage.module.js";
 import { StudentParentsModule } from "./student-parents/student-parents.module.js";
 import { CompensateLessonsModule } from "./compensate-lessons/compensate-lessons.module.js";
 import { BranchesModule } from "./branches/branches.module.js";
+import { IeltsTestsModule } from './ielts-tests/ielts-tests.module.js';
 
 @Module({
   imports: [
@@ -175,6 +176,7 @@ import { BranchesModule } from "./branches/branches.module.js";
     StudentParentsModule,
     CompensateLessonsModule,
     BranchesModule,
+    IeltsTestsModule,
   ],
   controllers: [AppController],
   providers: [
