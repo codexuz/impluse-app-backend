@@ -4,8 +4,6 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
-  HasMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
@@ -49,12 +47,6 @@ export class IeltsWriting extends Model<IeltsWriting> {
     defaultValue: true,
   })
   is_active: boolean;
-
-  @BelongsTo(() => IeltsTest)
-  test: IeltsTest;
-
-  @HasMany(() => IeltsWritingTask)
-  tasks: IeltsWritingTask[];
 
   @CreatedAt
   createdAt: Date;

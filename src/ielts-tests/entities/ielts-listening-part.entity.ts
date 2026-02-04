@@ -4,8 +4,6 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
-  HasMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
@@ -57,15 +55,6 @@ export class IeltsListeningPart extends Model<IeltsListeningPart> {
     allowNull: true,
   })
   answers: Record<string, any>;
-
-  @BelongsTo(() => IeltsListening)
-  listening: IeltsListening;
-
-  @HasMany(() => IeltsQuestion)
-  questions: IeltsQuestion[];
-
-  @BelongsTo(() => IeltsAudio)
-  audio: IeltsAudio;
 
   @CreatedAt
   createdAt: Date;

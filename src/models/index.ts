@@ -1268,4 +1268,120 @@ export function initializeAssociations() {
     foreignKey: "judgeUserId",
     as: "judge",
   });
+
+  // IELTS Test associations
+  IeltsTest.belongsTo(User, {
+    foreignKey: "created_by",
+    as: "creator",
+  });
+
+  // IeltsReading associations
+  IeltsReading.belongsTo(IeltsTest, {
+    foreignKey: "test_id",
+    as: "test",
+  });
+  IeltsReading.hasMany(IeltsReadingPart, {
+    foreignKey: "reading_id",
+    as: "parts",
+  });
+
+  // IeltsListening associations
+  IeltsListening.belongsTo(IeltsTest, {
+    foreignKey: "test_id",
+    as: "test",
+  });
+  IeltsListening.hasMany(IeltsListeningPart, {
+    foreignKey: "listening_id",
+    as: "parts",
+  });
+
+  // IeltsWriting associations
+  IeltsWriting.belongsTo(IeltsTest, {
+    foreignKey: "test_id",
+    as: "test",
+  });
+  IeltsWriting.hasMany(IeltsWritingTask, {
+    foreignKey: "writing_id",
+    as: "tasks",
+  });
+
+  // IeltsReadingPart associations
+  IeltsReadingPart.belongsTo(IeltsReading, {
+    foreignKey: "reading_id",
+    as: "reading",
+  });
+  IeltsReadingPart.hasMany(IeltsQuestion, {
+    foreignKey: "reading_part_id",
+    as: "questions",
+  });
+
+  // IeltsListeningPart associations
+  IeltsListeningPart.belongsTo(IeltsListening, {
+    foreignKey: "listening_id",
+    as: "listening",
+  });
+  IeltsListeningPart.hasMany(IeltsQuestion, {
+    foreignKey: "listening_part_id",
+    as: "questions",
+  });
+  IeltsListeningPart.belongsTo(IeltsAudio, {
+    foreignKey: "audio_id",
+    as: "audio",
+  });
+
+  // IeltsWritingTask associations
+  IeltsWritingTask.belongsTo(IeltsWriting, {
+    foreignKey: "writing_id",
+    as: "writing",
+  });
+
+  // IeltsQuestion associations
+  IeltsQuestion.belongsTo(IeltsReadingPart, {
+    foreignKey: "reading_part_id",
+    as: "readingPart",
+  });
+  IeltsQuestion.belongsTo(IeltsListeningPart, {
+    foreignKey: "listening_part_id",
+    as: "listeningPart",
+  });
+  IeltsQuestion.hasMany(IeltsQuestionContent, {
+    foreignKey: "question_id",
+    as: "contents",
+  });
+
+  // IeltsQuestionContent associations
+  IeltsQuestionContent.belongsTo(IeltsQuestion, {
+    foreignKey: "question_id",
+    as: "question",
+  });
+  IeltsQuestionContent.hasMany(IeltsQuestionOption, {
+    foreignKey: "question_content_id",
+    as: "options",
+  });
+  IeltsQuestionContent.hasMany(IeltsMultipleChoiceQuestion, {
+    foreignKey: "question_content_id",
+    as: "multipleChoiceQuestions",
+  });
+
+  // IeltsQuestionOption associations
+  IeltsQuestionOption.belongsTo(IeltsQuestionContent, {
+    foreignKey: "question_content_id",
+    as: "questionContent",
+  });
+
+  // IeltsMultipleChoiceQuestion associations
+  IeltsMultipleChoiceQuestion.belongsTo(IeltsQuestionContent, {
+    foreignKey: "question_content_id",
+    as: "questionContent",
+  });
+  IeltsMultipleChoiceQuestion.hasMany(IeltsMultipleChoiceOption, {
+    foreignKey: "multiple_choice_question_id",
+    as: "options",
+  });
+
+  // IeltsMultipleChoiceOption associations
+  IeltsMultipleChoiceOption.belongsTo(IeltsMultipleChoiceQuestion, {
+    foreignKey: "multiple_choice_question_id",
+    as: "multipleChoiceQuestion",
+  });
 }

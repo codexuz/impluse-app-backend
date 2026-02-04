@@ -4,7 +4,6 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
@@ -48,9 +47,6 @@ export class IeltsTest extends Model<IeltsTest> {
     allowNull: false,
   })
   created_by: string;
-
-  @BelongsTo(() => User)
-  creator: User;
 
   @CreatedAt
   createdAt: Date;

@@ -4,7 +4,6 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
@@ -63,9 +62,6 @@ export class IeltsWritingTask extends Model<IeltsWritingTask> {
     allowNull: true,
   })
   suggested_time: number;
-
-  @BelongsTo(() => IeltsWriting)
-  writing: IeltsWriting;
 
   @CreatedAt
   createdAt: Date;

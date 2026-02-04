@@ -4,8 +4,6 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
-  HasMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
@@ -36,12 +34,6 @@ export class IeltsReading extends Model<IeltsReading> {
     allowNull: false,
   })
   test_id: string;
-
-  @BelongsTo(() => IeltsTest)
-  test: IeltsTest;
-
-  @HasMany(() => IeltsReadingPart)
-  parts: IeltsReadingPart[];
 
   @CreatedAt
   createdAt: Date;

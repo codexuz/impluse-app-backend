@@ -142,19 +142,21 @@ export class AudioService {
         file.mimetype,
       );
 
-      // Generate presigned URL (valid for 7 days)
-      const presignedUrl = await this.awsStorageService.getPresignedUrl(
-        "speakup",
-        objectName,
-        7 * 24 * 60 * 60, // 7 days
-      );
+      // // Generate presigned URL (valid for 7 days)
+      // const presignedUrl = await this.awsStorageService.getPresignedUrl(
+      //   "speakup",
+      //   objectName,
+      //   7 * 24 * 60 * 60, // 7 days
+      // );
+
+      const audioURL = `https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/${objectName}`;
 
       // Create audio record with completed status
       const audio = await this.audioModel.create({
         taskId: createAudioDto.taskId,
         caption: createAudioDto.caption,
         durationSeconds: createAudioDto.durationSeconds,
-        audioUrl: presignedUrl,
+        audioUrl: audioURL,
         studentId,
         status: "completed",
       });
@@ -264,11 +266,8 @@ export class AudioService {
       offset,
     });
 
-    // Process audios with fresh URLs in batches to handle large datasets
-    const audiosWithFreshUrls = await this.processAudiosWithFreshUrls(audios);
-
     // Check if user has liked and judged each audio
-    const audioIds = audiosWithFreshUrls.map((v) => v.id);
+    const audioIds = audios.map((v) => v.id);
 
     // Fetch user likes and judges in parallel
     const [userLikes, userJudges] = await Promise.all([
@@ -291,7 +290,7 @@ export class AudioService {
     const likedAudioIds = new Set(userLikes.map((like) => like.audioId));
     const judgedAudioIds = new Set(userJudges.map((judge) => judge.audioId));
 
-    const audiosWithStatus = audiosWithFreshUrls.map((audio) => {
+    const audiosWithStatus = audios.map((audio) => {
       const audioJson =
         typeof audio.toJSON === "function" ? audio.toJSON() : audio;
       return {
@@ -391,13 +390,10 @@ export class AudioService {
       offset,
     });
 
-    // Process audios with fresh URLs in batches to handle large datasets
-    const audiosWithFreshUrls = await this.processAudiosWithFreshUrls(audios);
-
     // Check if user has liked and judged each audio
-    let audiosWithLikeStatus: any[] = audiosWithFreshUrls;
+    let audiosWithLikeStatus: any[] = audios;
     if (userId) {
-      const audioIds = audiosWithFreshUrls.map((v) => v.id);
+      const audioIds = audios.map((v) => v.id);
 
       // Fetch user likes and judges in parallel
       const [userLikes, userJudges] = await Promise.all([
@@ -420,7 +416,7 @@ export class AudioService {
       const likedAudioIds = new Set(userLikes.map((like) => like.audioId));
       const judgedAudioIds = new Set(userJudges.map((judge) => judge.audioId));
 
-      audiosWithLikeStatus = audiosWithFreshUrls.map((audio) => {
+      audiosWithLikeStatus = audios.map((audio) => {
         const audioJson =
           typeof audio.toJSON === "function" ? audio.toJSON() : audio;
         return {
@@ -430,7 +426,7 @@ export class AudioService {
         };
       });
     } else {
-      audiosWithLikeStatus = audiosWithFreshUrls.map((audio) => {
+      audiosWithLikeStatus = audios.map((audio) => {
         const audioJson =
           typeof audio.toJSON === "function" ? audio.toJSON() : audio;
         return {
@@ -454,113 +450,6 @@ export class AudioService {
         totalPages: Math.ceil(total / limit),
       },
     };
-  }
-
-  // ========== HELPER METHODS FOR URL PROCESSING ==========
-  private async processAudiosWithFreshUrls(audios: any[]): Promise<any[]> {
-    // If no audios, return empty array
-    if (!audios || audios.length === 0) {
-      return [];
-    }
-
-    // For small datasets (< 1000), process all at once
-    if (audios.length < 1000) {
-      return await this.batchProcessAudios(audios);
-    }
-
-    // For large datasets, process in smaller batches to prevent memory issues
-    const BATCH_SIZE = 100;
-    const processedAudios: any[] = [];
-
-    for (let i = 0; i < audios.length; i += BATCH_SIZE) {
-      const batch = audios.slice(i, i + BATCH_SIZE);
-      try {
-        const processedBatch = await this.batchProcessAudios(batch);
-        processedAudios.push(...processedBatch);
-
-        // Add small delay between batches to prevent overwhelming the system
-        if (i + BATCH_SIZE < audios.length) {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-        }
-      } catch (error) {
-        console.error(
-          `Error processing audio batch ${i}-${i + BATCH_SIZE}:`,
-          error,
-        );
-        // Include original audios in case of error to prevent data loss
-        processedAudios.push(...batch);
-      }
-    }
-
-    return processedAudios;
-  }
-
-  private async batchProcessAudios(audios: any[]): Promise<any[]> {
-    const processedAudios = await Promise.allSettled(
-      audios.map(async (audio) => {
-        try {
-          // Check if URL needs refresh (older than 6 days)
-          const audioAge = Date.now() - new Date(audio.updatedAt).getTime();
-          const sixDaysInMs = 6 * 24 * 60 * 60 * 1000;
-
-          if (audioAge > sixDaysInMs && audio.status === "completed") {
-            // Refresh the URL for this audio
-            await this.refreshAudioUrl(audio.id);
-            // Get the updated audio data
-            const updatedAudio = await this.audioModel.findByPk(audio.id, {
-              include: [
-                { model: AudioTask, as: "task" },
-                {
-                  model: User,
-                  as: "student",
-                  attributes: [
-                    "user_id",
-                    "first_name",
-                    "last_name",
-                    "username",
-                    "avatar_url",
-                    "level_id",
-                  ],
-                  include: [
-                    {
-                      model: Course,
-                      as: "level",
-                      attributes: [
-                        "id",
-                        "title",
-                        "description",
-                        "level",
-                        "isActive",
-                      ],
-                    },
-                  ],
-                },
-              ],
-            });
-            return updatedAudio || audio;
-          }
-
-          return audio;
-        } catch (error) {
-          console.error(`Error processing audio ${audio.id}:`, error);
-          // Return original audio if processing fails
-          return audio;
-        }
-      }),
-    );
-
-    // Extract successful results and fallback to original audio for failed ones
-    return processedAudios.map((result, index) => {
-      if (result.status === "fulfilled") {
-        return result.value;
-      } else {
-        console.error(
-          `Failed to process audio ${audios[index].id}:`,
-          result.reason,
-        );
-        return audios[index]; // Return original audio on failure
-      }
-    });
   }
 
   async getTaskAudios(taskId: number, page: number = 1, limit: number = 20) {
@@ -1070,80 +959,6 @@ export class AudioService {
     } catch (error) {
       console.error("Error sending notification:", error);
       // Don't throw - notifications shouldn't break the main flow
-    }
-  }
-
-  // ========== PRESIGNED URL MANAGEMENT ==========
-  async refreshAudioUrl(audioId: number): Promise<string> {
-    // Validate audioId parameter
-    if (
-      !audioId ||
-      isNaN(audioId) ||
-      !Number.isInteger(audioId) ||
-      audioId <= 0
-    ) {
-      throw new BadRequestException("Invalid audio ID provided");
-    }
-
-    const audio = await this.audioModel.findByPk(audioId);
-    if (!audio) {
-      throw new NotFoundException("Audio not found");
-    }
-
-    const objectName = `audios/${audioId}.mp3`;
-    const newPresignedUrl = await this.awsStorageService.getPresignedUrl(
-      "speakup",
-      objectName,
-      7 * 24 * 60 * 60, // 7 days
-    );
-
-    await audio.update({
-      audioUrl: newPresignedUrl,
-    });
-
-    return newPresignedUrl;
-  }
-
-  async getAudioWithFreshUrl(audioId: number) {
-    // Validate audioId parameter
-    if (
-      !audioId ||
-      isNaN(audioId) ||
-      !Number.isInteger(audioId) ||
-      audioId <= 0
-    ) {
-      throw new BadRequestException("Invalid audio ID provided");
-    }
-
-    try {
-      const audio = await this.getAudioById(audioId);
-
-      // Check if URL needs refresh (you might want to store expiry date)
-      // For now, we'll refresh if the URL is older than 6 days
-      const audioAge = Date.now() - new Date(audio.updatedAt).getTime();
-      const sixDaysInMs = 6 * 24 * 60 * 60 * 1000;
-
-      if (audioAge > sixDaysInMs && audio.status === "completed") {
-        try {
-          await this.refreshAudioUrl(audioId);
-          return await this.getAudioById(audioId); // Fetch updated audio
-        } catch (refreshError) {
-          console.error(
-            `Failed to refresh URL for audio ${audioId}:`,
-            refreshError,
-          );
-          // Return original audio if refresh fails
-          return audio;
-        }
-      }
-
-      return audio;
-    } catch (error) {
-      console.error(
-        `Error in getAudioWithFreshUrl for audio ${audioId}:`,
-        error,
-      );
-      throw error; // Re-throw the error for the caller to handle
     }
   }
 

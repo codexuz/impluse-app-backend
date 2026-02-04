@@ -4,7 +4,6 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
@@ -46,9 +45,6 @@ export class IeltsMultipleChoiceOption extends Model<IeltsMultipleChoiceOption> 
     allowNull: true,
   })
   order: number;
-
-  @BelongsTo(() => IeltsMultipleChoiceQuestion)
-  multipleChoiceQuestion: IeltsMultipleChoiceQuestion;
 
   @CreatedAt
   createdAt: Date;
