@@ -126,7 +126,7 @@ export class GroupsService {
     totalPages: number;
   }> {
     const offset = (page - 1) * limit;
-    const whereClause: any = {};
+    const whereClause: any = { isDeleted: false };
 
     if (query) {
       whereClause[Op.or] = [{ name: { [Op.like]: `%${query}%` } }];
@@ -161,11 +161,13 @@ export class GroupsService {
   }
 
   async countActiveGroups(): Promise<number> {
-    return await this.groupModel.count();
+    return await this.groupModel.count({ where: { isDeleted: false } });
   }
 
   async findOne(id: string): Promise<Group> {
-    const group = await this.groupModel.findOne({ where: { id } });
+    const group = await this.groupModel.findOne({
+      where: { id, isDeleted: false },
+    });
     if (!group) {
       throw new NotFoundException(`Group with ID ${id} not found`);
     }
@@ -174,7 +176,7 @@ export class GroupsService {
 
   async findAllStudentsInGroup(id: string): Promise<Group> {
     const group = await this.groupModel.findOne({
-      where: { id },
+      where: { id, isDeleted: false },
       include: [
         {
           association: "students",
@@ -190,7 +192,7 @@ export class GroupsService {
 
   async findTeacherOfGroup(id: string): Promise<Group> {
     const group = await this.groupModel.findOne({
-      where: { id },
+      where: { id, isDeleted: false },
       include: [
         {
           association: "teacher",
@@ -217,7 +219,7 @@ export class GroupsService {
     totalPages: number;
   }> {
     const offset = (page - 1) * limit;
-    const whereClause: any = { teacher_id: teacherId };
+    const whereClause: any = { teacher_id: teacherId, isDeleted: false };
 
     if (query) {
       whereClause[Op.or] = [{ name: { [Op.like]: `%${query}%` } }];
@@ -262,7 +264,7 @@ export class GroupsService {
     totalPages: number;
   }> {
     const offset = (page - 1) * limit;
-    const whereClause: any = { level_id: levelId };
+    const whereClause: any = { level_id: levelId, isDeleted: false };
 
     if (query) {
       whereClause[Op.or] = [{ name: { [Op.like]: `%${query}%` } }];
@@ -292,18 +294,6 @@ export class GroupsService {
 
   async remove(id: string): Promise<void> {
     const group = await this.findOne(id);
-
-    // Delete all group assigned lessons for this group
-    await this.groupAssignedLessonModel.destroy({
-      where: { group_id: id },
-    });
-
-    // Delete all group assigned units for this group
-    await this.groupAssignedUnitModel.destroy({
-      where: { group_id: id },
-    });
-
-    // Delete the group
-    await group.destroy();
+    await group.update({ isDeleted: true });
   }
 }

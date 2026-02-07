@@ -68,6 +68,12 @@ export class Group extends Model {
   })
   lesson_end: string; // Format: HH:MM (e.g., "10:30")
 
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  isDeleted: boolean;
+
   @CreatedAt
   createdAt: Date;
 
