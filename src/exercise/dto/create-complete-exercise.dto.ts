@@ -87,6 +87,15 @@ export class CreateExerciseDto {
   image_url?: string;
 
   @ApiProperty({
+    description: "Video URL for the exercise",
+    required: false,
+    example: "https://example.com/video.mp4",
+  })
+  @IsUrl()
+  @IsOptional()
+  video_url?: string;
+
+  @ApiProperty({
     description: "Instructions for the exercise",
     required: false,
     example: "Choose the correct answer",

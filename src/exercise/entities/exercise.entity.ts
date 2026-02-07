@@ -5,10 +5,10 @@ import {
   DataType,
   CreatedAt,
   UpdatedAt,
-} from 'sequelize-typescript';
+} from "sequelize-typescript";
 
 @Table({
-  tableName: 'exercises',
+  tableName: "exercises",
   timestamps: true,
   paranoid: true,
   underscored: true,
@@ -27,8 +27,8 @@ export class Exercise extends Model {
   })
   title: string;
 
-   @Column({
-    type: DataType.ENUM('grammar', 'reading', 'listening', 'writing'),
+  @Column({
+    type: DataType.ENUM("grammar", "reading", "listening", "writing"),
     allowNull: false,
   })
   exercise_type: string;
@@ -49,9 +49,15 @@ export class Exercise extends Model {
     type: DataType.TEXT,
     allowNull: true,
   })
+  video_url: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
   instructions: string;
 
-    @Column({
+  @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
@@ -74,5 +80,4 @@ export class Exercise extends Model {
 
   @UpdatedAt
   updatedAt: Date;
-
 }
