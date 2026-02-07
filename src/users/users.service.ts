@@ -330,12 +330,13 @@ export class UsersService {
     const hasStudentRole = user.roles?.some((role) => role.name === "student");
 
     if (hasStudentRole) {
-      // Remove student from all groups
+      // Set student status to 'removed' in all groups
       const models = this.userModel.sequelize.models;
       if (models.GroupStudent) {
-        await models.GroupStudent.destroy({
-          where: { student_id: id },
-        });
+        await models.GroupStudent.update(
+          { status: "removed" },
+          { where: { student_id: id } },
+        );
       }
     }
 

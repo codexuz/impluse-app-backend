@@ -16,7 +16,7 @@ export class GroupStudentsService {
     @InjectModel(GroupStudent)
     private groupStudentModel: typeof GroupStudent,
     @InjectModel(Group)
-    private groupModel: typeof Group
+    private groupModel: typeof Group,
   ) {}
 
   async create(createDto: CreateGroupStudentDto): Promise<GroupStudent> {
@@ -31,7 +31,7 @@ export class GroupStudentsService {
 
     if (existingInSameGroup) {
       throw new ConflictException(
-        `Student is already enrolled in this group with status: ${existingInSameGroup.status}`
+        `Student is already enrolled in this group with status: ${existingInSameGroup.status}`,
       );
     }
 
@@ -42,6 +42,7 @@ export class GroupStudentsService {
 
   async findAll(): Promise<GroupStudent[]> {
     return await this.groupStudentModel.findAll({
+      where: { status: "active" },
       include: [
         {
           model: User,
@@ -77,7 +78,7 @@ export class GroupStudentsService {
 
   async findOne(id: string): Promise<GroupStudent> {
     const groupStudent = await this.groupStudentModel.findOne({
-      where: { id },
+      where: { id, status: "active" },
       include: [
         {
           model: User,
@@ -119,7 +120,7 @@ export class GroupStudentsService {
 
   async findByGroupId(groupId: string): Promise<GroupStudent[]> {
     return await this.groupStudentModel.findAll({
-      where: { group_id: groupId },
+      where: { group_id: groupId, status: "active" },
       include: [
         {
           model: User,
@@ -155,7 +156,7 @@ export class GroupStudentsService {
 
   async findByStudentId(studentId: string): Promise<GroupStudent[]> {
     return await this.groupStudentModel.findAll({
-      where: { student_id: studentId },
+      where: { student_id: studentId, status: "active" },
       include: [
         {
           model: User,
@@ -230,7 +231,7 @@ export class GroupStudentsService {
 
   async update(
     id: string,
-    updateDto: UpdateGroupStudentDto
+    updateDto: UpdateGroupStudentDto,
   ): Promise<GroupStudent> {
     const [affectedCount] = await this.groupStudentModel.update(updateDto, {
       where: { id },
@@ -244,11 +245,12 @@ export class GroupStudentsService {
   }
 
   async remove(id: string): Promise<{ id: string; deleted: boolean }> {
-    const result = await this.groupStudentModel.destroy({
-      where: { id },
-    });
+    const [affectedCount] = await this.groupStudentModel.update(
+      { status: "removed" },
+      { where: { id } },
+    );
 
-    if (result === 0) {
+    if (affectedCount === 0) {
       throw new NotFoundException(`Group student with ID ${id} not found`);
     }
 
@@ -258,7 +260,7 @@ export class GroupStudentsService {
   async updateStatus(id: string, status: string): Promise<GroupStudent> {
     const [affectedCount] = await this.groupStudentModel.update(
       { status },
-      { where: { id } }
+      { where: { id } },
     );
 
     if (affectedCount === 0) {
@@ -271,7 +273,7 @@ export class GroupStudentsService {
   async transferStudent(
     studentId: string,
     fromGroupId: string,
-    toGroupId: string
+    toGroupId: string,
   ): Promise<{ removed: GroupStudent; added: GroupStudent }> {
     // Find existing enrollment in the source group
     const existingEnrollment = await this.groupStudentModel.findOne({
@@ -284,7 +286,7 @@ export class GroupStudentsService {
 
     if (!existingEnrollment) {
       throw new NotFoundException(
-        `Student is not actively enrolled in the source group (ID: ${fromGroupId})`
+        `Student is not actively enrolled in the source group (ID: ${fromGroupId})`,
       );
     }
 
@@ -299,12 +301,12 @@ export class GroupStudentsService {
 
     if (existingInTargetGroup) {
       throw new ConflictException(
-        `Student is already enrolled in the target group with status: ${existingInTargetGroup.status}`
+        `Student is already enrolled in the target group with status: ${existingInTargetGroup.status}`,
       );
     }
 
     // Remove from current group (set status to 'removed')
-    await existingEnrollment.destroy()
+    await existingEnrollment.destroy();
 
     // Add to new group
     const newEnrollment = await this.groupStudentModel.create({
@@ -402,6 +404,3 @@ export class GroupStudentsService {
     });
   }
 }
-
-
-
