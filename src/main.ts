@@ -20,11 +20,11 @@ async function bootstrap() {
       res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
       res.setHeader(
         "Access-Control-Allow-Headers",
-        "Origin, X-Requested-With, Content-Type, Accept, Range"
+        "Origin, X-Requested-With, Content-Type, Accept, Range",
       );
       res.setHeader(
         "Access-Control-Expose-Headers",
-        "Content-Length, Content-Range"
+        "Content-Length, Content-Range",
       );
 
       // Set content type for audio files
@@ -78,7 +78,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-    })
+    }),
   );
 
   // Enable CORS
@@ -87,6 +87,8 @@ async function bootstrap() {
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   });
+
+  app.setGlobalPrefix("api"); // Set global prefix for all routes
 
   // Swagger documentation setup
   const config = new DocumentBuilder()
@@ -105,8 +107,6 @@ async function bootstrap() {
       persistAuthorization: true,
     },
   });
-
-  app.setGlobalPrefix("api"); // Set global prefix for all routes
 
   await app.listen(process.env.PORT ?? 3000);
   console.log(`Application is running on: ${await app.getUrl()}`);
