@@ -149,7 +149,33 @@ export class IeltsTestsService {
   async createReadingPart(
     createReadingPartDto: CreateReadingPartDto,
   ): Promise<IeltsReadingPart> {
-    return await this.ieltsReadingPartModel.create(createReadingPartDto as any);
+    return await this.ieltsReadingPartModel.create(
+      createReadingPartDto as any,
+      {
+        include: [
+          {
+            model: IeltsQuestion,
+            as: "questions",
+            include: [
+              {
+                model: IeltsQuestionContent,
+                as: "contents",
+                include: [
+                  { model: IeltsQuestionOption, as: "options" },
+                  {
+                    model: IeltsMultipleChoiceQuestion,
+                    as: "multipleChoiceQuestions",
+                    include: [
+                      { model: IeltsMultipleChoiceOption, as: "options" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    );
   }
 
   async findReadingPartById(id: string): Promise<IeltsReadingPart> {
@@ -205,6 +231,31 @@ export class IeltsTestsService {
   ): Promise<IeltsListeningPart> {
     return await this.ieltsListeningPartModel.create(
       createListeningPartDto as any,
+      {
+        include: [
+          { model: IeltsAudio, as: "audio" },
+          {
+            model: IeltsQuestion,
+            as: "questions",
+            include: [
+              {
+                model: IeltsQuestionContent,
+                as: "contents",
+                include: [
+                  { model: IeltsQuestionOption, as: "options" },
+                  {
+                    model: IeltsMultipleChoiceQuestion,
+                    as: "multipleChoiceQuestions",
+                    include: [
+                      { model: IeltsMultipleChoiceOption, as: "options" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
     );
   }
 

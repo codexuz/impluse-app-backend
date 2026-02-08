@@ -102,6 +102,9 @@ import { IeltsQuestionContent } from "../ielts-tests/entities/ielts-question-con
 import { IeltsQuestionOption } from "../ielts-tests/entities/ielts-question-option.entity.js";
 import { IeltsMultipleChoiceQuestion } from "../ielts-tests/entities/ielts-multiple-choice-question.entity.js";
 import { IeltsMultipleChoiceOption } from "../ielts-tests/entities/ielts-multiple-choice-option.entity.js";
+import { IeltsVocabulary } from "../ielts-vocabulary/entities/ielts-vocabulary.entity.js";
+import { IeltsVocabularyDeck } from "../ielts-vocabulary/entities/ielts-vocabulary-deck.entity.js";
+import { IeltsDeckWord } from "../ielts-vocabulary/entities/ielts-deck-word.entity.js";
 
 export const Models = [
   User,
@@ -199,6 +202,9 @@ export const Models = [
   IeltsMultipleChoiceOption,
   SupportSchedule,
   SupportBooking,
+  IeltsVocabulary,
+  IeltsVocabularyDeck,
+  IeltsDeckWord,
 ];
 
 // Define associations after all models are loaded
@@ -1383,5 +1389,29 @@ export function initializeAssociations() {
   IeltsMultipleChoiceOption.belongsTo(IeltsMultipleChoiceQuestion, {
     foreignKey: "multiple_choice_question_id",
     as: "multipleChoiceQuestion",
+  });
+
+  // IeltsVocabulary associations
+  IeltsVocabulary.hasMany(IeltsVocabularyDeck, {
+    foreignKey: "ielts_vocabulary_id",
+    as: "decks",
+  });
+
+  // IeltsVocabularyDeck associations
+  IeltsVocabularyDeck.belongsTo(IeltsVocabulary, {
+    foreignKey: "ielts_vocabulary_id",
+    targetKey: "id",
+    as: "vocabulary",
+  });
+  IeltsVocabularyDeck.hasMany(IeltsDeckWord, {
+    foreignKey: "deck_id",
+    as: "words",
+  });
+
+  // IeltsDeckWord associations
+  IeltsDeckWord.belongsTo(IeltsVocabularyDeck, {
+    foreignKey: "deck_id",
+    targetKey: "id",
+    as: "deck",
   });
 }

@@ -4,8 +4,6 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
-  HasMany,
 } from "sequelize-typescript";
 import { IeltsVocabulary } from "./ielts-vocabulary.entity.js";
 import { IeltsDeckWord } from "./ielts-deck-word.entity.js";
@@ -35,16 +33,7 @@ export class IeltsVocabularyDeck extends Model<IeltsVocabularyDeck> {
   })
   title: string;
 
-  @BelongsTo(() => IeltsVocabulary, {
-    foreignKey: "ielts_vocabulary_id",
-    targetKey: "id",
-    as: "vocabulary",
-  })
   vocabulary: IeltsVocabulary;
 
-  @HasMany(() => IeltsDeckWord, {
-    foreignKey: "deck_id",
-    as: "words",
-  })
   words: IeltsDeckWord[];
 }

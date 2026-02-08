@@ -1,4 +1,4 @@
-import { Table, Column, Model, DataType, HasMany } from "sequelize-typescript";
+import { Table, Column, Model, DataType } from "sequelize-typescript";
 import { IeltsVocabularyDeck } from "./ielts-vocabulary-deck.entity.js";
 
 @Table({
@@ -25,9 +25,5 @@ export class IeltsVocabulary extends Model<IeltsVocabulary> {
   })
   description: string;
 
-  @HasMany(() => IeltsVocabularyDeck, {
-    foreignKey: "ielts_vocabulary_id",
-    as: "decks",
-  })
   decks: IeltsVocabularyDeck[];
 }
