@@ -27,7 +27,6 @@ export enum QuestionContentTypeEnum {
   MULTI_SELECT = "multi-select",
   SELECTION = "selection",
   DRAGGABLE_SELECTION = "draggable-selection",
-  MATCHING = "matching",
 }
 
 export class ListeningPartAudioDto {

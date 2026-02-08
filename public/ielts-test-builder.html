@@ -279,7 +279,6 @@
     .type-multi-select { background: #ede9fe; color: #6d28d9; }
     .type-selection { background: #d1fae5; color: #065f46; }
     .type-draggable-selection { background: #fef3c7; color: #92400e; }
-    .type-matching { background: #ffedd5; color: #c2410c; }
 
     /* ===== OPTIONS LIST ===== */
     .options-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
@@ -683,7 +682,6 @@
           <option value="multi-select">Multi Select</option>
           <option value="selection">Selection (True/False/Not Given)</option>
           <option value="draggable-selection">Draggable Selection</option>
-          <option value="matching">Matching</option>
         </select>
       </div>
       <div class="form-group">
@@ -718,7 +716,7 @@
         <input type="text" class="form-control" id="qc-options-title" placeholder="e.g. List of headings" />
       </div>
 
-      <!-- Options builder for selection/matching/draggable types -->
+      <!-- Options builder for selection/draggable types -->
       <div id="qc-options-builder" style="display:none">
         <div class="flex items-center justify-between mb-2">
           <label style="margin-bottom:0">Options</label>
@@ -1097,7 +1095,7 @@ function openQuestionContentModal(section, partIndex, questionIndex) {
 
 function onQuestionTypeChange() {
   const type = document.getElementById('qc-type').value;
-  const hasOptions = ['selection', 'draggable-selection', 'matching'].includes(type);
+  const hasOptions = ['selection', 'draggable-selection'].includes(type);
   const isMcq = ['multiple-choice', 'multi-select'].includes(type);
 
   document.getElementById('qc-options-builder').style.display = hasOptions ? 'block' : 'none';
