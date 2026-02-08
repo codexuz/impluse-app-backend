@@ -77,6 +77,15 @@ export class ReadingQueryDto extends PaginationDto {
   @IsString()
   @IsOptional()
   mode?: string;
+
+  @ApiProperty({
+    description: "Filter by reading part",
+    enum: ["PART_1", "PART_2", "PART_3"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  part?: string;
 }
 
 export class ListeningQueryDto extends PaginationDto {
