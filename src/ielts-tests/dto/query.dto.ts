@@ -95,6 +95,15 @@ export class ListeningQueryDto extends PaginationDto {
   @Transform(({ value }) => value === "true" || value === true)
   @IsOptional()
   isActive?: boolean;
+
+  @ApiProperty({
+    description: "Filter by test mode",
+    enum: ["practice", "mock"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  mode?: string;
 }
 
 export class WritingQueryDto extends PaginationDto {
@@ -113,4 +122,13 @@ export class WritingQueryDto extends PaginationDto {
   @Transform(({ value }) => value === "true" || value === true)
   @IsOptional()
   isActive?: boolean;
+
+  @ApiProperty({
+    description: "Filter by test mode",
+    enum: ["practice", "mock"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  mode?: string;
 }

@@ -286,7 +286,7 @@ export class IeltsTestsService {
   }
 
   async findAllListenings(query: ListeningQueryDto) {
-    const { page = 1, limit = 10, search, testId, isActive } = query;
+    const { page = 1, limit = 10, search, testId, isActive, mode } = query;
     const where: any = {};
 
     if (search) {
@@ -299,11 +299,19 @@ export class IeltsTestsService {
       where.is_active = isActive;
     }
 
+    const testWhere: any = {};
+    if (mode) {
+      testWhere.mode = mode;
+    }
+
     const { rows, count } = await this.ieltsListeningModel.findAndCountAll({
       where,
       include: [
-        { model: IeltsTest, as: "test" },
-        { model: IeltsListeningPart, as: "parts" },
+        {
+          model: IeltsTest,
+          as: "test",
+          where: Object.keys(testWhere).length ? testWhere : undefined,
+        },
       ],
       order: [["createdAt", "DESC"]],
       limit,
@@ -418,7 +426,7 @@ export class IeltsTestsService {
   }
 
   async findAllWritings(query: WritingQueryDto) {
-    const { page = 1, limit = 10, search, testId, isActive } = query;
+    const { page = 1, limit = 10, search, testId, isActive, mode } = query;
     const where: any = {};
 
     if (search) {
@@ -431,11 +439,19 @@ export class IeltsTestsService {
       where.is_active = isActive;
     }
 
+    const testWhere: any = {};
+    if (mode) {
+      testWhere.mode = mode;
+    }
+
     const { rows, count } = await this.ieltsWritingModel.findAndCountAll({
       where,
       include: [
-        { model: IeltsTest, as: "test" },
-        { model: IeltsWritingTask, as: "tasks" },
+        {
+          model: IeltsTest,
+          as: "test",
+          where: Object.keys(testWhere).length ? testWhere : undefined,
+        },
       ],
       order: [["createdAt", "DESC"]],
       limit,
