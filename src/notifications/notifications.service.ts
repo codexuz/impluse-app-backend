@@ -21,7 +21,7 @@ export class NotificationsService {
 
   async getAllNotifications(
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<{
     data: NotificationResponseDto[];
     total: number;
@@ -47,7 +47,7 @@ export class NotificationsService {
   }
 
   async createNotificationForAllUsers(
-    createNotificationDto: CreateNotificationDto
+    createNotificationDto: CreateNotificationDto,
   ): Promise<NotificationResponseDto> {
     const notification = await Notifications.create(createNotificationDto);
 
@@ -82,7 +82,7 @@ export class NotificationsService {
             notification_id: notification.id,
             img_url: createNotificationDto.img_url,
             type: "global",
-          }
+          },
         );
       }
     } catch (error) {
@@ -107,7 +107,7 @@ export class NotificationsService {
     const notification = await Notifications.findByPk(notification_id);
     if (!notification) {
       throw new BadRequestException(
-        `Notification with ID ${notification_id} not found`
+        `Notification with ID ${notification_id} not found`,
       );
     }
 
@@ -121,7 +121,7 @@ export class NotificationsService {
 
     if (!userNotification) {
       throw new BadRequestException(
-        `User notification not found for user ${user_id} and notification ${notification_id}`
+        `User notification not found for user ${user_id} and notification ${notification_id}`,
       );
     }
 
@@ -133,12 +133,12 @@ export class NotificationsService {
           notification_id,
           user_id,
         },
-      }
+      },
     );
   }
 
   async getUnseenNotifications(
-    user_id: string
+    user_id: string,
   ): Promise<NotificationResponseDto[]> {
     return await Notifications.findAll({
       include: [
@@ -157,13 +157,13 @@ export class NotificationsService {
     notifications: NotificationResponseDto[];
     unseenCount: number;
   }> {
-    // Get all notifications for this user
+    // Get only unseen notifications for this user
     const notifications = await Notifications.findAll({
       include: [
         {
           model: UserNotification,
           as: "user_notifications",
-          where: { user_id },
+          where: { user_id, seen: false },
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -196,7 +196,7 @@ export class NotificationsService {
 
   // Notification Token Methods
   async createNotificationToken(
-    createDto: CreateNotificationTokenDto
+    createDto: CreateNotificationTokenDto,
   ): Promise<NotificationTokenResponseDto> {
     try {
       // Check if user already has a notification token
@@ -243,7 +243,7 @@ export class NotificationsService {
   }
 
   async findNotificationTokensByUserId(
-    userId: string
+    userId: string,
   ): Promise<NotificationTokenResponseDto[]> {
     return await NotificationToken.findAll({
       where: { user_id: userId },
@@ -255,13 +255,13 @@ export class NotificationsService {
     deviceToken: string,
     title?: string,
     body?: string,
-    data?: Record<string, string>
+    data?: Record<string, string>,
   ) {
     return this.firebaseService.sendNotification(
       deviceToken,
       title || "Hello!",
       body || "This is a test push notification 🚀",
-      data || { customData: "12345" }
+      data || { customData: "12345" },
     );
   }
 
@@ -269,13 +269,13 @@ export class NotificationsService {
     tokens: string[],
     title?: string,
     body?: string,
-    data?: Record<string, string>
+    data?: Record<string, string>,
   ) {
     return this.firebaseService.sendMulticastNotification(
       tokens,
       title || "Hello!",
       body || "This is a test push notification 🚀",
-      data || { customData: "12345" }
+      data || { customData: "12345" },
     );
   }
 
@@ -283,13 +283,13 @@ export class NotificationsService {
     topic: string,
     title?: string,
     body?: string,
-    data?: Record<string, string>
+    data?: Record<string, string>,
   ) {
     return this.firebaseService.sendToTopic(
       topic,
       title || "Hello!",
       body || "This is a test push notification 🚀",
-      data || { customData: "12345" }
+      data || { customData: "12345" },
     );
   }
 
@@ -319,7 +319,7 @@ export class NotificationsService {
       return await this.firebaseService.sendAppUpdateNotification(
         tokens,
         options?.customMessage,
-        options?.playStoreUrl
+        options?.playStoreUrl,
       );
     } catch (error) {
       console.error("Error sending app update notification:", error);
@@ -328,7 +328,7 @@ export class NotificationsService {
   }
 
   async findNotificationTokenById(
-    id: string
+    id: string,
   ): Promise<NotificationTokenResponseDto> {
     const token = await NotificationToken.findByPk(id);
     if (!token) {
@@ -339,7 +339,7 @@ export class NotificationsService {
 
   async updateNotificationToken(
     id: string,
-    updateDto: UpdateNotificationTokenDto
+    updateDto: UpdateNotificationTokenDto,
   ): Promise<NotificationTokenResponseDto> {
     const token = await this.findNotificationTokenById(id);
 
@@ -353,7 +353,7 @@ export class NotificationsService {
   async updateNotificationTokenByUserId(
     userId: string,
     oldToken: string,
-    updateDto: UpdateNotificationTokenDto
+    updateDto: UpdateNotificationTokenDto,
   ): Promise<NotificationTokenResponseDto> {
     const token = await NotificationToken.findOne({
       where: {
@@ -364,7 +364,7 @@ export class NotificationsService {
 
     if (!token) {
       throw new NotFoundException(
-        `Notification token not found for user ${userId} with token ${oldToken}`
+        `Notification token not found for user ${userId} with token ${oldToken}`,
       );
     }
 
