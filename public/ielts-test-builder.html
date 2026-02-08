@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IELTS Test Builder</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #818cf8;
+      --primary-dark: #3730a3;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+      --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--gray-100);
+      color: var(--gray-800);
+      line-height: 1.6;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+    .header-actions { display: flex; gap: 10px; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--gray-300);
+      color: var(--gray-700);
+    }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-xs { padding: 3px 8px; font-size: 11px; }
+
+    /* ===== LAYOUT ===== */
+    .app-layout {
+      display: flex;
+      height: calc(100vh - 56px);
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 280px;
+      background: #fff;
+      border-right: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sidebar-header h3 { font-size: 14px; font-weight: 600; color: var(--gray-700); }
+    .sidebar-body { flex: 1; overflow-y: auto; padding: 8px; }
+
+    .nav-section { margin-bottom: 4px; }
+    .nav-section-title {
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--gray-400);
+    }
+    .nav-item {
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-600);
+      transition: all .1s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-item:hover { background: var(--gray-100); color: var(--gray-800); }
+    .nav-item.active { background: #eef2ff; color: var(--primary); font-weight: 600; }
+    .nav-item .badge {
+      margin-left: auto;
+      background: var(--gray-200);
+      color: var(--gray-600);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .nav-item.active .badge { background: #c7d2fe; color: var(--primary-dark); }
+
+    /* ===== MAIN AREA ===== */
+    .main-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--gray-200);
+      margin-bottom: 16px;
+    }
+    .card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-header h3 { font-size: 15px; font-weight: 600; }
+    .card-body { padding: 18px; }
+
+    /* ===== FORMS ===== */
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--gray-800);
+      background: #fff;
+      transition: border .15s;
+      font-family: inherit;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+    }
+    select.form-control { cursor: pointer; }
+    textarea.form-control { resize: vertical; min-height: 80px; }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* ===== TABS ===== */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--gray-100);
+      padding: 3px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-500);
+      cursor: pointer;
+      text-align: center;
+      transition: all .15s;
+      border: none;
+      background: transparent;
+    }
+    .tab:hover { color: var(--gray-700); }
+    .tab.active { background: #fff; color: var(--primary); box-shadow: var(--shadow); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===== PARTS ===== */
+    .part-card {
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .part-card-header {
+      padding: 10px 14px;
+      background: var(--gray-50);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .part-card-header h4 { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .part-card-header .chevron { transition: transform .2s; font-size: 12px; color: var(--gray-400); }
+    .part-card-header.collapsed .chevron { transform: rotate(-90deg); }
+    .part-card-body { padding: 14px; border-top: 1px solid var(--gray-100); }
+    .part-card-body.collapsed { display: none; }
+
+    /* ===== QUESTION CONTENT ===== */
+    .question-block {
+      border: 1px dashed var(--gray-300);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: var(--gray-50);
+      position: relative;
+    }
+    .question-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .question-block-header .type-badge {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: .3px;
+    }
+    .type-completion { background: #dbeafe; color: #1d4ed8; }
+    .type-multiple-choice { background: #fce7f3; color: #be185d; }
+    .type-multi-select { background: #ede9fe; color: #6d28d9; }
+    .type-selection { background: #d1fae5; color: #065f46; }
+    .type-draggable-selection { background: #fef3c7; color: #92400e; }
+    .type-matching { background: #ffedd5; color: #c2410c; }
+
+    /* ===== OPTIONS LIST ===== */
+    .options-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .option-row .option-label {
+      width: 28px;
+      height: 28px;
+      background: var(--gray-200);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gray-600);
+      flex-shrink: 0;
+    }
+    .option-row input { flex: 1; }
+
+    /* ===== MCQ LIST ===== */
+    .mcq-item {
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .mcq-item .mcq-question { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+
+    /* ===== ANSWER KEY ===== */
+    .answer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+    }
+    .answer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .answer-item .q-num {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gray-500);
+      width: 24px;
+      text-align: right;
+    }
+    .answer-item input {
+      flex: 1;
+      padding: 5px 8px;
+      border: 1px solid var(--gray-300);
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* ===== JSON PREVIEW ===== */
+    .json-preview {
+      background: var(--gray-900);
+      color: #a5f3fc;
+      border-radius: var(--radius);
+      padding: 16px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      max-height: 500px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--gray-400);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state h3 { font-size: 16px; color: var(--gray-500); margin-bottom: 6px; }
+    .empty-state p { font-size: 13px; }
+
+    /* ===== STATUS BADGE ===== */
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+    .status-draft { background: #fef3c7; color: #92400e; }
+    .status-published { background: #d1fae5; color: #065f46; }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all .2s;
+    }
+    .modal-overlay.open { opacity: 1; visibility: visible; }
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      width: 90%;
+      max-width: 560px;
+      max-height: 80vh;
+      overflow-y: auto;
+      transform: translateY(20px);
+      transition: transform .2s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 700; }
+    .modal-close {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: var(--gray-100);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray-500);
+    }
+    .modal-close:hover { background: var(--gray-200); }
+    .modal-body { padding: 20px; }
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* ===== TOAST ===== */
+    .toast-container {
+      position: fixed;
+      top: 72px;
+      right: 20px;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      box-shadow: var(--shadow-lg);
+      animation: slideIn .3s ease;
+    }
+    .toast-success { background: var(--success); }
+    .toast-error { background: var(--danger); }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+
+    /* ===== UTIL ===== */
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .mt-4 { margin-top: 16px; }
+    .mb-2 { margin-bottom: 8px; }
+    .mb-3 { margin-bottom: 12px; }
+    .gap-2 { gap: 8px; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .text-sm { font-size: 13px; }
+    .text-gray { color: var(--gray-500); }
+    .fw-600 { font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <h1>📝 IELTS Test Builder</h1>
+  <div class="header-actions">
+    <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="showJsonPreview()">{ } JSON Preview</button>
+    <button class="btn btn-success" onclick="exportTest()">⬇ Export</button>
+  </div>
+</header>
+
+<!-- APP LAYOUT -->
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h3>Test Structure</h3>
+      <button class="btn btn-primary btn-xs" onclick="resetBuilder()">↻ Reset</button>
+    </div>
+    <div class="sidebar-body">
+      <div class="nav-section">
+        <div class="nav-section-title">General</div>
+        <div class="nav-item active" onclick="switchSection('test-info', this)">
+          <span>📋</span> Test Info
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Sections</div>
+        <div class="nav-item" onclick="switchSection('reading-section', this)">
+          <span>📖</span> Reading
+          <span class="badge" id="reading-count">0</span>
+        </div>
+        <div class="nav-item" onclick="switchSection('listening-section', this)">
+          <span>🎧</span> Listening
+          <span class="badge" id="listening-count">0</span>
+        </div>
+        <div class="nav-item" onclick="switchSection('writing-section', this)">
+          <span>✍️</span> Writing
+          <span class="badge" id="writing-count">0</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Output</div>
+        <div class="nav-item" onclick="switchSection('json-section', this)">
+          <span>{ }</span> JSON Output
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <main class="main-area">
+
+    <!-- TEST INFO SECTION -->
+    <div id="test-info" class="section active">
+      <div class="card">
+        <div class="card-header">
+          <h3>Test Information</h3>
+          <span class="status-badge status-draft" id="status-badge">Draft</span>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>Test Title</label>
+            <input type="text" class="form-control" id="test-title" placeholder="e.g. Cambridge IELTS 18 - Test 1" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Mode</label>
+              <select class="form-control" id="test-mode">
+                <option value="practice">Practice</option>
+                <option value="mock">Mock Exam</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select class="form-control" id="test-status" onchange="updateStatusBadge()">
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- READING SECTION -->
+    <div id="reading-section" class="section" style="display:none">
+      <div class="flex items-center justify-between mb-3">
+        <h2 style="font-size:18px;font-weight:700">📖 Reading Section</h2>
+        <button class="btn btn-primary btn-sm" onclick="addReadingPart()">+ Add Part</button>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="form-group">
+            <label>Reading Title</label>
+            <input type="text" class="form-control" id="reading-title" placeholder="e.g. Academic Reading Test" />
+          </div>
+        </div>
+      </div>
+
+      <div id="reading-parts-container"></div>
+
+      <div class="empty-state" id="reading-empty">
+        <div class="icon">📖</div>
+        <h3>No Reading Parts Yet</h3>
+        <p>Click "Add Part" to create Part 1, Part 2, or Part 3</p>
+      </div>
+    </div>
+
+    <!-- LISTENING SECTION -->
+    <div id="listening-section" class="section" style="display:none">
+      <div class="flex items-center justify-between mb-3">
+        <h2 style="font-size:18px;font-weight:700">🎧 Listening Section</h2>
+        <button class="btn btn-primary btn-sm" onclick="addListeningPart()">+ Add Part</button>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="form-group">
+            <label>Listening Title</label>
+            <input type="text" class="form-control" id="listening-title" placeholder="e.g. Listening Test" />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea class="form-control" id="listening-description" placeholder="Optional description..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Full Audio URL</label>
+            <input type="text" class="form-control" id="listening-full-audio" placeholder="https://..." />
+          </div>
+        </div>
+      </div>
+
+      <div id="listening-parts-container"></div>
+
+      <div class="empty-state" id="listening-empty">
+        <div class="icon">🎧</div>
+        <h3>No Listening Parts Yet</h3>
+        <p>Click "Add Part" to create Parts 1-4</p>
+      </div>
+    </div>
+
+    <!-- WRITING SECTION -->
+    <div id="writing-section" class="section" style="display:none">
+      <div class="flex items-center justify-between mb-3">
+        <h2 style="font-size:18px;font-weight:700">✍️ Writing Section</h2>
+        <button class="btn btn-primary btn-sm" onclick="addWritingTask()">+ Add Task</button>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="form-group">
+            <label>Writing Title</label>
+            <input type="text" class="form-control" id="writing-title" placeholder="e.g. Academic Writing Test" />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea class="form-control" id="writing-description" placeholder="Optional description..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div id="writing-tasks-container"></div>
+
+      <div class="empty-state" id="writing-empty">
+        <div class="icon">✍️</div>
+        <h3>No Writing Tasks Yet</h3>
+        <p>Click "Add Task" to create Task 1 or Task 2</p>
+      </div>
+    </div>
+
+    <!-- JSON SECTION -->
+    <div id="json-section" class="section" style="display:none">
+      <div class="flex items-center justify-between mb-3">
+        <h2 style="font-size:18px;font-weight:700">{ } JSON Output</h2>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-sm" onclick="copyJson()">📋 Copy</button>
+          <button class="btn btn-primary btn-sm" onclick="exportTest()">⬇ Download</button>
+        </div>
+      </div>
+      <div class="json-preview" id="json-output">Click "Refresh" or switch here to see the generated JSON...</div>
+    </div>
+
+  </main>
+</div>
+
+<!-- QUESTION CONTENT MODAL -->
+<div class="modal-overlay" id="question-content-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Question Content</h3>
+      <button class="modal-close" onclick="closeModal('question-content-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Question Type</label>
+        <select class="form-control" id="qc-type" onchange="onQuestionTypeChange()">
+          <option value="completion">Completion (Fill in the blanks)</option>
+          <option value="multiple-choice">Multiple Choice</option>
+          <option value="multi-select">Multi Select</option>
+          <option value="selection">Selection (True/False/Not Given)</option>
+          <option value="draggable-selection">Draggable Selection</option>
+          <option value="matching">Matching</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" class="form-control" id="qc-title" placeholder="e.g. Questions 1-6" />
+      </div>
+      <div class="form-group">
+        <label>Condition / Instructions</label>
+        <textarea class="form-control" id="qc-condition" placeholder="e.g. Complete the sentences below. Write NO MORE THAN TWO WORDS..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Content (HTML allowed)</label>
+        <textarea class="form-control" id="qc-content" style="min-height:100px" placeholder="Main content / passage excerpt with blanks like {{1}}, {{2}}..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Word Limit</label>
+          <input type="number" class="form-control" id="qc-limit" placeholder="e.g. 2" />
+        </div>
+        <div class="form-group">
+          <label>Order</label>
+          <input type="number" class="form-control" id="qc-order" placeholder="1" />
+        </div>
+      </div>
+      <div class="form-group" id="qc-show-options-group">
+        <label>
+          <input type="checkbox" id="qc-show-options" checked /> Show Options
+        </label>
+      </div>
+      <div class="form-group" id="qc-options-title-group">
+        <label>Options Title</label>
+        <input type="text" class="form-control" id="qc-options-title" placeholder="e.g. List of headings" />
+      </div>
+
+      <!-- Options builder for selection/matching/draggable types -->
+      <div id="qc-options-builder" style="display:none">
+        <div class="flex items-center justify-between mb-2">
+          <label style="margin-bottom:0">Options</label>
+          <button class="btn btn-outline btn-xs" onclick="addOptionToModal()">+ Add Option</button>
+        </div>
+        <div id="qc-options-list" class="options-list"></div>
+      </div>
+
+      <!-- MCQ builder -->
+      <div id="qc-mcq-builder" style="display:none">
+        <div class="flex items-center justify-between mb-2">
+          <label style="margin-bottom:0">Multiple Choice Questions</label>
+          <button class="btn btn-outline btn-xs" onclick="addMcqToModal()">+ Add MCQ</button>
+        </div>
+        <div id="qc-mcq-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('question-content-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuestionContent()">Add Question Content</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+const state = {
+  test: { title: '', mode: 'practice', status: 'draft' },
+  reading: {
+    title: '',
+    parts: [] // { part, passage, answers:{}, questions: [{ number_of_questions, contents: [{ type, title, condition, content, limit, showOptions, optionsTitle, order, options:[], multipleChoiceQuestions:[{ question, order, options:[] }] }] }] }
+  },
+  listening: {
+    title: '',
+    description: '',
+    full_audio_url: '',
+    parts: [] // { part, audio_url, audio_file_name, audio_duration, answers:{}, questions:[...same as reading] }
+  },
+  writing: {
+    title: '',
+    description: '',
+    tasks: [] // { task, prompt, instructions, min_words, suggested_time }
+  }
+};
+
+let currentModalTarget = null; // { section: 'reading'|'listening', partIndex: number, questionIndex: number }
+let modalOptions = [];
+let modalMcqs = [];
+
+// ============================================================
+//  NAVIGATION
+// ============================================================
+function switchSection(sectionId, navEl) {
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById(sectionId).style.display = 'block';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+
+  if (sectionId === 'json-section') refreshJsonPreview();
+}
+
+function updateStatusBadge() {
+  const status = document.getElementById('test-status').value;
+  const badge = document.getElementById('status-badge');
+  badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+  badge.className = 'status-badge ' + (status === 'published' ? 'status-published' : 'status-draft');
+}
+
+// ============================================================
+//  READING
+// ============================================================
+function addReadingPart() {
+  const partNum = state.reading.parts.length + 1;
+  if (partNum > 3) { toast('Maximum 3 reading parts allowed', 'error'); return; }
+  state.reading.parts.push({
+    part: `PART_${partNum}`,
+    passage: '',
+    answers: {},
+    questions: []
+  });
+  renderReadingParts();
+  updateCounts();
+}
+
+function removeReadingPart(idx) {
+  state.reading.parts.splice(idx, 1);
+  // Renumber
+  state.reading.parts.forEach((p, i) => p.part = `PART_${i + 1}`);
+  renderReadingParts();
+  updateCounts();
+}
+
+function renderReadingParts() {
+  const container = document.getElementById('reading-parts-container');
+  const empty = document.getElementById('reading-empty');
+  empty.style.display = state.reading.parts.length ? 'none' : 'block';
+
+  container.innerHTML = state.reading.parts.map((part, pi) => `
+    <div class="part-card">
+      <div class="part-card-header" onclick="togglePartCard(this)">
+        <h4>
+          <span class="chevron">▼</span>
+          Part ${pi + 1}
+          <span style="font-weight:400;font-size:12px;color:var(--gray-400)">(${part.questions.reduce((a,q) => a + q.contents.length, 0)} question blocks)</span>
+        </h4>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-xs" onclick="event.stopPropagation(); addQuestionGroup('reading', ${pi})">+ Question Group</button>
+          <button class="btn btn-danger btn-xs" onclick="event.stopPropagation(); removeReadingPart(${pi})">🗑</button>
+        </div>
+      </div>
+      <div class="part-card-body">
+        <div class="form-group">
+          <label>Passage</label>
+          <textarea class="form-control" style="min-height:120px" placeholder="Paste the reading passage here..."
+            onchange="state.reading.parts[${pi}].passage = this.value">${part.passage}</textarea>
+        </div>
+
+        ${renderQuestionGroups(part.questions, 'reading', pi)}
+
+        <div class="mt-3">
+          <label style="font-size:12px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:.3px">Answer Key (JSON)</label>
+          <textarea class="form-control mt-2" style="min-height:60px" placeholder='{"1":"answer1","2":"answer2"}'
+            onchange="try{state.reading.parts[${pi}].answers=JSON.parse(this.value)}catch(e){}">${Object.keys(part.answers).length ? JSON.stringify(part.answers, null, 2) : ''}</textarea>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+//  LISTENING
+// ============================================================
+function addListeningPart() {
+  const partNum = state.listening.parts.length + 1;
+  if (partNum > 4) { toast('Maximum 4 listening parts allowed', 'error'); return; }
+  state.listening.parts.push({
+    part: `PART_${partNum}`,
+    audio_url: '',
+    audio_file_name: '',
+    audio_duration: null,
+    answers: {},
+    questions: []
+  });
+  renderListeningParts();
+  updateCounts();
+}
+
+function removeListeningPart(idx) {
+  state.listening.parts.splice(idx, 1);
+  state.listening.parts.forEach((p, i) => p.part = `PART_${i + 1}`);
+  renderListeningParts();
+  updateCounts();
+}
+
+function renderListeningParts() {
+  const container = document.getElementById('listening-parts-container');
+  const empty = document.getElementById('listening-empty');
+  empty.style.display = state.listening.parts.length ? 'none' : 'block';
+
+  container.innerHTML = state.listening.parts.map((part, pi) => `
+    <div class="part-card">
+      <div class="part-card-header" onclick="togglePartCard(this)">
+        <h4>
+          <span class="chevron">▼</span>
+          Part ${pi + 1}
+          <span style="font-weight:400;font-size:12px;color:var(--gray-400)">(${part.questions.reduce((a,q) => a + q.contents.length, 0)} question blocks)</span>
+        </h4>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-xs" onclick="event.stopPropagation(); addQuestionGroup('listening', ${pi})">+ Question Group</button>
+          <button class="btn btn-danger btn-xs" onclick="event.stopPropagation(); removeListeningPart(${pi})">🗑</button>
+        </div>
+      </div>
+      <div class="part-card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Audio URL</label>
+            <input type="text" class="form-control" placeholder="https://..."
+              value="${part.audio_url}" onchange="state.listening.parts[${pi}].audio_url=this.value" />
+          </div>
+          <div class="form-group">
+            <label>Audio File Name</label>
+            <input type="text" class="form-control" placeholder="part1.mp3"
+              value="${part.audio_file_name}" onchange="state.listening.parts[${pi}].audio_file_name=this.value" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Audio Duration (seconds)</label>
+          <input type="number" class="form-control" placeholder="300"
+            value="${part.audio_duration || ''}" onchange="state.listening.parts[${pi}].audio_duration=parseInt(this.value)||null" />
+        </div>
+
+        ${renderQuestionGroups(part.questions, 'listening', pi)}
+
+        <div class="mt-3">
+          <label style="font-size:12px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:.3px">Answer Key (JSON)</label>
+          <textarea class="form-control mt-2" style="min-height:60px" placeholder='{"1":"answer1","2":"answer2"}'
+            onchange="try{state.listening.parts[${pi}].answers=JSON.parse(this.value)}catch(e){}">${Object.keys(part.answers).length ? JSON.stringify(part.answers, null, 2) : ''}</textarea>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+//  WRITING
+// ============================================================
+function addWritingTask() {
+  const taskNum = state.writing.tasks.length + 1;
+  if (taskNum > 2) { toast('Maximum 2 writing tasks allowed', 'error'); return; }
+  state.writing.tasks.push({
+    task: `TASK_${taskNum}`,
+    prompt: '',
+    instructions: '',
+    min_words: taskNum === 1 ? 150 : 250,
+    suggested_time: taskNum === 1 ? 20 : 40
+  });
+  renderWritingTasks();
+  updateCounts();
+}
+
+function removeWritingTask(idx) {
+  state.writing.tasks.splice(idx, 1);
+  state.writing.tasks.forEach((t, i) => t.task = `TASK_${i + 1}`);
+  renderWritingTasks();
+  updateCounts();
+}
+
+function renderWritingTasks() {
+  const container = document.getElementById('writing-tasks-container');
+  const empty = document.getElementById('writing-empty');
+  empty.style.display = state.writing.tasks.length ? 'none' : 'block';
+
+  container.innerHTML = state.writing.tasks.map((task, ti) => `
+    <div class="part-card">
+      <div class="part-card-header" onclick="togglePartCard(this)">
+        <h4>
+          <span class="chevron">▼</span>
+          Task ${ti + 1}
+        </h4>
+        <button class="btn btn-danger btn-xs" onclick="event.stopPropagation(); removeWritingTask(${ti})">🗑</button>
+      </div>
+      <div class="part-card-body">
+        <div class="form-group">
+          <label>Prompt</label>
+          <textarea class="form-control" style="min-height:100px" placeholder="Write the task prompt here..."
+            onchange="state.writing.tasks[${ti}].prompt=this.value">${task.prompt}</textarea>
+        </div>
+        <div class="form-group">
+          <label>Instructions</label>
+          <textarea class="form-control" placeholder="Additional instructions..."
+            onchange="state.writing.tasks[${ti}].instructions=this.value">${task.instructions}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Minimum Words</label>
+            <input type="number" class="form-control" value="${task.min_words}"
+              onchange="state.writing.tasks[${ti}].min_words=parseInt(this.value)||0" />
+          </div>
+          <div class="form-group">
+            <label>Suggested Time (minutes)</label>
+            <input type="number" class="form-control" value="${task.suggested_time}"
+              onchange="state.writing.tasks[${ti}].suggested_time=parseInt(this.value)||0" />
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+//  QUESTION GROUPS & CONTENTS
+// ============================================================
+function addQuestionGroup(section, partIndex) {
+  const parts = section === 'reading' ? state.reading.parts : state.listening.parts;
+  parts[partIndex].questions.push({
+    number_of_questions: 10,
+    contents: []
+  });
+  section === 'reading' ? renderReadingParts() : renderListeningParts();
+}
+
+function removeQuestionGroup(section, partIndex, qIndex) {
+  const parts = section === 'reading' ? state.reading.parts : state.listening.parts;
+  parts[partIndex].questions.splice(qIndex, 1);
+  section === 'reading' ? renderReadingParts() : renderListeningParts();
+}
+
+function renderQuestionGroups(questions, section, partIndex) {
+  if (!questions.length) return '';
+  return questions.map((q, qi) => `
+    <div class="card mt-3">
+      <div class="card-header">
+        <h3 style="font-size:13px">Question Group ${qi + 1}</h3>
+        <div class="flex gap-2">
+          <button class="btn btn-primary btn-xs" onclick="openQuestionContentModal('${section}', ${partIndex}, ${qi})">+ Content Block</button>
+          <button class="btn btn-danger btn-xs" onclick="removeQuestionGroup('${section}', ${partIndex}, ${qi})">🗑</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>Number of Questions</label>
+          <input type="number" class="form-control" style="width:120px" value="${q.number_of_questions}"
+            onchange="updateQuestionCount('${section}', ${partIndex}, ${qi}, this.value)" />
+        </div>
+        ${renderQuestionContents(q.contents, section, partIndex, qi)}
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateQuestionCount(section, pi, qi, val) {
+  const parts = section === 'reading' ? state.reading.parts : state.listening.parts;
+  parts[pi].questions[qi].number_of_questions = parseInt(val) || 0;
+}
+
+function renderQuestionContents(contents, section, partIndex, qIndex) {
+  if (!contents.length) return '<p class="text-sm text-gray mt-2">No question content blocks yet. Click "+ Content Block" to add one.</p>';
+  return contents.map((c, ci) => `
+    <div class="question-block">
+      <div class="question-block-header">
+        <div class="flex items-center gap-2">
+          <span class="type-badge type-${c.type}">${c.type}</span>
+          <span class="fw-600 text-sm">${c.title || 'Untitled'}</span>
+        </div>
+        <button class="btn btn-danger btn-xs" onclick="removeQuestionContent('${section}', ${partIndex}, ${qIndex}, ${ci})">🗑</button>
+      </div>
+      ${c.condition ? `<p class="text-sm text-gray mb-2">${truncate(c.condition, 100)}</p>` : ''}
+      ${c.options && c.options.length ? `
+        <div style="font-size:12px;color:var(--gray-500);margin-top:4px">
+          Options: ${c.options.map(o => o.label).join(', ')}
+        </div>
+      ` : ''}
+      ${c.multipleChoiceQuestions && c.multipleChoiceQuestions.length ? `
+        <div style="font-size:12px;color:var(--gray-500);margin-top:4px">
+          ${c.multipleChoiceQuestions.length} MCQ(s)
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+function removeQuestionContent(section, pi, qi, ci) {
+  const parts = section === 'reading' ? state.reading.parts : state.listening.parts;
+  parts[pi].questions[qi].contents.splice(ci, 1);
+  section === 'reading' ? renderReadingParts() : renderListeningParts();
+}
+
+// ============================================================
+//  QUESTION CONTENT MODAL
+// ============================================================
+function openQuestionContentModal(section, partIndex, questionIndex) {
+  currentModalTarget = { section, partIndex, questionIndex };
+  modalOptions = [];
+  modalMcqs = [];
+
+  // Reset fields
+  document.getElementById('qc-type').value = 'completion';
+  document.getElementById('qc-title').value = '';
+  document.getElementById('qc-condition').value = '';
+  document.getElementById('qc-content').value = '';
+  document.getElementById('qc-limit').value = '';
+  document.getElementById('qc-order').value = '';
+  document.getElementById('qc-show-options').checked = true;
+  document.getElementById('qc-options-title').value = '';
+  document.getElementById('qc-options-list').innerHTML = '';
+  document.getElementById('qc-mcq-list').innerHTML = '';
+
+  onQuestionTypeChange();
+  openModal('question-content-modal');
+}
+
+function onQuestionTypeChange() {
+  const type = document.getElementById('qc-type').value;
+  const hasOptions = ['selection', 'draggable-selection', 'matching'].includes(type);
+  const isMcq = ['multiple-choice', 'multi-select'].includes(type);
+
+  document.getElementById('qc-options-builder').style.display = hasOptions ? 'block' : 'none';
+  document.getElementById('qc-mcq-builder').style.display = isMcq ? 'block' : 'none';
+  document.getElementById('qc-show-options-group').style.display = hasOptions ? 'block' : 'none';
+  document.getElementById('qc-options-title-group').style.display = hasOptions ? 'block' : 'none';
+}
+
+function addOptionToModal() {
+  const letter = String.fromCharCode(65 + modalOptions.length);
+  modalOptions.push({ value: letter.toLowerCase(), label: '', order: modalOptions.length + 1 });
+  renderModalOptions();
+}
+
+function renderModalOptions() {
+  const container = document.getElementById('qc-options-list');
+  container.innerHTML = modalOptions.map((opt, i) => `
+    <div class="option-row">
+      <span class="option-label">${String.fromCharCode(65 + i)}</span>
+      <input type="text" class="form-control" placeholder="Option label" value="${opt.label}"
+        onchange="modalOptions[${i}].label=this.value;modalOptions[${i}].value='${String.fromCharCode(97 + i)}'" />
+      <button class="btn btn-danger btn-xs" onclick="modalOptions.splice(${i},1);renderModalOptions()">×</button>
+    </div>
+  `).join('');
+}
+
+function addMcqToModal() {
+  modalMcqs.push({ question: '', order: modalMcqs.length + 1, options: [] });
+  renderModalMcqs();
+}
+
+function renderModalMcqs() {
+  const container = document.getElementById('qc-mcq-list');
+  container.innerHTML = modalMcqs.map((mcq, mi) => `
+    <div class="mcq-item">
+      <div class="form-group mb-2">
+        <input type="text" class="form-control" placeholder="Question text..." value="${mcq.question}"
+          onchange="modalMcqs[${mi}].question=this.value" />
+      </div>
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm text-gray">Options:</span>
+        <button class="btn btn-outline btn-xs" onclick="addMcqOption(${mi})">+ Option</button>
+      </div>
+      <div class="options-list">
+        ${mcq.options.map((opt, oi) => `
+          <div class="option-row">
+            <span class="option-label">${String.fromCharCode(65 + oi)}</span>
+            <input type="text" class="form-control" placeholder="Option text" value="${opt.label}"
+              onchange="modalMcqs[${mi}].options[${oi}].label=this.value;modalMcqs[${mi}].options[${oi}].value='${String.fromCharCode(97 + oi)}'" />
+            <button class="btn btn-danger btn-xs" onclick="modalMcqs[${mi}].options.splice(${oi},1);renderModalMcqs()">×</button>
+          </div>
+        `).join('')}
+      </div>
+      <div style="text-align:right;margin-top:6px">
+        <button class="btn btn-danger btn-xs" onclick="modalMcqs.splice(${mi},1);renderModalMcqs()">Remove MCQ</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addMcqOption(mcqIndex) {
+  const letter = String.fromCharCode(97 + modalMcqs[mcqIndex].options.length);
+  modalMcqs[mcqIndex].options.push({ value: letter, label: '', order: modalMcqs[mcqIndex].options.length + 1 });
+  renderModalMcqs();
+}
+
+function saveQuestionContent() {
+  if (!currentModalTarget) return;
+  const { section, partIndex, questionIndex } = currentModalTarget;
+  const parts = section === 'reading' ? state.reading.parts : state.listening.parts;
+
+  const content = {
+    type: document.getElementById('qc-type').value,
+    title: document.getElementById('qc-title').value,
+    condition: document.getElementById('qc-condition').value,
+    content: document.getElementById('qc-content').value,
+    limit: parseInt(document.getElementById('qc-limit').value) || null,
+    showOptions: document.getElementById('qc-show-options').checked,
+    optionsTitle: document.getElementById('qc-options-title').value,
+    order: parseInt(document.getElementById('qc-order').value) || parts[partIndex].questions[questionIndex].contents.length + 1,
+    options: [...modalOptions],
+    multipleChoiceQuestions: modalMcqs.map(m => ({
+      question: m.question,
+      order: m.order,
+      options: [...m.options]
+    }))
+  };
+
+  parts[partIndex].questions[questionIndex].contents.push(content);
+
+  closeModal('question-content-modal');
+  section === 'reading' ? renderReadingParts() : renderListeningParts();
+  toast('Question content added!', 'success');
+}
+
+// ============================================================
+//  COLLECT STATE → JSON
+// ============================================================
+function collectState() {
+  state.test.title = document.getElementById('test-title').value;
+  state.test.mode = document.getElementById('test-mode').value;
+  state.test.status = document.getElementById('test-status').value;
+  state.reading.title = document.getElementById('reading-title').value;
+  state.listening.title = document.getElementById('listening-title').value;
+  state.listening.description = document.getElementById('listening-description').value;
+  state.listening.full_audio_url = document.getElementById('listening-full-audio').value;
+  state.writing.title = document.getElementById('writing-title').value;
+  state.writing.description = document.getElementById('writing-description').value;
+}
+
+function buildJson() {
+  collectState();
+
+  const output = {
+    test: {
+      title: state.test.title,
+      mode: state.test.mode,
+      status: state.test.status
+    },
+    reading: {
+      title: state.reading.title,
+      parts: state.reading.parts.map(p => ({
+        part: p.part,
+        passage: p.passage,
+        answers: p.answers,
+        questions: p.questions.map(q => ({
+          number_of_questions: q.number_of_questions,
+          contents: q.contents.map(c => {
+            const block = {
+              type: c.type,
+              title: c.title,
+              condition: c.condition || null,
+              content: c.content || null,
+              limit: c.limit,
+              showOptions: c.showOptions,
+              optionsTitle: c.optionsTitle || null,
+              order: c.order
+            };
+            if (c.options && c.options.length) {
+              block.options = c.options.map((o, i) => ({
+                value: o.value,
+                label: o.label,
+                order: o.order || i + 1
+              }));
+            }
+            if (c.multipleChoiceQuestions && c.multipleChoiceQuestions.length) {
+              block.multipleChoiceQuestions = c.multipleChoiceQuestions.map((m, i) => ({
+                question: m.question,
+                order: m.order || i + 1,
+                options: m.options.map((o, j) => ({
+                  value: o.value,
+                  label: o.label,
+                  order: o.order || j + 1
+                }))
+              }));
+            }
+            return block;
+          })
+        }))
+      }))
+    },
+    listening: {
+      title: state.listening.title,
+      description: state.listening.description || null,
+      full_audio_url: state.listening.full_audio_url || null,
+      parts: state.listening.parts.map(p => ({
+        part: p.part,
+        audio: p.audio_url ? {
+          url: p.audio_url,
+          file_name: p.audio_file_name || null,
+          duration: p.audio_duration
+        } : null,
+        answers: p.answers,
+        questions: p.questions.map(q => ({
+          number_of_questions: q.number_of_questions,
+          contents: q.contents.map(c => {
+            const block = {
+              type: c.type,
+              title: c.title,
+              condition: c.condition || null,
+              content: c.content || null,
+              limit: c.limit,
+              showOptions: c.showOptions,
+              optionsTitle: c.optionsTitle || null,
+              order: c.order
+            };
+            if (c.options && c.options.length) {
+              block.options = c.options.map((o, i) => ({
+                value: o.value,
+                label: o.label,
+                order: o.order || i + 1
+              }));
+            }
+            if (c.multipleChoiceQuestions && c.multipleChoiceQuestions.length) {
+              block.multipleChoiceQuestions = c.multipleChoiceQuestions.map((m, i) => ({
+                question: m.question,
+                order: m.order || i + 1,
+                options: m.options.map((o, j) => ({
+                  value: o.value,
+                  label: o.label,
+                  order: o.order || j + 1
+                }))
+              }));
+            }
+            return block;
+          })
+        }))
+      }))
+    },
+    writing: {
+      title: state.writing.title,
+      description: state.writing.description || null,
+      tasks: state.writing.tasks.map(t => ({
+        task: t.task,
+        prompt: t.prompt,
+        instructions: t.instructions || null,
+        min_words: t.min_words,
+        suggested_time: t.suggested_time
+      }))
+    }
+  };
+
+  return output;
+}
+
+// ============================================================
+//  JSON PREVIEW & EXPORT
+// ============================================================
+function refreshJsonPreview() {
+  const json = buildJson();
+  document.getElementById('json-output').textContent = JSON.stringify(json, null, 2);
+}
+
+function showJsonPreview() {
+  switchSection('json-section', document.querySelectorAll('.nav-item')[4]);
+}
+
+function copyJson() {
+  const json = buildJson();
+  navigator.clipboard.writeText(JSON.stringify(json, null, 2))
+    .then(() => toast('JSON copied to clipboard!', 'success'))
+    .catch(() => toast('Failed to copy', 'error'));
+}
+
+function exportTest() {
+  const json = buildJson();
+  const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ielts-test-${(json.test.title || 'untitled').replace(/\s+/g, '-').toLowerCase()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Test exported!', 'success');
+}
+
+function resetBuilder() {
+  if (!confirm('Reset all data? This cannot be undone.')) return;
+  state.reading.parts = [];
+  state.listening.parts = [];
+  state.writing.tasks = [];
+  state.reading.title = '';
+  state.listening.title = '';
+  state.listening.description = '';
+  state.listening.full_audio_url = '';
+  state.writing.title = '';
+  state.writing.description = '';
+
+  document.getElementById('test-title').value = '';
+  document.getElementById('test-mode').value = 'practice';
+  document.getElementById('test-status').value = 'draft';
+  document.getElementById('reading-title').value = '';
+  document.getElementById('listening-title').value = '';
+  document.getElementById('listening-description').value = '';
+  document.getElementById('listening-full-audio').value = '';
+  document.getElementById('writing-title').value = '';
+  document.getElementById('writing-description').value = '';
+
+  renderReadingParts();
+  renderListeningParts();
+  renderWritingTasks();
+  updateStatusBadge();
+  updateCounts();
+  toast('Builder reset', 'success');
+}
+
+// ============================================================
+//  HELPERS
+// ============================================================
+function togglePartCard(header) {
+  header.classList.toggle('collapsed');
+  const body = header.nextElementSibling;
+  body.classList.toggle('collapsed');
+}
+
+function updateCounts() {
+  document.getElementById('reading-count').textContent = state.reading.parts.length;
+  document.getElementById('listening-count').textContent = state.listening.parts.length;
+  document.getElementById('writing-count').textContent = state.writing.tasks.length;
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function truncate(str, len) {
+  return str.length > len ? str.substring(0, len) + '...' : str;
+}
+
+function toast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+</script>
+
+</body>
+</html>
