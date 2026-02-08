@@ -21,7 +21,6 @@ import {
 import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateReadingDto } from "./dto/create-reading.dto.js";
 import { UpdateReadingDto } from "./dto/update-reading.dto.js";
-import { CreateReadingPartDto } from "./dto/create-reading-part.dto.js";
 import { ReadingQueryDto } from "./dto/query.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
@@ -93,26 +92,5 @@ export class IeltsReadingController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteReading(@Param("id") id: string) {
     return await this.ieltsTestsService.deleteReading(id);
-  }
-
-  // ========== Reading Parts ==========
-  @Post("part")
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Create a new reading part" })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: "The reading part has been successfully created.",
-  })
-  async createReadingPart(@Body() createReadingPartDto: CreateReadingPartDto) {
-    return await this.ieltsTestsService.createReadingPart(createReadingPartDto);
-  }
-
-  @Get("part/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get a reading part by ID" })
-  @ApiParam({ name: "id", description: "The reading part ID" })
-  async findReadingPartById(@Param("id") id: string) {
-    return await this.ieltsTestsService.findReadingPartById(id);
   }
 }

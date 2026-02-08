@@ -28,11 +28,15 @@ import { CreateQuestionContentDto } from "./dto/create-question-content.dto.js";
 import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
 import { CreateMultipleChoiceQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
 import { CreateMultipleChoiceOptionDto } from "./dto/create-multiple-choice-option.dto.js";
+import { UpdateReadingPartDto } from "./dto/update-reading-part.dto.js";
+import { UpdateListeningPartDto } from "./dto/update-listening-part.dto.js";
 import {
   TestQueryDto,
   ReadingQueryDto,
   ListeningQueryDto,
   WritingQueryDto,
+  ReadingPartQueryDto,
+  ListeningPartQueryDto,
 } from "./dto/query.dto.js";
 import { User } from "../users/entities/user.entity.js";
 import { Op } from "sequelize";
@@ -275,6 +279,37 @@ export class IeltsTestsService {
     );
   }
 
+  async findAllReadingParts(query: ReadingPartQueryDto) {
+    const { page = 1, limit = 10, search, readingId, part } = query;
+    const where: any = {};
+
+    if (search) {
+      where.passage_title = { [Op.like]: `%${search}%` };
+    }
+    if (readingId) {
+      where.reading_id = readingId;
+    }
+    if (part) {
+      where.part = part;
+    }
+
+    const { rows, count } = await this.ieltsReadingPartModel.findAndCountAll({
+      where,
+      include: [{ model: IeltsReading, as: "reading" }],
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
   async findReadingPartById(id: string): Promise<IeltsReadingPart> {
     const part = await this.ieltsReadingPartModel.findByPk(id, {
       include: [
@@ -288,6 +323,20 @@ export class IeltsTestsService {
     }
 
     return part;
+  }
+
+  async updateReadingPart(
+    id: string,
+    updateReadingPartDto: UpdateReadingPartDto,
+  ): Promise<IeltsReadingPart> {
+    const part = await this.findReadingPartById(id);
+    await part.update(updateReadingPartDto as any);
+    return part;
+  }
+
+  async deleteReadingPart(id: string): Promise<void> {
+    const part = await this.findReadingPartById(id);
+    await part.destroy();
   }
 
   // ========== Listening ==========
@@ -414,6 +463,40 @@ export class IeltsTestsService {
     );
   }
 
+  async findAllListeningParts(query: ListeningPartQueryDto) {
+    const { page = 1, limit = 10, search, listeningId, part } = query;
+    const where: any = {};
+
+    if (search) {
+      where.part_title = { [Op.like]: `%${search}%` };
+    }
+    if (listeningId) {
+      where.listening_id = listeningId;
+    }
+    if (part) {
+      where.part = part;
+    }
+
+    const { rows, count } = await this.ieltsListeningPartModel.findAndCountAll({
+      where,
+      include: [
+        { model: IeltsListening, as: "listening" },
+        { model: IeltsAudio, as: "audio" },
+      ],
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
   async findListeningPartById(id: string): Promise<IeltsListeningPart> {
     const part = await this.ieltsListeningPartModel.findByPk(id, {
       include: [
@@ -428,6 +511,20 @@ export class IeltsTestsService {
     }
 
     return part;
+  }
+
+  async updateListeningPart(
+    id: string,
+    updateListeningPartDto: UpdateListeningPartDto,
+  ): Promise<IeltsListeningPart> {
+    const part = await this.findListeningPartById(id);
+    await part.update(updateListeningPartDto as any);
+    return part;
+  }
+
+  async deleteListeningPart(id: string): Promise<void> {
+    const part = await this.findListeningPartById(id);
+    await part.destroy();
   }
 
   // ========== Writing ==========

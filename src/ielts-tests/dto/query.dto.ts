@@ -141,3 +141,41 @@ export class WritingQueryDto extends PaginationDto {
   @IsOptional()
   mode?: string;
 }
+
+export class ReadingPartQueryDto extends PaginationDto {
+  @ApiProperty({
+    description: "Filter by reading ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  readingId?: string;
+
+  @ApiProperty({
+    description: "Filter by part",
+    enum: ["PART_1", "PART_2", "PART_3"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  part?: string;
+}
+
+export class ListeningPartQueryDto extends PaginationDto {
+  @ApiProperty({
+    description: "Filter by listening ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  listeningId?: string;
+
+  @ApiProperty({
+    description: "Filter by part",
+    enum: ["PART_1", "PART_2", "PART_3", "PART_4"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  part?: string;
+}

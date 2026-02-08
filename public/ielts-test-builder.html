@@ -1660,6 +1660,7 @@
             title: state.reading.title,
             parts: state.reading.parts.map((p) => ({
               part: p.part,
+              passage_title: p.passage_title || null,
               passage: p.passage,
               answers: p.answers,
               questions: p.questions.map((q) => ({
@@ -1708,6 +1709,7 @@
             full_audio_url: state.listening.full_audio_url || null,
             parts: state.listening.parts.map((p) => ({
               part: p.part,
+              part_title: p.part_title || null,
               audio: p.audio_url
                 ? {
                     url: p.audio_url,
