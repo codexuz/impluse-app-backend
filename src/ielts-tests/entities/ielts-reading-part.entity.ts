@@ -45,7 +45,7 @@ export class IeltsReadingPart extends Model<IeltsReadingPart> {
     type: DataType.STRING,
     allowNull: true,
   })
-  passage_title: string;
+  title: string;
 
   @Column({
     type: DataType.TEXT("long"),

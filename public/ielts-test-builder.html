@@ -1146,7 +1146,7 @@
         }
         state.reading.parts.push({
           part: `PART_${partNum}`,
-          passage_title: "",
+          title: "",
           passage: "",
           answers: {},
           questions: [],
@@ -1185,9 +1185,9 @@
       </div>
       <div class="part-card-body">
         <div class="form-group">
-          <label>Passage Title</label>
+          <label>Title</label>
           <input type="text" class="form-control" placeholder="e.g. The History of Astronomy"
-            value="${part.passage_title || ""}" onchange="state.reading.parts[${pi}].passage_title = this.value" />
+            value="${part.title || ""}" onchange="state.reading.parts[${pi}].title = this.value" />
         </div>
         <div class="form-group">
           <label>Passage</label>
@@ -1220,7 +1220,7 @@
         }
         state.listening.parts.push({
           part: `PART_${partNum}`,
-          part_title: "",
+          title: "",
           audio_url: "",
           audio_file_name: "",
           audio_duration: null,
@@ -1260,9 +1260,9 @@
       </div>
       <div class="part-card-body">
         <div class="form-group">
-          <label>Part Title</label>
+          <label>Title</label>
           <input type="text" class="form-control" placeholder="e.g. A conversation between two students"
-            value="${part.part_title || ""}" onchange="state.listening.parts[${pi}].part_title=this.value" />
+            value="${part.title || ""}" onchange="state.listening.parts[${pi}].title=this.value" />
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1660,7 +1660,7 @@
             title: state.reading.title,
             parts: state.reading.parts.map((p) => ({
               part: p.part,
-              passage_title: p.passage_title || null,
+              title: p.title || null,
               passage: p.passage,
               answers: p.answers,
               questions: p.questions.map((q) => ({
@@ -1709,7 +1709,7 @@
             full_audio_url: state.listening.full_audio_url || null,
             parts: state.listening.parts.map((p) => ({
               part: p.part,
-              part_title: p.part_title || null,
+              title: p.title || null,
               audio: p.audio_url
                 ? {
                     url: p.audio_url,

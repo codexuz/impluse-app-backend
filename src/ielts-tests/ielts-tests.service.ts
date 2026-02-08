@@ -284,7 +284,7 @@ export class IeltsTestsService {
     const where: any = {};
 
     if (search) {
-      where.passage_title = { [Op.like]: `%${search}%` };
+      where.title = { [Op.like]: `%${search}%` };
     }
     if (readingId) {
       where.reading_id = readingId;
@@ -468,7 +468,7 @@ export class IeltsTestsService {
     const where: any = {};
 
     if (search) {
-      where.part_title = { [Op.like]: `%${search}%` };
+      where.title = { [Op.like]: `%${search}%` };
     }
     if (listeningId) {
       where.listening_id = listeningId;
