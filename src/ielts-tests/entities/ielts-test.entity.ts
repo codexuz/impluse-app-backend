@@ -41,6 +41,12 @@ export class IeltsTest extends Model<IeltsTest> {
   })
   status: "draft" | "published";
 
+  @Column({
+    type: DataType.ENUM("authentic", "pre-test", "cambridge books"),
+    allowNull: true,
+  })
+  category: "authentic" | "pre-test" | "cambridge books";
+
   @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,

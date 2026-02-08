@@ -78,7 +78,7 @@ export class IeltsTestsService {
   }
 
   async findAllTests(query: TestQueryDto) {
-    const { page = 1, limit = 10, search, mode, status } = query;
+    const { page = 1, limit = 10, search, mode, status, category } = query;
     const where: any = {};
 
     if (search) {
@@ -89,6 +89,9 @@ export class IeltsTestsService {
     }
     if (status) {
       where.status = status;
+    }
+    if (category) {
+      where.category = category;
     }
 
     const { rows, count } = await this.ieltsTestModel.findAndCountAll({

@@ -17,6 +17,12 @@ export enum TestStatus {
   PUBLISHED = "published",
 }
 
+export enum TestCategory {
+  AUTHENTIC = "authentic",
+  PRE_TEST = "pre-test",
+  CAMBRIDGE_BOOKS = "cambridge books",
+}
+
 export class CreateTestDto {
   @ApiProperty({
     description: "The title of the test",
@@ -44,6 +50,16 @@ export class CreateTestDto {
   @IsEnum(TestStatus)
   @IsOptional()
   status?: TestStatus;
+
+  @ApiProperty({
+    description: "The category of the test",
+    enum: TestCategory,
+    example: TestCategory.AUTHENTIC,
+    required: false,
+  })
+  @IsEnum(TestCategory)
+  @IsOptional()
+  category?: TestCategory;
 
   @ApiProperty({
     description: "The ID of the user creating the test",

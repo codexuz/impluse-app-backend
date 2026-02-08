@@ -58,6 +58,15 @@ export class TestQueryDto extends PaginationDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @ApiProperty({
+    description: "Filter by category",
+    enum: ["authentic", "pre-test", "cambridge books"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  category?: string;
 }
 
 export class ReadingQueryDto extends PaginationDto {

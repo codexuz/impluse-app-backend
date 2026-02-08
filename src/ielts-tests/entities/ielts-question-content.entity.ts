@@ -17,6 +17,7 @@ export enum QuestionContentType {
   MULTI_SELECT = "multi-select",
   SELECTION = "selection",
   DRAGGABLE_SELECTION = "draggable-selection",
+  MATCHING_INFORMATION = "matching-information",
 }
 
 @Table({
