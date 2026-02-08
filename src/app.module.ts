@@ -1,4 +1,6 @@
 import { Module, OnModuleInit } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ConfigModule } from "@nestjs/config";
 import { SequelizeModule } from "@nestjs/sequelize";
@@ -87,9 +89,9 @@ import { AwsStorageModule } from "./aws-storage/aws-storage.module.js";
 import { StudentParentsModule } from "./student-parents/student-parents.module.js";
 import { CompensateLessonsModule } from "./compensate-lessons/compensate-lessons.module.js";
 import { BranchesModule } from "./branches/branches.module.js";
-import { IeltsTestsModule } from './ielts-tests/ielts-tests.module.js';
-import { IeltsVocabularyModule } from './ielts-vocabulary/ielts-vocabulary.module.js';
-import { IeltsCoursesModule } from './ielts-courses/ielts-courses.module.js';
+import { IeltsTestsModule } from "./ielts-tests/ielts-tests.module.js";
+import { IeltsVocabularyModule } from "./ielts-vocabulary/ielts-vocabulary.module.js";
+import { IeltsCoursesModule } from "./ielts-courses/ielts-courses.module.js";
 
 @Module({
   imports: [
@@ -97,6 +99,12 @@ import { IeltsCoursesModule } from './ielts-courses/ielts-courses.module.js';
       envFilePath: ".env",
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     SequelizeModule.forRoot({
@@ -184,6 +192,10 @@ import { IeltsCoursesModule } from './ielts-courses/ielts-courses.module.js';
   ],
   controllers: [AppController],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     AppService,
     OpenaiService,
     DeepgramService,

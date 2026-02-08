@@ -37,6 +37,7 @@
     "@nestjs/sequelize": "^11.0.0",
     "@nestjs/serve-static": "^4.0.2",
     "@nestjs/swagger": "^8.1.1",
+    "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^10.4.19",
     "@onesignal/node-onesignal": "^5.2.0-beta1",
     "@openai/agents": "^0.0.14",
