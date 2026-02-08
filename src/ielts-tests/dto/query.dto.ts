@@ -68,6 +68,15 @@ export class ReadingQueryDto extends PaginationDto {
   @IsString()
   @IsOptional()
   testId?: string;
+
+  @ApiProperty({
+    description: "Filter by test mode",
+    enum: ["practice", "mock"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  mode?: string;
 }
 
 export class ListeningQueryDto extends PaginationDto {

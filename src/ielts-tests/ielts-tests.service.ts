@@ -138,7 +138,7 @@ export class IeltsTestsService {
   }
 
   async findAllReadings(query: ReadingQueryDto) {
-    const { page = 1, limit = 10, search, testId } = query;
+    const { page = 1, limit = 10, search, testId, mode } = query;
     const where: any = {};
 
     if (search) {
@@ -148,11 +148,19 @@ export class IeltsTestsService {
       where.test_id = testId;
     }
 
+    const testWhere: any = {};
+    if (mode) {
+      testWhere.mode = mode;
+    }
+
     const { rows, count } = await this.ieltsReadingModel.findAndCountAll({
       where,
       include: [
-        { model: IeltsTest, as: "test" },
-        { model: IeltsReadingPart, as: "parts" },
+        {
+          model: IeltsTest,
+          as: "test",
+          where: Object.keys(testWhere).length ? testWhere : undefined,
+        },
       ],
       order: [["createdAt", "DESC"]],
       limit,
