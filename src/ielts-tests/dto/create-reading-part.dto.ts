@@ -188,6 +188,15 @@ export class CreateReadingPartDto {
   part: ReadingPartEnum;
 
   @ApiProperty({
+    description: "The reading passage title",
+    example: "The History of Astronomy",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  passage_title?: string;
+
+  @ApiProperty({
     description: "The reading passage text",
     example: "The passage text goes here...",
     required: false,

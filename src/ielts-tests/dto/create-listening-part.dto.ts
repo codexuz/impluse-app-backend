@@ -207,6 +207,15 @@ export class CreateListeningPartDto {
   part: ListeningPartEnum;
 
   @ApiProperty({
+    description: "The part title",
+    example: "A conversation between two students",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  part_title?: string;
+
+  @ApiProperty({
     description: "The audio ID for this part",
     example: "123e4567-e89b-12d3-a456-426614174000",
     required: false,

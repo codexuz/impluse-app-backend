@@ -42,6 +42,12 @@ export class IeltsReadingPart extends Model<IeltsReadingPart> {
   part: ReadingPart;
 
   @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  passage_title: string;
+
+  @Column({
     type: DataType.TEXT("long"),
     allowNull: true,
   })

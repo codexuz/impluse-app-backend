@@ -1146,6 +1146,7 @@
         }
         state.reading.parts.push({
           part: `PART_${partNum}`,
+          passage_title: "",
           passage: "",
           answers: {},
           questions: [],
@@ -1184,6 +1185,11 @@
       </div>
       <div class="part-card-body">
         <div class="form-group">
+          <label>Passage Title</label>
+          <input type="text" class="form-control" placeholder="e.g. The History of Astronomy"
+            value="${part.passage_title || ""}" onchange="state.reading.parts[${pi}].passage_title = this.value" />
+        </div>
+        <div class="form-group">
           <label>Passage</label>
           <textarea class="form-control" style="min-height:120px" placeholder="Paste the reading passage here..."
             onchange="state.reading.parts[${pi}].passage = this.value">${part.passage}</textarea>
@@ -1214,6 +1220,7 @@
         }
         state.listening.parts.push({
           part: `PART_${partNum}`,
+          part_title: "",
           audio_url: "",
           audio_file_name: "",
           audio_duration: null,
@@ -1252,6 +1259,11 @@
         </div>
       </div>
       <div class="part-card-body">
+        <div class="form-group">
+          <label>Part Title</label>
+          <input type="text" class="form-control" placeholder="e.g. A conversation between two students"
+            value="${part.part_title || ""}" onchange="state.listening.parts[${pi}].part_title=this.value" />
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label>Audio URL</label>

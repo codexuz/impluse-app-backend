@@ -43,6 +43,12 @@ export class IeltsListeningPart extends Model<IeltsListeningPart> {
   })
   part: ListeningPart;
 
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  part_title: string;
+
   @ForeignKey(() => IeltsAudio)
   @Column({
     type: DataType.UUID,
