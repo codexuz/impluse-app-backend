@@ -106,6 +106,17 @@ import { IeltsVocabulary } from "../ielts-vocabulary/entities/ielts-vocabulary.e
 import { IeltsVocabularyDeck } from "../ielts-vocabulary/entities/ielts-vocabulary-deck.entity.js";
 import { IeltsDeckWord } from "../ielts-vocabulary/entities/ielts-deck-word.entity.js";
 
+import { IeltsCourse } from "../ielts-courses/entities/ielts-course.entity.js";
+import { IeltsCourseSection } from "../ielts-courses/entities/ielts-course-section.entity.js";
+import { IeltsLesson as IeltsCourseLesson } from "../ielts-courses/entities/ielts-lesson.entity.js";
+import { IeltsQuiz } from "../ielts-courses/entities/ielts-quiz.entity.js";
+import { IeltsQuizQuestion } from "../ielts-courses/entities/ielts-quiz-question.entity.js";
+import { IeltsQuestionChoice } from "../ielts-courses/entities/ielts-question-choice.entity.js";
+import { IeltsQuestionAcceptedAnswer } from "../ielts-courses/entities/ielts-question-accepted-answer.entity.js";
+import { IeltsLessonProgress } from "../ielts-courses/entities/ielts-lesson-progress.entity.js";
+import { IeltsQuizAttempt } from "../ielts-courses/entities/ielts-quiz-attempt.entity.js";
+import { IeltsAttemptAnswer } from "../ielts-courses/entities/ielts-attempt-answer.entity.js";
+
 export const Models = [
   User,
   Role,
@@ -205,6 +216,16 @@ export const Models = [
   IeltsVocabulary,
   IeltsVocabularyDeck,
   IeltsDeckWord,
+  IeltsCourse,
+  IeltsCourseSection,
+  IeltsCourseLesson,
+  IeltsQuiz,
+  IeltsQuizQuestion,
+  IeltsQuestionChoice,
+  IeltsQuestionAcceptedAnswer,
+  IeltsLessonProgress,
+  IeltsQuizAttempt,
+  IeltsAttemptAnswer,
 ];
 
 // Define associations after all models are loaded
@@ -1413,5 +1434,137 @@ export function initializeAssociations() {
     foreignKey: "deck_id",
     targetKey: "id",
     as: "deck",
+  });
+
+  // IeltsCourse associations
+  IeltsCourse.hasMany(IeltsCourseSection, {
+    foreignKey: "course_id",
+    as: "sections",
+  });
+  IeltsCourse.hasMany(IeltsQuiz, {
+    foreignKey: "course_id",
+    as: "quizzes",
+  });
+
+  // IeltsCourseSection associations
+  IeltsCourseSection.belongsTo(IeltsCourse, {
+    foreignKey: "course_id",
+    as: "course",
+  });
+  IeltsCourseSection.hasMany(IeltsCourseLesson, {
+    foreignKey: "section_id",
+    as: "lessons",
+  });
+  IeltsCourseSection.hasMany(IeltsQuiz, {
+    foreignKey: "section_id",
+    as: "quizzes",
+  });
+
+  // IeltsCourseLesson associations
+  IeltsCourseLesson.belongsTo(IeltsCourseSection, {
+    foreignKey: "section_id",
+    as: "section",
+  });
+  IeltsCourseLesson.hasMany(IeltsQuiz, {
+    foreignKey: "lesson_id",
+    as: "quizzes",
+  });
+
+  // IeltsQuiz associations
+  IeltsQuiz.belongsTo(IeltsCourse, {
+    foreignKey: "course_id",
+    as: "course",
+  });
+  IeltsQuiz.belongsTo(IeltsCourseSection, {
+    foreignKey: "section_id",
+    as: "section",
+  });
+  IeltsQuiz.belongsTo(IeltsCourseLesson, {
+    foreignKey: "lesson_id",
+    as: "lesson",
+  });
+  IeltsQuiz.hasMany(IeltsQuizQuestion, {
+    foreignKey: "quiz_id",
+    as: "questions",
+  });
+
+  // IeltsQuizQuestion associations
+  IeltsQuizQuestion.belongsTo(IeltsQuiz, {
+    foreignKey: "quiz_id",
+    as: "quiz",
+  });
+  IeltsQuizQuestion.hasMany(IeltsQuestionChoice, {
+    foreignKey: "question_id",
+    as: "choices",
+  });
+  IeltsQuizQuestion.hasMany(IeltsQuestionAcceptedAnswer, {
+    foreignKey: "question_id",
+    as: "acceptedAnswers",
+  });
+
+  // IeltsQuestionChoice associations
+  IeltsQuestionChoice.belongsTo(IeltsQuizQuestion, {
+    foreignKey: "question_id",
+    as: "question",
+  });
+
+  // IeltsQuestionAcceptedAnswer associations
+  IeltsQuestionAcceptedAnswer.belongsTo(IeltsQuizQuestion, {
+    foreignKey: "question_id",
+    as: "question",
+  });
+
+  // IeltsLessonProgress associations
+  IeltsLessonProgress.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
+  });
+  IeltsLessonProgress.belongsTo(IeltsCourseLesson, {
+    foreignKey: "lesson_id",
+    as: "lesson",
+  });
+  User.hasMany(IeltsLessonProgress, {
+    foreignKey: "user_id",
+    as: "ielts_lesson_progress",
+  });
+  IeltsCourseLesson.hasMany(IeltsLessonProgress, {
+    foreignKey: "lesson_id",
+    as: "progress",
+  });
+
+  // IeltsQuizAttempt associations
+  IeltsQuizAttempt.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
+  });
+  IeltsQuizAttempt.belongsTo(IeltsQuiz, {
+    foreignKey: "quiz_id",
+    as: "quiz",
+  });
+  IeltsQuizAttempt.hasMany(IeltsAttemptAnswer, {
+    foreignKey: "attempt_id",
+    as: "answers",
+  });
+  User.hasMany(IeltsQuizAttempt, {
+    foreignKey: "user_id",
+    as: "ielts_quiz_attempts",
+  });
+  IeltsQuiz.hasMany(IeltsQuizAttempt, {
+    foreignKey: "quiz_id",
+    as: "attempts",
+  });
+
+  // IeltsAttemptAnswer associations
+  IeltsAttemptAnswer.belongsTo(IeltsQuizAttempt, {
+    foreignKey: "attempt_id",
+    as: "attempt",
+  });
+  IeltsAttemptAnswer.belongsTo(IeltsQuizQuestion, {
+    foreignKey: "question_id",
+    as: "question",
+  });
+  IeltsAttemptAnswer.belongsTo(IeltsQuestionChoice, {
+    foreignKey: "choice_id",
+    as: "choice",
   });
 }

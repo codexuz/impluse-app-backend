@@ -89,6 +89,7 @@ import { CompensateLessonsModule } from "./compensate-lessons/compensate-lessons
 import { BranchesModule } from "./branches/branches.module.js";
 import { IeltsTestsModule } from './ielts-tests/ielts-tests.module.js';
 import { IeltsVocabularyModule } from './ielts-vocabulary/ielts-vocabulary.module.js';
+import { IeltsCoursesModule } from './ielts-courses/ielts-courses.module.js';
 
 @Module({
   imports: [
@@ -179,6 +180,7 @@ import { IeltsVocabularyModule } from './ielts-vocabulary/ielts-vocabulary.modul
     BranchesModule,
     IeltsTestsModule,
     IeltsVocabularyModule,
+    IeltsCoursesModule,
   ],
   controllers: [AppController],
   providers: [
