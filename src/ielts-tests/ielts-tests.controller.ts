@@ -73,58 +73,6 @@ export class IeltsTestsController {
     return await this.ieltsTestsService.findAllTests();
   }
 
-  @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get an IELTS test by ID" })
-  @ApiParam({ name: "id", description: "The test ID" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "Return the requested test.",
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: "Test not found.",
-  })
-  async findTestById(@Param("id") id: string) {
-    return await this.ieltsTestsService.findTestById(id);
-  }
-
-  @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Update an IELTS test" })
-  @ApiParam({ name: "id", description: "The test ID" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "The test has been successfully updated.",
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: "Test not found.",
-  })
-  async updateTest(
-    @Param("id") id: string,
-    @Body() updateTestDto: UpdateTestDto,
-  ) {
-    return await this.ieltsTestsService.updateTest(id, updateTestDto);
-  }
-
-  @Delete(":id")
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Delete an IELTS test" })
-  @ApiParam({ name: "id", description: "The test ID" })
-  @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: "The test has been successfully deleted.",
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: "Test not found.",
-  })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteTest(@Param("id") id: string) {
-    return await this.ieltsTestsService.deleteTest(id);
-  }
-
   // ========== Reading ==========
   @Post("reading")
   @HttpCode(HttpStatus.CREATED)
@@ -451,5 +399,58 @@ export class IeltsTestsController {
     return await this.ieltsTestsService.createMultipleChoiceOption(
       createMultipleChoiceOptionDto,
     );
+  }
+
+  // ========== Test by ID (must be LAST to avoid catching named routes) ==========
+  @Get(":id")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: "Get an IELTS test by ID" })
+  @ApiParam({ name: "id", description: "The test ID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Return the requested test.",
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Test not found.",
+  })
+  async findTestById(@Param("id") id: string) {
+    return await this.ieltsTestsService.findTestById(id);
+  }
+
+  @Patch(":id")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Update an IELTS test" })
+  @ApiParam({ name: "id", description: "The test ID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "The test has been successfully updated.",
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Test not found.",
+  })
+  async updateTest(
+    @Param("id") id: string,
+    @Body() updateTestDto: UpdateTestDto,
+  ) {
+    return await this.ieltsTestsService.updateTest(id, updateTestDto);
+  }
+
+  @Delete(":id")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Delete an IELTS test" })
+  @ApiParam({ name: "id", description: "The test ID" })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: "The test has been successfully deleted.",
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Test not found.",
+  })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteTest(@Param("id") id: string) {
+    return await this.ieltsTestsService.deleteTest(id);
   }
 }
