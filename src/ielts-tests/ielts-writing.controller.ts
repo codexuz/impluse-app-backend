@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -18,6 +19,7 @@ import {
 import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateWritingDto } from "./dto/create-writing.dto.js";
 import { CreateWritingTaskDto } from "./dto/create-writing-task.dto.js";
+import { WritingQueryDto } from "./dto/query.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -50,8 +52,8 @@ export class IeltsWritingController {
     status: HttpStatus.OK,
     description: "Return all writing sections.",
   })
-  async findAllWritings() {
-    return await this.ieltsTestsService.findAllWritings();
+  async findAllWritings(@Query() query: WritingQueryDto) {
+    return await this.ieltsTestsService.findAllWritings(query);
   }
 
   @Get(":id")

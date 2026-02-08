@@ -28,7 +28,14 @@ import { CreateQuestionContentDto } from "./dto/create-question-content.dto.js";
 import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
 import { CreateMultipleChoiceQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
 import { CreateMultipleChoiceOptionDto } from "./dto/create-multiple-choice-option.dto.js";
+import {
+  TestQueryDto,
+  ReadingQueryDto,
+  ListeningQueryDto,
+  WritingQueryDto,
+} from "./dto/query.dto.js";
 import { User } from "../users/entities/user.entity.js";
+import { Op } from "sequelize";
 
 @Injectable()
 export class IeltsTestsService {
@@ -66,11 +73,35 @@ export class IeltsTestsService {
     return await this.ieltsTestModel.create(createTestDto as any);
   }
 
-  async findAllTests(): Promise<IeltsTest[]> {
-    return await this.ieltsTestModel.findAll({
+  async findAllTests(query: TestQueryDto) {
+    const { page = 1, limit = 10, search, mode, status } = query;
+    const where: any = {};
+
+    if (search) {
+      where.title = { [Op.like]: `%${search}%` };
+    }
+    if (mode) {
+      where.mode = mode;
+    }
+    if (status) {
+      where.status = status;
+    }
+
+    const { rows, count } = await this.ieltsTestModel.findAndCountAll({
+      where,
       include: [{ model: User, as: "creator" }],
       order: [["createdAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findTestById(id: string): Promise<IeltsTest> {
@@ -106,14 +137,35 @@ export class IeltsTestsService {
     return await this.ieltsReadingModel.create(createReadingDto as any);
   }
 
-  async findAllReadings(): Promise<IeltsReading[]> {
-    return await this.ieltsReadingModel.findAll({
+  async findAllReadings(query: ReadingQueryDto) {
+    const { page = 1, limit = 10, search, testId } = query;
+    const where: any = {};
+
+    if (search) {
+      where.title = { [Op.like]: `%${search}%` };
+    }
+    if (testId) {
+      where.test_id = testId;
+    }
+
+    const { rows, count } = await this.ieltsReadingModel.findAndCountAll({
+      where,
       include: [
         { model: IeltsTest, as: "test" },
         { model: IeltsReadingPart, as: "parts" },
       ],
       order: [["createdAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findReadingById(id: string): Promise<IeltsReading> {
@@ -225,14 +277,38 @@ export class IeltsTestsService {
     return await this.ieltsListeningModel.create(createListeningDto as any);
   }
 
-  async findAllListenings(): Promise<IeltsListening[]> {
-    return await this.ieltsListeningModel.findAll({
+  async findAllListenings(query: ListeningQueryDto) {
+    const { page = 1, limit = 10, search, testId, isActive } = query;
+    const where: any = {};
+
+    if (search) {
+      where.title = { [Op.like]: `%${search}%` };
+    }
+    if (testId) {
+      where.test_id = testId;
+    }
+    if (isActive !== undefined) {
+      where.is_active = isActive;
+    }
+
+    const { rows, count } = await this.ieltsListeningModel.findAndCountAll({
+      where,
       include: [
         { model: IeltsTest, as: "test" },
         { model: IeltsListeningPart, as: "parts" },
       ],
       order: [["createdAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findListeningById(id: string): Promise<IeltsListening> {
@@ -333,14 +409,38 @@ export class IeltsTestsService {
     return await this.ieltsWritingModel.create(createWritingDto as any);
   }
 
-  async findAllWritings(): Promise<IeltsWriting[]> {
-    return await this.ieltsWritingModel.findAll({
+  async findAllWritings(query: WritingQueryDto) {
+    const { page = 1, limit = 10, search, testId, isActive } = query;
+    const where: any = {};
+
+    if (search) {
+      where.title = { [Op.like]: `%${search}%` };
+    }
+    if (testId) {
+      where.test_id = testId;
+    }
+    if (isActive !== undefined) {
+      where.is_active = isActive;
+    }
+
+    const { rows, count } = await this.ieltsWritingModel.findAndCountAll({
+      where,
       include: [
         { model: IeltsTest, as: "test" },
         { model: IeltsWritingTask, as: "tasks" },
       ],
       order: [["createdAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findWritingById(id: string): Promise<IeltsWriting> {

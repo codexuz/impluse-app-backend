@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -21,6 +22,7 @@ import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateReadingDto } from "./dto/create-reading.dto.js";
 import { UpdateReadingDto } from "./dto/update-reading.dto.js";
 import { CreateReadingPartDto } from "./dto/create-reading-part.dto.js";
+import { ReadingQueryDto } from "./dto/query.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -53,8 +55,8 @@ export class IeltsReadingController {
     status: HttpStatus.OK,
     description: "Return all reading sections.",
   })
-  async findAllReadings() {
-    return await this.ieltsTestsService.findAllReadings();
+  async findAllReadings(@Query() query: ReadingQueryDto) {
+    return await this.ieltsTestsService.findAllReadings(query);
   }
 
   @Get(":id")

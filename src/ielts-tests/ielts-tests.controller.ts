@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -16,10 +17,12 @@ import {
   ApiBearerAuth,
   ApiResponse,
   ApiParam,
+  ApiQuery,
 } from "@nestjs/swagger";
 import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateTestDto } from "./dto/create-test.dto.js";
 import { UpdateTestDto } from "./dto/update-test.dto.js";
+import { TestQueryDto } from "./dto/query.dto.js";
 import { CreateAudioDto } from "./dto/create-audio.dto.js";
 import { CreateQuestionDto } from "./dto/create-question.dto.js";
 import { CreateQuestionContentDto } from "./dto/create-question-content.dto.js";
@@ -62,8 +65,8 @@ export class IeltsTestsController {
     status: HttpStatus.OK,
     description: "Return all tests.",
   })
-  async findAllTests() {
-    return await this.ieltsTestsService.findAllTests();
+  async findAllTests(@Query() query: TestQueryDto) {
+    return await this.ieltsTestsService.findAllTests(query);
   }
 
   // ========== Audio ==========

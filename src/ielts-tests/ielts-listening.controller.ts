@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -18,6 +19,7 @@ import {
 import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateListeningDto } from "./dto/create-listening.dto.js";
 import { CreateListeningPartDto } from "./dto/create-listening-part.dto.js";
+import { ListeningQueryDto } from "./dto/query.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -50,8 +52,8 @@ export class IeltsListeningController {
     status: HttpStatus.OK,
     description: "Return all listening sections.",
   })
-  async findAllListenings() {
-    return await this.ieltsTestsService.findAllListenings();
+  async findAllListenings(@Query() query: ListeningQueryDto) {
+    return await this.ieltsTestsService.findAllListenings(query);
   }
 
   @Get(":id")
