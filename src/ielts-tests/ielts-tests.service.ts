@@ -120,7 +120,32 @@ export class IeltsTestsService {
     const reading = await this.ieltsReadingModel.findByPk(id, {
       include: [
         { model: IeltsTest, as: "test" },
-        { model: IeltsReadingPart, as: "parts" },
+        {
+          model: IeltsReadingPart,
+          as: "parts",
+          include: [
+            {
+              model: IeltsQuestion,
+              as: "questions",
+              include: [
+                {
+                  model: IeltsQuestionContent,
+                  as: "contents",
+                  include: [
+                    { model: IeltsQuestionOption, as: "options" },
+                    {
+                      model: IeltsMultipleChoiceQuestion,
+                      as: "multipleChoiceQuestions",
+                      include: [
+                        { model: IeltsMultipleChoiceOption, as: "options" },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
       ],
     });
 
@@ -214,7 +239,33 @@ export class IeltsTestsService {
     const listening = await this.ieltsListeningModel.findByPk(id, {
       include: [
         { model: IeltsTest, as: "test" },
-        { model: IeltsListeningPart, as: "parts" },
+        {
+          model: IeltsListeningPart,
+          as: "parts",
+          include: [
+            { model: IeltsAudio, as: "audio" },
+            {
+              model: IeltsQuestion,
+              as: "questions",
+              include: [
+                {
+                  model: IeltsQuestionContent,
+                  as: "contents",
+                  include: [
+                    { model: IeltsQuestionOption, as: "options" },
+                    {
+                      model: IeltsMultipleChoiceQuestion,
+                      as: "multipleChoiceQuestions",
+                      include: [
+                        { model: IeltsMultipleChoiceOption, as: "options" },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
       ],
     });
 

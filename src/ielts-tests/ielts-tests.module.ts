@@ -2,6 +2,9 @@ import { Module } from "@nestjs/common";
 import { SequelizeModule } from "@nestjs/sequelize";
 import { IeltsTestsService } from "./ielts-tests.service.js";
 import { IeltsTestsController } from "./ielts-tests.controller.js";
+import { IeltsReadingController } from "./ielts-reading.controller.js";
+import { IeltsListeningController } from "./ielts-listening.controller.js";
+import { IeltsWritingController } from "./ielts-writing.controller.js";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { IeltsReading } from "./entities/ielts-reading.entity.js";
 import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
@@ -34,7 +37,12 @@ import { IeltsMultipleChoiceOption } from "./entities/ielts-multiple-choice-opti
       IeltsMultipleChoiceOption,
     ]),
   ],
-  controllers: [IeltsTestsController],
+  controllers: [
+    IeltsTestsController,
+    IeltsReadingController,
+    IeltsListeningController,
+    IeltsWritingController,
+  ],
   providers: [IeltsTestsService],
   exports: [IeltsTestsService],
 })
