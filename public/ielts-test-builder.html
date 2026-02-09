@@ -29,13 +29,11 @@
         --shadow-lg:
           0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
       }
-
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
-
       body {
         font-family:
           "Inter",
@@ -49,15 +47,15 @@
         line-height: 1.6;
       }
 
-      /* ===== HEADER ===== */
+      /* HEADER */
       .header {
         background: linear-gradient(
           135deg,
-          var(--primary) 0%,
-          var(--primary-dark) 100%
+          var(--primary),
+          var(--primary-dark)
         );
         color: #fff;
-        padding: 16px 32px;
+        padding: 14px 32px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -69,14 +67,50 @@
       .header h1 {
         font-size: 20px;
         font-weight: 700;
-        letter-spacing: -0.3px;
       }
       .header-actions {
         display: flex;
         gap: 10px;
       }
 
-      /* ===== BUTTONS ===== */
+      /* CONFIG BAR */
+      .config-bar {
+        background: #fff;
+        border-bottom: 1px solid var(--gray-200);
+        padding: 10px 32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .config-bar label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+      }
+      .config-bar input {
+        padding: 6px 10px;
+        border: 1.5px solid var(--gray-300);
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: "JetBrains Mono", "Fira Code", monospace;
+        color: var(--gray-800);
+      }
+      .config-bar input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      }
+      .config-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* BUTTONS */
       .btn {
         display: inline-flex;
         align-items: center;
@@ -95,6 +129,11 @@
       }
       .btn:active {
         transform: translateY(0);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
       }
       .btn-primary {
         background: var(--primary);
@@ -133,15 +172,13 @@
         font-size: 11px;
       }
 
-      /* ===== LAYOUT ===== */
+      /* LAYOUT */
       .app-layout {
         display: flex;
-        height: calc(100vh - 56px - 48px);
+        height: calc(100vh - 56px - 44px);
       }
-
-      /* ===== SIDEBAR ===== */
       .sidebar {
-        width: 280px;
+        width: 260px;
         background: #fff;
         border-right: 1px solid var(--gray-200);
         display: flex;
@@ -149,11 +186,8 @@
         overflow: hidden;
       }
       .sidebar-header {
-        padding: 16px;
+        padding: 14px 16px;
         border-bottom: 1px solid var(--gray-200);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
       }
       .sidebar-header h3 {
         font-size: 14px;
@@ -165,7 +199,6 @@
         overflow-y: auto;
         padding: 8px;
       }
-
       .nav-section {
         margin-bottom: 4px;
       }
@@ -212,14 +245,20 @@
         color: var(--primary-dark);
       }
 
-      /* ===== MAIN AREA ===== */
+      /* MAIN */
       .main-area {
         flex: 1;
         overflow-y: auto;
         padding: 24px;
       }
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+      }
 
-      /* ===== CARDS ===== */
+      /* CARDS */
       .card {
         background: #fff;
         border-radius: var(--radius);
@@ -242,7 +281,7 @@
         padding: 18px;
       }
 
-      /* ===== FORMS ===== */
+      /* FORMS */
       .form-group {
         margin-bottom: 14px;
       }
@@ -283,46 +322,179 @@
         grid-template-columns: 1fr 1fr;
         gap: 12px;
       }
-
-      /* ===== TABS ===== */
-      .tabs {
-        display: flex;
-        gap: 2px;
-        background: var(--gray-100);
-        padding: 3px;
-        border-radius: var(--radius);
-        margin-bottom: 16px;
+      .form-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
       }
-      .tab {
-        flex: 1;
-        padding: 8px 16px;
-        border-radius: 6px;
+
+      /* TABLE */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
         font-size: 13px;
-        font-weight: 600;
+      }
+      .data-table th {
+        text-align: left;
+        padding: 10px 14px;
+        background: var(--gray-50);
+        border-bottom: 2px solid var(--gray-200);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--gray-500);
+        font-weight: 700;
+      }
+      .data-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--gray-100);
+      }
+      .data-table tr:hover td {
+        background: var(--gray-50);
+      }
+      .data-table .actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      /* BADGES */
+      .status-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .status-draft {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .status-published {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .id-badge {
+        font-size: 11px;
+        font-family: "JetBrains Mono", "Fira Code", monospace;
+        background: var(--gray-100);
+        padding: 2px 6px;
+        border-radius: 4px;
         color: var(--gray-500);
         cursor: pointer;
-        text-align: center;
-        transition: all 0.15s;
-        border: none;
-        background: transparent;
       }
-      .tab:hover {
-        color: var(--gray-700);
+      .id-badge:hover {
+        background: var(--gray-200);
       }
-      .tab.active {
-        background: #fff;
+
+      /* BREADCRUMB */
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--gray-400);
+        margin-bottom: 16px;
+      }
+      .breadcrumb a {
         color: var(--primary);
-        box-shadow: var(--shadow);
+        text-decoration: none;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+      .breadcrumb .sep {
+        color: var(--gray-300);
       }
 
-      .tab-panel {
-        display: none;
+      /* QUESTION CONTENT TYPES */
+      .type-badge {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 4px;
+        letter-spacing: 0.3px;
       }
-      .tab-panel.active {
-        display: block;
+      .type-completion {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+      .type-multiple-choice {
+        background: #fce7f3;
+        color: #be185d;
+      }
+      .type-multi-select {
+        background: #ede9fe;
+        color: #6d28d9;
+      }
+      .type-selection {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .type-draggable-selection {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .type-matching-information {
+        background: #fce4ec;
+        color: #880e4f;
       }
 
-      /* ===== PARTS ===== */
+      /* QUESTION BLOCK */
+      .question-block {
+        border: 1px dashed var(--gray-300);
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: var(--gray-50);
+        position: relative;
+      }
+      .question-block-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      /* OPTIONS */
+      .options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .option-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .option-row .option-label {
+        width: 28px;
+        height: 28px;
+        background: var(--gray-200);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--gray-600);
+        flex-shrink: 0;
+      }
+
+      /* MCQ */
+      .mcq-item {
+        border: 1px solid var(--gray-200);
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: #fff;
+      }
+
+      /* PART CARD */
       .part-card {
         border: 1.5px solid var(--gray-200);
         border-radius: var(--radius);
@@ -361,197 +533,7 @@
         display: none;
       }
 
-      /* ===== QUESTION CONTENT ===== */
-      .question-block {
-        border: 1px dashed var(--gray-300);
-        border-radius: 6px;
-        padding: 12px;
-        margin-bottom: 10px;
-        background: var(--gray-50);
-        position: relative;
-      }
-      .question-block-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 10px;
-      }
-      .question-block-header .type-badge {
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        padding: 2px 8px;
-        border-radius: 4px;
-        letter-spacing: 0.3px;
-      }
-      .type-completion {
-        background: #dbeafe;
-        color: #1d4ed8;
-      }
-      .type-multiple-choice {
-        background: #fce7f3;
-        color: #be185d;
-      }
-      .type-multi-select {
-        background: #ede9fe;
-        color: #6d28d9;
-      }
-      .type-selection {
-        background: #d1fae5;
-        color: #065f46;
-      }
-      .type-draggable-selection {
-        background: #fef3c7;
-        color: #92400e;
-      }
-      .type-matching-information {
-        background: #fce4ec;
-        color: #880e4f;
-      }
-
-      /* ===== CONFIG BAR ===== */
-      .config-bar {
-        background: #fff;
-        border-bottom: 1px solid var(--gray-200);
-        padding: 10px 32px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
-      }
-      .config-bar label {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--gray-600);
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        white-space: nowrap;
-      }
-      .config-bar input {
-        padding: 6px 10px;
-        border: 1.5px solid var(--gray-300);
-        border-radius: 6px;
-        font-size: 13px;
-        font-family: "JetBrains Mono", "Fira Code", monospace;
-        color: var(--gray-800);
-        background: #fff;
-        transition: border 0.15s;
-      }
-      .config-bar input:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-      }
-      .config-bar .config-group {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .api-status {
-        font-size: 11px;
-        font-weight: 700;
-        padding: 3px 8px;
-        border-radius: 12px;
-        letter-spacing: 0.3px;
-      }
-      .api-status.connected {
-        background: #d1fae5;
-        color: #065f46;
-      }
-      .api-status.disconnected {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-      .api-status.saving {
-        background: #dbeafe;
-        color: #1d4ed8;
-      }
-
-      /* ===== OPTIONS LIST ===== */
-      .options-list {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        margin-top: 8px;
-      }
-      .option-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .option-row .option-label {
-        width: 28px;
-        height: 28px;
-        background: var(--gray-200);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--gray-600);
-        flex-shrink: 0;
-      }
-      .option-row input {
-        flex: 1;
-      }
-
-      /* ===== MCQ LIST ===== */
-      .mcq-item {
-        border: 1px solid var(--gray-200);
-        border-radius: 6px;
-        padding: 10px;
-        margin-bottom: 8px;
-        background: #fff;
-      }
-      .mcq-item .mcq-question {
-        font-weight: 600;
-        font-size: 13px;
-        margin-bottom: 6px;
-      }
-
-      /* ===== ANSWER KEY ===== */
-      .answer-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-        gap: 8px;
-      }
-      .answer-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .answer-item .q-num {
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--gray-500);
-        width: 24px;
-        text-align: right;
-      }
-      .answer-item input {
-        flex: 1;
-        padding: 5px 8px;
-        border: 1px solid var(--gray-300);
-        border-radius: 4px;
-        font-size: 13px;
-      }
-
-      /* ===== JSON PREVIEW ===== */
-      .json-preview {
-        background: var(--gray-900);
-        color: #a5f3fc;
-        border-radius: var(--radius);
-        padding: 16px;
-        font-family: "JetBrains Mono", "Fira Code", monospace;
-        font-size: 12px;
-        line-height: 1.7;
-        max-height: 500px;
-        overflow: auto;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-      }
-
-      /* ===== EMPTY STATE ===== */
+      /* EMPTY */
       .empty-state {
         text-align: center;
         padding: 48px 24px;
@@ -570,25 +552,7 @@
         font-size: 13px;
       }
 
-      /* ===== STATUS BADGE ===== */
-      .status-badge {
-        font-size: 11px;
-        font-weight: 700;
-        padding: 3px 8px;
-        border-radius: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-      }
-      .status-draft {
-        background: #fef3c7;
-        color: #92400e;
-      }
-      .status-published {
-        background: #d1fae5;
-        color: #065f46;
-      }
-
-      /* ===== MODAL ===== */
+      /* MODAL */
       .modal-overlay {
         position: fixed;
         inset: 0;
@@ -610,8 +574,8 @@
         border-radius: 12px;
         box-shadow: var(--shadow-lg);
         width: 90%;
-        max-width: 560px;
-        max-height: 80vh;
+        max-width: 600px;
+        max-height: 85vh;
         overflow-y: auto;
         transform: translateY(20px);
         transition: transform 0.2s;
@@ -657,7 +621,7 @@
         gap: 8px;
       }
 
-      /* ===== TOAST ===== */
+      /* TOAST */
       .toast-container {
         position: fixed;
         top: 72px;
@@ -693,7 +657,7 @@
         }
       }
 
-      /* ===== SCROLLBAR ===== */
+      /* SCROLLBAR */
       ::-webkit-scrollbar {
         width: 6px;
       }
@@ -708,7 +672,7 @@
         background: var(--gray-400);
       }
 
-      /* ===== UTIL ===== */
+      /* UTILS */
       .mt-2 {
         margin-top: 8px;
       }
@@ -724,9 +688,6 @@
       .mb-3 {
         margin-bottom: 12px;
       }
-      .gap-2 {
-        gap: 8px;
-      }
       .flex {
         display: flex;
       }
@@ -735,6 +696,9 @@
       }
       .justify-between {
         justify-content: space-between;
+      }
+      .gap-2 {
+        gap: 8px;
       }
       .text-sm {
         font-size: 13px;
@@ -755,22 +719,9 @@
         <button
           class="btn btn-outline"
           style="color: #fff; border-color: rgba(255, 255, 255, 0.3)"
-          onclick="loadTestList()"
+          onclick="navigateTo('tests')"
         >
-          📂 Load Test
-        </button>
-        <button
-          class="btn btn-outline"
-          style="color: #fff; border-color: rgba(255, 255, 255, 0.3)"
-          onclick="showJsonPreview()"
-        >
-          { } JSON Preview
-        </button>
-        <button class="btn btn-warning" onclick="saveToApi()">
-          🚀 Save to API
-        </button>
-        <button class="btn btn-success" onclick="exportTest()">
-          ⬇ Export
+          📋 All Tests
         </button>
       </div>
     </header>
@@ -783,8 +734,7 @@
           type="text"
           id="api-url"
           value="http://localhost:3000"
-          style="width: 240px"
-          placeholder="http://localhost:3000"
+          style="width: 220px"
         />
       </div>
       <div class="config-group">
@@ -792,61 +742,68 @@
         <input
           type="text"
           id="jwt-token"
-          style="width: 420px"
-          placeholder="Paste your Bearer token here..."
+          style="width: 400px"
+          placeholder="Paste your Bearer token..."
         />
       </div>
-      <span class="api-status disconnected" id="api-status">Not Connected</span>
     </div>
 
     <!-- APP LAYOUT -->
     <div class="app-layout">
       <!-- SIDEBAR -->
       <aside class="sidebar">
-        <div class="sidebar-header">
-          <h3>Test Structure</h3>
-          <button class="btn btn-primary btn-xs" onclick="resetBuilder()">
-            ↻ Reset
-          </button>
-        </div>
+        <div class="sidebar-header"><h3>Navigation</h3></div>
         <div class="sidebar-body">
           <div class="nav-section">
-            <div class="nav-section-title">General</div>
+            <div class="nav-section-title">Manage</div>
             <div
               class="nav-item active"
-              onclick="switchSection('test-info', this)"
+              onclick="navigateTo('tests')"
+              data-nav="tests"
             >
-              <span>📋</span> Test Info
-            </div>
-          </div>
-          <div class="nav-section">
-            <div class="nav-section-title">Sections</div>
-            <div
-              class="nav-item"
-              onclick="switchSection('reading-section', this)"
-            >
-              <span>📖</span> Reading
-              <span class="badge" id="reading-count">0</span>
+              <span>📋</span> Tests
             </div>
             <div
               class="nav-item"
-              onclick="switchSection('listening-section', this)"
+              onclick="navigateTo('readings')"
+              data-nav="readings"
             >
-              <span>🎧</span> Listening
-              <span class="badge" id="listening-count">0</span>
+              <span>📖</span> Readings
             </div>
             <div
               class="nav-item"
-              onclick="switchSection('writing-section', this)"
+              onclick="navigateTo('reading-parts')"
+              data-nav="reading-parts"
             >
-              <span>✍️</span> Writing
-              <span class="badge" id="writing-count">0</span>
+              <span>📄</span> Reading Parts
             </div>
-          </div>
-          <div class="nav-section">
-            <div class="nav-section-title">Output</div>
-            <div class="nav-item" onclick="switchSection('json-section', this)">
-              <span>{ }</span> JSON Output
+            <div
+              class="nav-item"
+              onclick="navigateTo('listenings')"
+              data-nav="listenings"
+            >
+              <span>🎧</span> Listenings
+            </div>
+            <div
+              class="nav-item"
+              onclick="navigateTo('listening-parts')"
+              data-nav="listening-parts"
+            >
+              <span>🔊</span> Listening Parts
+            </div>
+            <div
+              class="nav-item"
+              onclick="navigateTo('writings')"
+              data-nav="writings"
+            >
+              <span>✍️</span> Writings
+            </div>
+            <div
+              class="nav-item"
+              onclick="navigateTo('writing-tasks')"
+              data-nav="writing-tasks"
+            >
+              <span>📝</span> Writing Tasks
             </div>
           </div>
         </div>
@@ -854,16 +811,38 @@
 
       <!-- MAIN AREA -->
       <main class="main-area">
-        <!-- TEST INFO SECTION -->
-        <div id="test-info" class="section active">
+        <!-- ==================== PAGE: TESTS ==================== -->
+        <div id="page-tests" class="page active">
+          <div class="flex items-center justify-between mb-3">
+            <h2 style="font-size: 18px; font-weight: 700">📋 Tests</h2>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="showCreateTestForm()"
+            >
+              + Create Test
+            </button>
+          </div>
+          <div id="tests-list-container">
+            <div class="empty-state">
+              <div class="icon">📋</div>
+              <h3>Loading tests...</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PAGE: CREATE/EDIT TEST ==================== -->
+        <div id="page-test-form" class="page">
+          <div class="breadcrumb">
+            <a onclick="navigateTo('tests')">Tests</a>
+            <span class="sep">/</span>
+            <span id="test-form-title">Create Test</span>
+          </div>
           <div class="card">
             <div class="card-header">
-              <h3>Test Information</h3>
-              <span class="status-badge status-draft" id="status-badge"
-                >Draft</span
-              >
+              <h3 id="test-form-heading">Create New Test</h3>
             </div>
             <div class="card-body">
+              <input type="hidden" id="test-edit-id" />
               <div class="form-group">
                 <label>Test Title</label>
                 <input
@@ -873,7 +852,7 @@
                   placeholder="e.g. Cambridge IELTS 18 - Test 1"
                 />
               </div>
-              <div class="form-row">
+              <div class="form-row-3">
                 <div class="form-group">
                   <label>Mode</label>
                   <select class="form-control" id="test-mode">
@@ -883,44 +862,74 @@
                 </div>
                 <div class="form-group">
                   <label>Status</label>
-                  <select
-                    class="form-control"
-                    id="test-status"
-                    onchange="updateStatusBadge()"
-                  >
+                  <select class="form-control" id="test-status">
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>
                   </select>
                 </div>
+                <div class="form-group">
+                  <label>Category</label>
+                  <select class="form-control" id="test-category">
+                    <option value="">-- Select --</option>
+                    <option value="authentic">Authentic</option>
+                    <option value="pre-test">Pre-Test</option>
+                    <option value="cambridge books">Cambridge Books</option>
+                  </select>
+                </div>
               </div>
-              <div class="form-group">
-                <label>Category</label>
-                <select class="form-control" id="test-category">
-                  <option value="">-- Select Category --</option>
-                  <option value="authentic">Authentic</option>
-                  <option value="pre-test">Pre-Test</option>
-                  <option value="cambridge books">Cambridge Books</option>
-                </select>
+              <div class="flex gap-2">
+                <button class="btn btn-success" onclick="saveTest()">
+                  💾 Save Test
+                </button>
+                <button class="btn btn-outline" onclick="navigateTo('tests')">
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- READING SECTION -->
-        <div id="reading-section" class="section" style="display: none">
+        <!-- ==================== PAGE: TEST DETAIL ==================== -->
+        <div id="page-test-detail" class="page">
+          <div class="breadcrumb">
+            <a onclick="navigateTo('tests')">Tests</a>
+            <span class="sep">/</span>
+            <span id="test-detail-name">Test</span>
+          </div>
+          <div id="test-detail-content"></div>
+        </div>
+
+        <!-- ==================== PAGE: READINGS ==================== -->
+        <div id="page-readings" class="page">
           <div class="flex items-center justify-between mb-3">
-            <h2 style="font-size: 18px; font-weight: 700">
-              📖 Reading Section
-            </h2>
-            <button class="btn btn-primary btn-sm" onclick="addReadingPart()">
-              + Add Part
+            <h2 style="font-size: 18px; font-weight: 700">📖 Readings</h2>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="showCreateReadingForm()"
+            >
+              + Create Reading
             </button>
           </div>
+          <div id="readings-list-container">
+            <div class="empty-state">
+              <div class="icon">📖</div>
+              <h3>Loading readings...</h3>
+            </div>
+          </div>
+        </div>
 
-          <div class="card mb-3">
+        <!-- ==================== PAGE: CREATE READING ==================== -->
+        <div id="page-reading-form" class="page">
+          <div class="breadcrumb">
+            <a onclick="navigateTo('readings')">Readings</a>
+            <span class="sep">/</span>
+            <span>Create Reading</span>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Create Reading Section</h3></div>
             <div class="card-body">
               <div class="form-group">
-                <label>Reading Title</label>
+                <label>Title</label>
                 <input
                   type="text"
                   class="form-control"
@@ -928,33 +937,165 @@
                   placeholder="e.g. Academic Reading Test"
                 />
               </div>
+              <div class="form-group">
+                <label>Test ID</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="reading-test-id"
+                  placeholder="UUID of the test this belongs to"
+                />
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-success" onclick="saveReading()">
+                  💾 Save Reading
+                </button>
+                <button
+                  class="btn btn-outline"
+                  onclick="navigateTo('readings')"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
-
-          <div id="reading-parts-container"></div>
-
-          <div class="empty-state" id="reading-empty">
-            <div class="icon">📖</div>
-            <h3>No Reading Parts Yet</h3>
-            <p>Click "Add Part" to create Part 1, Part 2, or Part 3</p>
           </div>
         </div>
 
-        <!-- LISTENING SECTION -->
-        <div id="listening-section" class="section" style="display: none">
+        <!-- ==================== PAGE: READING PARTS ==================== -->
+        <div id="page-reading-parts" class="page">
           <div class="flex items-center justify-between mb-3">
-            <h2 style="font-size: 18px; font-weight: 700">
-              🎧 Listening Section
-            </h2>
-            <button class="btn btn-primary btn-sm" onclick="addListeningPart()">
-              + Add Part
+            <h2 style="font-size: 18px; font-weight: 700">📄 Reading Parts</h2>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="showCreateReadingPartForm()"
+            >
+              + Create Reading Part
             </button>
           </div>
+          <div id="reading-parts-list-container">
+            <div class="empty-state">
+              <div class="icon">📄</div>
+              <h3>Loading reading parts...</h3>
+            </div>
+          </div>
+        </div>
 
-          <div class="card mb-3">
+        <!-- ==================== PAGE: CREATE READING PART ==================== -->
+        <div id="page-reading-part-form" class="page">
+          <div class="breadcrumb">
+            <a onclick="navigateTo('reading-parts')">Reading Parts</a>
+            <span class="sep">/</span>
+            <span>Create Reading Part</span>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Create Reading Part</h3></div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Reading ID</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="rp-reading-id"
+                    placeholder="UUID of reading section"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Part</label>
+                  <select class="form-control" id="rp-part">
+                    <option value="PART_1">Part 1</option>
+                    <option value="PART_2">Part 2</option>
+                    <option value="PART_3">Part 3</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Title</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="rp-title"
+                  placeholder="e.g. The History of Astronomy"
+                />
+              </div>
+              <div class="form-group">
+                <label>Passage</label>
+                <textarea
+                  class="form-control"
+                  id="rp-passage"
+                  style="min-height: 150px"
+                  placeholder="Paste the reading passage here..."
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label>Answer Key (JSON)</label>
+                <textarea
+                  class="form-control"
+                  id="rp-answers"
+                  placeholder='{"1":"answer1","2":"answer2"}'
+                ></textarea>
+              </div>
+
+              <!-- Question Groups Builder -->
+              <div class="card mt-3">
+                <div class="card-header">
+                  <h3>Question Groups</h3>
+                  <button
+                    class="btn btn-primary btn-xs"
+                    onclick="rpAddQuestionGroup()"
+                  >
+                    + Add Group
+                  </button>
+                </div>
+                <div class="card-body" id="rp-question-groups"></div>
+              </div>
+
+              <div class="flex gap-2 mt-3">
+                <button class="btn btn-success" onclick="saveReadingPart()">
+                  💾 Save Reading Part
+                </button>
+                <button
+                  class="btn btn-outline"
+                  onclick="navigateTo('reading-parts')"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PAGE: LISTENINGS ==================== -->
+        <div id="page-listenings" class="page">
+          <div class="flex items-center justify-between mb-3">
+            <h2 style="font-size: 18px; font-weight: 700">🎧 Listenings</h2>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="showCreateListeningForm()"
+            >
+              + Create Listening
+            </button>
+          </div>
+          <div id="listenings-list-container">
+            <div class="empty-state">
+              <div class="icon">🎧</div>
+              <h3>Loading listenings...</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PAGE: CREATE LISTENING ==================== -->
+        <div id="page-listening-form" class="page">
+          <div class="breadcrumb">
+            <a onclick="navigateTo('listenings')">Listenings</a>
+            <span class="sep">/</span>
+            <span>Create Listening</span>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Create Listening Section</h3></div>
             <div class="card-body">
               <div class="form-group">
-                <label>Listening Title</label>
+                <label>Title</label>
                 <input
                   type="text"
                   class="form-control"
@@ -970,42 +1111,199 @@
                   placeholder="Optional description..."
                 ></textarea>
               </div>
-              <div class="form-group">
-                <label>Full Audio URL</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="listening-full-audio"
-                  placeholder="https://..."
-                />
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Test ID</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="listening-test-id"
+                    placeholder="UUID of the test"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Full Audio URL</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="listening-full-audio"
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-success" onclick="saveListening()">
+                  💾 Save Listening
+                </button>
+                <button
+                  class="btn btn-outline"
+                  onclick="navigateTo('listenings')"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
+        </div>
 
-          <div id="listening-parts-container"></div>
-
-          <div class="empty-state" id="listening-empty">
-            <div class="icon">🎧</div>
-            <h3>No Listening Parts Yet</h3>
-            <p>Click "Add Part" to create Parts 1-4</p>
+        <!-- ==================== PAGE: LISTENING PARTS ==================== -->
+        <div id="page-listening-parts" class="page">
+          <div class="flex items-center justify-between mb-3">
+            <h2 style="font-size: 18px; font-weight: 700">
+              🔊 Listening Parts
+            </h2>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="showCreateListeningPartForm()"
+            >
+              + Create Listening Part
+            </button>
+          </div>
+          <div id="listening-parts-list-container">
+            <div class="empty-state">
+              <div class="icon">🔊</div>
+              <h3>Loading listening parts...</h3>
+            </div>
           </div>
         </div>
 
-        <!-- WRITING SECTION -->
-        <div id="writing-section" class="section" style="display: none">
+        <!-- ==================== PAGE: CREATE LISTENING PART ==================== -->
+        <div id="page-listening-part-form" class="page">
+          <div class="breadcrumb">
+            <a onclick="navigateTo('listening-parts')">Listening Parts</a>
+            <span class="sep">/</span>
+            <span>Create Listening Part</span>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Create Listening Part</h3></div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Listening ID</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="lp-listening-id"
+                    placeholder="UUID of listening section"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Part</label>
+                  <select class="form-control" id="lp-part">
+                    <option value="PART_1">Part 1</option>
+                    <option value="PART_2">Part 2</option>
+                    <option value="PART_3">Part 3</option>
+                    <option value="PART_4">Part 4</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Title</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="lp-title"
+                  placeholder="e.g. A conversation between two students"
+                />
+              </div>
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>Audio URL</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="lp-audio-url"
+                    placeholder="https://..."
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Audio File Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="lp-audio-name"
+                    placeholder="part1.mp3"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Audio Duration (s)</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="lp-audio-duration"
+                    placeholder="300"
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Answer Key (JSON)</label>
+                <textarea
+                  class="form-control"
+                  id="lp-answers"
+                  placeholder='{"1":"answer1","2":"answer2"}'
+                ></textarea>
+              </div>
+
+              <!-- Question Groups Builder -->
+              <div class="card mt-3">
+                <div class="card-header">
+                  <h3>Question Groups</h3>
+                  <button
+                    class="btn btn-primary btn-xs"
+                    onclick="lpAddQuestionGroup()"
+                  >
+                    + Add Group
+                  </button>
+                </div>
+                <div class="card-body" id="lp-question-groups"></div>
+              </div>
+
+              <div class="flex gap-2 mt-3">
+                <button class="btn btn-success" onclick="saveListeningPart()">
+                  💾 Save Listening Part
+                </button>
+                <button
+                  class="btn btn-outline"
+                  onclick="navigateTo('listening-parts')"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PAGE: WRITINGS ==================== -->
+        <div id="page-writings" class="page">
           <div class="flex items-center justify-between mb-3">
-            <h2 style="font-size: 18px; font-weight: 700">
-              ✍️ Writing Section
-            </h2>
-            <button class="btn btn-primary btn-sm" onclick="addWritingTask()">
-              + Add Task
+            <h2 style="font-size: 18px; font-weight: 700">✍️ Writings</h2>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="showCreateWritingForm()"
+            >
+              + Create Writing
             </button>
           </div>
+          <div id="writings-list-container">
+            <div class="empty-state">
+              <div class="icon">✍️</div>
+              <h3>Loading writings...</h3>
+            </div>
+          </div>
+        </div>
 
-          <div class="card mb-3">
+        <!-- ==================== PAGE: CREATE WRITING ==================== -->
+        <div id="page-writing-form" class="page">
+          <div class="breadcrumb">
+            <a onclick="navigateTo('writings')">Writings</a>
+            <span class="sep">/</span>
+            <span>Create Writing</span>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Create Writing Section</h3></div>
             <div class="card-body">
               <div class="form-group">
-                <label>Writing Title</label>
+                <label>Title</label>
                 <input
                   type="text"
                   class="form-control"
@@ -1021,47 +1319,138 @@
                   placeholder="Optional description..."
                 ></textarea>
               </div>
+              <div class="form-group">
+                <label>Test ID</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="writing-test-id"
+                  placeholder="UUID of the test"
+                />
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-success" onclick="saveWriting()">
+                  💾 Save Writing
+                </button>
+                <button
+                  class="btn btn-outline"
+                  onclick="navigateTo('writings')"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
-
-          <div id="writing-tasks-container"></div>
-
-          <div class="empty-state" id="writing-empty">
-            <div class="icon">✍️</div>
-            <h3>No Writing Tasks Yet</h3>
-            <p>Click "Add Task" to create Task 1 or Task 2</p>
           </div>
         </div>
 
-        <!-- JSON SECTION -->
-        <div id="json-section" class="section" style="display: none">
+        <!-- ==================== PAGE: WRITING TASKS ==================== -->
+        <div id="page-writing-tasks" class="page">
           <div class="flex items-center justify-between mb-3">
-            <h2 style="font-size: 18px; font-weight: 700">{ } JSON Output</h2>
-            <div class="flex gap-2">
-              <button class="btn btn-outline btn-sm" onclick="copyJson()">
-                📋 Copy
-              </button>
-              <button class="btn btn-primary btn-sm" onclick="exportTest()">
-                ⬇ Download
-              </button>
+            <h2 style="font-size: 18px; font-weight: 700">📝 Writing Tasks</h2>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="showCreateWritingTaskForm()"
+            >
+              + Create Task
+            </button>
+          </div>
+          <div id="writing-tasks-list-container">
+            <div class="empty-state">
+              <div class="icon">📝</div>
+              <h3>Create tasks from a Writing section</h3>
+              <p>Use the "+ Task" button on a Writing section</p>
             </div>
           </div>
-          <div class="json-preview" id="json-output">
-            Click "Refresh" or switch here to see the generated JSON...
+        </div>
+
+        <!-- ==================== PAGE: CREATE WRITING TASK ==================== -->
+        <div id="page-writing-task-form" class="page">
+          <div class="breadcrumb">
+            <a onclick="navigateTo('writing-tasks')">Writing Tasks</a>
+            <span class="sep">/</span>
+            <span>Create Task</span>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Create Writing Task</h3></div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Writing ID</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="wt-writing-id"
+                    placeholder="UUID of writing section"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Task</label>
+                  <select class="form-control" id="wt-task">
+                    <option value="TASK_1">Task 1</option>
+                    <option value="TASK_2">Task 2</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Prompt</label>
+                <textarea
+                  class="form-control"
+                  id="wt-prompt"
+                  style="min-height: 120px"
+                  placeholder="Write the task prompt here..."
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label>Instructions</label>
+                <textarea
+                  class="form-control"
+                  id="wt-instructions"
+                  placeholder="Additional instructions..."
+                ></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Minimum Words</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="wt-min-words"
+                    value="150"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Suggested Time (minutes)</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="wt-suggested-time"
+                    value="20"
+                  />
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-success" onclick="saveWritingTask()">
+                  💾 Save Task
+                </button>
+                <button
+                  class="btn btn-outline"
+                  onclick="navigateTo('writing-tasks')"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
     </div>
 
     <!-- QUESTION CONTENT MODAL -->
-    <div class="modal-overlay" id="question-content-modal">
-      <div class="modal">
+    <div class="modal-overlay" id="qc-modal">
+      <div class="modal" style="max-width: 640px">
         <div class="modal-header">
           <h3>Add Question Content</h3>
-          <button
-            class="modal-close"
-            onclick="closeModal('question-content-modal')"
-          >
+          <button class="modal-close" onclick="closeModal('qc-modal')">
             ×
           </button>
         </div>
@@ -1071,7 +1460,7 @@
             <select
               class="form-control"
               id="qc-type"
-              onchange="onQuestionTypeChange()"
+              onchange="onQcTypeChange()"
             >
               <option value="completion">
                 Completion (Fill in the blanks)
@@ -1099,7 +1488,7 @@
             <textarea
               class="form-control"
               id="qc-condition"
-              placeholder="e.g. Complete the sentences below. Write NO MORE THAN TWO WORDS..."
+              placeholder="e.g. Complete the sentences below..."
             ></textarea>
           </div>
           <div class="form-group">
@@ -1108,13 +1497,13 @@
               class="form-control"
               id="qc-content"
               style="min-height: 100px"
-              placeholder="Main content / passage excerpt with blanks like {{1}}, {{2}}..."
+              placeholder="Main content with blanks like {{1}}, {{2}}..."
             ></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Word Limit</label>
-              <input
+              <label>Word Limit</label
+              ><input
                 type="number"
                 class="form-control"
                 id="qc-limit"
@@ -1122,8 +1511,8 @@
               />
             </div>
             <div class="form-group">
-              <label>Order</label>
-              <input
+              <label>Order</label
+              ><input
                 type="number"
                 class="form-control"
                 id="qc-order"
@@ -1132,10 +1521,10 @@
             </div>
           </div>
           <div class="form-group" id="qc-show-options-group">
-            <label>
-              <input type="checkbox" id="qc-show-options" checked /> Show
-              Options
-            </label>
+            <label
+              ><input type="checkbox" id="qc-show-options" checked /> Show
+              Options</label
+            >
           </div>
           <div class="form-group" id="qc-options-title-group">
             <label>Options Title</label>
@@ -1146,26 +1535,19 @@
               placeholder="e.g. List of headings"
             />
           </div>
-
-          <!-- Options builder for selection/draggable types -->
           <div id="qc-options-builder" style="display: none">
             <div class="flex items-center justify-between mb-2">
               <label style="margin-bottom: 0">Options</label>
-              <button
-                class="btn btn-outline btn-xs"
-                onclick="addOptionToModal()"
-              >
+              <button class="btn btn-outline btn-xs" onclick="qcAddOption()">
                 + Add Option
               </button>
             </div>
             <div id="qc-options-list" class="options-list"></div>
           </div>
-
-          <!-- MCQ builder -->
           <div id="qc-mcq-builder" style="display: none">
             <div class="flex items-center justify-between mb-2">
               <label style="margin-bottom: 0">Multiple Choice Questions</label>
-              <button class="btn btn-outline btn-xs" onclick="addMcqToModal()">
+              <button class="btn btn-outline btn-xs" onclick="qcAddMcq()">
                 + Add MCQ
               </button>
             </div>
@@ -1173,395 +1555,918 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button
-            class="btn btn-outline"
-            onclick="closeModal('question-content-modal')"
-          >
+          <button class="btn btn-outline" onclick="closeModal('qc-modal')">
             Cancel
           </button>
-          <button class="btn btn-primary" onclick="saveQuestionContent()">
-            Add Question Content
+          <button class="btn btn-primary" onclick="qcSaveContent()">
+            Add Content
           </button>
         </div>
       </div>
     </div>
 
-    <!-- LOAD TEST MODAL -->
-    <div class="modal-overlay" id="load-test-modal">
-      <div class="modal" style="max-width: 700px">
-        <div class="modal-header">
-          <h3>📂 Load Existing Test</h3>
-          <button class="modal-close" onclick="closeModal('load-test-modal')">
-            ×
-          </button>
-        </div>
-        <div class="modal-body">
-          <div id="load-test-list" style="max-height: 400px; overflow-y: auto">
-            <p class="text-sm text-gray">Loading tests...</p>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button
-            class="btn btn-outline"
-            onclick="closeModal('load-test-modal')"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- PROGRESS MODAL -->
-    <div class="modal-overlay" id="progress-modal">
-      <div class="modal" style="max-width: 480px">
-        <div class="modal-header">
-          <h3>🚀 Saving to API</h3>
-        </div>
-        <div class="modal-body">
-          <div
-            id="progress-steps"
-            style="font-size: 13px; line-height: 2"
-          ></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TOAST CONTAINER -->
+    <!-- TOAST -->
     <div class="toast-container" id="toast-container"></div>
 
     <script>
       // ============================================================
-      //  STATE
+      //  API HELPERS
       // ============================================================
-      const state = {
-        test: { title: "", mode: "practice", status: "draft", category: "" },
-        reading: {
-          title: "",
-          parts: [], // { part, passage, answers:{}, questions: [{ number_of_questions, contents: [{ type, title, condition, content, limit, showOptions, optionsTitle, order, options:[], multipleChoiceQuestions:[{ question, order, options:[] }] }] }] }
-        },
-        listening: {
-          title: "",
-          description: "",
-          full_audio_url: "",
-          parts: [], // { part, audio_url, audio_file_name, audio_duration, answers:{}, questions:[...same as reading] }
-        },
-        writing: {
-          title: "",
-          description: "",
-          tasks: [], // { task, prompt, instructions, min_words, suggested_time }
-        },
-        // API-created IDs (populated after save)
-        _ids: {
-          test_id: null,
-          reading_id: null,
-          listening_id: null,
-          writing_id: null,
-        },
-      };
-
-      let currentModalTarget = null; // { section: 'reading'|'listening', partIndex: number, questionIndex: number }
-      let modalOptions = [];
-      let modalMcqs = [];
+      function getApiUrl() {
+        return document.getElementById("api-url").value.replace(/\/+$/, "");
+      }
+      function getHeaders() {
+        return {
+          "Content-Type": "application/json",
+          Authorization:
+            "Bearer " + document.getElementById("jwt-token").value.trim(),
+        };
+      }
+      async function apiPost(path, body) {
+        const res = await fetch(getApiUrl() + path, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok)
+          throw new Error(
+            Array.isArray(data.message)
+              ? data.message.join(", ")
+              : data.message || JSON.stringify(data) || `Error ${res.status}`,
+          );
+        return data;
+      }
+      async function apiGet(path) {
+        const res = await fetch(getApiUrl() + path, { headers: getHeaders() });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
+        return data;
+      }
+      async function apiPatch(path, body) {
+        const res = await fetch(getApiUrl() + path, {
+          method: "PATCH",
+          headers: getHeaders(),
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
+        return data;
+      }
+      async function apiDelete(path) {
+        const res = await fetch(getApiUrl() + path, {
+          method: "DELETE",
+          headers: getHeaders(),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || `Error ${res.status}`);
+        }
+        return true;
+      }
 
       // ============================================================
       //  NAVIGATION
       // ============================================================
-      function switchSection(sectionId, navEl) {
+      const pageLoaders = {
+        tests: loadTests,
+        readings: loadReadings,
+        "reading-parts": loadReadingParts,
+        listenings: loadListenings,
+        "listening-parts": loadListeningParts,
+        writings: loadWritings,
+        "writing-tasks": loadWritingTasks,
+      };
+
+      function navigateTo(pageId) {
         document
-          .querySelectorAll(".section")
-          .forEach((s) => (s.style.display = "none"));
-        document.getElementById(sectionId).style.display = "block";
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        const el = document.getElementById("page-" + pageId);
+        if (el) el.classList.add("active");
         document
           .querySelectorAll(".nav-item")
           .forEach((n) => n.classList.remove("active"));
-        if (navEl) navEl.classList.add("active");
-
-        if (sectionId === "json-section") refreshJsonPreview();
+        const nav = document.querySelector(`[data-nav="${pageId}"]`);
+        if (nav) nav.classList.add("active");
+        if (pageLoaders[pageId]) pageLoaders[pageId]();
       }
 
-      function updateStatusBadge() {
-        const status = document.getElementById("test-status").value;
-        const badge = document.getElementById("status-badge");
-        badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-        badge.className =
-          "status-badge " +
-          (status === "published" ? "status-published" : "status-draft");
+      function showPage(pageId) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById(pageId).classList.add("active");
       }
 
       // ============================================================
-      //  READING
+      //  HELPERS
       // ============================================================
-      function addReadingPart() {
-        const partNum = state.reading.parts.length + 1;
-        if (partNum > 3) {
-          toast("Maximum 3 reading parts allowed", "error");
+      function toast(msg, type = "success") {
+        const c = document.getElementById("toast-container");
+        const t = document.createElement("div");
+        t.className = `toast toast-${type}`;
+        t.textContent = msg;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 3500);
+      }
+      function openModal(id) {
+        document.getElementById(id).classList.add("open");
+      }
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("open");
+      }
+      function truncId(id) {
+        return id ? id.substring(0, 8) + "..." : "-";
+      }
+      function copyId(id) {
+        navigator.clipboard.writeText(id).then(() => toast("ID copied!"));
+      }
+      function truncate(s, n) {
+        return s && s.length > n ? s.substring(0, n) + "..." : s || "";
+      }
+
+      // ============================================================
+      //  TESTS
+      // ============================================================
+      async function loadTests() {
+        const c = document.getElementById("tests-list-container");
+        c.innerHTML = '<p class="text-sm text-gray">Loading...</p>';
+        try {
+          const data = await apiGet("/ielts-tests?limit=100");
+          const tests = data.data || data;
+          if (!tests || !tests.length) {
+            c.innerHTML =
+              '<div class="empty-state"><div class="icon">📋</div><h3>No tests yet</h3><p>Create your first test</p></div>';
+            return;
+          }
+          c.innerHTML = `<table class="data-table">
+      <thead><tr><th>Title</th><th>Mode</th><th>Category</th><th>Status</th><th>ID</th><th>Actions</th></tr></thead>
+      <tbody>${tests
+        .map(
+          (t) => `<tr>
+        <td class="fw-600">${t.title || "Untitled"}</td>
+        <td>${t.mode}</td>
+        <td>${t.category || "-"}</td>
+        <td><span class="status-badge ${t.status === "published" ? "status-published" : "status-draft"}">${t.status}</span></td>
+        <td><span class="id-badge" onclick="copyId('${t.id}')" title="${t.id}">${truncId(t.id)}</span></td>
+        <td class="actions">
+          <button class="btn btn-primary btn-xs" onclick="viewTestDetail('${t.id}')">View</button>
+          <button class="btn btn-outline btn-xs" onclick="editTest('${t.id}')">Edit</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteTest('${t.id}')">Del</button>
+        </td>
+      </tr>`,
+        )
+        .join("")}</tbody></table>`;
+        } catch (e) {
+          c.innerHTML = `<p style="color:var(--danger)">Error: ${e.message}</p>`;
+        }
+      }
+
+      function showCreateTestForm() {
+        document.getElementById("test-edit-id").value = "";
+        document.getElementById("test-title").value = "";
+        document.getElementById("test-mode").value = "practice";
+        document.getElementById("test-status").value = "draft";
+        document.getElementById("test-category").value = "";
+        document.getElementById("test-form-title").textContent = "Create Test";
+        document.getElementById("test-form-heading").textContent =
+          "Create New Test";
+        showPage("page-test-form");
+      }
+
+      async function editTest(id) {
+        try {
+          const t = await apiGet(`/ielts-tests/${id}`);
+          document.getElementById("test-edit-id").value = t.id;
+          document.getElementById("test-title").value = t.title || "";
+          document.getElementById("test-mode").value = t.mode || "practice";
+          document.getElementById("test-status").value = t.status || "draft";
+          document.getElementById("test-category").value = t.category || "";
+          document.getElementById("test-form-title").textContent = "Edit Test";
+          document.getElementById("test-form-heading").textContent =
+            "Edit Test";
+          showPage("page-test-form");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      async function saveTest() {
+        const editId = document.getElementById("test-edit-id").value;
+        const body = {
+          title: document.getElementById("test-title").value,
+          mode: document.getElementById("test-mode").value,
+          status: document.getElementById("test-status").value,
+        };
+        const cat = document.getElementById("test-category").value;
+        if (cat) body.category = cat;
+        try {
+          if (editId) {
+            await apiPatch(`/ielts-tests/${editId}`, body);
+            toast("Test updated!");
+          } else {
+            const r = await apiPost("/ielts-tests", body);
+            toast(`Test created! ID: ${r.id}`);
+          }
+          navigateTo("tests");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      async function deleteTest(id) {
+        if (!confirm("Delete this test?")) return;
+        try {
+          await apiDelete(`/ielts-tests/${id}`);
+          toast("Test deleted!");
+          loadTests();
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      async function viewTestDetail(id) {
+        showPage("page-test-detail");
+        const c = document.getElementById("test-detail-content");
+        c.innerHTML = '<p class="text-sm text-gray">Loading...</p>';
+        try {
+          const t = await apiGet(`/ielts-tests/${id}`);
+          document.getElementById("test-detail-name").textContent =
+            t.title || "Test";
+          let html = `
+      <div class="card">
+        <div class="card-header">
+          <h3>${t.title}</h3>
+          <span class="status-badge ${t.status === "published" ? "status-published" : "status-draft"}">${t.status}</span>
+        </div>
+        <div class="card-body">
+          <div class="form-row-3 mb-3">
+            <div><label class="text-sm text-gray">MODE</label><div class="fw-600">${t.mode}</div></div>
+            <div><label class="text-sm text-gray">CATEGORY</label><div class="fw-600">${t.category || "-"}</div></div>
+            <div><label class="text-sm text-gray">ID</label><div><span class="id-badge" onclick="copyId('${t.id}')">${t.id}</span></div></div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-primary btn-sm" onclick="createReadingForTest('${t.id}')">+ Reading</button>
+            <button class="btn btn-primary btn-sm" onclick="createListeningForTest('${t.id}')">+ Listening</button>
+            <button class="btn btn-primary btn-sm" onclick="createWritingForTest('${t.id}')">+ Writing</button>
+          </div>
+        </div>
+      </div>`;
+
+          if (t.readings && t.readings.length) {
+            html += `<div class="card"><div class="card-header"><h3>📖 Readings</h3></div><div class="card-body">
+        <table class="data-table"><thead><tr><th>Title</th><th>ID</th><th>Parts</th><th>Actions</th></tr></thead><tbody>
+        ${t.readings
+          .map(
+            (r) => `<tr>
+          <td class="fw-600">${r.title || "-"}</td>
+          <td><span class="id-badge" onclick="copyId('${r.id}')">${truncId(r.id)}</span></td>
+          <td>${(r.parts || []).length} parts</td>
+          <td class="actions"><button class="btn btn-primary btn-xs" onclick="createReadingPartFor('${r.id}')">+ Part</button></td>
+        </tr>`,
+          )
+          .join("")}
+        </tbody></table></div></div>`;
+          }
+          if (t.listenings && t.listenings.length) {
+            html += `<div class="card"><div class="card-header"><h3>🎧 Listenings</h3></div><div class="card-body">
+        <table class="data-table"><thead><tr><th>Title</th><th>ID</th><th>Parts</th><th>Actions</th></tr></thead><tbody>
+        ${t.listenings
+          .map(
+            (l) => `<tr>
+          <td class="fw-600">${l.title || "-"}</td>
+          <td><span class="id-badge" onclick="copyId('${l.id}')">${truncId(l.id)}</span></td>
+          <td>${(l.parts || []).length} parts</td>
+          <td class="actions"><button class="btn btn-primary btn-xs" onclick="createListeningPartFor('${l.id}')">+ Part</button></td>
+        </tr>`,
+          )
+          .join("")}
+        </tbody></table></div></div>`;
+          }
+          if (t.writings && t.writings.length) {
+            html += `<div class="card"><div class="card-header"><h3>✍️ Writings</h3></div><div class="card-body">
+        <table class="data-table"><thead><tr><th>Title</th><th>ID</th><th>Tasks</th><th>Actions</th></tr></thead><tbody>
+        ${t.writings
+          .map(
+            (w) => `<tr>
+          <td class="fw-600">${w.title || "-"}</td>
+          <td><span class="id-badge" onclick="copyId('${w.id}')">${truncId(w.id)}</span></td>
+          <td>${(w.tasks || []).length} tasks</td>
+          <td class="actions"><button class="btn btn-primary btn-xs" onclick="createWritingTaskFor('${w.id}')">+ Task</button></td>
+        </tr>`,
+          )
+          .join("")}
+        </tbody></table></div></div>`;
+          }
+          c.innerHTML = html;
+        } catch (e) {
+          c.innerHTML = `<p style="color:var(--danger)">Error: ${e.message}</p>`;
+        }
+      }
+
+      // Quick-create linked entities from test detail
+      function createReadingForTest(testId) {
+        showCreateReadingForm();
+        document.getElementById("reading-test-id").value = testId;
+      }
+      function createListeningForTest(testId) {
+        showCreateListeningForm();
+        document.getElementById("listening-test-id").value = testId;
+      }
+      function createWritingForTest(testId) {
+        showCreateWritingForm();
+        document.getElementById("writing-test-id").value = testId;
+      }
+      function createReadingPartFor(readingId) {
+        showCreateReadingPartForm();
+        document.getElementById("rp-reading-id").value = readingId;
+      }
+      function createListeningPartFor(listeningId) {
+        showCreateListeningPartForm();
+        document.getElementById("lp-listening-id").value = listeningId;
+      }
+      function createWritingTaskFor(writingId) {
+        showCreateWritingTaskForm();
+        document.getElementById("wt-writing-id").value = writingId;
+      }
+
+      // ============================================================
+      //  READINGS
+      // ============================================================
+      async function loadReadings() {
+        const c = document.getElementById("readings-list-container");
+        c.innerHTML = '<p class="text-sm text-gray">Loading...</p>';
+        try {
+          const data = await apiGet("/ielts-reading?limit=100");
+          const items = data.data || data;
+          if (!items || !items.length) {
+            c.innerHTML =
+              '<div class="empty-state"><div class="icon">📖</div><h3>No readings yet</h3></div>';
+            return;
+          }
+          c.innerHTML = `<table class="data-table">
+      <thead><tr><th>Title</th><th>Test ID</th><th>ID</th><th>Actions</th></tr></thead>
+      <tbody>${items
+        .map(
+          (r) => `<tr>
+        <td class="fw-600">${r.title || "-"}</td>
+        <td><span class="id-badge" onclick="copyId('${r.test_id || ""}')">${truncId(r.test_id)}</span></td>
+        <td><span class="id-badge" onclick="copyId('${r.id}')">${truncId(r.id)}</span></td>
+        <td class="actions">
+          <button class="btn btn-primary btn-xs" onclick="createReadingPartFor('${r.id}')">+ Part</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteReading('${r.id}')">Del</button>
+        </td>
+      </tr>`,
+        )
+        .join("")}</tbody></table>`;
+        } catch (e) {
+          c.innerHTML = `<p style="color:var(--danger)">Error: ${e.message}</p>`;
+        }
+      }
+
+      function showCreateReadingForm() {
+        document.getElementById("reading-title").value = "";
+        document.getElementById("reading-test-id").value = "";
+        showPage("page-reading-form");
+      }
+
+      async function saveReading() {
+        try {
+          const body = {
+            title: document.getElementById("reading-title").value,
+            test_id: document.getElementById("reading-test-id").value,
+          };
+          const r = await apiPost("/ielts-reading", body);
+          toast(`Reading created! ID: ${r.id}`);
+          navigateTo("readings");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      async function deleteReading(id) {
+        if (!confirm("Delete this reading?")) return;
+        try {
+          await apiDelete(`/ielts-reading/${id}`);
+          toast("Reading deleted!");
+          loadReadings();
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      // ============================================================
+      //  READING PARTS
+      // ============================================================
+      let rpQuestionGroups = [];
+
+      async function loadReadingParts() {
+        const c = document.getElementById("reading-parts-list-container");
+        c.innerHTML = '<p class="text-sm text-gray">Loading...</p>';
+        try {
+          const data = await apiGet("/ielts-reading-parts?limit=100");
+          const items = data.data || data;
+          if (!items || !items.length) {
+            c.innerHTML =
+              '<div class="empty-state"><div class="icon">📄</div><h3>No reading parts yet</h3></div>';
+            return;
+          }
+          c.innerHTML = `<table class="data-table">
+      <thead><tr><th>Part</th><th>Title</th><th>Reading ID</th><th>ID</th><th>Actions</th></tr></thead>
+      <tbody>${items
+        .map(
+          (p) => `<tr>
+        <td class="fw-600">${p.part}</td>
+        <td>${p.title || "-"}</td>
+        <td><span class="id-badge" onclick="copyId('${p.reading_id || ""}')">${truncId(p.reading_id)}</span></td>
+        <td><span class="id-badge" onclick="copyId('${p.id}')">${truncId(p.id)}</span></td>
+        <td class="actions">
+          <button class="btn btn-outline btn-xs" onclick="editReadingPart('${p.id}')">Edit</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteReadingPart('${p.id}')">Del</button>
+        </td>
+      </tr>`,
+        )
+        .join("")}</tbody></table>`;
+        } catch (e) {
+          c.innerHTML = `<p style="color:var(--danger)">Error: ${e.message}</p>`;
+        }
+      }
+
+      let rpEditId = null;
+
+      function showCreateReadingPartForm() {
+        rpEditId = null;
+        rpQuestionGroups = [];
+        document.getElementById("rp-reading-id").value = "";
+        document.getElementById("rp-part").value = "PART_1";
+        document.getElementById("rp-title").value = "";
+        document.getElementById("rp-passage").value = "";
+        document.getElementById("rp-answers").value = "";
+        document.querySelector(
+          "#page-reading-part-form .card-header h3",
+        ).textContent = "Create Reading Part";
+        renderRpQuestionGroups();
+        showPage("page-reading-part-form");
+      }
+
+      async function editReadingPart(id) {
+        try {
+          const p = await apiGet(`/ielts-reading-parts/${id}`);
+          rpEditId = p.id;
+          document.getElementById("rp-reading-id").value = p.reading_id || "";
+          document.getElementById("rp-part").value = p.part || "PART_1";
+          document.getElementById("rp-title").value = p.title || "";
+          document.getElementById("rp-passage").value = p.passage || "";
+          document.getElementById("rp-answers").value = p.answers
+            ? JSON.stringify(p.answers, null, 2)
+            : "";
+          rpQuestionGroups = (p.questions || []).map((q) => ({
+            number_of_questions: q.number_of_questions || 0,
+            contents: (q.contents || []).map((c) => ({ ...c })),
+          }));
+          document.querySelector(
+            "#page-reading-part-form .card-header h3",
+          ).textContent = "Edit Reading Part";
+          renderRpQuestionGroups();
+          showPage("page-reading-part-form");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      function rpAddQuestionGroup() {
+        rpQuestionGroups.push({ number_of_questions: 10, contents: [] });
+        renderRpQuestionGroups();
+      }
+      function rpRemoveQuestionGroup(idx) {
+        rpQuestionGroups.splice(idx, 1);
+        renderRpQuestionGroups();
+      }
+      function renderRpQuestionGroups() {
+        renderQuestionGroups("rp-question-groups", rpQuestionGroups, "rp");
+      }
+
+      async function saveReadingPart() {
+        try {
+          let answers = null;
+          const av = document.getElementById("rp-answers").value.trim();
+          if (av) {
+            try {
+              answers = JSON.parse(av);
+            } catch (e) {
+              toast("Invalid JSON in answers", "error");
+              return;
+            }
+          }
+          const body = {
+            reading_id: document.getElementById("rp-reading-id").value,
+            part: document.getElementById("rp-part").value,
+            title: document.getElementById("rp-title").value || null,
+            passage: document.getElementById("rp-passage").value || null,
+            answers,
+            questions: rpQuestionGroups.map((q) => ({
+              number_of_questions: q.number_of_questions,
+              contents: q.contents.map(buildContentPayload),
+            })),
+          };
+          if (rpEditId) {
+            await apiPatch(`/ielts-reading-parts/${rpEditId}`, body);
+            toast("Reading part updated!");
+          } else {
+            const r = await apiPost("/ielts-reading-parts", body);
+            toast(`Reading part created! ID: ${r.id}`);
+          }
+          rpEditId = null;
+          navigateTo("reading-parts");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      async function deleteReadingPart(id) {
+        if (!confirm("Delete this reading part?")) return;
+        try {
+          await apiDelete(`/ielts-reading-parts/${id}`);
+          toast("Deleted!");
+          loadReadingParts();
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      // ============================================================
+      //  LISTENINGS
+      // ============================================================
+      async function loadListenings() {
+        const c = document.getElementById("listenings-list-container");
+        c.innerHTML = '<p class="text-sm text-gray">Loading...</p>';
+        try {
+          const data = await apiGet("/ielts-listening?limit=100");
+          const items = data.data || data;
+          if (!items || !items.length) {
+            c.innerHTML =
+              '<div class="empty-state"><div class="icon">🎧</div><h3>No listenings yet</h3></div>';
+            return;
+          }
+          c.innerHTML = `<table class="data-table">
+      <thead><tr><th>Title</th><th>Test ID</th><th>ID</th><th>Actions</th></tr></thead>
+      <tbody>${items
+        .map(
+          (l) => `<tr>
+        <td class="fw-600">${l.title || "-"}</td>
+        <td><span class="id-badge" onclick="copyId('${l.test_id || ""}')">${truncId(l.test_id)}</span></td>
+        <td><span class="id-badge" onclick="copyId('${l.id}')">${truncId(l.id)}</span></td>
+        <td class="actions">
+          <button class="btn btn-primary btn-xs" onclick="createListeningPartFor('${l.id}')">+ Part</button>
+        </td>
+      </tr>`,
+        )
+        .join("")}</tbody></table>`;
+        } catch (e) {
+          c.innerHTML = `<p style="color:var(--danger)">Error: ${e.message}</p>`;
+        }
+      }
+
+      function showCreateListeningForm() {
+        document.getElementById("listening-title").value = "";
+        document.getElementById("listening-description").value = "";
+        document.getElementById("listening-test-id").value = "";
+        document.getElementById("listening-full-audio").value = "";
+        showPage("page-listening-form");
+      }
+
+      async function saveListening() {
+        try {
+          const body = {
+            title: document.getElementById("listening-title").value,
+            test_id:
+              document.getElementById("listening-test-id").value || undefined,
+            description:
+              document.getElementById("listening-description").value ||
+              undefined,
+            full_audio_url:
+              document.getElementById("listening-full-audio").value ||
+              undefined,
+          };
+          const r = await apiPost("/ielts-listening", body);
+          toast(`Listening created! ID: ${r.id}`);
+          navigateTo("listenings");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      // ============================================================
+      //  LISTENING PARTS
+      // ============================================================
+      let lpQuestionGroups = [];
+
+      async function loadListeningParts() {
+        const c = document.getElementById("listening-parts-list-container");
+        c.innerHTML = '<p class="text-sm text-gray">Loading...</p>';
+        try {
+          const data = await apiGet("/ielts-listening-parts?limit=100");
+          const items = data.data || data;
+          if (!items || !items.length) {
+            c.innerHTML =
+              '<div class="empty-state"><div class="icon">🔊</div><h3>No listening parts yet</h3></div>';
+            return;
+          }
+          c.innerHTML = `<table class="data-table">
+      <thead><tr><th>Part</th><th>Title</th><th>Listening ID</th><th>ID</th><th>Actions</th></tr></thead>
+      <tbody>${items
+        .map(
+          (p) => `<tr>
+        <td class="fw-600">${p.part}</td>
+        <td>${p.title || "-"}</td>
+        <td><span class="id-badge" onclick="copyId('${p.listening_id || ""}')">${truncId(p.listening_id)}</span></td>
+        <td><span class="id-badge" onclick="copyId('${p.id}')">${truncId(p.id)}</span></td>
+        <td class="actions">
+          <button class="btn btn-outline btn-xs" onclick="editListeningPart('${p.id}')">Edit</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteListeningPart('${p.id}')">Del</button>
+        </td>
+      </tr>`,
+        )
+        .join("")}</tbody></table>`;
+        } catch (e) {
+          c.innerHTML = `<p style="color:var(--danger)">Error: ${e.message}</p>`;
+        }
+      }
+
+      let lpEditId = null;
+
+      function showCreateListeningPartForm() {
+        lpEditId = null;
+        lpQuestionGroups = [];
+        document.getElementById("lp-listening-id").value = "";
+        document.getElementById("lp-part").value = "PART_1";
+        document.getElementById("lp-title").value = "";
+        document.getElementById("lp-audio-url").value = "";
+        document.getElementById("lp-audio-name").value = "";
+        document.getElementById("lp-audio-duration").value = "";
+        document.getElementById("lp-answers").value = "";
+        document.querySelector(
+          "#page-listening-part-form .card-header h3",
+        ).textContent = "Create Listening Part";
+        renderLpQuestionGroups();
+        showPage("page-listening-part-form");
+      }
+
+      async function editListeningPart(id) {
+        try {
+          const p = await apiGet(`/ielts-listening-parts/${id}`);
+          lpEditId = p.id;
+          document.getElementById("lp-listening-id").value =
+            p.listening_id || "";
+          document.getElementById("lp-part").value = p.part || "PART_1";
+          document.getElementById("lp-title").value = p.title || "";
+          document.getElementById("lp-audio-url").value =
+            (p.audio && p.audio.url) || "";
+          document.getElementById("lp-audio-name").value =
+            (p.audio && p.audio.file_name) || "";
+          document.getElementById("lp-audio-duration").value =
+            (p.audio && p.audio.duration) || "";
+          document.getElementById("lp-answers").value = p.answers
+            ? JSON.stringify(p.answers, null, 2)
+            : "";
+          lpQuestionGroups = (p.questions || []).map((q) => ({
+            number_of_questions: q.number_of_questions || 0,
+            contents: (q.contents || []).map((c) => ({ ...c })),
+          }));
+          document.querySelector(
+            "#page-listening-part-form .card-header h3",
+          ).textContent = "Edit Listening Part";
+          renderLpQuestionGroups();
+          showPage("page-listening-part-form");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      function lpAddQuestionGroup() {
+        lpQuestionGroups.push({ number_of_questions: 10, contents: [] });
+        renderLpQuestionGroups();
+      }
+      function lpRemoveQuestionGroup(idx) {
+        lpQuestionGroups.splice(idx, 1);
+        renderLpQuestionGroups();
+      }
+      function renderLpQuestionGroups() {
+        renderQuestionGroups("lp-question-groups", lpQuestionGroups, "lp");
+      }
+
+      async function saveListeningPart() {
+        try {
+          let answers = null;
+          const av = document.getElementById("lp-answers").value.trim();
+          if (av) {
+            try {
+              answers = JSON.parse(av);
+            } catch (e) {
+              toast("Invalid JSON in answers", "error");
+              return;
+            }
+          }
+          const audioUrl = document.getElementById("lp-audio-url").value;
+          const body = {
+            listening_id: document.getElementById("lp-listening-id").value,
+            part: document.getElementById("lp-part").value,
+            title: document.getElementById("lp-title").value || null,
+            answers,
+            audio: audioUrl
+              ? {
+                  url: audioUrl,
+                  file_name:
+                    document.getElementById("lp-audio-name").value || null,
+                  duration:
+                    parseInt(
+                      document.getElementById("lp-audio-duration").value,
+                    ) || null,
+                }
+              : null,
+            questions: lpQuestionGroups.map((q) => ({
+              number_of_questions: q.number_of_questions,
+              contents: q.contents.map(buildContentPayload),
+            })),
+          };
+          if (lpEditId) {
+            await apiPatch(`/ielts-listening-parts/${lpEditId}`, body);
+            toast("Listening part updated!");
+          } else {
+            const r = await apiPost("/ielts-listening-parts", body);
+            toast(`Listening part created! ID: ${r.id}`);
+          }
+          lpEditId = null;
+          navigateTo("listening-parts");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      async function deleteListeningPart(id) {
+        if (!confirm("Delete this listening part?")) return;
+        try {
+          await apiDelete(`/ielts-listening-parts/${id}`);
+          toast("Deleted!");
+          loadListeningParts();
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      // ============================================================
+      //  WRITINGS
+      // ============================================================
+      async function loadWritings() {
+        const c = document.getElementById("writings-list-container");
+        c.innerHTML = '<p class="text-sm text-gray">Loading...</p>';
+        try {
+          const data = await apiGet("/ielts-writing?limit=100");
+          const items = data.data || data;
+          if (!items || !items.length) {
+            c.innerHTML =
+              '<div class="empty-state"><div class="icon">✍️</div><h3>No writings yet</h3></div>';
+            return;
+          }
+          c.innerHTML = `<table class="data-table">
+      <thead><tr><th>Title</th><th>Test ID</th><th>ID</th><th>Actions</th></tr></thead>
+      <tbody>${items
+        .map(
+          (w) => `<tr>
+        <td class="fw-600">${w.title || "-"}</td>
+        <td><span class="id-badge" onclick="copyId('${w.test_id || ""}')">${truncId(w.test_id)}</span></td>
+        <td><span class="id-badge" onclick="copyId('${w.id}')">${truncId(w.id)}</span></td>
+        <td class="actions">
+          <button class="btn btn-primary btn-xs" onclick="createWritingTaskFor('${w.id}')">+ Task</button>
+        </td>
+      </tr>`,
+        )
+        .join("")}</tbody></table>`;
+        } catch (e) {
+          c.innerHTML = `<p style="color:var(--danger)">Error: ${e.message}</p>`;
+        }
+      }
+
+      function showCreateWritingForm() {
+        document.getElementById("writing-title").value = "";
+        document.getElementById("writing-description").value = "";
+        document.getElementById("writing-test-id").value = "";
+        showPage("page-writing-form");
+      }
+
+      async function saveWriting() {
+        try {
+          const body = {
+            title: document.getElementById("writing-title").value,
+            description:
+              document.getElementById("writing-description").value || undefined,
+            test_id:
+              document.getElementById("writing-test-id").value || undefined,
+          };
+          const r = await apiPost("/ielts-writing", body);
+          toast(`Writing created! ID: ${r.id}`);
+          navigateTo("writings");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      // ============================================================
+      //  WRITING TASKS
+      // ============================================================
+      async function loadWritingTasks() {
+        // No direct list-all endpoint; show guidance
+        const c = document.getElementById("writing-tasks-list-container");
+        c.innerHTML =
+          '<div class="empty-state"><div class="icon">📝</div><h3>Writing Tasks</h3><p>Create tasks from a Writing section (use "+ Task" button), or click "+ Create Task" above.</p></div>';
+      }
+
+      function showCreateWritingTaskForm() {
+        document.getElementById("wt-writing-id").value = "";
+        document.getElementById("wt-task").value = "TASK_1";
+        document.getElementById("wt-prompt").value = "";
+        document.getElementById("wt-instructions").value = "";
+        document.getElementById("wt-min-words").value = "150";
+        document.getElementById("wt-suggested-time").value = "20";
+        showPage("page-writing-task-form");
+      }
+
+      async function saveWritingTask() {
+        try {
+          const body = {
+            writing_id: document.getElementById("wt-writing-id").value,
+            task: document.getElementById("wt-task").value,
+            prompt: document.getElementById("wt-prompt").value || null,
+            instructions:
+              document.getElementById("wt-instructions").value || null,
+            min_words:
+              parseInt(document.getElementById("wt-min-words").value) || 150,
+            suggested_time:
+              parseInt(document.getElementById("wt-suggested-time").value) ||
+              20,
+          };
+          const r = await apiPost("/ielts-writing/task", body);
+          toast(`Writing task created! ID: ${r.id}`);
+          navigateTo("writing-tasks");
+        } catch (e) {
+          toast(`Error: ${e.message}`, "error");
+        }
+      }
+
+      // ============================================================
+      //  SHARED: QUESTION GROUPS RENDERER
+      // ============================================================
+      let currentQcTarget = null;
+      let qcOptions = [];
+      let qcMcqs = [];
+
+      function renderQuestionGroups(containerId, groups, prefix) {
+        const c = document.getElementById(containerId);
+        if (!groups.length) {
+          c.innerHTML =
+            '<p class="text-sm text-gray">No question groups. Click "+ Add Group".</p>';
           return;
         }
-        state.reading.parts.push({
-          part: `PART_${partNum}`,
-          title: "",
-          passage: "",
-          answers: {},
-          questions: [],
-        });
-        renderReadingParts();
-        updateCounts();
-      }
-
-      function removeReadingPart(idx) {
-        state.reading.parts.splice(idx, 1);
-        // Renumber
-        state.reading.parts.forEach((p, i) => (p.part = `PART_${i + 1}`));
-        renderReadingParts();
-        updateCounts();
-      }
-
-      function renderReadingParts() {
-        const container = document.getElementById("reading-parts-container");
-        const empty = document.getElementById("reading-empty");
-        empty.style.display = state.reading.parts.length ? "none" : "block";
-
-        container.innerHTML = state.reading.parts
+        c.innerHTML = groups
           .map(
-            (part, pi) => `
-    <div class="part-card">
+            (g, gi) => `
+    <div class="part-card mb-3">
       <div class="part-card-header" onclick="togglePartCard(this)">
-        <h4>
-          <span class="chevron">▼</span>
-          Part ${pi + 1}
-          <span style="font-weight:400;font-size:12px;color:var(--gray-400)">(${part.questions.reduce((a, q) => a + q.contents.length, 0)} question blocks)</span>
-        </h4>
+        <h4><span class="chevron">▼</span> Group ${gi + 1} <span style="font-weight:400;font-size:12px;color:var(--gray-400)">(${g.contents.length} content blocks)</span></h4>
         <div class="flex gap-2">
-          <button class="btn btn-outline btn-xs" onclick="event.stopPropagation(); addQuestionGroup('reading', ${pi})">+ Question Group</button>
-          <button class="btn btn-danger btn-xs" onclick="event.stopPropagation(); removeReadingPart(${pi})">🗑</button>
+          <button class="btn btn-primary btn-xs" onclick="event.stopPropagation(); openQcModal('${prefix}', ${gi})">+ Content</button>
+          <button class="btn btn-danger btn-xs" onclick="event.stopPropagation(); ${prefix}RemoveQuestionGroup(${gi})">🗑</button>
         </div>
       </div>
       <div class="part-card-body">
-        <div class="form-group">
-          <label>Title</label>
-          <input type="text" class="form-control" placeholder="e.g. The History of Astronomy"
-            value="${part.title || ""}" onchange="state.reading.parts[${pi}].title = this.value" />
-        </div>
-        <div class="form-group">
-          <label>Passage</label>
-          <textarea class="form-control" style="min-height:120px" placeholder="Paste the reading passage here..."
-            onchange="state.reading.parts[${pi}].passage = this.value">${part.passage}</textarea>
-        </div>
-
-        ${renderQuestionGroups(part.questions, "reading", pi)}
-
-        <div class="mt-3">
-          <label style="font-size:12px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:.3px">Answer Key (JSON)</label>
-          <textarea class="form-control mt-2" style="min-height:60px" placeholder='{"1":"answer1","2":"answer2"}'
-            onchange="try{state.reading.parts[${pi}].answers=JSON.parse(this.value)}catch(e){}">${Object.keys(part.answers).length ? JSON.stringify(part.answers, null, 2) : ""}</textarea>
-        </div>
-      </div>
-    </div>
-  `,
-          )
-          .join("");
-      }
-
-      // ============================================================
-      //  LISTENING
-      // ============================================================
-      function addListeningPart() {
-        const partNum = state.listening.parts.length + 1;
-        if (partNum > 4) {
-          toast("Maximum 4 listening parts allowed", "error");
-          return;
-        }
-        state.listening.parts.push({
-          part: `PART_${partNum}`,
-          title: "",
-          audio_url: "",
-          audio_file_name: "",
-          audio_duration: null,
-          answers: {},
-          questions: [],
-        });
-        renderListeningParts();
-        updateCounts();
-      }
-
-      function removeListeningPart(idx) {
-        state.listening.parts.splice(idx, 1);
-        state.listening.parts.forEach((p, i) => (p.part = `PART_${i + 1}`));
-        renderListeningParts();
-        updateCounts();
-      }
-
-      function renderListeningParts() {
-        const container = document.getElementById("listening-parts-container");
-        const empty = document.getElementById("listening-empty");
-        empty.style.display = state.listening.parts.length ? "none" : "block";
-
-        container.innerHTML = state.listening.parts
-          .map(
-            (part, pi) => `
-    <div class="part-card">
-      <div class="part-card-header" onclick="togglePartCard(this)">
-        <h4>
-          <span class="chevron">▼</span>
-          Part ${pi + 1}
-          <span style="font-weight:400;font-size:12px;color:var(--gray-400)">(${part.questions.reduce((a, q) => a + q.contents.length, 0)} question blocks)</span>
-        </h4>
-        <div class="flex gap-2">
-          <button class="btn btn-outline btn-xs" onclick="event.stopPropagation(); addQuestionGroup('listening', ${pi})">+ Question Group</button>
-          <button class="btn btn-danger btn-xs" onclick="event.stopPropagation(); removeListeningPart(${pi})">🗑</button>
-        </div>
-      </div>
-      <div class="part-card-body">
-        <div class="form-group">
-          <label>Title</label>
-          <input type="text" class="form-control" placeholder="e.g. A conversation between two students"
-            value="${part.title || ""}" onchange="state.listening.parts[${pi}].title=this.value" />
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Audio URL</label>
-            <input type="text" class="form-control" placeholder="https://..."
-              value="${part.audio_url}" onchange="state.listening.parts[${pi}].audio_url=this.value" />
-          </div>
-          <div class="form-group">
-            <label>Audio File Name</label>
-            <input type="text" class="form-control" placeholder="part1.mp3"
-              value="${part.audio_file_name}" onchange="state.listening.parts[${pi}].audio_file_name=this.value" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Audio Duration (seconds)</label>
-          <input type="number" class="form-control" placeholder="300"
-            value="${part.audio_duration || ""}" onchange="state.listening.parts[${pi}].audio_duration=parseInt(this.value)||null" />
-        </div>
-
-        ${renderQuestionGroups(part.questions, "listening", pi)}
-
-        <div class="mt-3">
-          <label style="font-size:12px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:.3px">Answer Key (JSON)</label>
-          <textarea class="form-control mt-2" style="min-height:60px" placeholder='{"1":"answer1","2":"answer2"}'
-            onchange="try{state.listening.parts[${pi}].answers=JSON.parse(this.value)}catch(e){}">${Object.keys(part.answers).length ? JSON.stringify(part.answers, null, 2) : ""}</textarea>
-        </div>
-      </div>
-    </div>
-  `,
-          )
-          .join("");
-      }
-
-      // ============================================================
-      //  WRITING
-      // ============================================================
-      function addWritingTask() {
-        const taskNum = state.writing.tasks.length + 1;
-        if (taskNum > 2) {
-          toast("Maximum 2 writing tasks allowed", "error");
-          return;
-        }
-        state.writing.tasks.push({
-          task: `TASK_${taskNum}`,
-          prompt: "",
-          instructions: "",
-          min_words: taskNum === 1 ? 150 : 250,
-          suggested_time: taskNum === 1 ? 20 : 40,
-        });
-        renderWritingTasks();
-        updateCounts();
-      }
-
-      function removeWritingTask(idx) {
-        state.writing.tasks.splice(idx, 1);
-        state.writing.tasks.forEach((t, i) => (t.task = `TASK_${i + 1}`));
-        renderWritingTasks();
-        updateCounts();
-      }
-
-      function renderWritingTasks() {
-        const container = document.getElementById("writing-tasks-container");
-        const empty = document.getElementById("writing-empty");
-        empty.style.display = state.writing.tasks.length ? "none" : "block";
-
-        container.innerHTML = state.writing.tasks
-          .map(
-            (task, ti) => `
-    <div class="part-card">
-      <div class="part-card-header" onclick="togglePartCard(this)">
-        <h4>
-          <span class="chevron">▼</span>
-          Task ${ti + 1}
-        </h4>
-        <button class="btn btn-danger btn-xs" onclick="event.stopPropagation(); removeWritingTask(${ti})">🗑</button>
-      </div>
-      <div class="part-card-body">
-        <div class="form-group">
-          <label>Prompt</label>
-          <textarea class="form-control" style="min-height:100px" placeholder="Write the task prompt here..."
-            onchange="state.writing.tasks[${ti}].prompt=this.value">${task.prompt}</textarea>
-        </div>
-        <div class="form-group">
-          <label>Instructions</label>
-          <textarea class="form-control" placeholder="Additional instructions..."
-            onchange="state.writing.tasks[${ti}].instructions=this.value">${task.instructions}</textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Minimum Words</label>
-            <input type="number" class="form-control" value="${task.min_words}"
-              onchange="state.writing.tasks[${ti}].min_words=parseInt(this.value)||0" />
-          </div>
-          <div class="form-group">
-            <label>Suggested Time (minutes)</label>
-            <input type="number" class="form-control" value="${task.suggested_time}"
-              onchange="state.writing.tasks[${ti}].suggested_time=parseInt(this.value)||0" />
-          </div>
-        </div>
-      </div>
-    </div>
-  `,
-          )
-          .join("");
-      }
-
-      // ============================================================
-      //  QUESTION GROUPS & CONTENTS
-      // ============================================================
-      function addQuestionGroup(section, partIndex) {
-        const parts =
-          section === "reading" ? state.reading.parts : state.listening.parts;
-        parts[partIndex].questions.push({
-          number_of_questions: 10,
-          contents: [],
-        });
-        section === "reading" ? renderReadingParts() : renderListeningParts();
-      }
-
-      function removeQuestionGroup(section, partIndex, qIndex) {
-        const parts =
-          section === "reading" ? state.reading.parts : state.listening.parts;
-        parts[partIndex].questions.splice(qIndex, 1);
-        section === "reading" ? renderReadingParts() : renderListeningParts();
-      }
-
-      function renderQuestionGroups(questions, section, partIndex) {
-        if (!questions.length) return "";
-        return questions
-          .map(
-            (q, qi) => `
-    <div class="card mt-3">
-      <div class="card-header">
-        <h3 style="font-size:13px">Question Group ${qi + 1}</h3>
-        <div class="flex gap-2">
-          <button class="btn btn-primary btn-xs" onclick="openQuestionContentModal('${section}', ${partIndex}, ${qi})">+ Content Block</button>
-          <button class="btn btn-danger btn-xs" onclick="removeQuestionGroup('${section}', ${partIndex}, ${qi})">🗑</button>
-        </div>
-      </div>
-      <div class="card-body">
         <div class="form-group">
           <label>Number of Questions</label>
-          <input type="number" class="form-control" style="width:120px" value="${q.number_of_questions}"
-            onchange="updateQuestionCount('${section}', ${partIndex}, ${qi}, this.value)" />
+          <input type="number" class="form-control" style="width:120px" value="${g.number_of_questions}"
+            onchange="${prefix}QuestionGroups[${gi}].number_of_questions=parseInt(this.value)||0" />
         </div>
-        ${renderQuestionContents(q.contents, section, partIndex, qi)}
+        ${
+          g.contents.length
+            ? g.contents
+                .map(
+                  (ct, ci) => `
+          <div class="question-block">
+            <div class="question-block-header">
+              <div class="flex items-center gap-2">
+                <span class="type-badge type-${ct.type}">${ct.type}</span>
+                <span class="fw-600 text-sm">${ct.title || "Untitled"}</span>
+              </div>
+              <button class="btn btn-danger btn-xs" onclick="${prefix}RemoveContent(${gi}, ${ci})">🗑</button>
+            </div>
+            ${ct.condition ? `<p class="text-sm text-gray">${truncate(ct.condition, 120)}</p>` : ""}
+            ${ct.options && ct.options.length ? `<div class="text-sm text-gray mt-2">Options: ${ct.options.map((o) => o.label).join(", ")}</div>` : ""}
+            ${ct.multipleChoiceQuestions && ct.multipleChoiceQuestions.length ? `<div class="text-sm text-gray mt-2">${ct.multipleChoiceQuestions.length} MCQ(s)</div>` : ""}
+          </div>
+        `,
+                )
+                .join("")
+            : '<p class="text-sm text-gray mt-2">No content blocks yet.</p>'
+        }
       </div>
     </div>
   `,
@@ -1569,67 +2474,60 @@
           .join("");
       }
 
-      function updateQuestionCount(section, pi, qi, val) {
-        const parts =
-          section === "reading" ? state.reading.parts : state.listening.parts;
-        parts[pi].questions[qi].number_of_questions = parseInt(val) || 0;
+      function rpRemoveContent(gi, ci) {
+        rpQuestionGroups[gi].contents.splice(ci, 1);
+        renderRpQuestionGroups();
+      }
+      function lpRemoveContent(gi, ci) {
+        lpQuestionGroups[gi].contents.splice(ci, 1);
+        renderLpQuestionGroups();
       }
 
-      function renderQuestionContents(contents, section, partIndex, qIndex) {
-        if (!contents.length)
-          return '<p class="text-sm text-gray mt-2">No question content blocks yet. Click "+ Content Block" to add one.</p>';
-        return contents
-          .map(
-            (c, ci) => `
-    <div class="question-block">
-      <div class="question-block-header">
-        <div class="flex items-center gap-2">
-          <span class="type-badge type-${c.type}">${c.type}</span>
-          <span class="fw-600 text-sm">${c.title || "Untitled"}</span>
-        </div>
-        <button class="btn btn-danger btn-xs" onclick="removeQuestionContent('${section}', ${partIndex}, ${qIndex}, ${ci})">🗑</button>
-      </div>
-      ${c.condition ? `<p class="text-sm text-gray mb-2">${truncate(c.condition, 100)}</p>` : ""}
-      ${
-        c.options && c.options.length
-          ? `
-        <div style="font-size:12px;color:var(--gray-500);margin-top:4px">
-          Options: ${c.options.map((o) => o.label).join(", ")}
-        </div>
-      `
-          : ""
-      }
-      ${
-        c.multipleChoiceQuestions && c.multipleChoiceQuestions.length
-          ? `
-        <div style="font-size:12px;color:var(--gray-500);margin-top:4px">
-          ${c.multipleChoiceQuestions.length} MCQ(s)
-        </div>
-      `
-          : ""
-      }
-    </div>
-  `,
-          )
-          .join("");
+      function togglePartCard(header) {
+        header.classList.toggle("collapsed");
+        header.nextElementSibling.classList.toggle("collapsed");
       }
 
-      function removeQuestionContent(section, pi, qi, ci) {
-        const parts =
-          section === "reading" ? state.reading.parts : state.listening.parts;
-        parts[pi].questions[qi].contents.splice(ci, 1);
-        section === "reading" ? renderReadingParts() : renderListeningParts();
+      function buildContentPayload(c) {
+        const block = {
+          type: c.type,
+          title: c.title,
+          condition: c.condition || null,
+          content: c.content || null,
+          limit: c.limit,
+          showOptions: c.showOptions,
+          optionsTitle: c.optionsTitle || null,
+          order: c.order,
+        };
+        if (c.options && c.options.length)
+          block.options = c.options.map((o, i) => ({
+            value: o.value,
+            label: o.label,
+            order: o.order || i + 1,
+          }));
+        if (c.multipleChoiceQuestions && c.multipleChoiceQuestions.length) {
+          block.multipleChoiceQuestions = c.multipleChoiceQuestions.map(
+            (m, i) => ({
+              question: m.question,
+              order: m.order || i + 1,
+              options: m.options.map((o, j) => ({
+                value: o.value,
+                label: o.label,
+                order: o.order || j + 1,
+              })),
+            }),
+          );
+        }
+        return block;
       }
 
       // ============================================================
       //  QUESTION CONTENT MODAL
       // ============================================================
-      function openQuestionContentModal(section, partIndex, questionIndex) {
-        currentModalTarget = { section, partIndex, questionIndex };
-        modalOptions = [];
-        modalMcqs = [];
-
-        // Reset fields
+      function openQcModal(prefix, groupIndex) {
+        currentQcTarget = { prefix, groupIndex };
+        qcOptions = [];
+        qcMcqs = [];
         document.getElementById("qc-type").value = "completion";
         document.getElementById("qc-title").value = "";
         document.getElementById("qc-condition").value = "";
@@ -1640,121 +2538,109 @@
         document.getElementById("qc-options-title").value = "";
         document.getElementById("qc-options-list").innerHTML = "";
         document.getElementById("qc-mcq-list").innerHTML = "";
-
-        onQuestionTypeChange();
-        openModal("question-content-modal");
+        onQcTypeChange();
+        openModal("qc-modal");
       }
 
-      function onQuestionTypeChange() {
+      function onQcTypeChange() {
         const type = document.getElementById("qc-type").value;
-        const hasOptions = [
+        const hasOpts = [
           "selection",
           "draggable-selection",
           "matching-information",
         ].includes(type);
         const isMcq = ["multiple-choice", "multi-select"].includes(type);
-
-        document.getElementById("qc-options-builder").style.display = hasOptions
+        document.getElementById("qc-options-builder").style.display = hasOpts
           ? "block"
           : "none";
         document.getElementById("qc-mcq-builder").style.display = isMcq
           ? "block"
           : "none";
-        document.getElementById("qc-show-options-group").style.display =
-          hasOptions ? "block" : "none";
+        document.getElementById("qc-show-options-group").style.display = hasOpts
+          ? "block"
+          : "none";
         document.getElementById("qc-options-title-group").style.display =
-          hasOptions ? "block" : "none";
+          hasOpts ? "block" : "none";
       }
 
-      function addOptionToModal() {
-        const letter = String.fromCharCode(65 + modalOptions.length);
-        modalOptions.push({
+      function qcAddOption() {
+        const letter = String.fromCharCode(65 + qcOptions.length);
+        qcOptions.push({
           value: letter.toLowerCase(),
           label: "",
-          order: modalOptions.length + 1,
+          order: qcOptions.length + 1,
         });
-        renderModalOptions();
+        renderQcOptions();
       }
 
-      function renderModalOptions() {
-        const container = document.getElementById("qc-options-list");
-        container.innerHTML = modalOptions
+      function renderQcOptions() {
+        document.getElementById("qc-options-list").innerHTML = qcOptions
           .map(
-            (opt, i) => `
+            (o, i) => `
     <div class="option-row">
       <span class="option-label">${String.fromCharCode(65 + i)}</span>
-      <input type="text" class="form-control" placeholder="Option label" value="${opt.label}"
-        onchange="modalOptions[${i}].label=this.value;modalOptions[${i}].value='${String.fromCharCode(97 + i)}'" />
-      <button class="btn btn-danger btn-xs" onclick="modalOptions.splice(${i},1);renderModalOptions()">×</button>
+      <input type="text" class="form-control" placeholder="Option label" value="${o.label}"
+        onchange="qcOptions[${i}].label=this.value;qcOptions[${i}].value='${String.fromCharCode(97 + i)}'" />
+      <button class="btn btn-danger btn-xs" onclick="qcOptions.splice(${i},1);renderQcOptions()">×</button>
     </div>
   `,
           )
           .join("");
       }
 
-      function addMcqToModal() {
-        modalMcqs.push({
-          question: "",
-          order: modalMcqs.length + 1,
-          options: [],
-        });
-        renderModalMcqs();
+      function qcAddMcq() {
+        qcMcqs.push({ question: "", order: qcMcqs.length + 1, options: [] });
+        renderQcMcqs();
       }
 
-      function renderModalMcqs() {
-        const container = document.getElementById("qc-mcq-list");
-        container.innerHTML = modalMcqs
+      function renderQcMcqs() {
+        document.getElementById("qc-mcq-list").innerHTML = qcMcqs
           .map(
-            (mcq, mi) => `
+            (m, mi) => `
     <div class="mcq-item">
       <div class="form-group mb-2">
-        <input type="text" class="form-control" placeholder="Question text..." value="${mcq.question}"
-          onchange="modalMcqs[${mi}].question=this.value" />
+        <input type="text" class="form-control" placeholder="Question text..." value="${m.question}"
+          onchange="qcMcqs[${mi}].question=this.value" />
       </div>
       <div class="flex items-center justify-between mb-2">
         <span class="text-sm text-gray">Options:</span>
-        <button class="btn btn-outline btn-xs" onclick="addMcqOption(${mi})">+ Option</button>
+        <button class="btn btn-outline btn-xs" onclick="qcAddMcqOption(${mi})">+ Option</button>
       </div>
       <div class="options-list">
-        ${mcq.options
+        ${m.options
           .map(
-            (opt, oi) => `
+            (o, oi) => `
           <div class="option-row">
             <span class="option-label">${String.fromCharCode(65 + oi)}</span>
-            <input type="text" class="form-control" placeholder="Option text" value="${opt.label}"
-              onchange="modalMcqs[${mi}].options[${oi}].label=this.value;modalMcqs[${mi}].options[${oi}].value='${String.fromCharCode(97 + oi)}'" />
-            <button class="btn btn-danger btn-xs" onclick="modalMcqs[${mi}].options.splice(${oi},1);renderModalMcqs()">×</button>
+            <input type="text" class="form-control" placeholder="Option text" value="${o.label}"
+              onchange="qcMcqs[${mi}].options[${oi}].label=this.value;qcMcqs[${mi}].options[${oi}].value='${String.fromCharCode(97 + oi)}'" />
+            <button class="btn btn-danger btn-xs" onclick="qcMcqs[${mi}].options.splice(${oi},1);renderQcMcqs()">×</button>
           </div>
         `,
           )
           .join("")}
       </div>
-      <div style="text-align:right;margin-top:6px">
-        <button class="btn btn-danger btn-xs" onclick="modalMcqs.splice(${mi},1);renderModalMcqs()">Remove MCQ</button>
-      </div>
+      <div style="text-align:right;margin-top:6px"><button class="btn btn-danger btn-xs" onclick="qcMcqs.splice(${mi},1);renderQcMcqs()">Remove MCQ</button></div>
     </div>
   `,
           )
           .join("");
       }
 
-      function addMcqOption(mcqIndex) {
-        const letter = String.fromCharCode(
-          97 + modalMcqs[mcqIndex].options.length,
-        );
-        modalMcqs[mcqIndex].options.push({
+      function qcAddMcqOption(mi) {
+        const letter = String.fromCharCode(97 + qcMcqs[mi].options.length);
+        qcMcqs[mi].options.push({
           value: letter,
           label: "",
-          order: modalMcqs[mcqIndex].options.length + 1,
+          order: qcMcqs[mi].options.length + 1,
         });
-        renderModalMcqs();
+        renderQcMcqs();
       }
 
-      function saveQuestionContent() {
-        if (!currentModalTarget) return;
-        const { section, partIndex, questionIndex } = currentModalTarget;
-        const parts =
-          section === "reading" ? state.reading.parts : state.listening.parts;
+      function qcSaveContent() {
+        if (!currentQcTarget) return;
+        const { prefix, groupIndex } = currentQcTarget;
+        const groups = prefix === "rp" ? rpQuestionGroups : lpQuestionGroups;
 
         const content = {
           type: document.getElementById("qc-type").value,
@@ -1766,660 +2652,34 @@
           optionsTitle: document.getElementById("qc-options-title").value,
           order:
             parseInt(document.getElementById("qc-order").value) ||
-            parts[partIndex].questions[questionIndex].contents.length + 1,
-          options: [...modalOptions],
-          multipleChoiceQuestions: modalMcqs.map((m) => ({
+            groups[groupIndex].contents.length + 1,
+          options: [...qcOptions],
+          multipleChoiceQuestions: qcMcqs.map((m) => ({
             question: m.question,
             order: m.order,
             options: [...m.options],
           })),
         };
 
-        parts[partIndex].questions[questionIndex].contents.push(content);
-
-        closeModal("question-content-modal");
-        section === "reading" ? renderReadingParts() : renderListeningParts();
-        toast("Question content added!", "success");
+        groups[groupIndex].contents.push(content);
+        closeModal("qc-modal");
+        prefix === "rp" ? renderRpQuestionGroups() : renderLpQuestionGroups();
+        toast("Content block added!");
       }
 
       // ============================================================
-      //  COLLECT STATE → JSON
+      //  MODAL OVERLAY CLOSE
       // ============================================================
-      function collectState() {
-        state.test.title = document.getElementById("test-title").value;
-        state.test.mode = document.getElementById("test-mode").value;
-        state.test.status = document.getElementById("test-status").value;
-        state.test.category = document.getElementById("test-category").value;
-        state.reading.title = document.getElementById("reading-title").value;
-        state.listening.title =
-          document.getElementById("listening-title").value;
-        state.listening.description = document.getElementById(
-          "listening-description",
-        ).value;
-        state.listening.full_audio_url = document.getElementById(
-          "listening-full-audio",
-        ).value;
-        state.writing.title = document.getElementById("writing-title").value;
-        state.writing.description = document.getElementById(
-          "writing-description",
-        ).value;
-      }
-
-      function buildJson() {
-        collectState();
-
-        const output = {
-          test: {
-            title: state.test.title,
-            mode: state.test.mode,
-            status: state.test.status,
-            category: state.test.category || null,
-          },
-          reading: {
-            title: state.reading.title,
-            parts: state.reading.parts.map((p) => ({
-              part: p.part,
-              title: p.title || null,
-              passage: p.passage,
-              answers: p.answers,
-              questions: p.questions.map((q) => ({
-                number_of_questions: q.number_of_questions,
-                contents: q.contents.map((c) => {
-                  const block = {
-                    type: c.type,
-                    title: c.title,
-                    condition: c.condition || null,
-                    content: c.content || null,
-                    limit: c.limit,
-                    showOptions: c.showOptions,
-                    optionsTitle: c.optionsTitle || null,
-                    order: c.order,
-                  };
-                  if (c.options && c.options.length) {
-                    block.options = c.options.map((o, i) => ({
-                      value: o.value,
-                      label: o.label,
-                      order: o.order || i + 1,
-                    }));
-                  }
-                  if (
-                    c.multipleChoiceQuestions &&
-                    c.multipleChoiceQuestions.length
-                  ) {
-                    block.multipleChoiceQuestions =
-                      c.multipleChoiceQuestions.map((m, i) => ({
-                        question: m.question,
-                        order: m.order || i + 1,
-                        options: m.options.map((o, j) => ({
-                          value: o.value,
-                          label: o.label,
-                          order: o.order || j + 1,
-                        })),
-                      }));
-                  }
-                  return block;
-                }),
-              })),
-            })),
-          },
-          listening: {
-            title: state.listening.title,
-            description: state.listening.description || null,
-            full_audio_url: state.listening.full_audio_url || null,
-            parts: state.listening.parts.map((p) => ({
-              part: p.part,
-              title: p.title || null,
-              audio: p.audio_url
-                ? {
-                    url: p.audio_url,
-                    file_name: p.audio_file_name || null,
-                    duration: p.audio_duration,
-                  }
-                : null,
-              answers: p.answers,
-              questions: p.questions.map((q) => ({
-                number_of_questions: q.number_of_questions,
-                contents: q.contents.map((c) => {
-                  const block = {
-                    type: c.type,
-                    title: c.title,
-                    condition: c.condition || null,
-                    content: c.content || null,
-                    limit: c.limit,
-                    showOptions: c.showOptions,
-                    optionsTitle: c.optionsTitle || null,
-                    order: c.order,
-                  };
-                  if (c.options && c.options.length) {
-                    block.options = c.options.map((o, i) => ({
-                      value: o.value,
-                      label: o.label,
-                      order: o.order || i + 1,
-                    }));
-                  }
-                  if (
-                    c.multipleChoiceQuestions &&
-                    c.multipleChoiceQuestions.length
-                  ) {
-                    block.multipleChoiceQuestions =
-                      c.multipleChoiceQuestions.map((m, i) => ({
-                        question: m.question,
-                        order: m.order || i + 1,
-                        options: m.options.map((o, j) => ({
-                          value: o.value,
-                          label: o.label,
-                          order: o.order || j + 1,
-                        })),
-                      }));
-                  }
-                  return block;
-                }),
-              })),
-            })),
-          },
-          writing: {
-            title: state.writing.title,
-            description: state.writing.description || null,
-            tasks: state.writing.tasks.map((t) => ({
-              task: t.task,
-              prompt: t.prompt,
-              instructions: t.instructions || null,
-              min_words: t.min_words,
-              suggested_time: t.suggested_time,
-            })),
-          },
-        };
-
-        return output;
-      }
-
-      // ============================================================
-      //  API HELPERS
-      // ============================================================
-      function getApiUrl() { return document.getElementById('api-url').value.replace(/\/+$/, ''); }
-      function getHeaders() {
-        return {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + document.getElementById('jwt-token').value.trim(),
-        };
-      }
-
-      async function apiPost(path, body) {
-        const res = await fetch(getApiUrl() + path, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
-        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || `API error ${res.status}`); }
-        return res.json();
-      }
-      async function apiGet(path) {
-        const res = await fetch(getApiUrl() + path, { headers: getHeaders() });
-        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || `API error ${res.status}`); }
-        return res.json();
-      }
-
-      function setApiStatus(text, cls) {
-        const el = document.getElementById('api-status');
-        el.textContent = text;
-        el.className = 'api-status ' + cls;
-      }
-
-      function progressLog(msg, status = '') {
-        const el = document.getElementById('progress-steps');
-        const icon = status === 'ok' ? '✅' : status === 'err' ? '❌' : '⏳';
-        el.innerHTML += `<div>${icon} ${msg}</div>`;
-      }
-
-      // ============================================================
-      //  SAVE TO API (step-by-step creation)
-      // ============================================================
-      async function saveToApi() {
-        collectState();
-        if (!document.getElementById('jwt-token').value.trim()) {
-          toast('Please enter a JWT token in the config bar', 'error');
-          return;
-        }
-        if (!state.test.title) {
-          toast('Please enter a test title', 'error');
-          return;
-        }
-
-        document.getElementById('progress-steps').innerHTML = '';
-        openModal('progress-modal');
-        setApiStatus('Saving...', 'saving');
-
-        try {
-          // 1. Create test
-          progressLog('Creating test...');
-          const testData = { title: state.test.title, mode: state.test.mode, status: state.test.status };
-          if (state.test.category) testData.category = state.test.category;
-          const test = await apiPost('/ielts-tests', testData);
-          const test_id = test.id;
-          state._ids.test_id = test_id;
-          progressLog(`Test created: ${test_id}`, 'ok');
-
-          // 2. Create Reading section + parts
-          if (state.reading.title || state.reading.parts.length) {
-            progressLog('Creating reading section...');
-            const reading = await apiPost('/ielts-reading', { title: state.reading.title || 'Reading', test_id });
-            const reading_id = reading.id;
-            state._ids.reading_id = reading_id;
-            progressLog(`Reading section created: ${reading_id}`, 'ok');
-
-            for (let i = 0; i < state.reading.parts.length; i++) {
-              const p = state.reading.parts[i];
-              progressLog(`Creating reading part ${i + 1}...`);
-              const partBody = {
-                reading_id,
-                part: p.part,
-                title: p.title || null,
-                passage: p.passage || null,
-                answers: Object.keys(p.answers).length ? p.answers : null,
-                questions: p.questions.map(q => ({
-                  number_of_questions: q.number_of_questions,
-                  contents: q.contents.map(c => {
-                    const block = {
-                      type: c.type,
-                      title: c.title,
-                      condition: c.condition || null,
-                      content: c.content || null,
-                      limit: c.limit,
-                      showOptions: c.showOptions,
-                      optionsTitle: c.optionsTitle || null,
-                      order: c.order,
-                    };
-                    if (c.options && c.options.length) {
-                      block.options = c.options.map((o, j) => ({ value: o.value, label: o.label, order: o.order || j + 1 }));
-                    }
-                    if (c.multipleChoiceQuestions && c.multipleChoiceQuestions.length) {
-                      block.multipleChoiceQuestions = c.multipleChoiceQuestions.map((m, j) => ({
-                        question: m.question,
-                        order: m.order || j + 1,
-                        options: m.options.map((o, k) => ({ value: o.value, label: o.label, order: o.order || k + 1 })),
-                      }));
-                    }
-                    return block;
-                  }),
-                })),
-              };
-              await apiPost('/ielts-reading-parts', partBody);
-              progressLog(`Reading part ${i + 1} created`, 'ok');
-            }
-          }
-
-          // 3. Create Listening section + parts
-          if (state.listening.title || state.listening.parts.length) {
-            progressLog('Creating listening section...');
-            const listeningBody = {
-              title: state.listening.title || 'Listening',
-              test_id,
-              description: state.listening.description || null,
-              full_audio_url: state.listening.full_audio_url || null,
-            };
-            const listening = await apiPost('/ielts-listening', listeningBody);
-            const listening_id = listening.id;
-            state._ids.listening_id = listening_id;
-            progressLog(`Listening section created: ${listening_id}`, 'ok');
-
-            for (let i = 0; i < state.listening.parts.length; i++) {
-              const p = state.listening.parts[i];
-              progressLog(`Creating listening part ${i + 1}...`);
-              const partBody = {
-                listening_id,
-                part: p.part,
-                title: p.title || null,
-                answers: Object.keys(p.answers).length ? p.answers : null,
-                audio: p.audio_url ? { url: p.audio_url, file_name: p.audio_file_name || null, duration: p.audio_duration } : null,
-                questions: p.questions.map(q => ({
-                  number_of_questions: q.number_of_questions,
-                  contents: q.contents.map(c => {
-                    const block = {
-                      type: c.type,
-                      title: c.title,
-                      condition: c.condition || null,
-                      content: c.content || null,
-                      limit: c.limit,
-                      showOptions: c.showOptions,
-                      optionsTitle: c.optionsTitle || null,
-                      order: c.order,
-                    };
-                    if (c.options && c.options.length) {
-                      block.options = c.options.map((o, j) => ({ value: o.value, label: o.label, order: o.order || j + 1 }));
-                    }
-                    if (c.multipleChoiceQuestions && c.multipleChoiceQuestions.length) {
-                      block.multipleChoiceQuestions = c.multipleChoiceQuestions.map((m, j) => ({
-                        question: m.question,
-                        order: m.order || j + 1,
-                        options: m.options.map((o, k) => ({ value: o.value, label: o.label, order: o.order || k + 1 })),
-                      }));
-                    }
-                    return block;
-                  }),
-                })),
-              };
-              await apiPost('/ielts-listening-parts', partBody);
-              progressLog(`Listening part ${i + 1} created`, 'ok');
-            }
-          }
-
-          // 4. Create Writing section + tasks
-          if (state.writing.title || state.writing.tasks.length) {
-            progressLog('Creating writing section...');
-            const writingBody = {
-              title: state.writing.title || 'Writing',
-              description: state.writing.description || null,
-              test_id,
-            };
-            const writing = await apiPost('/ielts-writing', writingBody);
-            const writing_id = writing.id;
-            state._ids.writing_id = writing_id;
-            progressLog(`Writing section created: ${writing_id}`, 'ok');
-
-            for (let i = 0; i < state.writing.tasks.length; i++) {
-              const t = state.writing.tasks[i];
-              progressLog(`Creating writing task ${i + 1}...`);
-              await apiPost('/ielts-writing/task', {
-                writing_id,
-                task: t.task,
-                prompt: t.prompt || null,
-                instructions: t.instructions || null,
-                min_words: t.min_words,
-                suggested_time: t.suggested_time,
-              });
-              progressLog(`Writing task ${i + 1} created`, 'ok');
-            }
-          }
-
-          progressLog('🎉 All done! Test saved successfully.', 'ok');
-          setApiStatus('Connected', 'connected');
-          toast('Test saved to API!', 'success');
-
-          setTimeout(() => closeModal('progress-modal'), 2000);
-        } catch (err) {
-          progressLog(`Error: ${err.message}`, 'err');
-          setApiStatus('Error', 'disconnected');
-          toast(`Save failed: ${err.message}`, 'error');
-        }
-      }
-
-      // ============================================================
-      //  LOAD TEST LIST
-      // ============================================================
-      async function loadTestList() {
-        if (!document.getElementById('jwt-token').value.trim()) {
-          toast('Please enter a JWT token in the config bar', 'error');
-          return;
-        }
-        openModal('load-test-modal');
-        const listEl = document.getElementById('load-test-list');
-        listEl.innerHTML = '<p class="text-sm text-gray">Loading tests...</p>';
-        try {
-          const data = await apiGet('/ielts-tests?limit=50');
-          const tests = data.data || data;
-          if (!tests || !tests.length) {
-            listEl.innerHTML = '<p class="text-sm text-gray">No tests found.</p>';
-            return;
-          }
-          listEl.innerHTML = tests.map(t => `
-            <div style="padding:10px 14px;border:1px solid var(--gray-200);border-radius:6px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" 
-                 onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background='#fff'"
-                 onclick="loadTestById('${t.id}')">
-              <div>
-                <div class="fw-600 text-sm">${t.title || 'Untitled'}</div>
-                <div style="font-size:11px;color:var(--gray-400)">${t.mode} · ${t.status}${t.category ? ' · ' + t.category : ''} · ${t.id.substring(0, 8)}...</div>
-              </div>
-              <span class="status-badge ${t.status === 'published' ? 'status-published' : 'status-draft'}">${t.status}</span>
-            </div>
-          `).join('');
-          setApiStatus('Connected', 'connected');
-        } catch (err) {
-          listEl.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
-          setApiStatus('Error', 'disconnected');
-        }
-      }
-
-      // ============================================================
-      //  LOAD TEST BY ID
-      // ============================================================
-      async function loadTestById(testId) {
-        closeModal('load-test-modal');
-        try {
-          const test = await apiGet(`/ielts-tests/${testId}`);
-
-          // Populate test info
-          document.getElementById('test-title').value = test.title || '';
-          document.getElementById('test-mode').value = test.mode || 'practice';
-          document.getElementById('test-status').value = test.status || 'draft';
-          document.getElementById('test-category').value = test.category || '';
-          state.test = { title: test.title, mode: test.mode, status: test.status, category: test.category || '' };
-          state._ids.test_id = test.id;
-          updateStatusBadge();
-
-          // Load Reading
-          state.reading.parts = [];
-          if (test.readings && test.readings.length) {
-            const reading = test.readings[0];
-            state._ids.reading_id = reading.id;
-            document.getElementById('reading-title').value = reading.title || '';
-            state.reading.title = reading.title || '';
-            if (reading.parts && reading.parts.length) {
-              state.reading.parts = reading.parts.map(p => ({
-                part: p.part,
-                title: p.title || '',
-                passage: p.passage || '',
-                answers: p.answers || {},
-                questions: (p.questions || []).map(q => ({
-                  number_of_questions: q.number_of_questions || 0,
-                  contents: (q.contents || []).map(c => ({
-                    type: c.type,
-                    title: c.title || '',
-                    condition: c.condition || '',
-                    content: c.content || '',
-                    limit: c.limit || null,
-                    showOptions: c.showOptions !== false,
-                    optionsTitle: c.optionsTitle || '',
-                    order: c.order || 1,
-                    options: (c.options || []).map(o => ({ value: o.value, label: o.label, order: o.order || 1 })),
-                    multipleChoiceQuestions: (c.multipleChoiceQuestions || []).map(m => ({
-                      question: m.question,
-                      order: m.order || 1,
-                      options: (m.options || []).map(o => ({ value: o.value, label: o.label, order: o.order || 1 })),
-                    })),
-                  })),
-                })),
-              }));
-            }
-          }
-          renderReadingParts();
-
-          // Load Listening
-          state.listening.parts = [];
-          if (test.listenings && test.listenings.length) {
-            const listening = test.listenings[0];
-            state._ids.listening_id = listening.id;
-            document.getElementById('listening-title').value = listening.title || '';
-            document.getElementById('listening-description').value = listening.description || '';
-            document.getElementById('listening-full-audio').value = listening.full_audio_url || '';
-            state.listening.title = listening.title || '';
-            state.listening.description = listening.description || '';
-            state.listening.full_audio_url = listening.full_audio_url || '';
-            if (listening.parts && listening.parts.length) {
-              state.listening.parts = listening.parts.map(p => ({
-                part: p.part,
-                title: p.title || '',
-                audio_url: (p.audio && p.audio.url) || '',
-                audio_file_name: (p.audio && p.audio.file_name) || '',
-                audio_duration: (p.audio && p.audio.duration) || null,
-                answers: p.answers || {},
-                questions: (p.questions || []).map(q => ({
-                  number_of_questions: q.number_of_questions || 0,
-                  contents: (q.contents || []).map(c => ({
-                    type: c.type,
-                    title: c.title || '',
-                    condition: c.condition || '',
-                    content: c.content || '',
-                    limit: c.limit || null,
-                    showOptions: c.showOptions !== false,
-                    optionsTitle: c.optionsTitle || '',
-                    order: c.order || 1,
-                    options: (c.options || []).map(o => ({ value: o.value, label: o.label, order: o.order || 1 })),
-                    multipleChoiceQuestions: (c.multipleChoiceQuestions || []).map(m => ({
-                      question: m.question,
-                      order: m.order || 1,
-                      options: (m.options || []).map(o => ({ value: o.value, label: o.label, order: o.order || 1 })),
-                    })),
-                  })),
-                })),
-              }));
-            }
-          }
-          renderListeningParts();
-
-          // Load Writing
-          state.writing.tasks = [];
-          if (test.writings && test.writings.length) {
-            const writing = test.writings[0];
-            state._ids.writing_id = writing.id;
-            document.getElementById('writing-title').value = writing.title || '';
-            document.getElementById('writing-description').value = writing.description || '';
-            state.writing.title = writing.title || '';
-            state.writing.description = writing.description || '';
-            if (writing.tasks && writing.tasks.length) {
-              state.writing.tasks = writing.tasks.map(t => ({
-                task: t.task,
-                prompt: t.prompt || '',
-                instructions: t.instructions || '',
-                min_words: t.min_words || 0,
-                suggested_time: t.suggested_time || 0,
-              }));
-            }
-          }
-          renderWritingTasks();
-
-          updateCounts();
-          toast(`Test "${test.title}" loaded successfully!`, 'success');
-          setApiStatus('Connected', 'connected');
-        } catch (err) {
-          toast(`Failed to load test: ${err.message}`, 'error');
-          setApiStatus('Error', 'disconnected');
-        }
-      }
-
-      // ============================================================
-      //  JSON PREVIEW & EXPORT
-      // ============================================================
-      function refreshJsonPreview() {
-        const json = buildJson();
-        document.getElementById("json-output").textContent = JSON.stringify(
-          json,
-          null,
-          2,
-        );
-      }
-
-      function showJsonPreview() {
-        switchSection(
-          "json-section",
-          document.querySelectorAll(".nav-item")[4],
-        );
-      }
-
-      function copyJson() {
-        const json = buildJson();
-        navigator.clipboard
-          .writeText(JSON.stringify(json, null, 2))
-          .then(() => toast("JSON copied to clipboard!", "success"))
-          .catch(() => toast("Failed to copy", "error"));
-      }
-
-      function exportTest() {
-        const json = buildJson();
-        const blob = new Blob([JSON.stringify(json, null, 2)], {
-          type: "application/json",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `ielts-test-${(json.test.title || "untitled").replace(/\s+/g, "-").toLowerCase()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast("Test exported!", "success");
-      }
-
-      function resetBuilder() {
-        if (!confirm("Reset all data? This cannot be undone.")) return;
-        state.reading.parts = [];
-        state.listening.parts = [];
-        state.writing.tasks = [];
-        state.reading.title = "";
-        state.listening.title = "";
-        state.listening.description = "";
-        state.listening.full_audio_url = "";
-        state.writing.title = "";
-        state.writing.description = "";
-        state._ids = { test_id: null, reading_id: null, listening_id: null, writing_id: null };
-
-        document.getElementById("test-title").value = "";
-        document.getElementById("test-mode").value = "practice";
-        document.getElementById("test-status").value = "draft";
-        document.getElementById("test-category").value = "";
-        document.getElementById("reading-title").value = "";
-        document.getElementById("listening-title").value = "";
-        document.getElementById("listening-description").value = "";
-        document.getElementById("listening-full-audio").value = "";
-        document.getElementById("writing-title").value = "";
-        document.getElementById("writing-description").value = "";
-
-        renderReadingParts();
-        renderListeningParts();
-        renderWritingTasks();
-        updateStatusBadge();
-        updateCounts();
-        toast("Builder reset", "success");
-      }
-
-      // ============================================================
-      //  HELPERS
-      // ============================================================
-      function togglePartCard(header) {
-        header.classList.toggle("collapsed");
-        const body = header.nextElementSibling;
-        body.classList.toggle("collapsed");
-      }
-
-      function updateCounts() {
-        document.getElementById("reading-count").textContent =
-          state.reading.parts.length;
-        document.getElementById("listening-count").textContent =
-          state.listening.parts.length;
-        document.getElementById("writing-count").textContent =
-          state.writing.tasks.length;
-      }
-
-      function openModal(id) {
-        document.getElementById(id).classList.add("open");
-      }
-
-      function closeModal(id) {
-        document.getElementById(id).classList.remove("open");
-      }
-
-      function truncate(str, len) {
-        return str.length > len ? str.substring(0, len) + "..." : str;
-      }
-
-      function toast(msg, type = "success") {
-        const container = document.getElementById("toast-container");
-        const t = document.createElement("div");
-        t.className = `toast toast-${type}`;
-        t.textContent = msg;
-        container.appendChild(t);
-        setTimeout(() => t.remove(), 3000);
-      }
-
-      // Close modal on overlay click
-      document.querySelectorAll(".modal-overlay").forEach((overlay) => {
-        overlay.addEventListener("click", (e) => {
-          if (e.target === overlay) overlay.classList.remove("open");
+      document.querySelectorAll(".modal-overlay").forEach((ov) => {
+        ov.addEventListener("click", (e) => {
+          if (e.target === ov) ov.classList.remove("open");
         });
       });
+
+      // ============================================================
+      //  INIT
+      // ============================================================
+      loadTests();
     </script>
   </body>
 </html>
