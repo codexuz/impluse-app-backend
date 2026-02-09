@@ -117,6 +117,11 @@ import { IeltsLessonProgress } from "../ielts-courses/entities/ielts-lesson-prog
 import { IeltsQuizAttempt } from "../ielts-courses/entities/ielts-quiz-attempt.entity.js";
 import { IeltsAttemptAnswer } from "../ielts-courses/entities/ielts-attempt-answer.entity.js";
 
+import { IeltsAnswerAttempt } from "../ielts-tests/entities/ielts-answer-attempt.entity.js";
+import { IeltsWritingAnswer } from "../ielts-tests/entities/ielts-writing-answer.entity.js";
+import { IeltsReadingAnswer } from "../ielts-tests/entities/ielts-reading-answer.entity.js";
+import { IeltsListeningAnswer } from "../ielts-tests/entities/ielts-listening-answer.entity.js";
+
 export const Models = [
   User,
   Role,
@@ -226,6 +231,10 @@ export const Models = [
   IeltsLessonProgress,
   IeltsQuizAttempt,
   IeltsAttemptAnswer,
+  IeltsAnswerAttempt,
+  IeltsWritingAnswer,
+  IeltsReadingAnswer,
+  IeltsListeningAnswer,
 ];
 
 // Define associations after all models are loaded
@@ -1566,5 +1575,85 @@ export function initializeAssociations() {
   IeltsAttemptAnswer.belongsTo(IeltsQuestionChoice, {
     foreignKey: "choice_id",
     as: "choice",
+  });
+
+  // IeltsAnswerAttempt associations
+  IeltsAnswerAttempt.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
+  });
+  IeltsAnswerAttempt.belongsTo(IeltsTest, {
+    foreignKey: "test_id",
+    as: "test",
+  });
+  IeltsAnswerAttempt.hasMany(IeltsWritingAnswer, {
+    foreignKey: "attempt_id",
+    as: "writingAnswers",
+  });
+  IeltsAnswerAttempt.hasMany(IeltsReadingAnswer, {
+    foreignKey: "attempt_id",
+    as: "readingAnswers",
+  });
+  IeltsAnswerAttempt.hasMany(IeltsListeningAnswer, {
+    foreignKey: "attempt_id",
+    as: "listeningAnswers",
+  });
+  User.hasMany(IeltsAnswerAttempt, {
+    foreignKey: "user_id",
+    as: "ielts_answer_attempts",
+  });
+  IeltsTest.hasMany(IeltsAnswerAttempt, {
+    foreignKey: "test_id",
+    as: "attempts",
+  });
+
+  // IeltsWritingAnswer associations
+  IeltsWritingAnswer.belongsTo(IeltsAnswerAttempt, {
+    foreignKey: "attempt_id",
+    as: "attempt",
+  });
+  IeltsWritingAnswer.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
+  });
+  IeltsWritingAnswer.belongsTo(IeltsWritingTask, {
+    foreignKey: "task_id",
+    as: "task",
+  });
+
+  // IeltsReadingAnswer associations
+  IeltsReadingAnswer.belongsTo(IeltsAnswerAttempt, {
+    foreignKey: "attempt_id",
+    as: "attempt",
+  });
+  IeltsReadingAnswer.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
+  });
+  IeltsReadingAnswer.belongsTo(IeltsReadingPart, {
+    foreignKey: "part_id",
+    as: "readingPart",
+  });
+  IeltsReadingAnswer.belongsTo(IeltsQuestionContent, {
+    foreignKey: "question_content_id",
+    as: "questionContent",
+  });
+
+  // IeltsListeningAnswer associations
+  IeltsListeningAnswer.belongsTo(IeltsAnswerAttempt, {
+    foreignKey: "attempt_id",
+    as: "attempt",
+  });
+  IeltsListeningAnswer.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
+  });
+  IeltsListeningAnswer.belongsTo(IeltsListeningPart, {
+    foreignKey: "part_id",
+    as: "listeningPart",
+  });
+  IeltsListeningAnswer.belongsTo(IeltsQuestionContent, {
+    foreignKey: "question_content_id",
+    as: "questionContent",
   });
 }

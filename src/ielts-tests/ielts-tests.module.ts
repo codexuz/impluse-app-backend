@@ -20,6 +20,12 @@ import { IeltsQuestionContent } from "./entities/ielts-question-content.entity.j
 import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
 import { IeltsMultipleChoiceQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
 import { IeltsMultipleChoiceOption } from "./entities/ielts-multiple-choice-option.entity.js";
+import { IeltsAnswerAttempt } from "./entities/ielts-answer-attempt.entity.js";
+import { IeltsReadingAnswer } from "./entities/ielts-reading-answer.entity.js";
+import { IeltsListeningAnswer } from "./entities/ielts-listening-answer.entity.js";
+import { IeltsWritingAnswer } from "./entities/ielts-writing-answer.entity.js";
+import { IeltsAnswersService } from "./ielts-answers.service.js";
+import { IeltsAnswersController } from "./ielts-answers.controller.js";
 
 @Module({
   imports: [
@@ -37,6 +43,10 @@ import { IeltsMultipleChoiceOption } from "./entities/ielts-multiple-choice-opti
       IeltsQuestionOption,
       IeltsMultipleChoiceQuestion,
       IeltsMultipleChoiceOption,
+      IeltsAnswerAttempt,
+      IeltsReadingAnswer,
+      IeltsListeningAnswer,
+      IeltsWritingAnswer,
     ]),
   ],
   controllers: [
@@ -46,8 +56,9 @@ import { IeltsMultipleChoiceOption } from "./entities/ielts-multiple-choice-opti
     IeltsListeningController,
     IeltsListeningPartsController,
     IeltsWritingController,
+    IeltsAnswersController,
   ],
-  providers: [IeltsTestsService],
-  exports: [IeltsTestsService],
+  providers: [IeltsTestsService, IeltsAnswersService],
+  exports: [IeltsTestsService, IeltsAnswersService],
 })
 export class IeltsTestsModule {}
