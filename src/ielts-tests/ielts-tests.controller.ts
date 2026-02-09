@@ -59,8 +59,10 @@ export class IeltsTestsController {
     @Body() createTestDto: CreateTestDto,
     @CurrentUser() user: any,
   ) {
-    createTestDto.created_by = user.userId;
-    return await this.ieltsTestsService.createTest(createTestDto);
+    return await this.ieltsTestsService.createTest({
+      ...createTestDto,
+      created_by: user.userId,
+    });
   }
 
   @Get()

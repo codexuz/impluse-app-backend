@@ -61,11 +61,5 @@ export class CreateTestDto {
   @IsOptional()
   category?: TestCategory;
 
-  @ApiProperty({
-    description: "The ID of the user creating the test",
-    example: "123e4567-e89b-12d3-a456-426614174000",
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  created_by: string;
+  created_by?: string;
 }
