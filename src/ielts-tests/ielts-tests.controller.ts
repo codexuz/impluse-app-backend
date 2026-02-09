@@ -32,6 +32,7 @@ import { CreateMultipleChoiceOptionDto } from "./dto/create-multiple-choice-opti
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
+import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { Role } from "../roles/role.enum.js";
 
 @ApiTags("IELTS Tests")
@@ -54,7 +55,11 @@ export class IeltsTestsController {
     status: HttpStatus.BAD_REQUEST,
     description: "Invalid input data.",
   })
-  async createTest(@Body() createTestDto: CreateTestDto) {
+  async createTest(
+    @Body() createTestDto: CreateTestDto,
+    @CurrentUser() user: any,
+  ) {
+    createTestDto.created_by = user.userId;
     return await this.ieltsTestsService.createTest(createTestDto);
   }
 

@@ -136,7 +136,7 @@
       /* ===== LAYOUT ===== */
       .app-layout {
         display: flex;
-        height: calc(100vh - 56px);
+        height: calc(100vh - 56px - 48px);
       }
 
       /* ===== SIDEBAR ===== */
@@ -403,6 +403,68 @@
       .type-draggable-selection {
         background: #fef3c7;
         color: #92400e;
+      }
+      .type-matching-information {
+        background: #fce4ec;
+        color: #880e4f;
+      }
+
+      /* ===== CONFIG BAR ===== */
+      .config-bar {
+        background: #fff;
+        border-bottom: 1px solid var(--gray-200);
+        padding: 10px 32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .config-bar label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+      }
+      .config-bar input {
+        padding: 6px 10px;
+        border: 1.5px solid var(--gray-300);
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: "JetBrains Mono", "Fira Code", monospace;
+        color: var(--gray-800);
+        background: #fff;
+        transition: border 0.15s;
+      }
+      .config-bar input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      }
+      .config-bar .config-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .api-status {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 12px;
+        letter-spacing: 0.3px;
+      }
+      .api-status.connected {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .api-status.disconnected {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .api-status.saving {
+        background: #dbeafe;
+        color: #1d4ed8;
       }
 
       /* ===== OPTIONS LIST ===== */
@@ -693,15 +755,49 @@
         <button
           class="btn btn-outline"
           style="color: #fff; border-color: rgba(255, 255, 255, 0.3)"
+          onclick="loadTestList()"
+        >
+          📂 Load Test
+        </button>
+        <button
+          class="btn btn-outline"
+          style="color: #fff; border-color: rgba(255, 255, 255, 0.3)"
           onclick="showJsonPreview()"
         >
           { } JSON Preview
+        </button>
+        <button class="btn btn-warning" onclick="saveToApi()">
+          🚀 Save to API
         </button>
         <button class="btn btn-success" onclick="exportTest()">
           ⬇ Export
         </button>
       </div>
     </header>
+
+    <!-- CONFIG BAR -->
+    <div class="config-bar">
+      <div class="config-group">
+        <label>API URL</label>
+        <input
+          type="text"
+          id="api-url"
+          value="http://localhost:3000"
+          style="width: 240px"
+          placeholder="http://localhost:3000"
+        />
+      </div>
+      <div class="config-group">
+        <label>JWT Token</label>
+        <input
+          type="text"
+          id="jwt-token"
+          style="width: 420px"
+          placeholder="Paste your Bearer token here..."
+        />
+      </div>
+      <span class="api-status disconnected" id="api-status">Not Connected</span>
+    </div>
 
     <!-- APP LAYOUT -->
     <div class="app-layout">
@@ -796,6 +892,15 @@
                     <option value="published">Published</option>
                   </select>
                 </div>
+              </div>
+              <div class="form-group">
+                <label>Category</label>
+                <select class="form-control" id="test-category">
+                  <option value="">-- Select Category --</option>
+                  <option value="authentic">Authentic</option>
+                  <option value="pre-test">Pre-Test</option>
+                  <option value="cambridge books">Cambridge Books</option>
+                </select>
               </div>
             </div>
           </div>
@@ -977,6 +1082,7 @@
                 Selection (True/False/Not Given)
               </option>
               <option value="draggable-selection">Draggable Selection</option>
+              <option value="matching-information">Matching Information</option>
             </select>
           </div>
           <div class="form-group">
@@ -1080,6 +1186,46 @@
       </div>
     </div>
 
+    <!-- LOAD TEST MODAL -->
+    <div class="modal-overlay" id="load-test-modal">
+      <div class="modal" style="max-width: 700px">
+        <div class="modal-header">
+          <h3>📂 Load Existing Test</h3>
+          <button class="modal-close" onclick="closeModal('load-test-modal')">
+            ×
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="load-test-list" style="max-height: 400px; overflow-y: auto">
+            <p class="text-sm text-gray">Loading tests...</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-outline"
+            onclick="closeModal('load-test-modal')"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS MODAL -->
+    <div class="modal-overlay" id="progress-modal">
+      <div class="modal" style="max-width: 480px">
+        <div class="modal-header">
+          <h3>🚀 Saving to API</h3>
+        </div>
+        <div class="modal-body">
+          <div
+            id="progress-steps"
+            style="font-size: 13px; line-height: 2"
+          ></div>
+        </div>
+      </div>
+    </div>
+
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
@@ -1088,7 +1234,7 @@
       //  STATE
       // ============================================================
       const state = {
-        test: { title: "", mode: "practice", status: "draft" },
+        test: { title: "", mode: "practice", status: "draft", category: "" },
         reading: {
           title: "",
           parts: [], // { part, passage, answers:{}, questions: [{ number_of_questions, contents: [{ type, title, condition, content, limit, showOptions, optionsTitle, order, options:[], multipleChoiceQuestions:[{ question, order, options:[] }] }] }] }
@@ -1103,6 +1249,13 @@
           title: "",
           description: "",
           tasks: [], // { task, prompt, instructions, min_words, suggested_time }
+        },
+        // API-created IDs (populated after save)
+        _ids: {
+          test_id: null,
+          reading_id: null,
+          listening_id: null,
+          writing_id: null,
         },
       };
 
@@ -1494,7 +1647,11 @@
 
       function onQuestionTypeChange() {
         const type = document.getElementById("qc-type").value;
-        const hasOptions = ["selection", "draggable-selection"].includes(type);
+        const hasOptions = [
+          "selection",
+          "draggable-selection",
+          "matching-information",
+        ].includes(type);
         const isMcq = ["multiple-choice", "multi-select"].includes(type);
 
         document.getElementById("qc-options-builder").style.display = hasOptions
@@ -1632,6 +1789,7 @@
         state.test.title = document.getElementById("test-title").value;
         state.test.mode = document.getElementById("test-mode").value;
         state.test.status = document.getElementById("test-status").value;
+        state.test.category = document.getElementById("test-category").value;
         state.reading.title = document.getElementById("reading-title").value;
         state.listening.title =
           document.getElementById("listening-title").value;
@@ -1655,6 +1813,7 @@
             title: state.test.title,
             mode: state.test.mode,
             status: state.test.status,
+            category: state.test.category || null,
           },
           reading: {
             title: state.reading.title,
@@ -1775,6 +1934,375 @@
       }
 
       // ============================================================
+      //  API HELPERS
+      // ============================================================
+      function getApiUrl() { return document.getElementById('api-url').value.replace(/\/+$/, ''); }
+      function getHeaders() {
+        return {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + document.getElementById('jwt-token').value.trim(),
+        };
+      }
+
+      async function apiPost(path, body) {
+        const res = await fetch(getApiUrl() + path, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
+        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || `API error ${res.status}`); }
+        return res.json();
+      }
+      async function apiGet(path) {
+        const res = await fetch(getApiUrl() + path, { headers: getHeaders() });
+        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || `API error ${res.status}`); }
+        return res.json();
+      }
+
+      function setApiStatus(text, cls) {
+        const el = document.getElementById('api-status');
+        el.textContent = text;
+        el.className = 'api-status ' + cls;
+      }
+
+      function progressLog(msg, status = '') {
+        const el = document.getElementById('progress-steps');
+        const icon = status === 'ok' ? '✅' : status === 'err' ? '❌' : '⏳';
+        el.innerHTML += `<div>${icon} ${msg}</div>`;
+      }
+
+      // ============================================================
+      //  SAVE TO API (step-by-step creation)
+      // ============================================================
+      async function saveToApi() {
+        collectState();
+        if (!document.getElementById('jwt-token').value.trim()) {
+          toast('Please enter a JWT token in the config bar', 'error');
+          return;
+        }
+        if (!state.test.title) {
+          toast('Please enter a test title', 'error');
+          return;
+        }
+
+        document.getElementById('progress-steps').innerHTML = '';
+        openModal('progress-modal');
+        setApiStatus('Saving...', 'saving');
+
+        try {
+          // 1. Create test
+          progressLog('Creating test...');
+          const testData = { title: state.test.title, mode: state.test.mode, status: state.test.status };
+          if (state.test.category) testData.category = state.test.category;
+          const test = await apiPost('/ielts-tests', testData);
+          const test_id = test.id;
+          state._ids.test_id = test_id;
+          progressLog(`Test created: ${test_id}`, 'ok');
+
+          // 2. Create Reading section + parts
+          if (state.reading.title || state.reading.parts.length) {
+            progressLog('Creating reading section...');
+            const reading = await apiPost('/ielts-reading', { title: state.reading.title || 'Reading', test_id });
+            const reading_id = reading.id;
+            state._ids.reading_id = reading_id;
+            progressLog(`Reading section created: ${reading_id}`, 'ok');
+
+            for (let i = 0; i < state.reading.parts.length; i++) {
+              const p = state.reading.parts[i];
+              progressLog(`Creating reading part ${i + 1}...`);
+              const partBody = {
+                reading_id,
+                part: p.part,
+                title: p.title || null,
+                passage: p.passage || null,
+                answers: Object.keys(p.answers).length ? p.answers : null,
+                questions: p.questions.map(q => ({
+                  number_of_questions: q.number_of_questions,
+                  contents: q.contents.map(c => {
+                    const block = {
+                      type: c.type,
+                      title: c.title,
+                      condition: c.condition || null,
+                      content: c.content || null,
+                      limit: c.limit,
+                      showOptions: c.showOptions,
+                      optionsTitle: c.optionsTitle || null,
+                      order: c.order,
+                    };
+                    if (c.options && c.options.length) {
+                      block.options = c.options.map((o, j) => ({ value: o.value, label: o.label, order: o.order || j + 1 }));
+                    }
+                    if (c.multipleChoiceQuestions && c.multipleChoiceQuestions.length) {
+                      block.multipleChoiceQuestions = c.multipleChoiceQuestions.map((m, j) => ({
+                        question: m.question,
+                        order: m.order || j + 1,
+                        options: m.options.map((o, k) => ({ value: o.value, label: o.label, order: o.order || k + 1 })),
+                      }));
+                    }
+                    return block;
+                  }),
+                })),
+              };
+              await apiPost('/ielts-reading-parts', partBody);
+              progressLog(`Reading part ${i + 1} created`, 'ok');
+            }
+          }
+
+          // 3. Create Listening section + parts
+          if (state.listening.title || state.listening.parts.length) {
+            progressLog('Creating listening section...');
+            const listeningBody = {
+              title: state.listening.title || 'Listening',
+              test_id,
+              description: state.listening.description || null,
+              full_audio_url: state.listening.full_audio_url || null,
+            };
+            const listening = await apiPost('/ielts-listening', listeningBody);
+            const listening_id = listening.id;
+            state._ids.listening_id = listening_id;
+            progressLog(`Listening section created: ${listening_id}`, 'ok');
+
+            for (let i = 0; i < state.listening.parts.length; i++) {
+              const p = state.listening.parts[i];
+              progressLog(`Creating listening part ${i + 1}...`);
+              const partBody = {
+                listening_id,
+                part: p.part,
+                title: p.title || null,
+                answers: Object.keys(p.answers).length ? p.answers : null,
+                audio: p.audio_url ? { url: p.audio_url, file_name: p.audio_file_name || null, duration: p.audio_duration } : null,
+                questions: p.questions.map(q => ({
+                  number_of_questions: q.number_of_questions,
+                  contents: q.contents.map(c => {
+                    const block = {
+                      type: c.type,
+                      title: c.title,
+                      condition: c.condition || null,
+                      content: c.content || null,
+                      limit: c.limit,
+                      showOptions: c.showOptions,
+                      optionsTitle: c.optionsTitle || null,
+                      order: c.order,
+                    };
+                    if (c.options && c.options.length) {
+                      block.options = c.options.map((o, j) => ({ value: o.value, label: o.label, order: o.order || j + 1 }));
+                    }
+                    if (c.multipleChoiceQuestions && c.multipleChoiceQuestions.length) {
+                      block.multipleChoiceQuestions = c.multipleChoiceQuestions.map((m, j) => ({
+                        question: m.question,
+                        order: m.order || j + 1,
+                        options: m.options.map((o, k) => ({ value: o.value, label: o.label, order: o.order || k + 1 })),
+                      }));
+                    }
+                    return block;
+                  }),
+                })),
+              };
+              await apiPost('/ielts-listening-parts', partBody);
+              progressLog(`Listening part ${i + 1} created`, 'ok');
+            }
+          }
+
+          // 4. Create Writing section + tasks
+          if (state.writing.title || state.writing.tasks.length) {
+            progressLog('Creating writing section...');
+            const writingBody = {
+              title: state.writing.title || 'Writing',
+              description: state.writing.description || null,
+              test_id,
+            };
+            const writing = await apiPost('/ielts-writing', writingBody);
+            const writing_id = writing.id;
+            state._ids.writing_id = writing_id;
+            progressLog(`Writing section created: ${writing_id}`, 'ok');
+
+            for (let i = 0; i < state.writing.tasks.length; i++) {
+              const t = state.writing.tasks[i];
+              progressLog(`Creating writing task ${i + 1}...`);
+              await apiPost('/ielts-writing/task', {
+                writing_id,
+                task: t.task,
+                prompt: t.prompt || null,
+                instructions: t.instructions || null,
+                min_words: t.min_words,
+                suggested_time: t.suggested_time,
+              });
+              progressLog(`Writing task ${i + 1} created`, 'ok');
+            }
+          }
+
+          progressLog('🎉 All done! Test saved successfully.', 'ok');
+          setApiStatus('Connected', 'connected');
+          toast('Test saved to API!', 'success');
+
+          setTimeout(() => closeModal('progress-modal'), 2000);
+        } catch (err) {
+          progressLog(`Error: ${err.message}`, 'err');
+          setApiStatus('Error', 'disconnected');
+          toast(`Save failed: ${err.message}`, 'error');
+        }
+      }
+
+      // ============================================================
+      //  LOAD TEST LIST
+      // ============================================================
+      async function loadTestList() {
+        if (!document.getElementById('jwt-token').value.trim()) {
+          toast('Please enter a JWT token in the config bar', 'error');
+          return;
+        }
+        openModal('load-test-modal');
+        const listEl = document.getElementById('load-test-list');
+        listEl.innerHTML = '<p class="text-sm text-gray">Loading tests...</p>';
+        try {
+          const data = await apiGet('/ielts-tests?limit=50');
+          const tests = data.data || data;
+          if (!tests || !tests.length) {
+            listEl.innerHTML = '<p class="text-sm text-gray">No tests found.</p>';
+            return;
+          }
+          listEl.innerHTML = tests.map(t => `
+            <div style="padding:10px 14px;border:1px solid var(--gray-200);border-radius:6px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" 
+                 onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background='#fff'"
+                 onclick="loadTestById('${t.id}')">
+              <div>
+                <div class="fw-600 text-sm">${t.title || 'Untitled'}</div>
+                <div style="font-size:11px;color:var(--gray-400)">${t.mode} · ${t.status}${t.category ? ' · ' + t.category : ''} · ${t.id.substring(0, 8)}...</div>
+              </div>
+              <span class="status-badge ${t.status === 'published' ? 'status-published' : 'status-draft'}">${t.status}</span>
+            </div>
+          `).join('');
+          setApiStatus('Connected', 'connected');
+        } catch (err) {
+          listEl.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+          setApiStatus('Error', 'disconnected');
+        }
+      }
+
+      // ============================================================
+      //  LOAD TEST BY ID
+      // ============================================================
+      async function loadTestById(testId) {
+        closeModal('load-test-modal');
+        try {
+          const test = await apiGet(`/ielts-tests/${testId}`);
+
+          // Populate test info
+          document.getElementById('test-title').value = test.title || '';
+          document.getElementById('test-mode').value = test.mode || 'practice';
+          document.getElementById('test-status').value = test.status || 'draft';
+          document.getElementById('test-category').value = test.category || '';
+          state.test = { title: test.title, mode: test.mode, status: test.status, category: test.category || '' };
+          state._ids.test_id = test.id;
+          updateStatusBadge();
+
+          // Load Reading
+          state.reading.parts = [];
+          if (test.readings && test.readings.length) {
+            const reading = test.readings[0];
+            state._ids.reading_id = reading.id;
+            document.getElementById('reading-title').value = reading.title || '';
+            state.reading.title = reading.title || '';
+            if (reading.parts && reading.parts.length) {
+              state.reading.parts = reading.parts.map(p => ({
+                part: p.part,
+                title: p.title || '',
+                passage: p.passage || '',
+                answers: p.answers || {},
+                questions: (p.questions || []).map(q => ({
+                  number_of_questions: q.number_of_questions || 0,
+                  contents: (q.contents || []).map(c => ({
+                    type: c.type,
+                    title: c.title || '',
+                    condition: c.condition || '',
+                    content: c.content || '',
+                    limit: c.limit || null,
+                    showOptions: c.showOptions !== false,
+                    optionsTitle: c.optionsTitle || '',
+                    order: c.order || 1,
+                    options: (c.options || []).map(o => ({ value: o.value, label: o.label, order: o.order || 1 })),
+                    multipleChoiceQuestions: (c.multipleChoiceQuestions || []).map(m => ({
+                      question: m.question,
+                      order: m.order || 1,
+                      options: (m.options || []).map(o => ({ value: o.value, label: o.label, order: o.order || 1 })),
+                    })),
+                  })),
+                })),
+              }));
+            }
+          }
+          renderReadingParts();
+
+          // Load Listening
+          state.listening.parts = [];
+          if (test.listenings && test.listenings.length) {
+            const listening = test.listenings[0];
+            state._ids.listening_id = listening.id;
+            document.getElementById('listening-title').value = listening.title || '';
+            document.getElementById('listening-description').value = listening.description || '';
+            document.getElementById('listening-full-audio').value = listening.full_audio_url || '';
+            state.listening.title = listening.title || '';
+            state.listening.description = listening.description || '';
+            state.listening.full_audio_url = listening.full_audio_url || '';
+            if (listening.parts && listening.parts.length) {
+              state.listening.parts = listening.parts.map(p => ({
+                part: p.part,
+                title: p.title || '',
+                audio_url: (p.audio && p.audio.url) || '',
+                audio_file_name: (p.audio && p.audio.file_name) || '',
+                audio_duration: (p.audio && p.audio.duration) || null,
+                answers: p.answers || {},
+                questions: (p.questions || []).map(q => ({
+                  number_of_questions: q.number_of_questions || 0,
+                  contents: (q.contents || []).map(c => ({
+                    type: c.type,
+                    title: c.title || '',
+                    condition: c.condition || '',
+                    content: c.content || '',
+                    limit: c.limit || null,
+                    showOptions: c.showOptions !== false,
+                    optionsTitle: c.optionsTitle || '',
+                    order: c.order || 1,
+                    options: (c.options || []).map(o => ({ value: o.value, label: o.label, order: o.order || 1 })),
+                    multipleChoiceQuestions: (c.multipleChoiceQuestions || []).map(m => ({
+                      question: m.question,
+                      order: m.order || 1,
+                      options: (m.options || []).map(o => ({ value: o.value, label: o.label, order: o.order || 1 })),
+                    })),
+                  })),
+                })),
+              }));
+            }
+          }
+          renderListeningParts();
+
+          // Load Writing
+          state.writing.tasks = [];
+          if (test.writings && test.writings.length) {
+            const writing = test.writings[0];
+            state._ids.writing_id = writing.id;
+            document.getElementById('writing-title').value = writing.title || '';
+            document.getElementById('writing-description').value = writing.description || '';
+            state.writing.title = writing.title || '';
+            state.writing.description = writing.description || '';
+            if (writing.tasks && writing.tasks.length) {
+              state.writing.tasks = writing.tasks.map(t => ({
+                task: t.task,
+                prompt: t.prompt || '',
+                instructions: t.instructions || '',
+                min_words: t.min_words || 0,
+                suggested_time: t.suggested_time || 0,
+              }));
+            }
+          }
+          renderWritingTasks();
+
+          updateCounts();
+          toast(`Test "${test.title}" loaded successfully!`, 'success');
+          setApiStatus('Connected', 'connected');
+        } catch (err) {
+          toast(`Failed to load test: ${err.message}`, 'error');
+          setApiStatus('Error', 'disconnected');
+        }
+      }
+
+      // ============================================================
       //  JSON PREVIEW & EXPORT
       // ============================================================
       function refreshJsonPreview() {
@@ -1826,10 +2354,12 @@
         state.listening.full_audio_url = "";
         state.writing.title = "";
         state.writing.description = "";
+        state._ids = { test_id: null, reading_id: null, listening_id: null, writing_id: null };
 
         document.getElementById("test-title").value = "";
         document.getElementById("test-mode").value = "practice";
         document.getElementById("test-status").value = "draft";
+        document.getElementById("test-category").value = "";
         document.getElementById("reading-title").value = "";
         document.getElementById("listening-title").value = "";
         document.getElementById("listening-description").value = "";
