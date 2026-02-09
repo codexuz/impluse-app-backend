@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IELTS Answers API Tester</title>
+    <style>
+      :root {
+        --primary: #4f46e5;
+        --primary-light: #818cf8;
+        --primary-dark: #3730a3;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+        --radius: 8px;
+        --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+        --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--gray-100);
+        color: var(--gray-800);
+        line-height: 1.6;
+      }
+
+      /* HEADER */
+      .header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: #fff;
+        padding: 16px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: var(--shadow-md);
+        position: sticky; top: 0; z-index: 100;
+      }
+      .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+      .header-actions { display: flex; gap: 10px; align-items: center; }
+
+      /* STATUS BADGE */
+      .status-badge {
+        padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.5px;
+      }
+      .status-connected { background: #d1fae5; color: #065f46; }
+      .status-disconnected { background: #fee2e2; color: #991b1b; }
+
+      /* BUTTONS */
+      .btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px; border-radius: var(--radius);
+        font-size: 13px; font-weight: 600; cursor: pointer;
+        border: none; transition: all 0.15s;
+      }
+      .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+      .btn:active { transform: translateY(0); }
+      .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+      .btn-primary { background: var(--primary); color: #fff; }
+      .btn-primary:hover { background: var(--primary-dark); }
+      .btn-success { background: var(--success); color: #fff; }
+      .btn-warning { background: var(--warning); color: #fff; }
+      .btn-danger { background: var(--danger); color: #fff; }
+      .btn-outline { background: transparent; border: 1.5px solid var(--gray-300); color: var(--gray-700); }
+      .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+      .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+      /* LAYOUT */
+      .app-layout { display: flex; height: calc(100vh - 56px); }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 280px; background: #fff; border-right: 1px solid var(--gray-200);
+        display: flex; flex-direction: column; overflow: hidden;
+      }
+      .sidebar-header {
+        padding: 16px; border-bottom: 1px solid var(--gray-200);
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      .sidebar-header h3 { font-size: 14px; font-weight: 600; color: var(--gray-700); }
+      .sidebar-body { flex: 1; overflow-y: auto; padding: 8px; }
+      .sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--gray-200); }
+
+      .nav-section { margin-bottom: 4px; }
+      .nav-section-title {
+        padding: 8px 12px; font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-400);
+      }
+      .nav-item {
+        padding: 8px 12px; border-radius: 6px; cursor: pointer;
+        font-size: 13px; font-weight: 500; color: var(--gray-600);
+        transition: all 0.1s; display: flex; align-items: center; gap: 8px;
+      }
+      .nav-item:hover { background: var(--gray-100); color: var(--gray-800); }
+      .nav-item.active { background: #eef2ff; color: var(--primary); font-weight: 600; }
+
+      /* MAIN */
+      .main-area { flex: 1; overflow-y: auto; padding: 24px; }
+
+      /* CARD */
+      .card {
+        background: #fff; border-radius: var(--radius);
+        box-shadow: var(--shadow); border: 1px solid var(--gray-200); margin-bottom: 16px;
+      }
+      .card-header {
+        padding: 14px 18px; border-bottom: 1px solid var(--gray-100);
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      .card-header h3 { font-size: 15px; font-weight: 600; }
+      .card-body { padding: 18px; }
+
+      /* FORMS */
+      .form-group { margin-bottom: 14px; }
+      .form-group label {
+        display: block; font-size: 12px; font-weight: 600;
+        color: var(--gray-600); margin-bottom: 4px;
+        text-transform: uppercase; letter-spacing: 0.3px;
+      }
+      .form-control {
+        width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-300);
+        border-radius: 6px; font-size: 14px; color: var(--gray-800);
+        background: #fff; transition: border 0.15s; font-family: inherit;
+      }
+      .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+      select.form-control { cursor: pointer; }
+      textarea.form-control { resize: vertical; min-height: 80px; }
+      .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+      /* TABS */
+      .tabs { display: flex; gap: 2px; background: var(--gray-100); padding: 3px; border-radius: var(--radius); margin-bottom: 16px; }
+      .tab {
+        flex: 1; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+        color: var(--gray-500); cursor: pointer; text-align: center;
+        transition: all 0.15s; border: none; background: transparent;
+      }
+      .tab:hover { color: var(--gray-700); }
+      .tab.active { background: #fff; color: var(--primary); box-shadow: var(--shadow); }
+      .tab-panel { display: none; }
+      .tab-panel.active { display: block; }
+
+      /* ANSWER ROW */
+      .answer-row {
+        display: grid; grid-template-columns: 60px 1fr 1fr 1fr auto;
+        gap: 8px; align-items: end; padding: 8px 0;
+        border-bottom: 1px solid var(--gray-100);
+      }
+      .answer-row:last-child { border-bottom: none; }
+      .answer-row input, .answer-row select { font-size: 13px; padding: 7px 10px; }
+
+      /* RESPONSE PANEL */
+      .response-panel {
+        background: var(--gray-900); color: #e5e7eb; border-radius: var(--radius);
+        padding: 16px; font-family: "Fira Code", "Consolas", monospace; font-size: 13px;
+        max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+      }
+      .response-panel .res-success { color: #34d399; }
+      .response-panel .res-error { color: #f87171; }
+      .response-panel .res-info { color: #60a5fa; }
+
+      /* ATTEMPT CARD */
+      .attempt-card {
+        border: 1.5px solid var(--gray-200); border-radius: var(--radius);
+        padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s;
+      }
+      .attempt-card:hover { border-color: var(--primary-light); background: var(--gray-50); }
+      .attempt-card.active { border-color: var(--primary); background: #eef2ff; }
+      .attempt-meta { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
+      .attempt-meta span {
+        font-size: 11px; font-weight: 600; padding: 2px 8px;
+        border-radius: 4px; text-transform: uppercase; letter-spacing: 0.3px;
+      }
+      .scope-test { background: #dbeafe; color: #1d4ed8; }
+      .scope-module { background: #fce7f3; color: #be185d; }
+      .scope-part { background: #ede9fe; color: #6d28d9; }
+      .scope-task { background: #fef3c7; color: #92400e; }
+      .status-in_progress { background: #fef3c7; color: #92400e; }
+      .status-submitted { background: #d1fae5; color: #065f46; }
+      .status-abandoned { background: #fee2e2; color: #991b1b; }
+
+      /* TOAST */
+      .toast-container { position: fixed; top: 70px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+      .toast {
+        padding: 12px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 600;
+        box-shadow: var(--shadow-md); animation: slideIn 0.3s ease; min-width: 280px;
+      }
+      .toast-success { background: #d1fae5; color: #065f46; border-left: 4px solid var(--success); }
+      .toast-error { background: #fee2e2; color: #991b1b; border-left: 4px solid var(--danger); }
+      @keyframes slideIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
+
+      .empty-state { text-align: center; padding: 40px; color: var(--gray-400); }
+      .empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+      .empty-state p { font-size: 14px; }
+
+      .config-bar {
+        background: #fff; padding: 12px 16px; border-bottom: 1px solid var(--gray-200);
+        display: flex; gap: 12px; align-items: end; flex-wrap: wrap;
+      }
+      .config-bar .form-group { margin-bottom: 0; flex: 1; min-width: 200px; }
+      .config-bar label { font-size: 11px; }
+      .config-bar input { font-size: 12px; padding: 7px 10px; }
+    </style>
+  </head>
+  <body>
+    <!-- HEADER -->
+    <div class="header">
+      <h1>📝 IELTS Answers API Tester</h1>
+      <div class="header-actions">
+        <span id="connStatus" class="status-badge status-disconnected">Not Connected</span>
+        <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="testConnection()">Test Connection</button>
+      </div>
+    </div>
+
+    <!-- CONFIG BAR -->
+    <div class="config-bar">
+      <div class="form-group">
+        <label>API Base URL</label>
+        <input type="text" class="form-control" id="apiUrl" value="http://localhost:3000">
+      </div>
+      <div class="form-group" style="flex:2">
+        <label>JWT Token</label>
+        <input type="text" class="form-control" id="token" placeholder="Paste your JWT token here...">
+      </div>
+      <div class="form-group">
+        <label>Test ID (for new attempts)</label>
+        <input type="text" class="form-control" id="testId" placeholder="UUID of the test">
+      </div>
+    </div>
+
+    <!-- APP LAYOUT -->
+    <div class="app-layout">
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <h3>Sections</h3>
+        </div>
+        <div class="sidebar-body">
+          <div class="nav-section">
+            <div class="nav-section-title">Attempt</div>
+            <div class="nav-item active" onclick="showPanel('attempts')">🎯 Manage Attempts</div>
+          </div>
+          <div class="nav-section">
+            <div class="nav-section-title">Save Answers</div>
+            <div class="nav-item" onclick="showPanel('reading')">📖 Reading</div>
+            <div class="nav-item" onclick="showPanel('listening')">🎧 Listening</div>
+            <div class="nav-item" onclick="showPanel('writing')">✍️ Writing</div>
+          </div>
+          <div class="nav-section">
+            <div class="nav-section-title">View</div>
+            <div class="nav-item" onclick="showPanel('results')">📊 View Results</div>
+          </div>
+        </div>
+        <div class="sidebar-footer">
+          <div style="font-size:12px;color:var(--gray-400)">
+            Active Attempt:<br>
+            <strong id="sidebarAttemptId" style="color:var(--primary);font-size:11px;word-break:break-all">None</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN AREA -->
+      <div class="main-area">
+        <!-- ATTEMPTS PANEL -->
+        <div id="panel-attempts" class="tab-panel active">
+          <div class="card">
+            <div class="card-header">
+              <h3>Create New Attempt</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Scope</label>
+                  <select class="form-control" id="attemptScope">
+                    <option value="TEST">TEST</option>
+                    <option value="MODULE">MODULE</option>
+                    <option value="PART">PART</option>
+                    <option value="TASK">TASK</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Module ID (optional)</label>
+                  <input type="text" class="form-control" id="attemptModuleId" placeholder="UUID">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Part ID (optional)</label>
+                  <input type="text" class="form-control" id="attemptPartId" placeholder="UUID">
+                </div>
+                <div class="form-group">
+                  <label>Task ID (optional)</label>
+                  <input type="text" class="form-control" id="attemptTaskId" placeholder="UUID">
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="createAttempt()">➕ Create Attempt</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>My Attempts</h3>
+              <button class="btn btn-outline btn-sm" onclick="loadAttempts()">🔄 Refresh</button>
+            </div>
+            <div class="card-body" id="attemptsList">
+              <div class="empty-state"><p>Click refresh to load attempts</p></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Response</h3></div>
+            <div class="card-body">
+              <div class="response-panel" id="attemptResponse">Waiting for action...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- READING PANEL -->
+        <div id="panel-reading" class="tab-panel">
+          <div class="card">
+            <div class="card-header">
+              <h3>Save Reading Answers</h3>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-outline btn-sm" onclick="addReadingRow()">➕ Add Row</button>
+                <button class="btn btn-primary btn-sm" onclick="saveReadingAnswers()">💾 Save All</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px">
+                Active Attempt: <strong id="readingAttemptLabel" style="color:var(--primary)">None</strong>
+              </div>
+              <div style="display:grid; grid-template-columns: 60px 1fr 1fr 1fr auto; gap:8px; padding:6px 0; border-bottom:2px solid var(--gray-200); margin-bottom:4px;">
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)">Q#</span>
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)">PART ID</span>
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)">QUESTION CONTENT ID</span>
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)">ANSWER</span>
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)"></span>
+              </div>
+              <div id="readingRows"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Response</h3></div>
+            <div class="card-body">
+              <div class="response-panel" id="readingResponse">Waiting for action...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LISTENING PANEL -->
+        <div id="panel-listening" class="tab-panel">
+          <div class="card">
+            <div class="card-header">
+              <h3>Save Listening Answers</h3>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-outline btn-sm" onclick="addListeningRow()">➕ Add Row</button>
+                <button class="btn btn-primary btn-sm" onclick="saveListeningAnswers()">💾 Save All</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px">
+                Active Attempt: <strong id="listeningAttemptLabel" style="color:var(--primary)">None</strong>
+              </div>
+              <div style="display:grid; grid-template-columns: 60px 1fr 1fr 1fr auto; gap:8px; padding:6px 0; border-bottom:2px solid var(--gray-200); margin-bottom:4px;">
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)">Q#</span>
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)">PART ID</span>
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)">QUESTION CONTENT ID</span>
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)">ANSWER</span>
+                <span style="font-size:11px;font-weight:700;color:var(--gray-500)"></span>
+              </div>
+              <div id="listeningRows"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Response</h3></div>
+            <div class="card-body">
+              <div class="response-panel" id="listeningResponse">Waiting for action...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WRITING PANEL -->
+        <div id="panel-writing" class="tab-panel">
+          <div class="card">
+            <div class="card-header">
+              <h3>Save Writing Answers</h3>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-outline btn-sm" onclick="addWritingBlock()">➕ Add Task</button>
+                <button class="btn btn-primary btn-sm" onclick="saveWritingAnswers()">💾 Save All</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px">
+                Active Attempt: <strong id="writingAttemptLabel" style="color:var(--primary)">None</strong>
+              </div>
+              <div id="writingBlocks"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Response</h3></div>
+            <div class="card-body">
+              <div class="response-panel" id="writingResponse">Waiting for action...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESULTS PANEL -->
+        <div id="panel-results" class="tab-panel">
+          <div class="card">
+            <div class="card-header">
+              <h3>Attempt Details</h3>
+              <button class="btn btn-primary btn-sm" onclick="loadAttemptDetails()">🔍 Load Details</button>
+            </div>
+            <div class="card-body">
+              <div class="response-panel" id="resultsResponse" style="max-height:600px">Select an attempt from the sidebar and click "Load Details"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+      // ========== STATE ==========
+      let currentAttemptId = null;
+      let readingRowCount = 0;
+      let listeningRowCount = 0;
+      let writingBlockCount = 0;
+
+      // ========== HELPERS ==========
+      function getApiUrl() { return document.getElementById('apiUrl').value.replace(/\/+$/, ''); }
+      function getHeaders() {
+        return {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${document.getElementById('token').value}`,
+        };
+      }
+
+      function toast(msg, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const div = document.createElement('div');
+        div.className = `toast toast-${type}`;
+        div.textContent = msg;
+        container.appendChild(div);
+        setTimeout(() => div.remove(), 4000);
+      }
+
+      function showResponse(elementId, data, isError = false) {
+        const el = document.getElementById(elementId);
+        const cls = isError ? 'res-error' : 'res-success';
+        el.innerHTML = `<span class="${cls}">${JSON.stringify(data, null, 2)}</span>`;
+      }
+
+      function setActiveAttempt(id) {
+        currentAttemptId = id;
+        document.getElementById('sidebarAttemptId').textContent = id || 'None';
+        document.getElementById('readingAttemptLabel').textContent = id ? id.substring(0, 8) + '...' : 'None';
+        document.getElementById('listeningAttemptLabel').textContent = id ? id.substring(0, 8) + '...' : 'None';
+        document.getElementById('writingAttemptLabel').textContent = id ? id.substring(0, 8) + '...' : 'None';
+      }
+
+      // ========== NAVIGATION ==========
+      function showPanel(name) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(`panel-${name}`).classList.add('active');
+        event.target.closest('.nav-item').classList.add('active');
+      }
+
+      // ========== CONNECTION TEST ==========
+      async function testConnection() {
+        try {
+          const res = await fetch(`${getApiUrl()}/ielts-answers/attempts?limit=1`, { headers: getHeaders() });
+          if (res.ok) {
+            document.getElementById('connStatus').className = 'status-badge status-connected';
+            document.getElementById('connStatus').textContent = 'Connected';
+            toast('API connection successful!');
+          } else {
+            throw new Error(`HTTP ${res.status}`);
+          }
+        } catch (err) {
+          document.getElementById('connStatus').className = 'status-badge status-disconnected';
+          document.getElementById('connStatus').textContent = 'Error';
+          toast(`Connection failed: ${err.message}`, 'error');
+        }
+      }
+
+      // ========== ATTEMPTS ==========
+      async function createAttempt() {
+        const body = {
+          scope: document.getElementById('attemptScope').value,
+          test_id: document.getElementById('testId').value || undefined,
+          module_id: document.getElementById('attemptModuleId').value || undefined,
+          part_id: document.getElementById('attemptPartId').value || undefined,
+          task_id: document.getElementById('attemptTaskId').value || undefined,
+        };
+        // Clean undefined
+        Object.keys(body).forEach(k => body[k] === undefined && delete body[k]);
+
+        try {
+          const res = await fetch(`${getApiUrl()}/ielts-answers/attempts`, {
+            method: 'POST', headers: getHeaders(), body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          showResponse('attemptResponse', data, !res.ok);
+          if (res.ok) {
+            setActiveAttempt(data.id);
+            toast(`Attempt created! ID: ${data.id.substring(0, 8)}...`);
+            loadAttempts();
+          } else {
+            toast(data.message || 'Failed to create attempt', 'error');
+          }
+        } catch (err) {
+          showResponse('attemptResponse', { error: err.message }, true);
+          toast(err.message, 'error');
+        }
+      }
+
+      async function loadAttempts() {
+        try {
+          const res = await fetch(`${getApiUrl()}/ielts-answers/attempts?limit=20`, { headers: getHeaders() });
+          const data = await res.json();
+          showResponse('attemptResponse', data, !res.ok);
+          if (res.ok) {
+            renderAttemptsList(data.data || []);
+          }
+        } catch (err) {
+          showResponse('attemptResponse', { error: err.message }, true);
+        }
+      }
+
+      function renderAttemptsList(attempts) {
+        const container = document.getElementById('attemptsList');
+        if (!attempts.length) {
+          container.innerHTML = '<div class="empty-state"><p>No attempts found. Create one above.</p></div>';
+          return;
+        }
+        container.innerHTML = attempts.map(a => `
+          <div class="attempt-card ${currentAttemptId === a.id ? 'active' : ''}" onclick="selectAttempt('${a.id}')">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <strong style="font-size:13px">${a.id.substring(0, 8)}...</strong>
+              <div style="display:flex;gap:6px">
+                ${a.status === 'IN_PROGRESS' ? `
+                  <button class="btn btn-success btn-sm" onclick="event.stopPropagation();submitAttempt('${a.id}')">✓ Submit</button>
+                  <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();abandonAttempt('${a.id}')">✕ Abandon</button>
+                ` : ''}
+              </div>
+            </div>
+            <div class="attempt-meta">
+              <span class="scope-${a.scope.toLowerCase()}">${a.scope}</span>
+              <span class="status-${a.status.toLowerCase()}">${a.status}</span>
+              <span style="background:var(--gray-100);color:var(--gray-600)">${new Date(a.createdAt).toLocaleString()}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function selectAttempt(id) {
+        setActiveAttempt(id);
+        document.querySelectorAll('.attempt-card').forEach(c => c.classList.remove('active'));
+        event.target.closest('.attempt-card').classList.add('active');
+        toast(`Attempt selected: ${id.substring(0, 8)}...`);
+      }
+
+      async function submitAttempt(id) {
+        try {
+          const res = await fetch(`${getApiUrl()}/ielts-answers/attempts/${id}/submit`, {
+            method: 'PATCH', headers: getHeaders(),
+          });
+          const data = await res.json();
+          showResponse('attemptResponse', data, !res.ok);
+          res.ok ? toast('Attempt submitted!') : toast(data.message, 'error');
+          loadAttempts();
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      }
+
+      async function abandonAttempt(id) {
+        if (!confirm('Are you sure you want to abandon this attempt?')) return;
+        try {
+          const res = await fetch(`${getApiUrl()}/ielts-answers/attempts/${id}/abandon`, {
+            method: 'PATCH', headers: getHeaders(),
+          });
+          const data = await res.json();
+          showResponse('attemptResponse', data, !res.ok);
+          res.ok ? toast('Attempt abandoned') : toast(data.message, 'error');
+          loadAttempts();
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      }
+
+      // ========== READING ANSWERS ==========
+      function addReadingRow() {
+        readingRowCount++;
+        const container = document.getElementById('readingRows');
+        const row = document.createElement('div');
+        row.className = 'answer-row';
+        row.id = `reading-row-${readingRowCount}`;
+        row.innerHTML = `
+          <input type="text" class="form-control" value="${readingRowCount}" placeholder="#" data-field="question_number">
+          <input type="text" class="form-control" placeholder="Part UUID" data-field="part_id">
+          <input type="text" class="form-control" placeholder="Question Content UUID" data-field="question_content_id">
+          <input type="text" class="form-control" placeholder="e.g. TRUE, FALSE" data-field="answer">
+          <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+        `;
+        container.appendChild(row);
+      }
+
+      async function saveReadingAnswers() {
+        if (!currentAttemptId) return toast('Select an attempt first!', 'error');
+        const rows = document.querySelectorAll('#readingRows .answer-row');
+        const answers = Array.from(rows).map(row => ({
+          question_number: row.querySelector('[data-field="question_number"]').value,
+          part_id: row.querySelector('[data-field="part_id"]').value,
+          question_content_id: row.querySelector('[data-field="question_content_id"]').value,
+          answer: row.querySelector('[data-field="answer"]').value,
+        })).filter(a => a.part_id && a.question_content_id && a.answer);
+
+        if (!answers.length) return toast('Add at least one answer row', 'error');
+
+        try {
+          const res = await fetch(`${getApiUrl()}/ielts-answers/reading`, {
+            method: 'POST', headers: getHeaders(),
+            body: JSON.stringify({ attempt_id: currentAttemptId, answers }),
+          });
+          const data = await res.json();
+          showResponse('readingResponse', data, !res.ok);
+          res.ok ? toast(`${data.count} reading answers saved!`) : toast(data.message, 'error');
+        } catch (err) {
+          showResponse('readingResponse', { error: err.message }, true);
+          toast(err.message, 'error');
+        }
+      }
+
+      // ========== LISTENING ANSWERS ==========
+      function addListeningRow() {
+        listeningRowCount++;
+        const container = document.getElementById('listeningRows');
+        const row = document.createElement('div');
+        row.className = 'answer-row';
+        row.id = `listening-row-${listeningRowCount}`;
+        row.innerHTML = `
+          <input type="text" class="form-control" value="${listeningRowCount}" placeholder="#" data-field="question_number">
+          <input type="text" class="form-control" placeholder="Part UUID" data-field="part_id">
+          <input type="text" class="form-control" placeholder="Question Content UUID" data-field="question_content_id">
+          <input type="text" class="form-control" placeholder="e.g. hospital" data-field="answer">
+          <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+        `;
+        container.appendChild(row);
+      }
+
+      async function saveListeningAnswers() {
+        if (!currentAttemptId) return toast('Select an attempt first!', 'error');
+        const rows = document.querySelectorAll('#listeningRows .answer-row');
+        const answers = Array.from(rows).map(row => ({
+          question_number: row.querySelector('[data-field="question_number"]').value,
+          part_id: row.querySelector('[data-field="part_id"]').value,
+          question_content_id: row.querySelector('[data-field="question_content_id"]').value,
+          answer: row.querySelector('[data-field="answer"]').value,
+        })).filter(a => a.part_id && a.question_content_id && a.answer);
+
+        if (!answers.length) return toast('Add at least one answer row', 'error');
+
+        try {
+          const res = await fetch(`${getApiUrl()}/ielts-answers/listening`, {
+            method: 'POST', headers: getHeaders(),
+            body: JSON.stringify({ attempt_id: currentAttemptId, answers }),
+          });
+          const data = await res.json();
+          showResponse('listeningResponse', data, !res.ok);
+          res.ok ? toast(`${data.count} listening answers saved!`) : toast(data.message, 'error');
+        } catch (err) {
+          showResponse('listeningResponse', { error: err.message }, true);
+          toast(err.message, 'error');
+        }
+      }
+
+      // ========== WRITING ANSWERS ==========
+      function addWritingBlock() {
+        writingBlockCount++;
+        const container = document.getElementById('writingBlocks');
+        const block = document.createElement('div');
+        block.className = 'card';
+        block.style.border = '1.5px dashed var(--gray-300)';
+        block.id = `writing-block-${writingBlockCount}`;
+        block.innerHTML = `
+          <div class="card-header" style="background:var(--gray-50)">
+            <h3 style="font-size:13px">Task ${writingBlockCount}</h3>
+            <button class="btn btn-danger btn-sm" onclick="this.closest('.card').remove()">✕ Remove</button>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>Writing Task ID</label>
+              <input type="text" class="form-control" placeholder="UUID of the writing task" data-field="task_id">
+            </div>
+            <div class="form-group">
+              <label>Answer Text</label>
+              <textarea class="form-control" rows="6" placeholder="Write your essay here..." data-field="answer_text"></textarea>
+            </div>
+            <div style="text-align:right;font-size:12px;color:var(--gray-400)">
+              Word count: <strong class="word-counter">0</strong>
+            </div>
+          </div>
+        `;
+        container.appendChild(block);
+
+        // Word counter
+        const textarea = block.querySelector('[data-field="answer_text"]');
+        const counter = block.querySelector('.word-counter');
+        textarea.addEventListener('input', () => {
+          const words = textarea.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+          counter.textContent = words;
+        });
+      }
+
+      async function saveWritingAnswers() {
+        if (!currentAttemptId) return toast('Select an attempt first!', 'error');
+        const blocks = document.querySelectorAll('#writingBlocks .card');
+        const answers = Array.from(blocks).map(block => {
+          const text = block.querySelector('[data-field="answer_text"]').value;
+          return {
+            task_id: block.querySelector('[data-field="task_id"]').value,
+            answer_text: text,
+            word_count: text.trim().split(/\s+/).filter(w => w.length > 0).length,
+          };
+        }).filter(a => a.task_id && a.answer_text);
+
+        if (!answers.length) return toast('Add at least one writing task', 'error');
+
+        try {
+          const res = await fetch(`${getApiUrl()}/ielts-answers/writing`, {
+            method: 'POST', headers: getHeaders(),
+            body: JSON.stringify({ attempt_id: currentAttemptId, answers }),
+          });
+          const data = await res.json();
+          showResponse('writingResponse', data, !res.ok);
+          res.ok ? toast(`${data.count} writing answers saved!`) : toast(data.message, 'error');
+        } catch (err) {
+          showResponse('writingResponse', { error: err.message }, true);
+          toast(err.message, 'error');
+        }
+      }
+
+      // ========== VIEW RESULTS ==========
+      async function loadAttemptDetails() {
+        if (!currentAttemptId) return toast('Select an attempt first!', 'error');
+        try {
+          const res = await fetch(`${getApiUrl()}/ielts-answers/attempts/${currentAttemptId}`, {
+            headers: getHeaders(),
+          });
+          const data = await res.json();
+          showResponse('resultsResponse', data, !res.ok);
+          res.ok ? toast('Attempt details loaded') : toast(data.message, 'error');
+        } catch (err) {
+          showResponse('resultsResponse', { error: err.message }, true);
+          toast(err.message, 'error');
+        }
+      }
+
+      // ========== INIT ==========
+      // Add some starter rows
+      addReadingRow();
+      addReadingRow();
+      addReadingRow();
+      addListeningRow();
+      addListeningRow();
+      addWritingBlock();
+    </script>
+  </body>
+</html>

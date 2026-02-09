@@ -49,7 +49,7 @@ export class IeltsAnswersController {
     description: "The attempt has been successfully created.",
   })
   async createAttempt(@CurrentUser() user: any, @Body() dto: CreateAttemptDto) {
-    return await this.ieltsAnswersService.createAttempt(user.id, dto);
+    return await this.ieltsAnswersService.createAttempt(user.userId, dto);
   }
 
   @Get("attempts")
@@ -63,7 +63,7 @@ export class IeltsAnswersController {
     @CurrentUser() user: any,
     @Query() query: AttemptQueryDto,
   ) {
-    return await this.ieltsAnswersService.findAllAttempts(user.id, query);
+    return await this.ieltsAnswersService.findAllAttempts(user.userId, query);
   }
 
   @Get("attempts/:id")
@@ -71,7 +71,7 @@ export class IeltsAnswersController {
   @ApiOperation({ summary: "Get an attempt by ID with all answers" })
   @ApiParam({ name: "id", description: "The attempt ID" })
   async findAttemptById(@CurrentUser() user: any, @Param("id") id: string) {
-    return await this.ieltsAnswersService.findAttemptById(id, user.id);
+    return await this.ieltsAnswersService.findAttemptById(id, user.userId);
   }
 
   @Patch("attempts/:id/submit")
@@ -79,7 +79,7 @@ export class IeltsAnswersController {
   @ApiOperation({ summary: "Submit an attempt" })
   @ApiParam({ name: "id", description: "The attempt ID" })
   async submitAttempt(@CurrentUser() user: any, @Param("id") id: string) {
-    return await this.ieltsAnswersService.submitAttempt(id, user.id);
+    return await this.ieltsAnswersService.submitAttempt(id, user.userId);
   }
 
   @Patch("attempts/:id/abandon")
@@ -87,7 +87,7 @@ export class IeltsAnswersController {
   @ApiOperation({ summary: "Abandon an attempt" })
   @ApiParam({ name: "id", description: "The attempt ID" })
   async abandonAttempt(@CurrentUser() user: any, @Param("id") id: string) {
-    return await this.ieltsAnswersService.abandonAttempt(id, user.id);
+    return await this.ieltsAnswersService.abandonAttempt(id, user.userId);
   }
 
   // ========== Reading Answers ==========
@@ -104,7 +104,7 @@ export class IeltsAnswersController {
     @CurrentUser() user: any,
     @Body() dto: SaveReadingAnswersDto,
   ) {
-    return await this.ieltsAnswersService.saveReadingAnswers(user.id, dto);
+    return await this.ieltsAnswersService.saveReadingAnswers(user.userId, dto);
   }
 
   @Get("reading/:attemptId")
@@ -115,7 +115,10 @@ export class IeltsAnswersController {
     @CurrentUser() user: any,
     @Param("attemptId") attemptId: string,
   ) {
-    return await this.ieltsAnswersService.getReadingAnswers(attemptId, user.id);
+    return await this.ieltsAnswersService.getReadingAnswers(
+      attemptId,
+      user.userId,
+    );
   }
 
   // ========== Listening Answers ==========
@@ -132,7 +135,10 @@ export class IeltsAnswersController {
     @CurrentUser() user: any,
     @Body() dto: SaveListeningAnswersDto,
   ) {
-    return await this.ieltsAnswersService.saveListeningAnswers(user.id, dto);
+    return await this.ieltsAnswersService.saveListeningAnswers(
+      user.userId,
+      dto,
+    );
   }
 
   @Get("listening/:attemptId")
@@ -145,7 +151,7 @@ export class IeltsAnswersController {
   ) {
     return await this.ieltsAnswersService.getListeningAnswers(
       attemptId,
-      user.id,
+      user.userId,
     );
   }
 
@@ -163,7 +169,7 @@ export class IeltsAnswersController {
     @CurrentUser() user: any,
     @Body() dto: SaveWritingAnswersDto,
   ) {
-    return await this.ieltsAnswersService.saveWritingAnswers(user.id, dto);
+    return await this.ieltsAnswersService.saveWritingAnswers(user.userId, dto);
   }
 
   @Get("writing/:attemptId")
@@ -174,6 +180,9 @@ export class IeltsAnswersController {
     @CurrentUser() user: any,
     @Param("attemptId") attemptId: string,
   ) {
-    return await this.ieltsAnswersService.getWritingAnswers(attemptId, user.id);
+    return await this.ieltsAnswersService.getWritingAnswers(
+      attemptId,
+      user.userId,
+    );
   }
 }
