@@ -190,7 +190,7 @@ export class IeltsCoursesService {
   }
 
   async findAllLessons(query: LessonQueryDto) {
-    const { page = 1, limit = 10, search, sectionId, lessonType } = query;
+    const { page = 1, limit = 10, search, sectionId } = query;
     const where: any = {};
 
     if (search) {
@@ -198,9 +198,6 @@ export class IeltsCoursesService {
     }
     if (sectionId) {
       where.section_id = sectionId;
-    }
-    if (lessonType) {
-      where.lesson_type = lessonType;
     }
 
     const { rows, count } = await this.lessonModel.findAndCountAll({

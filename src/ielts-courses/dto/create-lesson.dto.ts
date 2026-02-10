@@ -3,7 +3,6 @@ import {
   IsString,
   IsNotEmpty,
   IsUUID,
-  IsEnum,
   IsOptional,
   IsInt,
   IsArray,
@@ -11,7 +10,6 @@ import {
   Min,
 } from "class-validator";
 import { Type } from "class-transformer";
-import { LessonType } from "../entities/ielts-lesson.entity.js";
 
 export class LessonContentItemDto {
   @ApiProperty({ description: "Content item ID", example: 1 })
@@ -44,22 +42,7 @@ export class CreateLessonDto {
   position: number;
 
   @ApiProperty({
-    description: "Lesson type",
-    enum: LessonType,
-    example: LessonType.VIDEO,
-    required: false,
-  })
-  @IsEnum(LessonType)
-  @IsOptional()
-  lesson_type?: LessonType;
-
-  @ApiProperty({ description: "Content URL for video/audio", required: false })
-  @IsString()
-  @IsOptional()
-  content_url?: string;
-
-  @ApiProperty({
-    description: "Content text for text lesson",
+    description: "Lesson content",
     required: false,
     type: [LessonContentItemDto],
     example: [{ id: 1, type: "text", content: "<p>Hello</p>" }],
@@ -68,7 +51,7 @@ export class CreateLessonDto {
   @ValidateNested({ each: true })
   @Type(() => LessonContentItemDto)
   @IsOptional()
-  content_text?: LessonContentItemDto[];
+  content?: LessonContentItemDto[];
 
   @ApiProperty({ description: "Duration in seconds", required: false })
   @IsInt()

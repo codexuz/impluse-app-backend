@@ -66,15 +66,6 @@ export class LessonQueryDto extends PaginationDto {
   @IsString()
   @IsOptional()
   sectionId?: string;
-
-  @ApiProperty({
-    description: "Filter by lesson type",
-    enum: ["video", "text", "audio", "live", "assignment"],
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  lessonType?: string;
 }
 
 export class QuizQueryDto extends PaginationDto {

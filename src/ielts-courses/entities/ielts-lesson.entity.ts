@@ -9,14 +9,6 @@ import {
 } from "sequelize-typescript";
 import { IeltsCourseSection } from "./ielts-course-section.entity.js";
 
-export enum LessonType {
-  VIDEO = "video",
-  TEXT = "text",
-  AUDIO = "audio",
-  LIVE = "live",
-  ASSIGNMENT = "assignment",
-}
-
 export interface LessonContentItem {
   id: number;
   type: string;
@@ -55,23 +47,10 @@ export class IeltsLesson extends Model<IeltsLesson> {
   position: number;
 
   @Column({
-    type: DataType.ENUM(...Object.values(LessonType)),
-    allowNull: false,
-    defaultValue: LessonType.VIDEO,
-  })
-  lesson_type: LessonType;
-
-  @Column({
-    type: DataType.STRING(500),
-    allowNull: true,
-  })
-  content_url: string;
-
-  @Column({
     type: DataType.JSON,
     allowNull: true,
   })
-  content_text: LessonContentItem[];
+  content: LessonContentItem[];
 
   @Column({
     type: DataType.INTEGER,
