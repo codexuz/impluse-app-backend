@@ -17,6 +17,12 @@ export enum LessonType {
   ASSIGNMENT = "assignment",
 }
 
+export interface LessonContentItem {
+  id: number;
+  type: string;
+  content: string;
+}
+
 @Table({
   tableName: "ielts_lessons",
   timestamps: true,
@@ -62,10 +68,10 @@ export class IeltsLesson extends Model<IeltsLesson> {
   content_url: string;
 
   @Column({
-    type: DataType.TEXT("long"),
+    type: DataType.JSON,
     allowNull: true,
   })
-  content_text: string;
+  content_text: LessonContentItem[];
 
   @Column({
     type: DataType.INTEGER,
