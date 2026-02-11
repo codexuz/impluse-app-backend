@@ -211,8 +211,8 @@ export class UsersService {
   }
 
   /**
-   * Remove a user and all associated data across the system
-   * @param id The user ID to delete
+   * Soft-remove a user by setting is_active to false
+   * @param id The user ID to deactivate
    */
   async remove(id: string): Promise<void> {
     const user = await this.userModel.findByPk(id);
@@ -220,115 +220,7 @@ export class UsersService {
       throw new NotFoundException(`User with ID "${id}" not found`);
     }
 
-    // Start transaction to ensure all deletions succeed or fail together
-    const transaction = await this.userModel.sequelize.transaction();
-
-    try {
-      // Get database models from Sequelize
-      const models = this.userModel.sequelize.models;
-
-      // Delete user sessions
-      if (models.UserSession) {
-        await models.UserSession.destroy({
-          where: { userId: id },
-          transaction,
-        });
-      }
-
-      // Delete user roles associations
-      if (models.UserRole) {
-        await models.UserRole.destroy({
-          where: { userId: id },
-          transaction,
-        });
-      }
-
-      // Delete student profile if exists
-      if (models.StudentProfile) {
-        await models.StudentProfile.destroy({
-          where: { user_id: id },
-          transaction,
-        });
-      }
-
-      // Delete student payments
-      // if (models.StudentPayment) {
-      //   await models.StudentPayment.destroy({
-      //     where: {
-      //       [Op.or]: [{ student_id: id }, { manager_id: id }],
-      //     },
-      //     transaction,
-      //   });
-      // }
-
-      // Delete user notifications
-      if (models.UserNotification) {
-        await models.UserNotification.destroy({
-          where: { user_id: id },
-          transaction,
-        });
-      }
-
-      // Delete homework submissions if user is a student
-      if (models.HomeworkSubmission) {
-        await models.HomeworkSubmission.destroy({
-          where: { student_id: id },
-          transaction,
-        });
-      }
-
-      // Delete group students associations
-      if (models.GroupStudent) {
-        await models.GroupStudent.destroy({
-          where: { student_id: id },
-          transaction,
-        });
-      }
-
-      // Delete student vocabulary progress
-      if (models.StudentVocabularyProgress) {
-        await models.StudentVocabularyProgress.destroy({
-          where: { student_id: id },
-          transaction,
-        });
-      }
-
-      // Delete lesson progress
-      if (models.LessonProgress) {
-        await models.LessonProgress.destroy({
-          where: { student_id: id },
-          transaction,
-        });
-      }
-
-      // Delete attendance records
-      if (models.Attendance) {
-        await models.Attendance.destroy({
-          where: {
-            [Op.or]: [{ student_id: id }, { teacher_id: id }],
-          },
-          transaction,
-        });
-      }
-
-      // Delete group homeworks created by teacher
-      if (models.GroupHomework) {
-        await models.GroupHomework.destroy({
-          where: { teacher_id: id },
-          transaction,
-        });
-      }
-
-      // Finally, delete the user
-      await user.destroy({ transaction });
-
-      // Commit the transaction if everything succeeded
-      await transaction.commit();
-    } catch (error) {
-      // Rollback the transaction if anything failed
-      await transaction.rollback();
-      throw error;
-    }
+    await user.update({ is_active: false });
   }
 
   async deactivate(id: string): Promise<User> {
@@ -372,7 +264,6 @@ export class UsersService {
 
     return user;
   }
-
 
   async getAllTeachers(
     page: number = 1,
