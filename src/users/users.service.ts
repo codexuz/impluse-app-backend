@@ -373,45 +373,6 @@ export class UsersService {
     return user;
   }
 
-  /**
-   * Archive a student by setting is_active to false
-   * @param studentId The student's user ID
-   * @returns The updated user object
-   */
-  async archiveStudent(studentId: string): Promise<User> {
-    const user = await this.findOne(studentId);
-
-    // Verify user has student role
-    const hasStudentRole = user.roles?.some((role) => role.name === "student");
-    if (!hasStudentRole) {
-      throw new NotFoundException(
-        `User with ID "${studentId}" is not a student`,
-      );
-    }
-
-    await user.update({ is_active: false });
-    return this.findOne(studentId);
-  }
-
-  /**
-   * Restore an archived student by setting is_active to true
-   * @param studentId The student's user ID
-   * @returns The updated user object
-   */
-  async restoreStudent(studentId: string): Promise<User> {
-    const user = await this.findOne(studentId);
-
-    // Verify user has student role
-    const hasStudentRole = user.roles?.some((role) => role.name === "student");
-    if (!hasStudentRole) {
-      throw new NotFoundException(
-        `User with ID "${studentId}" is not a student`,
-      );
-    }
-
-    await user.update({ is_active: true });
-    return this.findOne(studentId);
-  }
 
   async getAllTeachers(
     page: number = 1,
