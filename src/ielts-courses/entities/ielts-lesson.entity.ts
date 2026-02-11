@@ -15,6 +15,12 @@ export interface LessonContentItem {
   content: string;
 }
 
+export interface LessonTrack {
+  src: string;
+  lang: "uz" | "en" | "ru";
+  label: "English" | "O'zbekcha" | "Русский";
+}
+
 @Table({
   tableName: "ielts_lessons",
   timestamps: true,
@@ -57,6 +63,12 @@ export class IeltsLesson extends Model<IeltsLesson> {
     allowNull: true,
   })
   duration_seconds: number;
+
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  tracks: LessonTrack[];
 
   @CreatedAt
   createdAt: Date;

@@ -8,6 +8,7 @@ import {
   IsArray,
   ValidateNested,
   Min,
+  IsIn,
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -23,6 +24,34 @@ export class LessonContentItemDto {
   @ApiProperty({ description: "Content item content", example: "<p>Hello</p>" })
   @IsString()
   content: string;
+}
+
+export class LessonTrackDto {
+  @ApiProperty({
+    description: "Track source URL",
+    example: "https://example.com/track.vtt",
+  })
+  @IsString()
+  @IsNotEmpty()
+  src: string;
+
+  @ApiProperty({
+    description: "Track language",
+    enum: ["uz", "en", "ru"],
+    example: "en",
+  })
+  @IsString()
+  @IsIn(["uz", "en", "ru"])
+  lang: "uz" | "en" | "ru";
+
+  @ApiProperty({
+    description: "Track label",
+    enum: ["English", "O'zbekcha", "Русский"],
+    example: "English",
+  })
+  @IsString()
+  @IsIn(["English", "O'zbekcha", "Русский"])
+  label: "English" | "O'zbekcha" | "Русский";
 }
 
 export class CreateLessonDto {
@@ -58,4 +87,18 @@ export class CreateLessonDto {
   @Min(0)
   @IsOptional()
   duration_seconds?: number;
+
+  @ApiProperty({
+    description: "Lesson tracks",
+    required: false,
+    type: [LessonTrackDto],
+    example: [
+      { src: "https://example.com/track.vtt", lang: "en", label: "English" },
+    ],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LessonTrackDto)
+  @IsOptional()
+  tracks?: LessonTrackDto[];
 }
