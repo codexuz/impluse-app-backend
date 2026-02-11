@@ -102,7 +102,7 @@ import { IeltsCoursesModule } from "./ielts-courses/ielts-courses.module.js";
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 100,
+        limit: 400,
       },
     ]),
     ScheduleModule.forRoot(),
