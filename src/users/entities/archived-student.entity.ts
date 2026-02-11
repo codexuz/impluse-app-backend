@@ -8,6 +8,7 @@ export enum ArchivedStudentReason {
   USTOZ_TASHQI_KORINISHI = "Ustozning tashqi ko'rishni va munosabati",
   MARKAZ_JOYLASHUVI = "Markazning joylashuvi noqulayligi",
   SHAXSIY_MUAMMOLAR = "O'quvchining shaxsiy muammolari tufayli (sog'ligi yoki boshqa)",
+  KURSNI_MUVAFFAQIYATLI_TUGATDI = "Kursni muvaffaqiyatli tugatdi",
   BOSHQA = "Boshqa",
 }
 
