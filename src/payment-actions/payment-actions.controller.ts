@@ -20,6 +20,7 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { PaymentActionsService } from "./payment-actions.service.js";
 import { CreatePaymentActionDto } from "./dto/create-payment-action.dto.js";
 import { UpdatePaymentActionDto } from "./dto/update-payment-action.dto.js";
@@ -31,6 +32,7 @@ import { Role } from "../roles/role.enum.js";
 import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 
 @ApiTags("Payment Actions")
+@SkipThrottle()
 @Controller("payment-actions")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
@@ -52,7 +54,7 @@ export class PaymentActionsController {
   @ApiResponse({ status: 404, description: "Payment or Manager not found" })
   create(
     @Body() createPaymentActionDto: CreatePaymentActionDto,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ): Promise<PaymentActionResponseDto> {
     return this.paymentActionsService.create(createPaymentActionDto);
   }
@@ -95,7 +97,7 @@ export class PaymentActionsController {
     @Query("payment_id") payment_id?: string,
     @Query("manager_id") manager_id?: string,
     @Query("stage") stage?: string,
-    @Query("action_type") action_type?: string
+    @Query("action_type") action_type?: string,
   ): Promise<PaymentActionResponseDto[]> {
     return this.paymentActionsService.findAll({
       payment_id,
@@ -133,7 +135,7 @@ export class PaymentActionsController {
   @ApiResponse({ status: 403, description: "Forbidden" })
   findByPaymentId(
     @Param("payment_id", new ParseUUIDPipe())
-    payment_id: string
+    payment_id: string,
   ): Promise<PaymentActionResponseDto[]> {
     return this.paymentActionsService.findByPaymentId(payment_id);
   }
@@ -150,7 +152,7 @@ export class PaymentActionsController {
   @ApiResponse({ status: 403, description: "Forbidden" })
   findByManagerId(
     @Param("manager_id", new ParseUUIDPipe())
-    manager_id: string
+    manager_id: string,
   ): Promise<PaymentActionResponseDto[]> {
     return this.paymentActionsService.findByManagerId(manager_id);
   }
@@ -166,11 +168,11 @@ export class PaymentActionsController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   @ApiResponse({ status: 403, description: "Forbidden" })
   findByStage(
-    @Param("stage") stage: string
+    @Param("stage") stage: string,
   ): Promise<PaymentActionResponseDto[]> {
     if (!["upcoming", "debitor"].includes(stage)) {
       throw new BadRequestException(
-        'Stage must be either "upcoming" or "debitor"'
+        'Stage must be either "upcoming" or "debitor"',
       );
     }
     return this.paymentActionsService.findByStage(stage);
@@ -189,7 +191,7 @@ export class PaymentActionsController {
   @ApiResponse({ status: 404, description: "Payment action not found" })
   findOne(
     @Param("id", new ParseUUIDPipe())
-    id: string
+    id: string,
   ): Promise<PaymentActionResponseDto> {
     return this.paymentActionsService.findOne(id);
   }
@@ -210,7 +212,7 @@ export class PaymentActionsController {
     @Param("id", new ParseUUIDPipe())
     id: string,
     @Body() updatePaymentActionDto: UpdatePaymentActionDto,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ): Promise<PaymentActionResponseDto> {
     return this.paymentActionsService.update(id, updatePaymentActionDto);
   }
@@ -229,9 +231,8 @@ export class PaymentActionsController {
   remove(
     @Param("id", new ParseUUIDPipe())
     id: string,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ): Promise<void> {
     return this.paymentActionsService.remove(id);
   }
-
 }
