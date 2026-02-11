@@ -9,6 +9,8 @@ import { ConfigService } from "@nestjs/config";
 import { Op } from "sequelize";
 import * as bcrypt from "bcrypt";
 import { User } from "./entities/user.entity.js";
+import { ArchivedStudent } from "./entities/archived-student.entity.js";
+import { CreateArchivedStudentDto } from "./dto/create-archived-student.dto.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
 import { CreateAdminDto } from "./dto/create-admin.dto.js";
@@ -20,6 +22,8 @@ import { UserSession } from "./entities/user-session.model.js";
 import { StudentPayment } from "../student-payment/entities/student-payment.entity.js";
 import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 import { Course } from "../courses/entities/course.entity.js";
+import { Group } from "../groups/entities/group.entity.js";
+import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 
 @Injectable()
 export class UsersService {
@@ -32,6 +36,10 @@ export class UsersService {
     private roleModel: typeof Role,
     @InjectModel(StudentProfile)
     private studentProfileModel: typeof StudentProfile,
+    @InjectModel(ArchivedStudent)
+    private archivedStudentModel: typeof ArchivedStudent,
+    @InjectModel(GroupStudent)
+    private groupStudentModel: typeof GroupStudent,
     private configService: ConfigService,
     private awsStorageService: AwsStorageService,
   ) {}
@@ -347,6 +355,21 @@ export class UsersService {
   async activate(id: string): Promise<User> {
     const user = await this.findOne(id);
     await user.update({ is_active: true });
+
+    // Set student status back to 'active' in all groups
+    const models = this.userModel.sequelize.models;
+    if (models.GroupStudent) {
+      await models.GroupStudent.update(
+        { status: "active" },
+        { where: { student_id: id, status: "removed" } },
+      );
+    }
+
+    // Remove from archived students
+    await this.archivedStudentModel.destroy({
+      where: { user_id: id },
+    });
+
     return user;
   }
 
@@ -806,5 +829,115 @@ export class UsersService {
 
     // Return updated user without password_hash
     return this.findOne(userId);
+  }
+
+  // ==================== Archived Students ====================
+
+  async createArchivedStudent(
+    dto: CreateArchivedStudentDto,
+  ): Promise<ArchivedStudent> {
+    // Find the student's active group to get teacher_id and group_id
+    const groupStudent = await this.groupStudentModel.findOne({
+      where: { student_id: dto.user_id, status: "active" },
+      include: [{ model: Group, attributes: ["id", "teacher_id"] }],
+      order: [["createdAt", "DESC"]],
+    });
+
+    const archivedStudent = await this.archivedStudentModel.create({
+      user_id: dto.user_id,
+      reason: dto.reason,
+      notes: dto.notes,
+      group_id: groupStudent?.group_id || null,
+      teacher_id: groupStudent?.group?.teacher_id || null,
+    } as any);
+
+    // Deactivate the student
+    await this.deactivate(dto.user_id);
+
+    return archivedStudent;
+  }
+
+  async findAllArchivedStudents(
+    page: number = 1,
+    limit: number = 10,
+    reason?: string,
+  ): Promise<{
+    data: ArchivedStudent[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const where: any = {};
+    if (reason) {
+      where.reason = reason;
+    }
+
+    const { rows: data, count: total } =
+      await this.archivedStudentModel.findAndCountAll({
+        where,
+        limit,
+        offset,
+        order: [["created_at", "DESC"]],
+        include: [
+          {
+            model: User,
+            as: "student",
+            attributes: [
+              "user_id",
+              "first_name",
+              "last_name",
+              "phone",
+              "avatar_url",
+            ],
+          },
+          {
+            model: User,
+            as: "teacher",
+            attributes: ["user_id", "first_name", "last_name"],
+          },
+          { model: Group, attributes: ["id", "name"] },
+        ],
+      });
+
+    return { data, total, page, limit };
+  }
+
+  async findOneArchivedStudent(id: string): Promise<ArchivedStudent> {
+    const record = await this.archivedStudentModel.findByPk(id, {
+      include: [
+        {
+          model: User,
+          as: "student",
+          attributes: [
+            "user_id",
+            "first_name",
+            "last_name",
+            "phone",
+            "avatar_url",
+          ],
+        },
+        {
+          model: User,
+          as: "teacher",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+        { model: Group, attributes: ["id", "name"] },
+      ],
+    });
+
+    if (!record) {
+      throw new NotFoundException(`Archived student with ID "${id}" not found`);
+    }
+
+    return record;
+  }
+
+  async deleteArchivedStudent(id: string): Promise<void> {
+    const record = await this.archivedStudentModel.findByPk(id);
+    if (!record) {
+      throw new NotFoundException(`Archived student with ID "${id}" not found`);
+    }
+    await record.destroy();
   }
 }

@@ -121,6 +121,7 @@ import { IeltsAnswerAttempt } from "../ielts-tests/entities/ielts-answer-attempt
 import { IeltsWritingAnswer } from "../ielts-tests/entities/ielts-writing-answer.entity.js";
 import { IeltsReadingAnswer } from "../ielts-tests/entities/ielts-reading-answer.entity.js";
 import { IeltsListeningAnswer } from "../ielts-tests/entities/ielts-listening-answer.entity.js";
+import { ArchivedStudent } from "../users/entities/archived-student.entity.js";
 
 export const Models = [
   User,
@@ -235,6 +236,7 @@ export const Models = [
   IeltsWritingAnswer,
   IeltsReadingAnswer,
   IeltsListeningAnswer,
+  ArchivedStudent,
 ];
 
 // Define associations after all models are loaded
@@ -1655,5 +1657,21 @@ export function initializeAssociations() {
   IeltsListeningAnswer.belongsTo(IeltsQuestionContent, {
     foreignKey: "question_content_id",
     as: "questionContent",
+  });
+
+  // ArchivedStudent associations
+  ArchivedStudent.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "student",
+  });
+
+  ArchivedStudent.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "teacher",
+  });
+
+  ArchivedStudent.belongsTo(Group, {
+    foreignKey: "group_id",
+    as: "group",
   });
 }

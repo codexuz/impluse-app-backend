@@ -6,12 +6,21 @@ import { User } from "./entities/user.entity.js";
 import { Role } from "./entities/role.model.js";
 import { UserRole } from "./entities/user-role.model.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
+import { ArchivedStudent } from "./entities/archived-student.entity.js";
+import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { MinioModule } from "../minio/minio.module.js";
 import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([User, Role, UserRole, StudentProfile]),
+    SequelizeModule.forFeature([
+      User,
+      Role,
+      UserRole,
+      StudentProfile,
+      ArchivedStudent,
+      GroupStudent,
+    ]),
     MinioModule,
     AwsStorageModule,
   ],

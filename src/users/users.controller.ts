@@ -27,6 +27,7 @@ import { CreateAdminDto } from "./dto/create-admin.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { UpdatePasswordDto } from "./dto/update-password.dto.js";
 import { UpdateAvatarDto } from "./dto/update-avatar.dto.js";
+import { CreateArchivedStudentDto } from "./dto/create-archived-student.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -65,12 +66,12 @@ export class UsersController {
   getAllTeachers(
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return this.usersService.getAllTeachers(
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -81,12 +82,12 @@ export class UsersController {
   getAllAdmins(
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return this.usersService.getAllAdmins(
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -97,12 +98,12 @@ export class UsersController {
   getAllStudents(
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return this.usersService.getAllStudents(
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -116,12 +117,12 @@ export class UsersController {
   getArchivedStudents(
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return this.usersService.getArchivedStudents(
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -132,12 +133,12 @@ export class UsersController {
   getAllSupportTeachers(
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return this.usersService.getAllSupportTeachers(
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -219,12 +220,12 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "User not found" })
   async updatePassword(
     @Param("id") id: string,
-    @Body() updatePasswordDto: UpdatePasswordDto
+    @Body() updatePasswordDto: UpdatePasswordDto,
   ) {
     return this.usersService.updatePassword(
       id,
       updatePasswordDto.currentPassword,
-      updatePasswordDto.newPassword
+      updatePasswordDto.newPassword,
     );
   }
 
@@ -266,15 +267,15 @@ export class UsersController {
         } else {
           callback(
             new Error("Only image files are allowed (jpg, jpeg, png, gif)"),
-            false
+            false,
           );
         }
       },
-    })
+    }),
   )
   async uploadAvatar(
     @Param("id") id: string,
-    @UploadedFile() file: Express.Multer.File
+    @UploadedFile() file: Express.Multer.File,
   ) {
     return this.usersService.uploadAvatarToMinio(id, file);
   }
@@ -290,8 +291,54 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "User not found" })
   async updateAvatarUrl(
     @Param("id") id: string,
-    @Body() updateAvatarDto: UpdateAvatarDto
+    @Body() updateAvatarDto: UpdateAvatarDto,
   ) {
     return this.usersService.updateAvatarUrl(id, updateAvatarDto.avatar_url);
+  }
+
+  // ==================== Archived Students ====================
+
+  @Post("archived-students")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Archive a student" })
+  @ApiResponse({ status: 201, description: "Student archived successfully" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  createArchivedStudent(@Body() dto: CreateArchivedStudentDto) {
+    return this.usersService.createArchivedStudent(dto);
+  }
+
+  @Get("archived-students")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get all archived students" })
+  @ApiResponse({ status: 200, description: "List of archived students" })
+  findAllArchivedStudents(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("reason") reason?: string,
+  ) {
+    return this.usersService.findAllArchivedStudents(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      reason,
+    );
+  }
+
+  @Get("archived-students/:id")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get one archived student by ID" })
+  @ApiResponse({ status: 200, description: "Archived student details" })
+  @ApiResponse({ status: 404, description: "Not found" })
+  findOneArchivedStudent(@Param("id") id: string) {
+    return this.usersService.findOneArchivedStudent(id);
+  }
+
+  @Delete("archived-students/:id")
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete an archived student record" })
+  @ApiResponse({ status: 204, description: "Deleted successfully" })
+  @ApiResponse({ status: 404, description: "Not found" })
+  deleteArchivedStudent(@Param("id") id: string) {
+    return this.usersService.deleteArchivedStudent(id);
   }
 }
