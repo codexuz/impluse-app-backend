@@ -318,6 +318,31 @@ export class IeltsCoursesService {
     return quiz;
   }
 
+  async findQuizByLessonId(lessonId: string) {
+    const quiz = await this.quizModel.findOne({
+      where: { lesson_id: lessonId },
+      include: [
+        { model: IeltsCourse, as: "course" },
+        { model: IeltsCourseSection, as: "section" },
+        { model: IeltsLesson, as: "lesson" },
+        {
+          model: IeltsQuizQuestion,
+          as: "questions",
+          include: [
+            { model: IeltsQuestionChoice, as: "choices" },
+            { model: IeltsQuestionAcceptedAnswer, as: "acceptedAnswers" },
+          ],
+        },
+      ],
+    });
+
+    if (!quiz) {
+      throw new NotFoundException(`Quiz with lesson ID ${lessonId} not found`);
+    }
+
+    return quiz;
+  }
+
   async updateQuiz(id: string, dto: UpdateQuizDto) {
     const quiz = await this.findQuizById(id);
     await quiz.update(dto as any);

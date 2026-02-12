@@ -50,6 +50,14 @@ export class IeltsQuizzesController {
     return await this.ieltsCoursesService.findAllQuizzes(query);
   }
 
+  @Get("lesson/:lessonId")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: "Get a quiz by lesson ID" })
+  @ApiParam({ name: "lessonId", description: "Lesson ID" })
+  async findByLessonId(@Param("lessonId") lessonId: string) {
+    return await this.ieltsCoursesService.findQuizByLessonId(lessonId);
+  }
+
   @Get(":id")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a quiz by ID" })
