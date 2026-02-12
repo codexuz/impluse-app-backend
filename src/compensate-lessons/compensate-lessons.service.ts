@@ -383,7 +383,7 @@ export class CompensateLessonsService {
   async markAsPaid(id: string) {
     const walletEntry = await this.findOneWalletEntry(id);
 
-    await walletEntry.update({ paid_at: new Date() } as any);
+    await walletEntry.update({ paid_at: new Date(), isPaid: true } as any);
 
     return walletEntry;
   }
