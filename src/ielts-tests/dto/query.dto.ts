@@ -188,3 +188,77 @@ export class ListeningPartQueryDto extends PaginationDto {
   @IsOptional()
   part?: string;
 }
+
+export class QuestionQueryDto extends PaginationDto {
+  @ApiProperty({
+    description: "Filter by reading part ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  readingPartId?: string;
+
+  @ApiProperty({
+    description: "Filter by listening part ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  listeningPartId?: string;
+}
+
+export class QuestionContentQueryDto extends PaginationDto {
+  @ApiProperty({
+    description: "Filter by question ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  questionId?: string;
+
+  @ApiProperty({
+    description: "Filter by type",
+    enum: [
+      "completion",
+      "multiple-choice",
+      "multi-select",
+      "selection",
+      "draggable-selection",
+      "matching-information",
+    ],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  type?: string;
+}
+
+export class QuestionOptionQueryDto extends PaginationDto {
+  @ApiProperty({
+    description: "Filter by question content ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  questionContentId?: string;
+}
+
+export class MultipleChoiceQuestionQueryDto extends PaginationDto {
+  @ApiProperty({
+    description: "Filter by question content ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  questionContentId?: string;
+}
+
+export class MultipleChoiceOptionQueryDto extends PaginationDto {
+  @ApiProperty({
+    description: "Filter by multiple choice question ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  multipleChoiceQuestionId?: string;
+}

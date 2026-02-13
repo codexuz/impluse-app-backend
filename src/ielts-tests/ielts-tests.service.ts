@@ -30,6 +30,11 @@ import { CreateMultipleChoiceQuestionDto } from "./dto/create-multiple-choice-qu
 import { CreateMultipleChoiceOptionDto } from "./dto/create-multiple-choice-option.dto.js";
 import { UpdateReadingPartDto } from "./dto/update-reading-part.dto.js";
 import { UpdateListeningPartDto } from "./dto/update-listening-part.dto.js";
+import { UpdateQuestionDto } from "./dto/update-question.dto.js";
+import { UpdateQuestionContentDto } from "./dto/update-question-content.dto.js";
+import { UpdateQuestionOptionDto } from "./dto/update-question-option.dto.js";
+import { UpdateMultipleChoiceQuestionDto } from "./dto/update-multiple-choice-question.dto.js";
+import { UpdateMultipleChoiceOptionDto } from "./dto/update-multiple-choice-option.dto.js";
 import {
   TestQueryDto,
   ReadingQueryDto,
@@ -37,6 +42,11 @@ import {
   WritingQueryDto,
   ReadingPartQueryDto,
   ListeningPartQueryDto,
+  QuestionQueryDto,
+  QuestionContentQueryDto,
+  QuestionOptionQueryDto,
+  MultipleChoiceQuestionQueryDto,
+  MultipleChoiceOptionQueryDto,
 } from "./dto/query.dto.js";
 import { User } from "../users/entities/user.entity.js";
 import { Op } from "sequelize";
@@ -641,6 +651,40 @@ export class IeltsTestsService {
     return await this.ieltsQuestionModel.create(createQuestionDto as any);
   }
 
+  async findAllQuestions(query: QuestionQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      readingPartId,
+      listeningPartId,
+    } = query;
+    const where: any = {};
+
+    if (readingPartId) {
+      where.reading_part_id = readingPartId;
+    }
+    if (listeningPartId) {
+      where.listening_part_id = listeningPartId;
+    }
+
+    const { rows, count } = await this.ieltsQuestionModel.findAndCountAll({
+      where,
+      include: [{ model: IeltsQuestionContent, as: "contents" }],
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
   async findQuestionById(id: string): Promise<IeltsQuestion> {
     const question = await this.ieltsQuestionModel.findByPk(id, {
       include: [
@@ -657,6 +701,20 @@ export class IeltsTestsService {
     return question;
   }
 
+  async updateQuestion(
+    id: string,
+    updateQuestionDto: UpdateQuestionDto,
+  ): Promise<IeltsQuestion> {
+    const question = await this.findQuestionById(id);
+    await question.update(updateQuestionDto as any);
+    return question;
+  }
+
+  async deleteQuestion(id: string): Promise<void> {
+    const question = await this.findQuestionById(id);
+    await question.destroy();
+  }
+
   // ========== Question Contents ==========
   async createQuestionContent(
     createQuestionContentDto: CreateQuestionContentDto,
@@ -666,12 +724,58 @@ export class IeltsTestsService {
     );
   }
 
+  async findAllQuestionContents(query: QuestionContentQueryDto) {
+    const { page = 1, limit = 10, search, questionId, type } = query;
+    const where: any = {};
+
+    if (questionId) {
+      where.question_id = questionId;
+    }
+    if (type) {
+      where.type = type;
+    }
+    if (search) {
+      where.title = { [Op.like]: `%${search}%` };
+    }
+
+    const { rows, count } =
+      await this.ieltsQuestionContentModel.findAndCountAll({
+        where,
+        include: [
+          { model: IeltsQuestionOption, as: "options" },
+          {
+            model: IeltsMultipleChoiceQuestion,
+            as: "multipleChoiceQuestions",
+            include: [{ model: IeltsMultipleChoiceOption, as: "options" }],
+          },
+        ],
+        order: [
+          ["order", "ASC"],
+          ["createdAt", "DESC"],
+        ],
+        limit,
+        offset: (page - 1) * limit,
+      });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
   async findQuestionContentById(id: string): Promise<IeltsQuestionContent> {
     const content = await this.ieltsQuestionContentModel.findByPk(id, {
       include: [
         { model: IeltsQuestion, as: "question" },
         { model: IeltsQuestionOption, as: "options" },
-        { model: IeltsMultipleChoiceQuestion, as: "multipleChoiceQuestions" },
+        {
+          model: IeltsMultipleChoiceQuestion,
+          as: "multipleChoiceQuestions",
+          include: [{ model: IeltsMultipleChoiceOption, as: "options" }],
+        },
       ],
     });
 
@@ -680,6 +784,20 @@ export class IeltsTestsService {
     }
 
     return content;
+  }
+
+  async updateQuestionContent(
+    id: string,
+    updateQuestionContentDto: UpdateQuestionContentDto,
+  ): Promise<IeltsQuestionContent> {
+    const content = await this.findQuestionContentById(id);
+    await content.update(updateQuestionContentDto as any);
+    return content;
+  }
+
+  async deleteQuestionContent(id: string): Promise<void> {
+    const content = await this.findQuestionContentById(id);
+    await content.destroy();
   }
 
   // ========== Question Options ==========
@@ -691,6 +809,61 @@ export class IeltsTestsService {
     );
   }
 
+  async findAllQuestionOptions(query: QuestionOptionQueryDto) {
+    const { page = 1, limit = 10, questionContentId } = query;
+    const where: any = {};
+
+    if (questionContentId) {
+      where.question_content_id = questionContentId;
+    }
+
+    const { rows, count } = await this.ieltsQuestionOptionModel.findAndCountAll(
+      {
+        where,
+        order: [
+          ["order", "ASC"],
+          ["createdAt", "DESC"],
+        ],
+        limit,
+        offset: (page - 1) * limit,
+      },
+    );
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  async findQuestionOptionById(id: string): Promise<IeltsQuestionOption> {
+    const option = await this.ieltsQuestionOptionModel.findByPk(id, {
+      include: [{ model: IeltsQuestionContent, as: "questionContent" }],
+    });
+
+    if (!option) {
+      throw new NotFoundException(`Question option with ID ${id} not found`);
+    }
+
+    return option;
+  }
+
+  async updateQuestionOption(
+    id: string,
+    updateQuestionOptionDto: UpdateQuestionOptionDto,
+  ): Promise<IeltsQuestionOption> {
+    const option = await this.findQuestionOptionById(id);
+    await option.update(updateQuestionOptionDto as any);
+    return option;
+  }
+
+  async deleteQuestionOption(id: string): Promise<void> {
+    const option = await this.findQuestionOptionById(id);
+    await option.destroy();
+  }
+
   // ========== Multiple Choice Questions ==========
   async createMultipleChoiceQuestion(
     createMultipleChoiceQuestionDto: CreateMultipleChoiceQuestionDto,
@@ -698,6 +871,38 @@ export class IeltsTestsService {
     return await this.ieltsMultipleChoiceQuestionModel.create(
       createMultipleChoiceQuestionDto as any,
     );
+  }
+
+  async findAllMultipleChoiceQuestions(query: MultipleChoiceQuestionQueryDto) {
+    const { page = 1, limit = 10, search, questionContentId } = query;
+    const where: any = {};
+
+    if (questionContentId) {
+      where.question_content_id = questionContentId;
+    }
+    if (search) {
+      where.question = { [Op.like]: `%${search}%` };
+    }
+
+    const { rows, count } =
+      await this.ieltsMultipleChoiceQuestionModel.findAndCountAll({
+        where,
+        include: [{ model: IeltsMultipleChoiceOption, as: "options" }],
+        order: [
+          ["order", "ASC"],
+          ["createdAt", "DESC"],
+        ],
+        limit,
+        offset: (page - 1) * limit,
+      });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findMultipleChoiceQuestionById(
@@ -719,6 +924,20 @@ export class IeltsTestsService {
     return mcq;
   }
 
+  async updateMultipleChoiceQuestion(
+    id: string,
+    updateDto: UpdateMultipleChoiceQuestionDto,
+  ): Promise<IeltsMultipleChoiceQuestion> {
+    const mcq = await this.findMultipleChoiceQuestionById(id);
+    await mcq.update(updateDto as any);
+    return mcq;
+  }
+
+  async deleteMultipleChoiceQuestion(id: string): Promise<void> {
+    const mcq = await this.findMultipleChoiceQuestionById(id);
+    await mcq.destroy();
+  }
+
   // ========== Multiple Choice Options ==========
   async createMultipleChoiceOption(
     createMultipleChoiceOptionDto: CreateMultipleChoiceOptionDto,
@@ -726,5 +945,65 @@ export class IeltsTestsService {
     return await this.ieltsMultipleChoiceOptionModel.create(
       createMultipleChoiceOptionDto as any,
     );
+  }
+
+  async findAllMultipleChoiceOptions(query: MultipleChoiceOptionQueryDto) {
+    const { page = 1, limit = 10, multipleChoiceQuestionId } = query;
+    const where: any = {};
+
+    if (multipleChoiceQuestionId) {
+      where.multiple_choice_question_id = multipleChoiceQuestionId;
+    }
+
+    const { rows, count } =
+      await this.ieltsMultipleChoiceOptionModel.findAndCountAll({
+        where,
+        order: [
+          ["order", "ASC"],
+          ["createdAt", "DESC"],
+        ],
+        limit,
+        offset: (page - 1) * limit,
+      });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  async findMultipleChoiceOptionById(
+    id: string,
+  ): Promise<IeltsMultipleChoiceOption> {
+    const option = await this.ieltsMultipleChoiceOptionModel.findByPk(id, {
+      include: [
+        { model: IeltsMultipleChoiceQuestion, as: "multipleChoiceQuestion" },
+      ],
+    });
+
+    if (!option) {
+      throw new NotFoundException(
+        `Multiple choice option with ID ${id} not found`,
+      );
+    }
+
+    return option;
+  }
+
+  async updateMultipleChoiceOption(
+    id: string,
+    updateDto: UpdateMultipleChoiceOptionDto,
+  ): Promise<IeltsMultipleChoiceOption> {
+    const option = await this.findMultipleChoiceOptionById(id);
+    await option.update(updateDto as any);
+    return option;
+  }
+
+  async deleteMultipleChoiceOption(id: string): Promise<void> {
+    const option = await this.findMultipleChoiceOptionById(id);
+    await option.destroy();
   }
 }

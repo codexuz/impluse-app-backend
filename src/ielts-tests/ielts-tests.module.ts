@@ -7,6 +7,11 @@ import { IeltsReadingPartsController } from "./ielts-reading-parts.controller.js
 import { IeltsListeningController } from "./ielts-listening.controller.js";
 import { IeltsListeningPartsController } from "./ielts-listening-parts.controller.js";
 import { IeltsWritingController } from "./ielts-writing.controller.js";
+import { IeltsQuestionsController } from "./ielts-questions.controller.js";
+import { IeltsQuestionContentsController } from "./ielts-question-contents.controller.js";
+import { IeltsQuestionChoicesController } from "./ielts-question-choices.controller.js";
+import { IeltsMultipleChoiceQuestionsController } from "./ielts-multiple-choice-questions.controller.js";
+import { IeltsMultipleChoiceOptionsController } from "./ielts-multiple-choice-options.controller.js";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { IeltsReading } from "./entities/ielts-reading.entity.js";
 import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
@@ -57,6 +62,11 @@ import { IeltsAnswersController } from "./ielts-answers.controller.js";
     IeltsListeningPartsController,
     IeltsWritingController,
     IeltsAnswersController,
+    IeltsQuestionsController,
+    IeltsQuestionContentsController,
+    IeltsQuestionChoicesController,
+    IeltsMultipleChoiceQuestionsController,
+    IeltsMultipleChoiceOptionsController,
   ],
   providers: [IeltsTestsService, IeltsAnswersService],
   exports: [IeltsTestsService, IeltsAnswersService],
