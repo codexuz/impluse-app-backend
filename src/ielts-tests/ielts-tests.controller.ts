@@ -25,10 +25,8 @@ import { UpdateTestDto } from "./dto/update-test.dto.js";
 import { TestQueryDto } from "./dto/query.dto.js";
 import { CreateAudioDto } from "./dto/create-audio.dto.js";
 import { CreateQuestionDto } from "./dto/create-question.dto.js";
-import { CreateQuestionContentDto } from "./dto/create-question-content.dto.js";
 import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
-import { CreateMultipleChoiceQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
-import { CreateMultipleChoiceOptionDto } from "./dto/create-multiple-choice-option.dto.js";
+import { CreateSubQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -129,88 +127,25 @@ export class IeltsTestsController {
     return await this.ieltsTestsService.findQuestionById(id);
   }
 
-  // ========== Question Contents ==========
-  @Post("question-content")
+  // ========== Sub Questions ==========
+  @Post("sub-question")
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Create question content" })
+  @ApiOperation({ summary: "Create a sub question" })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: "The question content has been successfully created.",
+    description: "The sub question has been successfully created.",
   })
-  async createQuestionContent(
-    @Body() createQuestionContentDto: CreateQuestionContentDto,
-  ) {
-    return await this.ieltsTestsService.createQuestionContent(
-      createQuestionContentDto,
-    );
+  async createSubQuestion(@Body() createSubQuestionDto: CreateSubQuestionDto) {
+    return await this.ieltsTestsService.createSubQuestion(createSubQuestionDto);
   }
 
-  @Get("question-content/:id")
+  @Get("sub-question/:id")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get question content by ID" })
-  @ApiParam({ name: "id", description: "The question content ID" })
-  async findQuestionContentById(@Param("id") id: string) {
-    return await this.ieltsTestsService.findQuestionContentById(id);
-  }
-
-  // ========== Question Options ==========
-  @Post("question-option")
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Create a question option" })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: "The question option has been successfully created.",
-  })
-  async createQuestionOption(
-    @Body() createQuestionOptionDto: CreateQuestionOptionDto,
-  ) {
-    return await this.ieltsTestsService.createQuestionOption(
-      createQuestionOptionDto,
-    );
-  }
-
-  // ========== Multiple Choice Questions ==========
-  @Post("multiple-choice-question")
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Create a multiple choice question" })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: "The multiple choice question has been successfully created.",
-  })
-  async createMultipleChoiceQuestion(
-    @Body() createMultipleChoiceQuestionDto: CreateMultipleChoiceQuestionDto,
-  ) {
-    return await this.ieltsTestsService.createMultipleChoiceQuestion(
-      createMultipleChoiceQuestionDto,
-    );
-  }
-
-  @Get("multiple-choice-question/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get a multiple choice question by ID" })
-  @ApiParam({ name: "id", description: "The multiple choice question ID" })
-  async findMultipleChoiceQuestionById(@Param("id") id: string) {
-    return await this.ieltsTestsService.findMultipleChoiceQuestionById(id);
-  }
-
-  // ========== Multiple Choice Options ==========
-  @Post("multiple-choice-option")
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Create a multiple choice option" })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: "The multiple choice option has been successfully created.",
-  })
-  async createMultipleChoiceOption(
-    @Body() createMultipleChoiceOptionDto: CreateMultipleChoiceOptionDto,
-  ) {
-    return await this.ieltsTestsService.createMultipleChoiceOption(
-      createMultipleChoiceOptionDto,
-    );
+  @ApiOperation({ summary: "Get a sub question by ID" })
+  @ApiParam({ name: "id", description: "The sub question ID" })
+  async findSubQuestionById(@Param("id") id: string) {
+    return await this.ieltsTestsService.findSubQuestionById(id);
   }
 
   // ========== Test by ID (must be LAST to avoid catching named routes) ==========

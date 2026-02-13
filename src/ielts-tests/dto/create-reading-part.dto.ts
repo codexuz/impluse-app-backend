@@ -5,10 +5,11 @@ import {
   IsUUID,
   IsEnum,
   IsOptional,
-  IsObject,
   IsArray,
   IsInt,
   IsBoolean,
+  IsNumber,
+  IsObject,
   Min,
   ValidateNested,
 } from "class-validator";
@@ -20,122 +21,170 @@ export enum ReadingPartEnum {
   PART_3 = "PART_3",
 }
 
-export enum QuestionContentTypeEnum {
-  COMPLETION = "completion",
-  MULTIPLE_CHOICE = "multiple-choice",
-  MULTI_SELECT = "multi-select",
-  SELECTION = "selection",
-  DRAGGABLE_SELECTION = "draggable-selection",
-  MATCHING_INFORMATION = "matching-information",
+export enum DifficultyEnum {
+  EASY = "EASY",
+  MEDIUM = "MEDIUM",
+  HARD = "HARD",
 }
 
-export class ReadingPartMultipleChoiceOptionDto {
-  @ApiProperty({ example: "A" })
-  @IsString()
-  @IsNotEmpty()
-  value: string;
+export enum QuestionTypeEnum {
+  NOTE_COMPLETION = "NOTE_COMPLETION",
+  TRUE_FALSE_NOT_GIVEN = "TRUE_FALSE_NOT_GIVEN",
+  YES_NO_NOT_GIVEN = "YES_NO_NOT_GIVEN",
+  MATCHING_INFORMATION = "MATCHING_INFORMATION",
+  MATCHING_HEADINGS = "MATCHING_HEADINGS",
+  SUMMARY_COMPLETION = "SUMMARY_COMPLETION",
+  SUMMARY_COMPLETION_DRAG_DROP = "SUMMARY_COMPLETION_DRAG_DROP",
+  MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
+  SENTENCE_COMPLETION = "SENTENCE_COMPLETION",
+  SHORT_ANSWER = "SHORT_ANSWER",
+  TABLE_COMPLETION = "TABLE_COMPLETION",
+  FLOW_CHART_COMPLETION = "FLOW_CHART_COMPLETION",
+  DIAGRAM_LABELLING = "DIAGRAM_LABELLING",
+  MATCHING_FEATURES = "MATCHING_FEATURES",
+  MATCHING_SENTENCE_ENDINGS = "MATCHING_SENTENCE_ENDINGS",
+  PLAN_MAP_LABELLING = "PLAN_MAP_LABELLING",
+}
 
-  @ApiProperty({ example: "Climate change and its effects" })
-  @IsString()
-  @IsNotEmpty()
-  label: string;
-
+// ========== Sub-question nested DTO ==========
+export class ReadingPartSubQuestionDto {
   @ApiProperty({ example: 1, required: false })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  order?: number;
-}
-
-export class ReadingPartMultipleChoiceQuestionDto {
-  @ApiProperty({ example: "What is the main topic of the passage?" })
-  @IsString()
-  @IsNotEmpty()
-  question: string;
-
-  @ApiProperty({ example: 1, required: false })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  order?: number;
-
-  @ApiProperty({ type: [ReadingPartMultipleChoiceOptionDto], required: false })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ReadingPartMultipleChoiceOptionDto)
-  @IsOptional()
-  options?: ReadingPartMultipleChoiceOptionDto[];
-}
-
-export class ReadingPartQuestionOptionDto {
-  @ApiProperty({ example: "A" })
-  @IsString()
-  @IsNotEmpty()
-  value: string;
-
-  @ApiProperty({ example: "The Amazon rainforest" })
-  @IsString()
-  @IsNotEmpty()
-  label: string;
-
-  @ApiProperty({ example: 1, required: false })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  order?: number;
-}
-
-export class ReadingPartQuestionContentDto {
-  @ApiProperty({
-    enum: QuestionContentTypeEnum,
-    example: QuestionContentTypeEnum.MULTIPLE_CHOICE,
-  })
-  @IsEnum(QuestionContentTypeEnum)
-  @IsNotEmpty()
-  type: QuestionContentTypeEnum;
-
-  @ApiProperty({ example: "Questions 1-5", required: false })
-  @IsString()
-  @IsOptional()
-  title?: string;
-
-  @ApiProperty({
-    example: "Choose the correct letter, A, B, or C",
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  condition?: string;
-
-  @ApiProperty({
-    example: "The library is open from @@ to @@",
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  content?: string;
-
-  @ApiProperty({ example: 2, required: false })
   @IsInt()
   @Min(1)
   @IsOptional()
-  limit?: number;
+  questionNumber?: number;
+
+  @ApiProperty({ example: "", required: false })
+  @IsString()
+  @IsOptional()
+  questionText?: string;
+
+  @ApiProperty({ example: 1, required: false })
+  @IsNumber()
+  @IsOptional()
+  points?: number;
+
+  @ApiProperty({ example: "teacher", required: false })
+  @IsString()
+  @IsOptional()
+  correctAnswer?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  explanation?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  fromPassage?: string;
+
+  @ApiProperty({ example: 1, required: false })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  order?: number;
+}
+
+// ========== Option nested DTO ==========
+export class ReadingPartQuestionOptionDto {
+  @ApiProperty({ example: "A", required: false })
+  @IsString()
+  @IsOptional()
+  optionKey?: string;
+
+  @ApiProperty({ example: "Susanna Tol", required: false })
+  @IsString()
+  @IsOptional()
+  optionText?: string;
+
+  @ApiProperty({ example: false, required: false })
+  @IsBoolean()
+  @IsOptional()
+  isCorrect?: boolean;
+
+  @ApiProperty({ example: 0, required: false })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  orderIndex?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  explanation?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  fromPassage?: string;
+}
+
+// ========== Question nested DTO ==========
+export class ReadingPartQuestionDto {
+  @ApiProperty({ example: 1, required: false })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  questionNumber?: number;
+
+  @ApiProperty({ enum: QuestionTypeEnum, required: false })
+  @IsEnum(QuestionTypeEnum)
+  @IsOptional()
+  type?: QuestionTypeEnum;
+
+  @ApiProperty({ example: "<h3>Notes</h3>", required: false })
+  @IsString()
+  @IsOptional()
+  questionText?: string;
+
+  @ApiProperty({ example: "Complete the notes.", required: false })
+  @IsString()
+  @IsOptional()
+  instruction?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  context?: string;
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  headingOptions?: any;
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  tableData?: any;
+
+  @ApiProperty({ example: 7, required: false })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  points?: number;
 
   @ApiProperty({ example: true, required: false })
   @IsBoolean()
   @IsOptional()
-  showOptions?: boolean;
+  isActive?: boolean;
 
-  @ApiProperty({ example: "Choose from the following:", required: false })
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  optionsTitle?: string;
+  explanation?: string;
 
-  @ApiProperty({ example: 1, required: false })
-  @IsInt()
-  @Min(0)
+  @ApiProperty({ required: false })
+  @IsString()
   @IsOptional()
-  order?: number;
+  fromPassage?: string;
+
+  @ApiProperty({ type: [ReadingPartSubQuestionDto], required: false })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ReadingPartSubQuestionDto)
+  @IsOptional()
+  questions?: ReadingPartSubQuestionDto[];
 
   @ApiProperty({ type: [ReadingPartQuestionOptionDto], required: false })
   @IsArray()
@@ -143,33 +192,9 @@ export class ReadingPartQuestionContentDto {
   @Type(() => ReadingPartQuestionOptionDto)
   @IsOptional()
   options?: ReadingPartQuestionOptionDto[];
-
-  @ApiProperty({
-    type: [ReadingPartMultipleChoiceQuestionDto],
-    required: false,
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ReadingPartMultipleChoiceQuestionDto)
-  @IsOptional()
-  multipleChoiceQuestions?: ReadingPartMultipleChoiceQuestionDto[];
 }
 
-export class ReadingPartQuestionDto {
-  @ApiProperty({ example: 10, required: false })
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  number_of_questions?: number;
-
-  @ApiProperty({ type: [ReadingPartQuestionContentDto], required: false })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ReadingPartQuestionContentDto)
-  @IsOptional()
-  contents?: ReadingPartQuestionContentDto[];
-}
-
+// ========== Main DTO ==========
 export class CreateReadingPartDto {
   @ApiProperty({
     description: "The reading ID this part belongs to",
@@ -190,7 +215,7 @@ export class CreateReadingPartDto {
 
   @ApiProperty({
     description: "The reading part title",
-    example: "The History of Astronomy",
+    example: "Georgia O'Keeffe",
     required: false,
   })
   @IsString()
@@ -198,22 +223,51 @@ export class CreateReadingPartDto {
   title?: string;
 
   @ApiProperty({
-    description: "The reading passage text",
-    example: "The passage text goes here...",
+    description: "The reading passage content",
+    example: "For seven decades...",
     required: false,
   })
   @IsString()
   @IsOptional()
-  passage?: string;
+  content?: string;
 
   @ApiProperty({
-    description: "Answer keys for the questions",
-    example: { "1": "A", "2": "C", "3": "B" },
+    description: "Time limit in minutes",
+    example: 20,
     required: false,
   })
-  @IsObject()
+  @IsInt()
+  @Min(1)
   @IsOptional()
-  answers?: Record<string, any>;
+  timeLimitMinutes?: number;
+
+  @ApiProperty({
+    description: "Difficulty level",
+    enum: DifficultyEnum,
+    required: false,
+  })
+  @IsEnum(DifficultyEnum)
+  @IsOptional()
+  difficulty?: DifficultyEnum;
+
+  @ApiProperty({
+    description: "Whether this part is active",
+    example: true,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiProperty({
+    description: "Total number of questions",
+    example: 13,
+    required: false,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  totalQuestions?: number;
 
   @ApiProperty({
     description: "Questions for this reading part",

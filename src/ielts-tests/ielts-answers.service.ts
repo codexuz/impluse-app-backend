@@ -16,7 +16,7 @@ import { IeltsWritingAnswer } from "./entities/ielts-writing-answer.entity.js";
 import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
 import { IeltsListeningPart } from "./entities/ielts-listening-part.entity.js";
 import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
-import { IeltsQuestionContent } from "./entities/ielts-question-content.entity.js";
+import { IeltsQuestion } from "./entities/ielts-question.entity.js";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import {
@@ -151,7 +151,7 @@ export class IeltsAnswersService {
       attempt_id: dto.attempt_id,
       user_id: userId,
       part_id: answer.part_id,
-      question_content_id: answer.question_content_id,
+      question_id: answer.question_id,
       question_number: answer.question_number || null,
       answer: answer.answer,
     }));
@@ -183,7 +183,7 @@ export class IeltsAnswersService {
       where: { attempt_id: attemptId, user_id: userId },
       include: [
         { model: IeltsReadingPart, as: "readingPart" },
-        { model: IeltsQuestionContent, as: "questionContent" },
+        { model: IeltsQuestion, as: "question" },
       ],
       order: [["question_number", "ASC"]],
     });
@@ -198,7 +198,7 @@ export class IeltsAnswersService {
       attempt_id: dto.attempt_id,
       user_id: userId,
       part_id: answer.part_id,
-      question_content_id: answer.question_content_id,
+      question_id: answer.question_id,
       question_number: answer.question_number || null,
       answer: answer.answer,
     }));
@@ -229,7 +229,7 @@ export class IeltsAnswersService {
       where: { attempt_id: attemptId, user_id: userId },
       include: [
         { model: IeltsListeningPart, as: "listeningPart" },
-        { model: IeltsQuestionContent, as: "questionContent" },
+        { model: IeltsQuestion, as: "question" },
       ],
       order: [["question_number", "ASC"]],
     });

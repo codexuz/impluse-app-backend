@@ -8,12 +8,17 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsReading } from "./ielts-reading.entity.js";
-import { IeltsQuestion } from "./ielts-question.entity.js";
 
 export enum ReadingPart {
   PART_1 = "PART_1",
   PART_2 = "PART_2",
   PART_3 = "PART_3",
+}
+
+export enum DifficultyLevel {
+  EASY = "EASY",
+  MEDIUM = "MEDIUM",
+  HARD = "HARD",
 }
 
 @Table({
@@ -51,13 +56,32 @@ export class IeltsReadingPart extends Model<IeltsReadingPart> {
     type: DataType.TEXT("long"),
     allowNull: true,
   })
-  passage: string;
+  content: string;
 
   @Column({
-    type: DataType.JSON,
+    type: DataType.INTEGER,
     allowNull: true,
   })
-  answers: Record<string, any>;
+  timeLimitMinutes: number;
+
+  @Column({
+    type: DataType.ENUM(...Object.values(DifficultyLevel)),
+    allowNull: true,
+  })
+  difficulty: DifficultyLevel;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+    defaultValue: true,
+  })
+  isActive: boolean;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  totalQuestions: number;
 
   @CreatedAt
   createdAt: Date;

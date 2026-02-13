@@ -207,7 +207,7 @@ export class QuestionQueryDto extends PaginationDto {
   listeningPartId?: string;
 }
 
-export class QuestionContentQueryDto extends PaginationDto {
+export class QuestionOptionQueryDto extends PaginationDto {
   @ApiProperty({
     description: "Filter by question ID",
     required: false,
@@ -215,50 +215,14 @@ export class QuestionContentQueryDto extends PaginationDto {
   @IsString()
   @IsOptional()
   questionId?: string;
-
-  @ApiProperty({
-    description: "Filter by type",
-    enum: [
-      "completion",
-      "multiple-choice",
-      "multi-select",
-      "selection",
-      "draggable-selection",
-      "matching-information",
-    ],
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  type?: string;
 }
 
-export class QuestionOptionQueryDto extends PaginationDto {
+export class SubQuestionQueryDto extends PaginationDto {
   @ApiProperty({
-    description: "Filter by question content ID",
+    description: "Filter by question ID",
     required: false,
   })
   @IsString()
   @IsOptional()
-  questionContentId?: string;
-}
-
-export class MultipleChoiceQuestionQueryDto extends PaginationDto {
-  @ApiProperty({
-    description: "Filter by question content ID",
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  questionContentId?: string;
-}
-
-export class MultipleChoiceOptionQueryDto extends PaginationDto {
-  @ApiProperty({
-    description: "Filter by multiple choice question ID",
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  multipleChoiceQuestionId?: string;
+  questionId?: string;
 }

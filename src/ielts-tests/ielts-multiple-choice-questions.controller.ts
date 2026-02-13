@@ -19,68 +19,65 @@ import {
   ApiParam,
 } from "@nestjs/swagger";
 import { IeltsTestsService } from "./ielts-tests.service.js";
-import { CreateMultipleChoiceQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
-import { UpdateMultipleChoiceQuestionDto } from "./dto/update-multiple-choice-question.dto.js";
-import { MultipleChoiceQuestionQueryDto } from "./dto/query.dto.js";
+import { CreateSubQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
+import { UpdateSubQuestionDto } from "./dto/update-multiple-choice-question.dto.js";
+import { SubQuestionQueryDto } from "./dto/query.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { Role } from "../roles/role.enum.js";
 
-@ApiTags("IELTS Multiple Choice Questions")
+@ApiTags("IELTS Sub Questions")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller("ielts-multiple-choice-questions")
-export class IeltsMultipleChoiceQuestionsController {
+@Controller("ielts-sub-questions")
+export class IeltsSubQuestionsController {
   constructor(private readonly ieltsTestsService: IeltsTestsService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Create a new multiple choice question" })
+  @ApiOperation({ summary: "Create a new sub question" })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: "The multiple choice question has been successfully created.",
+    description: "The sub question has been successfully created.",
   })
-  async create(@Body() createDto: CreateMultipleChoiceQuestionDto) {
-    return await this.ieltsTestsService.createMultipleChoiceQuestion(createDto);
+  async create(@Body() createDto: CreateSubQuestionDto) {
+    return await this.ieltsTestsService.createSubQuestion(createDto);
   }
 
   @Get()
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get all multiple choice questions" })
-  async findAll(@Query() query: MultipleChoiceQuestionQueryDto) {
-    return await this.ieltsTestsService.findAllMultipleChoiceQuestions(query);
+  @ApiOperation({ summary: "Get all sub questions" })
+  async findAll(@Query() query: SubQuestionQueryDto) {
+    return await this.ieltsTestsService.findAllSubQuestions(query);
   }
 
   @Get(":id")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get a multiple choice question by ID" })
-  @ApiParam({ name: "id", description: "The multiple choice question ID" })
+  @ApiOperation({ summary: "Get a sub question by ID" })
+  @ApiParam({ name: "id", description: "The sub question ID" })
   async findOne(@Param("id") id: string) {
-    return await this.ieltsTestsService.findMultipleChoiceQuestionById(id);
+    return await this.ieltsTestsService.findSubQuestionById(id);
   }
 
   @Patch(":id")
   @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Update a multiple choice question" })
-  @ApiParam({ name: "id", description: "The multiple choice question ID" })
+  @ApiOperation({ summary: "Update a sub question" })
+  @ApiParam({ name: "id", description: "The sub question ID" })
   async update(
     @Param("id") id: string,
-    @Body() updateDto: UpdateMultipleChoiceQuestionDto,
+    @Body() updateDto: UpdateSubQuestionDto,
   ) {
-    return await this.ieltsTestsService.updateMultipleChoiceQuestion(
-      id,
-      updateDto,
-    );
+    return await this.ieltsTestsService.updateSubQuestion(id, updateDto);
   }
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Delete a multiple choice question" })
-  @ApiParam({ name: "id", description: "The multiple choice question ID" })
+  @ApiOperation({ summary: "Delete a sub question" })
+  @ApiParam({ name: "id", description: "The sub question ID" })
   async remove(@Param("id") id: string) {
-    return await this.ieltsTestsService.deleteMultipleChoiceQuestion(id);
+    return await this.ieltsTestsService.deleteSubQuestion(id);
   }
 }

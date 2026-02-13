@@ -8,10 +8,8 @@ import { IeltsListeningController } from "./ielts-listening.controller.js";
 import { IeltsListeningPartsController } from "./ielts-listening-parts.controller.js";
 import { IeltsWritingController } from "./ielts-writing.controller.js";
 import { IeltsQuestionsController } from "./ielts-questions.controller.js";
-import { IeltsQuestionContentsController } from "./ielts-question-contents.controller.js";
 import { IeltsQuestionChoicesController } from "./ielts-question-choices.controller.js";
-import { IeltsMultipleChoiceQuestionsController } from "./ielts-multiple-choice-questions.controller.js";
-import { IeltsMultipleChoiceOptionsController } from "./ielts-multiple-choice-options.controller.js";
+import { IeltsSubQuestionsController } from "./ielts-multiple-choice-questions.controller.js";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { IeltsReading } from "./entities/ielts-reading.entity.js";
 import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
@@ -21,10 +19,8 @@ import { IeltsWriting } from "./entities/ielts-writing.entity.js";
 import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
 import { IeltsAudio } from "./entities/ielts-audio.entity.js";
 import { IeltsQuestion } from "./entities/ielts-question.entity.js";
-import { IeltsQuestionContent } from "./entities/ielts-question-content.entity.js";
 import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
-import { IeltsMultipleChoiceQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
-import { IeltsMultipleChoiceOption } from "./entities/ielts-multiple-choice-option.entity.js";
+import { IeltsSubQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
 import { IeltsAnswerAttempt } from "./entities/ielts-answer-attempt.entity.js";
 import { IeltsReadingAnswer } from "./entities/ielts-reading-answer.entity.js";
 import { IeltsListeningAnswer } from "./entities/ielts-listening-answer.entity.js";
@@ -44,10 +40,8 @@ import { IeltsAnswersController } from "./ielts-answers.controller.js";
       IeltsWritingTask,
       IeltsAudio,
       IeltsQuestion,
-      IeltsQuestionContent,
       IeltsQuestionOption,
-      IeltsMultipleChoiceQuestion,
-      IeltsMultipleChoiceOption,
+      IeltsSubQuestion,
       IeltsAnswerAttempt,
       IeltsReadingAnswer,
       IeltsListeningAnswer,
@@ -63,10 +57,8 @@ import { IeltsAnswersController } from "./ielts-answers.controller.js";
     IeltsWritingController,
     IeltsAnswersController,
     IeltsQuestionsController,
-    IeltsQuestionContentsController,
     IeltsQuestionChoicesController,
-    IeltsMultipleChoiceQuestionsController,
-    IeltsMultipleChoiceOptionsController,
+    IeltsSubQuestionsController,
   ],
   providers: [IeltsTestsService, IeltsAnswersService],
   exports: [IeltsTestsService, IeltsAnswersService],

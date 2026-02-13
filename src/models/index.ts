@@ -98,10 +98,8 @@ import { IeltsWriting } from "../ielts-tests/entities/ielts-writing.entity.js";
 import { IeltsWritingTask } from "../ielts-tests/entities/ielts-writing-task.entity.js";
 import { IeltsAudio } from "../ielts-tests/entities/ielts-audio.entity.js";
 import { IeltsQuestion } from "../ielts-tests/entities/ielts-question.entity.js";
-import { IeltsQuestionContent } from "../ielts-tests/entities/ielts-question-content.entity.js";
 import { IeltsQuestionOption } from "../ielts-tests/entities/ielts-question-option.entity.js";
-import { IeltsMultipleChoiceQuestion } from "../ielts-tests/entities/ielts-multiple-choice-question.entity.js";
-import { IeltsMultipleChoiceOption } from "../ielts-tests/entities/ielts-multiple-choice-option.entity.js";
+import { IeltsSubQuestion } from "../ielts-tests/entities/ielts-multiple-choice-question.entity.js";
 import { IeltsVocabulary } from "../ielts-vocabulary/entities/ielts-vocabulary.entity.js";
 import { IeltsVocabularyDeck } from "../ielts-vocabulary/entities/ielts-vocabulary-deck.entity.js";
 import { IeltsDeckWord } from "../ielts-vocabulary/entities/ielts-deck-word.entity.js";
@@ -213,10 +211,8 @@ export const Models = [
   IeltsWritingTask,
   IeltsAudio,
   IeltsQuestion,
-  IeltsQuestionContent,
   IeltsQuestionOption,
-  IeltsMultipleChoiceQuestion,
-  IeltsMultipleChoiceOption,
+  IeltsSubQuestion,
   SupportSchedule,
   SupportBooking,
   IeltsVocabulary,
@@ -1382,45 +1378,25 @@ export function initializeAssociations() {
     foreignKey: "listening_part_id",
     as: "listeningPart",
   });
-  IeltsQuestion.hasMany(IeltsQuestionContent, {
+  IeltsQuestion.hasMany(IeltsSubQuestion, {
     foreignKey: "question_id",
-    as: "contents",
+    as: "questions",
   });
-
-  // IeltsQuestionContent associations
-  IeltsQuestionContent.belongsTo(IeltsQuestion, {
+  IeltsQuestion.hasMany(IeltsQuestionOption, {
     foreignKey: "question_id",
-    as: "question",
-  });
-  IeltsQuestionContent.hasMany(IeltsQuestionOption, {
-    foreignKey: "question_content_id",
     as: "options",
-  });
-  IeltsQuestionContent.hasMany(IeltsMultipleChoiceQuestion, {
-    foreignKey: "question_content_id",
-    as: "multipleChoiceQuestions",
   });
 
   // IeltsQuestionOption associations
-  IeltsQuestionOption.belongsTo(IeltsQuestionContent, {
-    foreignKey: "question_content_id",
-    as: "questionContent",
+  IeltsQuestionOption.belongsTo(IeltsQuestion, {
+    foreignKey: "question_id",
+    as: "question",
   });
 
-  // IeltsMultipleChoiceQuestion associations
-  IeltsMultipleChoiceQuestion.belongsTo(IeltsQuestionContent, {
-    foreignKey: "question_content_id",
-    as: "questionContent",
-  });
-  IeltsMultipleChoiceQuestion.hasMany(IeltsMultipleChoiceOption, {
-    foreignKey: "multiple_choice_question_id",
-    as: "options",
-  });
-
-  // IeltsMultipleChoiceOption associations
-  IeltsMultipleChoiceOption.belongsTo(IeltsMultipleChoiceQuestion, {
-    foreignKey: "multiple_choice_question_id",
-    as: "multipleChoiceQuestion",
+  // IeltsSubQuestion associations
+  IeltsSubQuestion.belongsTo(IeltsQuestion, {
+    foreignKey: "question_id",
+    as: "question",
   });
 
   // IeltsVocabulary associations
@@ -1636,9 +1612,9 @@ export function initializeAssociations() {
     foreignKey: "part_id",
     as: "readingPart",
   });
-  IeltsReadingAnswer.belongsTo(IeltsQuestionContent, {
-    foreignKey: "question_content_id",
-    as: "questionContent",
+  IeltsReadingAnswer.belongsTo(IeltsQuestion, {
+    foreignKey: "question_id",
+    as: "question",
   });
 
   // IeltsListeningAnswer associations
@@ -1654,9 +1630,9 @@ export function initializeAssociations() {
     foreignKey: "part_id",
     as: "listeningPart",
   });
-  IeltsListeningAnswer.belongsTo(IeltsQuestionContent, {
-    foreignKey: "question_content_id",
-    as: "questionContent",
+  IeltsListeningAnswer.belongsTo(IeltsQuestion, {
+    foreignKey: "question_id",
+    as: "question",
   });
 
   // ArchivedStudent associations

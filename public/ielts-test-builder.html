@@ -1027,15 +1027,6 @@
                   placeholder="Paste the reading passage here..."
                 ></textarea>
               </div>
-              <div class="form-group">
-                <label>Answer Key (JSON)</label>
-                <textarea
-                  class="form-control"
-                  id="rp-answers"
-                  placeholder='{"1":"answer1","2":"answer2"}'
-                ></textarea>
-              </div>
-
               <!-- Question Groups Builder -->
               <div class="card mt-3">
                 <div class="card-header">
@@ -1235,15 +1226,6 @@
                   />
                 </div>
               </div>
-              <div class="form-group">
-                <label>Answer Key (JSON)</label>
-                <textarea
-                  class="form-control"
-                  id="lp-answers"
-                  placeholder='{"1":"answer1","2":"answer2"}'
-                ></textarea>
-              </div>
-
               <!-- Question Groups Builder -->
               <div class="card mt-3">
                 <div class="card-header">
@@ -1500,7 +1482,16 @@
               placeholder="Main content with blanks like {{1}}, {{2}}..."
             ></textarea>
           </div>
-          <div class="form-row">
+          <div class="form-row-3">
+            <div class="form-group">
+              <label>Question Number</label
+              ><input
+                type="number"
+                class="form-control"
+                id="qc-question-number"
+                placeholder="e.g. 1"
+              />
+            </div>
             <div class="form-group">
               <label>Word Limit</label
               ><input
@@ -2002,7 +1993,6 @@
         document.getElementById("rp-part").value = "PART_1";
         document.getElementById("rp-title").value = "";
         document.getElementById("rp-passage").value = "";
-        document.getElementById("rp-answers").value = "";
         document.querySelector(
           "#page-reading-part-form .card-header h3",
         ).textContent = "Create Reading Part";
@@ -2018,11 +2008,7 @@
           document.getElementById("rp-part").value = p.part || "PART_1";
           document.getElementById("rp-title").value = p.title || "";
           document.getElementById("rp-passage").value = p.passage || "";
-          document.getElementById("rp-answers").value = p.answers
-            ? JSON.stringify(p.answers, null, 2)
-            : "";
           rpQuestionGroups = (p.questions || []).map((q) => ({
-            number_of_questions: q.number_of_questions || 0,
             contents: (q.contents || []).map((c) => ({ ...c })),
           }));
           document.querySelector(
@@ -2036,7 +2022,7 @@
       }
 
       function rpAddQuestionGroup() {
-        rpQuestionGroups.push({ number_of_questions: 10, contents: [] });
+        rpQuestionGroups.push({ contents: [] });
         renderRpQuestionGroups();
       }
       function rpRemoveQuestionGroup(idx) {
@@ -2049,24 +2035,12 @@
 
       async function saveReadingPart() {
         try {
-          let answers = null;
-          const av = document.getElementById("rp-answers").value.trim();
-          if (av) {
-            try {
-              answers = JSON.parse(av);
-            } catch (e) {
-              toast("Invalid JSON in answers", "error");
-              return;
-            }
-          }
           const body = {
             reading_id: document.getElementById("rp-reading-id").value,
             part: document.getElementById("rp-part").value,
             title: document.getElementById("rp-title").value || null,
             passage: document.getElementById("rp-passage").value || null,
-            answers,
             questions: rpQuestionGroups.map((q) => ({
-              number_of_questions: q.number_of_questions,
               contents: q.contents.map(buildContentPayload),
             })),
           };
@@ -2205,7 +2179,6 @@
         document.getElementById("lp-audio-url").value = "";
         document.getElementById("lp-audio-name").value = "";
         document.getElementById("lp-audio-duration").value = "";
-        document.getElementById("lp-answers").value = "";
         document.querySelector(
           "#page-listening-part-form .card-header h3",
         ).textContent = "Create Listening Part";
@@ -2227,11 +2200,7 @@
             (p.audio && p.audio.file_name) || "";
           document.getElementById("lp-audio-duration").value =
             (p.audio && p.audio.duration) || "";
-          document.getElementById("lp-answers").value = p.answers
-            ? JSON.stringify(p.answers, null, 2)
-            : "";
           lpQuestionGroups = (p.questions || []).map((q) => ({
-            number_of_questions: q.number_of_questions || 0,
             contents: (q.contents || []).map((c) => ({ ...c })),
           }));
           document.querySelector(
@@ -2245,7 +2214,7 @@
       }
 
       function lpAddQuestionGroup() {
-        lpQuestionGroups.push({ number_of_questions: 10, contents: [] });
+        lpQuestionGroups.push({ contents: [] });
         renderLpQuestionGroups();
       }
       function lpRemoveQuestionGroup(idx) {
@@ -2258,22 +2227,11 @@
 
       async function saveListeningPart() {
         try {
-          let answers = null;
-          const av = document.getElementById("lp-answers").value.trim();
-          if (av) {
-            try {
-              answers = JSON.parse(av);
-            } catch (e) {
-              toast("Invalid JSON in answers", "error");
-              return;
-            }
-          }
           const audioUrl = document.getElementById("lp-audio-url").value;
           const body = {
             listening_id: document.getElementById("lp-listening-id").value,
             part: document.getElementById("lp-part").value,
             title: document.getElementById("lp-title").value || null,
-            answers,
             audio: audioUrl
               ? {
                   url: audioUrl,
@@ -2286,7 +2244,6 @@
                 }
               : null,
             questions: lpQuestionGroups.map((q) => ({
-              number_of_questions: q.number_of_questions,
               contents: q.contents.map(buildContentPayload),
             })),
           };
@@ -2440,11 +2397,6 @@
         </div>
       </div>
       <div class="part-card-body">
-        <div class="form-group">
-          <label>Number of Questions</label>
-          <input type="number" class="form-control" style="width:120px" value="${g.number_of_questions}"
-            onchange="${prefix}QuestionGroups[${gi}].number_of_questions=parseInt(this.value)||0" />
-        </div>
         ${
           g.contents.length
             ? g.contents
@@ -2454,6 +2406,7 @@
             <div class="question-block-header">
               <div class="flex items-center gap-2">
                 <span class="type-badge type-${ct.type}">${ct.type}</span>
+                ${ct.questionNumber ? `<span class="text-sm text-gray">Q${ct.questionNumber}</span>` : ""}
                 <span class="fw-600 text-sm">${ct.title || "Untitled"}</span>
               </div>
               <button class="btn btn-danger btn-xs" onclick="${prefix}RemoveContent(${gi}, ${ci})">🗑</button>
@@ -2498,21 +2451,25 @@
           showOptions: c.showOptions,
           optionsTitle: c.optionsTitle || null,
           order: c.order,
+          questionNumber: c.questionNumber || null,
         };
         if (c.options && c.options.length)
           block.options = c.options.map((o, i) => ({
             value: o.value,
             label: o.label,
+            isCorrect: o.isCorrect || false,
             order: o.order || i + 1,
           }));
         if (c.multipleChoiceQuestions && c.multipleChoiceQuestions.length) {
           block.multipleChoiceQuestions = c.multipleChoiceQuestions.map(
             (m, i) => ({
               question: m.question,
+              correctAnswer: m.correctAnswer || null,
               order: m.order || i + 1,
               options: m.options.map((o, j) => ({
                 value: o.value,
                 label: o.label,
+                isCorrect: o.isCorrect || false,
                 order: o.order || j + 1,
               })),
             }),
@@ -2532,6 +2489,7 @@
         document.getElementById("qc-title").value = "";
         document.getElementById("qc-condition").value = "";
         document.getElementById("qc-content").value = "";
+        document.getElementById("qc-question-number").value = "";
         document.getElementById("qc-limit").value = "";
         document.getElementById("qc-order").value = "";
         document.getElementById("qc-show-options").checked = true;
@@ -2568,6 +2526,7 @@
         qcOptions.push({
           value: letter.toLowerCase(),
           label: "",
+          isCorrect: false,
           order: qcOptions.length + 1,
         });
         renderQcOptions();
@@ -2580,7 +2539,11 @@
     <div class="option-row">
       <span class="option-label">${String.fromCharCode(65 + i)}</span>
       <input type="text" class="form-control" placeholder="Option label" value="${o.label}"
-        onchange="qcOptions[${i}].label=this.value;qcOptions[${i}].value='${String.fromCharCode(97 + i)}'" />
+        onchange="qcOptions[${i}].label=this.value;qcOptions[${i}].value='${String.fromCharCode(97 + i)}'" style="flex:1" />
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap;cursor:pointer">
+        <input type="checkbox" ${o.isCorrect ? "checked" : ""}
+          onchange="qcOptions[${i}].isCorrect=this.checked" /> ✓
+      </label>
       <button class="btn btn-danger btn-xs" onclick="qcOptions.splice(${i},1);renderQcOptions()">×</button>
     </div>
   `,
@@ -2589,7 +2552,12 @@
       }
 
       function qcAddMcq() {
-        qcMcqs.push({ question: "", order: qcMcqs.length + 1, options: [] });
+        qcMcqs.push({
+          question: "",
+          correctAnswer: "",
+          order: qcMcqs.length + 1,
+          options: [],
+        });
         renderQcMcqs();
       }
 
@@ -2602,6 +2570,11 @@
         <input type="text" class="form-control" placeholder="Question text..." value="${m.question}"
           onchange="qcMcqs[${mi}].question=this.value" />
       </div>
+      <div class="form-group mb-2">
+        <label style="font-size:11px">Correct Answer</label>
+        <input type="text" class="form-control" placeholder="e.g. teacher, charcoal..." value="${m.correctAnswer || ""}"
+          onchange="qcMcqs[${mi}].correctAnswer=this.value" />
+      </div>
       <div class="flex items-center justify-between mb-2">
         <span class="text-sm text-gray">Options:</span>
         <button class="btn btn-outline btn-xs" onclick="qcAddMcqOption(${mi})">+ Option</button>
@@ -2613,7 +2586,11 @@
           <div class="option-row">
             <span class="option-label">${String.fromCharCode(65 + oi)}</span>
             <input type="text" class="form-control" placeholder="Option text" value="${o.label}"
-              onchange="qcMcqs[${mi}].options[${oi}].label=this.value;qcMcqs[${mi}].options[${oi}].value='${String.fromCharCode(97 + oi)}'" />
+              onchange="qcMcqs[${mi}].options[${oi}].label=this.value;qcMcqs[${mi}].options[${oi}].value='${String.fromCharCode(97 + oi)}'" style="flex:1" />
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap;cursor:pointer">
+              <input type="checkbox" ${o.isCorrect ? "checked" : ""}
+                onchange="qcMcqs[${mi}].options[${oi}].isCorrect=this.checked" /> ✓
+            </label>
             <button class="btn btn-danger btn-xs" onclick="qcMcqs[${mi}].options.splice(${oi},1);renderQcMcqs()">×</button>
           </div>
         `,
@@ -2632,6 +2609,7 @@
         qcMcqs[mi].options.push({
           value: letter,
           label: "",
+          isCorrect: false,
           order: qcMcqs[mi].options.length + 1,
         });
         renderQcMcqs();
@@ -2647,17 +2625,21 @@
           title: document.getElementById("qc-title").value,
           condition: document.getElementById("qc-condition").value,
           content: document.getElementById("qc-content").value,
+          questionNumber:
+            parseInt(document.getElementById("qc-question-number").value) ||
+            null,
           limit: parseInt(document.getElementById("qc-limit").value) || null,
           showOptions: document.getElementById("qc-show-options").checked,
           optionsTitle: document.getElementById("qc-options-title").value,
           order:
             parseInt(document.getElementById("qc-order").value) ||
             groups[groupIndex].contents.length + 1,
-          options: [...qcOptions],
+          options: qcOptions.map((o) => ({ ...o })),
           multipleChoiceQuestions: qcMcqs.map((m) => ({
             question: m.question,
+            correctAnswer: m.correctAnswer || null,
             order: m.order,
-            options: [...m.options],
+            options: m.options.map((o) => ({ ...o })),
           })),
         };
 

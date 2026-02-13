@@ -8,7 +8,6 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsListening } from "./ielts-listening.entity.js";
-import { IeltsQuestion } from "./ielts-question.entity.js";
 import { IeltsAudio } from "./ielts-audio.entity.js";
 
 export enum ListeningPart {
@@ -16,6 +15,12 @@ export enum ListeningPart {
   PART_2 = "PART_2",
   PART_3 = "PART_3",
   PART_4 = "PART_4",
+}
+
+export enum DifficultyLevel {
+  EASY = "EASY",
+  MEDIUM = "MEDIUM",
+  HARD = "HARD",
 }
 
 @Table({
@@ -57,10 +62,29 @@ export class IeltsListeningPart extends Model<IeltsListeningPart> {
   audio_id: string;
 
   @Column({
-    type: DataType.JSON,
+    type: DataType.INTEGER,
     allowNull: true,
   })
-  answers: Record<string, any>;
+  timeLimitMinutes: number;
+
+  @Column({
+    type: DataType.ENUM(...Object.values(DifficultyLevel)),
+    allowNull: true,
+  })
+  difficulty: DifficultyLevel;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+    defaultValue: true,
+  })
+  isActive: boolean;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  totalQuestions: number;
 
   @CreatedAt
   createdAt: Date;

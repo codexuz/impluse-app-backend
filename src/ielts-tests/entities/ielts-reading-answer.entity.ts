@@ -8,7 +8,7 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsAnswerAttempt } from "./ielts-answer-attempt.entity.js";
-import { IeltsQuestionContent } from "./ielts-question-content.entity.js";
+import { IeltsQuestion } from "./ielts-question.entity.js";
 import { IeltsReadingPart } from "./ielts-reading-part.entity.js";
 import { User } from "../../users/entities/user.entity.js";
 
@@ -45,12 +45,12 @@ export class IeltsReadingAnswer extends Model<IeltsReadingAnswer> {
   })
   part_id: string;
 
-  @ForeignKey(() => IeltsQuestionContent)
+  @ForeignKey(() => IeltsQuestion)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
-  question_content_id: string;
+  question_id: string;
 
   @Column({
     type: DataType.STRING,

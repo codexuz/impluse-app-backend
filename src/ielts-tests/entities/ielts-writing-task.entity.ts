@@ -46,10 +46,10 @@ export class IeltsWritingTask extends Model<IeltsWritingTask> {
   prompt: string;
 
   @Column({
-    type: DataType.TEXT,
+    type: DataType.STRING,
     allowNull: true,
   })
-  instructions: string;
+  image_url: string;
 
   @Column({
     type: DataType.INTEGER,

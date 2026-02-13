@@ -10,7 +10,7 @@ import {
 import { User } from "../../users/entities/user.entity.js";
 
 @Table({
-  tableName: "tests",
+  tableName: "ielts_tests",
   timestamps: true,
   paranoid: true,
 })

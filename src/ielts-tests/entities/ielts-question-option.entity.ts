@@ -7,7 +7,7 @@ import {
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
-import { IeltsQuestionContent } from "./ielts-question-content.entity.js";
+import { IeltsQuestion } from "./ielts-question.entity.js";
 
 @Table({
   tableName: "ielts_question_options",
@@ -21,30 +21,49 @@ export class IeltsQuestionOption extends Model<IeltsQuestionOption> {
   })
   id: string;
 
-  @ForeignKey(() => IeltsQuestionContent)
+  @ForeignKey(() => IeltsQuestion)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
-  question_content_id: string;
+  question_id: string;
 
   @Column({
     type: DataType.STRING,
-    allowNull: false,
+    allowNull: true,
   })
-  value: string;
+  optionKey: string;
 
   @Column({
-    type: DataType.STRING,
-    allowNull: false,
+    type: DataType.TEXT,
+    allowNull: true,
   })
-  label: string;
+  optionText: string;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+  })
+  isCorrect: boolean;
 
   @Column({
     type: DataType.INTEGER,
     allowNull: true,
   })
-  order: number;
+  orderIndex: number;
+
+  @Column({
+    type: DataType.TEXT("long"),
+    allowNull: true,
+  })
+  explanation: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  fromPassage: string;
 
   @CreatedAt
   createdAt: Date;

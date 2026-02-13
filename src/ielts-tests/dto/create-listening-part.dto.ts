@@ -5,10 +5,11 @@ import {
   IsUUID,
   IsEnum,
   IsOptional,
-  IsObject,
   IsArray,
   IsInt,
   IsBoolean,
+  IsNumber,
+  IsObject,
   Min,
   ValidateNested,
 } from "class-validator";
@@ -21,13 +22,29 @@ export enum ListeningPartEnum {
   PART_4 = "PART_4",
 }
 
-export enum QuestionContentTypeEnum {
-  COMPLETION = "completion",
-  MULTIPLE_CHOICE = "multiple-choice",
-  MULTI_SELECT = "multi-select",
-  SELECTION = "selection",
-  DRAGGABLE_SELECTION = "draggable-selection",
-  MATCHING_INFORMATION = "matching-information",
+export enum DifficultyEnum {
+  EASY = "EASY",
+  MEDIUM = "MEDIUM",
+  HARD = "HARD",
+}
+
+export enum QuestionTypeEnum {
+  NOTE_COMPLETION = "NOTE_COMPLETION",
+  TRUE_FALSE_NOT_GIVEN = "TRUE_FALSE_NOT_GIVEN",
+  YES_NO_NOT_GIVEN = "YES_NO_NOT_GIVEN",
+  MATCHING_INFORMATION = "MATCHING_INFORMATION",
+  MATCHING_HEADINGS = "MATCHING_HEADINGS",
+  SUMMARY_COMPLETION = "SUMMARY_COMPLETION",
+  SUMMARY_COMPLETION_DRAG_DROP = "SUMMARY_COMPLETION_DRAG_DROP",
+  MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
+  SENTENCE_COMPLETION = "SENTENCE_COMPLETION",
+  SHORT_ANSWER = "SHORT_ANSWER",
+  TABLE_COMPLETION = "TABLE_COMPLETION",
+  FLOW_CHART_COMPLETION = "FLOW_CHART_COMPLETION",
+  DIAGRAM_LABELLING = "DIAGRAM_LABELLING",
+  MATCHING_FEATURES = "MATCHING_FEATURES",
+  MATCHING_SENTENCE_ENDINGS = "MATCHING_SENTENCE_ENDINGS",
+  PLAN_MAP_LABELLING = "PLAN_MAP_LABELLING",
 }
 
 export class ListeningPartAudioDto {
@@ -48,16 +65,38 @@ export class ListeningPartAudioDto {
   duration?: number;
 }
 
-export class ListeningPartMultipleChoiceOptionDto {
-  @ApiProperty({ example: "A" })
-  @IsString()
-  @IsNotEmpty()
-  value: string;
+// ========== Sub-question nested DTO ==========
+export class ListeningPartSubQuestionDto {
+  @ApiProperty({ example: 1, required: false })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  questionNumber?: number;
 
-  @ApiProperty({ example: "Climate change and its effects" })
+  @ApiProperty({ example: "", required: false })
   @IsString()
-  @IsNotEmpty()
-  label: string;
+  @IsOptional()
+  questionText?: string;
+
+  @ApiProperty({ example: 1, required: false })
+  @IsNumber()
+  @IsOptional()
+  points?: number;
+
+  @ApiProperty({ example: "library", required: false })
+  @IsString()
+  @IsOptional()
+  correctAnswer?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  explanation?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  fromPassage?: string;
 
   @ApiProperty({ example: 1, required: false })
   @IsInt()
@@ -66,95 +105,105 @@ export class ListeningPartMultipleChoiceOptionDto {
   order?: number;
 }
 
-export class ListeningPartMultipleChoiceQuestionDto {
-  @ApiProperty({ example: "What is the main topic of the conversation?" })
-  @IsString()
-  @IsNotEmpty()
-  question: string;
-
-  @ApiProperty({ example: 1, required: false })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  order?: number;
-
-  @ApiProperty({
-    type: [ListeningPartMultipleChoiceOptionDto],
-    required: false,
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ListeningPartMultipleChoiceOptionDto)
-  @IsOptional()
-  options?: ListeningPartMultipleChoiceOptionDto[];
-}
-
+// ========== Option nested DTO ==========
 export class ListeningPartQuestionOptionDto {
-  @ApiProperty({ example: "A" })
+  @ApiProperty({ example: "A", required: false })
   @IsString()
-  @IsNotEmpty()
-  value: string;
+  @IsOptional()
+  optionKey?: string;
 
-  @ApiProperty({ example: "The library" })
+  @ApiProperty({ example: "The library", required: false })
   @IsString()
-  @IsNotEmpty()
-  label: string;
+  @IsOptional()
+  optionText?: string;
 
-  @ApiProperty({ example: 1, required: false })
+  @ApiProperty({ example: false, required: false })
+  @IsBoolean()
+  @IsOptional()
+  isCorrect?: boolean;
+
+  @ApiProperty({ example: 0, required: false })
   @IsInt()
   @Min(0)
   @IsOptional()
-  order?: number;
-}
+  orderIndex?: number;
 
-export class ListeningPartQuestionContentDto {
-  @ApiProperty({
-    enum: QuestionContentTypeEnum,
-    example: QuestionContentTypeEnum.COMPLETION,
-  })
-  @IsEnum(QuestionContentTypeEnum)
-  @IsNotEmpty()
-  type: QuestionContentTypeEnum;
-
-  @ApiProperty({ example: "Questions 1-5", required: false })
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  title?: string;
+  explanation?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  fromPassage?: string;
+}
+
+// ========== Question nested DTO ==========
+export class ListeningPartQuestionDto {
+  @ApiProperty({ example: 1, required: false })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  questionNumber?: number;
+
+  @ApiProperty({ enum: QuestionTypeEnum, required: false })
+  @IsEnum(QuestionTypeEnum)
+  @IsOptional()
+  type?: QuestionTypeEnum;
+
+  @ApiProperty({ example: "----", required: false })
+  @IsString()
+  @IsOptional()
+  questionText?: string;
 
   @ApiProperty({ example: "Complete the notes below", required: false })
   @IsString()
   @IsOptional()
-  condition?: string;
+  instruction?: string;
 
-  @ApiProperty({
-    example: "The library is open from @@ to @@",
-    required: false,
-  })
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  content?: string;
+  context?: string;
 
-  @ApiProperty({ example: 2, required: false })
-  @IsInt()
-  @Min(1)
+  @ApiProperty({ required: false })
+  @IsObject()
   @IsOptional()
-  limit?: number;
+  headingOptions?: any;
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  tableData?: any;
+
+  @ApiProperty({ example: 5, required: false })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  points?: number;
 
   @ApiProperty({ example: true, required: false })
   @IsBoolean()
   @IsOptional()
-  showOptions?: boolean;
+  isActive?: boolean;
 
-  @ApiProperty({ example: "Choose from the following:", required: false })
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  optionsTitle?: string;
+  explanation?: string;
 
-  @ApiProperty({ example: 1, required: false })
-  @IsInt()
-  @Min(0)
+  @ApiProperty({ required: false })
+  @IsString()
   @IsOptional()
-  order?: number;
+  fromPassage?: string;
+
+  @ApiProperty({ type: [ListeningPartSubQuestionDto], required: false })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ListeningPartSubQuestionDto)
+  @IsOptional()
+  questions?: ListeningPartSubQuestionDto[];
 
   @ApiProperty({ type: [ListeningPartQuestionOptionDto], required: false })
   @IsArray()
@@ -162,33 +211,9 @@ export class ListeningPartQuestionContentDto {
   @Type(() => ListeningPartQuestionOptionDto)
   @IsOptional()
   options?: ListeningPartQuestionOptionDto[];
-
-  @ApiProperty({
-    type: [ListeningPartMultipleChoiceQuestionDto],
-    required: false,
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ListeningPartMultipleChoiceQuestionDto)
-  @IsOptional()
-  multipleChoiceQuestions?: ListeningPartMultipleChoiceQuestionDto[];
 }
 
-export class ListeningPartQuestionDto {
-  @ApiProperty({ example: 10, required: false })
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  number_of_questions?: number;
-
-  @ApiProperty({ type: [ListeningPartQuestionContentDto], required: false })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ListeningPartQuestionContentDto)
-  @IsOptional()
-  contents?: ListeningPartQuestionContentDto[];
-}
-
+// ========== Main DTO ==========
 export class CreateListeningPartDto {
   @ApiProperty({
     description: "The listening ID this part belongs to",
@@ -226,15 +251,6 @@ export class CreateListeningPartDto {
   audio_id?: string;
 
   @ApiProperty({
-    description: "Answer keys for the questions",
-    example: { "1": "library", "2": "Tuesday", "3": "3pm" },
-    required: false,
-  })
-  @IsObject()
-  @IsOptional()
-  answers?: Record<string, any>;
-
-  @ApiProperty({
     description: "Audio for this listening part",
     type: ListeningPartAudioDto,
     required: false,
@@ -243,6 +259,44 @@ export class CreateListeningPartDto {
   @Type(() => ListeningPartAudioDto)
   @IsOptional()
   audio?: ListeningPartAudioDto;
+
+  @ApiProperty({
+    description: "Time limit in minutes",
+    example: 20,
+    required: false,
+  })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  timeLimitMinutes?: number;
+
+  @ApiProperty({
+    description: "Difficulty level",
+    enum: DifficultyEnum,
+    required: false,
+  })
+  @IsEnum(DifficultyEnum)
+  @IsOptional()
+  difficulty?: DifficultyEnum;
+
+  @ApiProperty({
+    description: "Whether this part is active",
+    example: true,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiProperty({
+    description: "Total number of questions",
+    example: 10,
+    required: false,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  totalQuestions?: number;
 
   @ApiProperty({
     description: "Questions for this listening part",

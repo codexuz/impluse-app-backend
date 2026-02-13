@@ -43,14 +43,13 @@ export class CreateWritingTaskDto {
   prompt?: string;
 
   @ApiProperty({
-    description: "Instructions for the task",
-    example:
-      "Summarize the information by selecting and reporting the main features...",
+    description: "Image URL for the task (e.g. chart, graph, diagram)",
+    example: "https://example.com/images/chart.png",
     required: false,
   })
   @IsString()
   @IsOptional()
-  instructions?: string;
+  image_url?: string;
 
   @ApiProperty({
     description: "Minimum word count required",

@@ -80,12 +80,12 @@ export class SaveReadingAnswerDto {
   part_id: string;
 
   @ApiProperty({
-    description: "Question content ID",
+    description: "Question ID",
     example: "123e4567-e89b-12d3-a456-426614174000",
   })
   @IsUUID()
   @IsNotEmpty()
-  question_content_id: string;
+  question_id: string;
 
   @ApiPropertyOptional({
     description: "Question number (e.g., 1, 2, 3...)",
@@ -135,12 +135,12 @@ export class SaveListeningAnswerDto {
   part_id: string;
 
   @ApiProperty({
-    description: "Question content ID",
+    description: "Question ID",
     example: "123e4567-e89b-12d3-a456-426614174000",
   })
   @IsUUID()
   @IsNotEmpty()
-  question_content_id: string;
+  question_id: string;
 
   @ApiPropertyOptional({
     description: "Question number (e.g., 1, 2, 3...)",

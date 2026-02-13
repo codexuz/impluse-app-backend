@@ -7,14 +7,13 @@ import {
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
-import { IeltsQuestionContent } from "./ielts-question-content.entity.js";
-import { IeltsMultipleChoiceOption } from "./ielts-multiple-choice-option.entity.js";
+import { IeltsQuestion } from "./ielts-question.entity.js";
 
 @Table({
-  tableName: "ielts_multiple_choice_questions",
+  tableName: "ielts_sub_questions",
   timestamps: true,
 })
-export class IeltsMultipleChoiceQuestion extends Model<IeltsMultipleChoiceQuestion> {
+export class IeltsSubQuestion extends Model<IeltsSubQuestion> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,
@@ -22,18 +21,49 @@ export class IeltsMultipleChoiceQuestion extends Model<IeltsMultipleChoiceQuesti
   })
   id: string;
 
-  @ForeignKey(() => IeltsQuestionContent)
+  @ForeignKey(() => IeltsQuestion)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
-  question_content_id: string;
+  question_id: string;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  questionNumber: number;
 
   @Column({
     type: DataType.TEXT,
-    allowNull: false,
+    allowNull: true,
   })
-  question: string;
+  questionText: string;
+
+  @Column({
+    type: DataType.DECIMAL(6, 2),
+    allowNull: true,
+    defaultValue: 1,
+  })
+  points: number;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  correctAnswer: string;
+
+  @Column({
+    type: DataType.TEXT("long"),
+    allowNull: true,
+  })
+  explanation: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  fromPassage: string;
 
   @Column({
     type: DataType.INTEGER,
