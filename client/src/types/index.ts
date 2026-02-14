@@ -17,6 +17,7 @@ export const QuestionType = {
   MATCHING_FEATURES: "MATCHING_FEATURES",
   MATCHING_SENTENCE_ENDINGS: "MATCHING_SENTENCE_ENDINGS",
   PLAN_MAP_LABELLING: "PLAN_MAP_LABELLING",
+  MULTIPLE_ANSWER: "MULTIPLE_ANSWER",
 } as const;
 export type QuestionType = (typeof QuestionType)[keyof typeof QuestionType];
 
@@ -447,4 +448,5 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   [QuestionType.MATCHING_FEATURES]: "Matching Features",
   [QuestionType.MATCHING_SENTENCE_ENDINGS]: "Matching Sentence Endings",
   [QuestionType.PLAN_MAP_LABELLING]: "Plan / Map Labelling",
+  [QuestionType.MULTIPLE_ANSWER]: "Multiple Answer",
 };

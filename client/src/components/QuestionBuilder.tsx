@@ -21,6 +21,7 @@ const DEFAULT_INSTRUCTIONS: Partial<Record<QuestionType, string>> = {
   [QuestionType.YES_NO_NOT_GIVEN]:
     "Do the following statements agree with the views of the writer? Write YES if the statement agrees with the views of the writer, NO if the statement contradicts the views of the writer, NOT GIVEN if it is impossible to say what the writer thinks about this.",
   [QuestionType.MULTIPLE_CHOICE]: "Choose the correct letter, A, B, C or D.",
+  [QuestionType.MULTIPLE_ANSWER]: "Choose the correct answers.",
   [QuestionType.NOTE_COMPLETION]:
     "Complete the notes below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer.",
   [QuestionType.SENTENCE_COMPLETION]:
@@ -69,6 +70,7 @@ const TYPES_WITH_BOTH: QuestionType[] = [
   QuestionType.MATCHING_FEATURES,
   QuestionType.MATCHING_SENTENCE_ENDINGS,
   QuestionType.PLAN_MAP_LABELLING,
+  QuestionType.MULTIPLE_ANSWER,
 ];
 
 const TYPES_WITH_HEADING_OPTIONS: QuestionType[] = [
@@ -87,6 +89,7 @@ const CORRECT_ANSWER_HINTS: Partial<Record<QuestionType, string>> = {
   [QuestionType.MATCHING_SENTENCE_ENDINGS]: "Option key (e.g. A, B, C)",
   [QuestionType.SUMMARY_COMPLETION_DRAG_DROP]: "Option key (e.g. A, B, C)",
   [QuestionType.PLAN_MAP_LABELLING]: "Option key (e.g. A, B, C)",
+  [QuestionType.MULTIPLE_ANSWER]: "Option key (e.g. A, B, C)",
 };
 
 function needsSubQuestions(type?: QuestionType): boolean {

@@ -1135,6 +1135,7 @@ GET /ielts-answers/writing/:attemptId
 | `MATCHING_FEATURES`           | Match features to categories                   |
 | `MATCHING_SENTENCE_ENDINGS`   | Match sentence beginnings to endings           |
 | `PLAN_MAP_LABELLING`          | Label a plan or map                            |
+| `MULTIPLE_ANSWER`             | Choose multiple correct answers from a list    |
 
 ### Attempt Scope
 | Value    | Description              |
@@ -1181,6 +1182,7 @@ This section provides **complete, copy-paste-ready JSON** for every question typ
 | `MATCHING_SENTENCE_ENDINGS` | ✅ | ✅ | — | `sub.correctAnswer` = option key |
 | `DIAGRAM_LABELLING` | ✅ | ❌ | — | `sub.correctAnswer` = text |
 | `PLAN_MAP_LABELLING` | ✅ | ✅ | — | `sub.correctAnswer` = option key |
+| `MULTIPLE_ANSWER` | ✅ | ✅ | — | `option.isCorrect = true` (multiple) |
 
 > **UI Rule:** If a type has `options[]`, render selectable choices. If it has only `questions[]` (sub-questions), render text input fields. If it has both, render a drag-drop or select-from-list interface.
 
@@ -2058,12 +2060,80 @@ further research in the field.", "isCorrect": false, "orderIndex": 5 }
 
 ---
 
+### 6.17 MULTIPLE_ANSWER
+
+**Uses:** Sub-questions + Options  
+**Correct answers:** Multiple options with `isCorrect: true`  
+**UI:** Show question text + checkboxes for A/B/C/D/E/F/G; user selects the required number of correct answers
+
+```json
+{
+  "listening_part_id": "uuid-of-listening-part",
+  "questionNumber": 18,
+  "type": "MULTIPLE_ANSWER",
+  "instruction": "Choose THREE correct answers.",
+  "questionText": "<p>Which <strong>THREE</strong> ways did the new well improve Helen's life?</p>",
+  "points": 3,
+  "options": [
+    { "optionKey": "A", "optionText": "her children enjoyed better health", "isCorrect": true, "orderIndex": 0 },
+    { "optionKey": "B", "optionText": "it increased her household income", "isCorrect": false, "orderIndex": 1 },
+    { "optionKey": "C", "optionText": "it gave her more free time", "isCorrect": true, "orderIndex": 2 },
+    { "optionKey": "D", "optionText": "she got a leadership position", "isCorrect": false, "orderIndex": 3 },
+    { "optionKey": "E", "optionText": "she had more choices and options", "isCorrect": true, "orderIndex": 4 },
+    { "optionKey": "F", "optionText": "she made new friends in her village", "isCorrect": false, "orderIndex": 5 },
+    { "optionKey": "G", "optionText": "it allowed her to go to school", "isCorrect": false, "orderIndex": 6 }
+  ],
+  "questions": [
+    {
+      "questionNumber": 18,
+      "questionText": "----",
+      "correctAnswer": "A",
+      "points": 1,
+      "order": 1
+    },
+    {
+      "questionNumber": 19,
+      "questionText": "----",
+      "correctAnswer": "C",
+      "points": 1,
+      "order": 2
+    },
+    {
+      "questionNumber": 20,
+      "questionText": "----",
+      "correctAnswer": "E",
+      "points": 1,
+      "order": 3
+    }
+  ]
+}
+```
+
+**Required fields for UI form:**
+| Field | Required | Notes |
+|---|---|---|
+| `type` | ✅ | `MULTIPLE_ANSWER` |
+| `questionText` | ✅ | The question (e.g. "Which THREE ways...") |
+| `instruction` | ✅ | "Choose THREE correct answers." |
+| `points` | ✅ | Total points (typically = number of correct answers) |
+| `options[].optionKey` | ✅ | `A`, `B`, `C`, ... |
+| `options[].optionText` | ✅ | The choice text |
+| `options[].isCorrect` | ✅ | Multiple can be `true` |
+| `options[].orderIndex` | ✅ | Display order (0-based) |
+| `questions[]` | ✅ | One sub-question per expected answer slot |
+| `questions[].correctAnswer` | ✅ | The option key of the correct choice |
+
+> **Key Difference from MULTIPLE_CHOICE:** In `MULTIPLE_CHOICE`, exactly **one** option is correct and the UI uses radio buttons. In `MULTIPLE_ANSWER`, **multiple** options are correct and the UI uses checkboxes. Sub-questions represent answer slots — the number of sub-questions equals the number of correct answers expected.
+
+---
+
 ### UI Implementation Summary
 
 | Category | Types | Input Component |
 |---|---|---|
 | **Radio (3 choices)** | `TRUE_FALSE_NOT_GIVEN`, `YES_NO_NOT_GIVEN` | 3 radio buttons per sub-question |
 | **Radio (4 choices)** | `MULTIPLE_CHOICE` | A/B/C/D radio buttons from `options[]` |
+| **Checkboxes (multi-select)** | `MULTIPLE_ANSWER` | Checkboxes from `options[]`, select N correct |
 | **Text Input** | `NOTE_COMPLETION`, `SENTENCE_COMPLETION`, `SUMMARY_COMPLETION`, `SHORT_ANSWER`, `TABLE_COMPLETION`, `FLOW_CHART_COMPLETION`, `DIAGRAM_LABELLING` | Text `<input>` per sub-question |
 | **Select / Dropdown** | `MATCHING_HEADINGS`, `MATCHING_INFORMATION`, `MATCHING_FEATURES`, `PLAN_MAP_LABELLING` | `<select>` from `headingOptions` or `options[]` |
 | **Drag & Drop** | `SUMMARY_COMPLETION_DRAG_DROP`, `MATCHING_SENTENCE_ENDINGS` | Draggable chips / selectable list |
@@ -2073,7 +2143,7 @@ further research in the field.", "isCorrect": false, "orderIndex": 5 }
 | Field | Validation | Notes |
 |---|---|---|
 | `questionNumber` | `integer >= 1` | Unique within the part |
-| `type` | Must be one of 16 enum values | See Quick Reference table |
+| `type` | Must be one of 17 enum values | See Quick Reference table |
 | `points` | `integer >= 0` | Total for the question group |
 | `questions[].correctAnswer` | Required for auto-grading | Format depends on type |
 | `questions[].order` | `integer >= 0` | Sequential within the group |
