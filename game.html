@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Active Recall Flashcards</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #0f172a;
+            --bg: #f1f5f9;
+            --text: #1e293b;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: var(--text);
+        }
+
+        .container {
+            perspective: 1000px;
+            width: 90%;
+            max-width: 450px;
+            height: 320px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* Front: Definition */
+        .card-face-front {
+            background: var(--white);
+        }
+
+        /* Back: The Word */
+        .card-face-back {
+            background: var(--primary);
+            color: var(--white);
+            transform: rotateY(180deg);
+        }
+
+        .card-face-front p {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--secondary);
+            line-height: 1.6;
+        }
+
+        .card-face-back h2 {
+            font-size: 2.5rem;
+            margin: 0;
+            letter-spacing: -1px;
+        }
+
+        .label {
+            position: absolute;
+            top: 20px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.5;
+        }
+
+        .controls {
+            margin-top: 40px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            background: var(--secondary);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        button:hover {
+            background: #1e293b;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .counter {
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card" id="card">
+            <div class="card-face card-face-front">
+                <span class="label">Definition</span>
+                <p id="def-display">Loading...</p>
+            </div>
+            <div class="card-face card-face-back">
+                <span class="label" style="color: white">The Word</span>
+                <h2 id="word-display"></h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="prevCard()">Prev</button>
+        <div class="counter" id="counter">1 / 48</div>
+        <button onclick="nextCard()">Next</button>
+    </div>
+
+    <script>
+        const vocab = [
+            { w: "Neglect", d: "To ignore or abandon something that needs care." },
+            { w: "Restoration", d: "The process of repairing or renewing a building or work of art." },
+            { w: "Former", d: "Existing in the past; ex- or previous." },
+            { w: "Glory", d: "When something is beautiful and impressive in appearance." },
+            { w: "Spectacular", d: "Fantastic, stunning, amazing, impressive, or fabulous." },
+            { w: "Bygone", d: "Belonging to an earlier time; past or former." },
+            { w: "Inhabitant", d: "A person or animal that lives in or occupies a place; resident." },
+            { w: "Monument", d: "A structure built to remind people of a famous person or event." },
+            { w: "Irrigate", d: "To supply land or crops with water to help growth." },
+            { w: "Utilitarian", d: "Designed to be useful or practical rather than attractive." },
+            { w: "Unique", d: "The only one of its kind; distinctive or sole." },
+            { w: "Heyday", d: "The period of a person's or thing's greatest success or popularity." },
+            { w: "Caste", d: "A system of social class, specifically in India." },
+            { w: "Position", d: "To put or arrange someone or something in a particular place." },
+            { w: "Comprise", d: "To consist of; to be made up of; to include or contain." },
+            { w: "Descend", d: "To move or go downwards; to tumble down." },
+            { w: "Negotiate", d: "To find a way through a path; or to discuss and consult." },
+            { w: "Crater", d: "A large, bowl-shaped cavity in the ground (a hole)." },
+            { w: "Tier", d: "One of several levels or layers rising one above another." },
+            { w: "Elaborate", d: "Involving many carefully arranged parts; intricate or complex." },
+            { w: "Pillar", d: "A tall upright post used as a support for a structure." },
+            { w: "Pavilion", d: "A decorative building or area for exhibitions and spectators." },
+            { w: "Shelter", d: "A place giving temporary protection from bad weather or danger." },
+            { w: "Intricate", d: "Very complicated or detailed; elaborate." },
+            { w: "Relentless", d: "Constant, persistent, and never-ending." },
+            { w: "Sculpture", d: "The art of making two- or three-dimensional representative forms (statues)." },
+            { w: "Embellish", d: "To make something more attractive by adding decorative details." },
+            { w: "Derelict", d: "In a very poor condition as a result of disuse and neglect." },
+            { w: "Divert", d: "To cause someone or something to change course or turn away." },
+            { w: "Undergo", d: "To experience or be subjected to something (typically unpleasant)." },
+            { w: "Finest", d: "Of the best or most excellent quality." },
+            { w: "Pristine", d: "In its original condition; unspoiled, untouched, or like new." },
+            { w: "Depict", d: "To show or represent by a drawing, painting, or other art form." },
+            { w: "Incarnation", d: "The state of living in the form of a particular person or animal." },
+            { w: "Devastating", d: "Highly destructive, harmful, or ruinous." },
+            { w: "Earthquake", d: "A sudden shaking of the ground causing great damage." },
+            { w: "Honour", d: "To show high respect or great admiration for someone." },
+            { w: "Commissioned", d: "Specially ordered or custom-built for a specific purpose." },
+            { w: "Ruined", d: "Destroyed or severely damaged." },
+            { w: "Dramatic", d: "Striking, remarkable, or extraordinary in appearance." },
+            { w: "Striking", d: "Attracting attention by being unusual, extreme, or good-looking." },
+            { w: "Ornate", d: "Made in an intricate shape or decorated with complex patterns." },
+            { w: "Preserve", d: "To maintain something in its original or existing state." },
+            { w: "Flock", d: "To gather or move in a large group." },
+            { w: "Marvel", d: "A wonderful or astonishing person or thing; a wonder." },
+            { w: "Ingenuity", d: "The quality of being clever, original, and inventive." }
+        ];
+
+        let currentIndex = 0;
+        const card = document.getElementById('card');
+        const wordDisplay = document.getElementById('word-display');
+        const defDisplay = document.getElementById('def-display');
+        const counterDisplay = document.getElementById('counter');
+
+        function updateCard() {
+            card.classList.remove('is-flipped');
+            // Small delay to hide text change while card flips back
+            setTimeout(() => {
+                wordDisplay.innerText = vocab[currentIndex].w;
+                defDisplay.innerText = vocab[currentIndex].d;
+                counterDisplay.innerText = `${currentIndex + 1} / ${vocab.length}`;
+            }, 150);
+        }
+
+        card.addEventListener('click', () => {
+            card.classList.toggle('is-flipped');
+        });
+
+        function nextCard() {
+            currentIndex = (currentIndex + 1) % vocab.length;
+            updateCard();
+        }
+
+        function prevCard() {
+            currentIndex = (currentIndex - 1 + vocab.length) % vocab.length;
+            updateCard();
+        }
+
+        // Initialize first card
+        updateCard();
+    </script>
+</body>
+</html>
