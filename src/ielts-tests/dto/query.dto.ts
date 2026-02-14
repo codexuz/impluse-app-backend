@@ -189,6 +189,25 @@ export class ListeningPartQueryDto extends PaginationDto {
   part?: string;
 }
 
+export class WritingTaskQueryDto extends PaginationDto {
+  @ApiProperty({
+    description: "Filter by writing ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  writingId?: string;
+
+  @ApiProperty({
+    description: "Filter by task type",
+    enum: ["TASK_1", "TASK_2"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  task?: string;
+}
+
 export class QuestionQueryDto extends PaginationDto {
   @ApiProperty({
     description: "Filter by reading part ID",

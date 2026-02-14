@@ -21,7 +21,9 @@ import type {
   CreateListeningPartDto,
   UpdateListeningPartDto,
   CreateWritingDto,
+  UpdateWritingDto,
   CreateWritingTaskDto,
+  UpdateWritingTaskDto,
   CreateQuestionDto,
   UpdateQuestionDto,
   CreateSubQuestionDto,
@@ -35,6 +37,7 @@ import type {
   ListeningQuery,
   ListeningPartQuery,
   WritingQuery,
+  WritingTaskQuery,
   PaginationQuery,
 } from "../types";
 
@@ -145,6 +148,9 @@ export const listeningApi = {
 
   getById: (id: string) =>
     api.get<IeltsListening>(`/ielts-listening/${id}`).then((r) => r.data),
+
+  delete: (id: string) =>
+    api.delete(`/ielts-listening/${id}`).then((r) => r.data),
 };
 
 // ==================== LISTENING PARTS ====================
@@ -193,6 +199,12 @@ export const writingApi = {
 
   getById: (id: string) =>
     api.get<IeltsWriting>(`/ielts-writing/${id}`).then((r) => r.data),
+
+  update: (id: string, data: UpdateWritingDto) =>
+    api.patch<IeltsWriting>(`/ielts-writing/${id}`, data).then((r) => r.data),
+
+  delete: (id: string) =>
+    api.delete(`/ielts-writing/${id}`).then((r) => r.data),
 };
 
 // ==================== WRITING TASKS ====================
@@ -201,8 +213,24 @@ export const writingTasksApi = {
   create: (data: CreateWritingTaskDto) =>
     api.post<IeltsWritingTask>("/ielts-writing/task", data).then((r) => r.data),
 
+  getAll: (query?: WritingTaskQuery) =>
+    api
+      .get<{
+        data: IeltsWritingTask[];
+        total: number;
+      }>("/ielts-writing/tasks", { params: query })
+      .then((r) => r.data),
+
   getById: (id: string) =>
     api.get<IeltsWritingTask>(`/ielts-writing/task/${id}`).then((r) => r.data),
+
+  update: (id: string, data: UpdateWritingTaskDto) =>
+    api
+      .patch<IeltsWritingTask>(`/ielts-writing/task/${id}`, data)
+      .then((r) => r.data),
+
+  delete: (id: string) =>
+    api.delete(`/ielts-writing/task/${id}`).then((r) => r.data),
 };
 
 // ==================== QUESTIONS ====================

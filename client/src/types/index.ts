@@ -315,6 +315,8 @@ export interface CreateWritingDto {
   is_active?: boolean;
 }
 
+export type UpdateWritingDto = Partial<CreateWritingDto>;
+
 export interface CreateWritingTaskDto {
   writing_id: string;
   task: WritingTask;
@@ -323,6 +325,8 @@ export interface CreateWritingTaskDto {
   min_words?: number;
   suggested_time?: number;
 }
+
+export type UpdateWritingTaskDto = Partial<CreateWritingTaskDto>;
 
 export interface CreateQuestionDto {
   reading_part_id?: string;
@@ -409,6 +413,11 @@ export interface ListeningPartQuery extends PaginationQuery {
 export interface WritingQuery extends PaginationQuery {
   testId?: string;
   isActive?: boolean;
+}
+
+export interface WritingTaskQuery extends PaginationQuery {
+  writingId?: string;
+  task?: WritingTask;
 }
 
 // ==================== API RESPONSE ====================

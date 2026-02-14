@@ -185,7 +185,7 @@ export class IeltsTestsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Delete an IELTS test" })
   @ApiParam({ name: "id", description: "The test ID" })
   @ApiResponse({

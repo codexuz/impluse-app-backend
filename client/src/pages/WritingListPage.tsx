@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PenTool, Eye } from "lucide-react";
+import { PenTool, Eye, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { writingApi } from "../services/api";
 import type { IeltsWriting, WritingQuery } from "../types";
@@ -24,6 +24,17 @@ export default function WritingListPage() {
       toast.error("Failed to fetch writings");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this writing section?")) return;
+    try {
+      await writingApi.delete(id);
+      toast.success("Writing deleted");
+      fetchData();
+    } catch {
+      toast.error("Failed to delete writing");
     }
   };
 
@@ -87,12 +98,21 @@ export default function WritingListPage() {
                   </td>
                   <td>{new Date(w.createdAt).toLocaleDateString()}</td>
                   <td>
-                    <button
-                      className="icon-btn"
-                      onClick={() => navigate(`/writing/${w.id}`)}
-                    >
-                      <Eye size={15} />
-                    </button>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button
+                        className="icon-btn"
+                        onClick={() => navigate(`/writing/${w.id}`)}
+                      >
+                        <Eye size={15} />
+                      </button>
+                      <button
+                        className="icon-btn danger"
+                        onClick={() => handleDelete(w.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

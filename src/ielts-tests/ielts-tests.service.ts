@@ -20,6 +20,8 @@ import { CreateListeningDto } from "./dto/create-listening.dto.js";
 import { CreateListeningPartDto } from "./dto/create-listening-part.dto.js";
 import { CreateWritingDto } from "./dto/create-writing.dto.js";
 import { CreateWritingTaskDto } from "./dto/create-writing-task.dto.js";
+import { UpdateWritingDto } from "./dto/update-writing.dto.js";
+import { UpdateWritingTaskDto } from "./dto/update-writing-task.dto.js";
 import { CreateAudioDto } from "./dto/create-audio.dto.js";
 import { CreateQuestionDto } from "./dto/create-question.dto.js";
 import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
@@ -34,6 +36,7 @@ import {
   ReadingQueryDto,
   ListeningQueryDto,
   WritingQueryDto,
+  WritingTaskQueryDto,
   ReadingPartQueryDto,
   ListeningPartQueryDto,
   QuestionQueryDto,
@@ -394,6 +397,11 @@ export class IeltsTestsService {
     return listening;
   }
 
+  async deleteListening(id: string): Promise<void> {
+    const listening = await this.findListeningById(id);
+    await listening.destroy();
+  }
+
   // ========== Listening Parts ==========
   async createListeningPart(
     createListeningPartDto: CreateListeningPartDto,
@@ -544,11 +552,56 @@ export class IeltsTestsService {
     return writing;
   }
 
+  async updateWriting(
+    id: string,
+    updateWritingDto: UpdateWritingDto,
+  ): Promise<IeltsWriting> {
+    const writing = await this.findWritingById(id);
+    await writing.update(updateWritingDto);
+    return writing;
+  }
+
+  async deleteWriting(id: string): Promise<void> {
+    const writing = await this.findWritingById(id);
+    await writing.destroy();
+  }
+
   // ========== Writing Tasks ==========
   async createWritingTask(
     createWritingTaskDto: CreateWritingTaskDto,
   ): Promise<IeltsWritingTask> {
     return await this.ieltsWritingTaskModel.create(createWritingTaskDto as any);
+  }
+
+  async findAllWritingTasks(query: WritingTaskQueryDto) {
+    const { page = 1, limit = 10, search, writingId, task } = query;
+    const where: any = {};
+
+    if (search) {
+      where.prompt = { [Op.like]: `%${search}%` };
+    }
+    if (writingId) {
+      where.writing_id = writingId;
+    }
+    if (task) {
+      where.task = task;
+    }
+
+    const { rows, count } = await this.ieltsWritingTaskModel.findAndCountAll({
+      where,
+      include: [{ model: IeltsWriting, as: "writing" }],
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findWritingTaskById(id: string): Promise<IeltsWritingTask> {
@@ -561,6 +614,20 @@ export class IeltsTestsService {
     }
 
     return task;
+  }
+
+  async updateWritingTask(
+    id: string,
+    updateWritingTaskDto: UpdateWritingTaskDto,
+  ): Promise<IeltsWritingTask> {
+    const task = await this.findWritingTaskById(id);
+    await task.update(updateWritingTaskDto as any);
+    return task;
+  }
+
+  async deleteWritingTask(id: string): Promise<void> {
+    const task = await this.findWritingTaskById(id);
+    await task.destroy();
   }
 
   // ========== Audio ==========

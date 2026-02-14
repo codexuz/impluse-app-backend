@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -61,5 +62,14 @@ export class IeltsListeningController {
   @ApiParam({ name: "id", description: "The listening ID" })
   async findListeningById(@Param("id") id: string) {
     return await this.ieltsTestsService.findListeningById(id);
+  }
+
+  @Delete(":id")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Delete a listening section" })
+  @ApiParam({ name: "id", description: "The listening ID" })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteListening(@Param("id") id: string) {
+    return await this.ieltsTestsService.deleteListening(id);
   }
 }

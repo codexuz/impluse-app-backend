@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Save } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, Edit3, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { writingApi, writingTasksApi } from "../services/api";
 import { WritingTask } from "../types";
@@ -8,6 +8,7 @@ import type {
   IeltsWriting,
   IeltsWritingTask,
   CreateWritingTaskDto,
+  UpdateWritingTaskDto,
 } from "../types";
 
 export default function WritingBuilderPage() {
@@ -17,6 +18,8 @@ export default function WritingBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editTaskForm, setEditTaskForm] = useState<UpdateWritingTaskDto>({});
 
   const emptyTaskForm = (): CreateWritingTaskDto => ({
     writing_id: id!,
@@ -61,6 +64,54 @@ export default function WritingBuilderPage() {
     }
   };
 
+  const handleEditTask = (task: IeltsWritingTask) => {
+    setEditingTaskId(task.id);
+    setEditTaskForm({
+      prompt: task.prompt,
+      image_url: task.image_url,
+      min_words: task.min_words,
+      suggested_time: task.suggested_time,
+    });
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editingTaskId) return;
+    setSaving(true);
+    try {
+      await writingTasksApi.update(editingTaskId, editTaskForm);
+      toast.success("Task updated");
+      setEditingTaskId(null);
+      fetchData();
+    } catch {
+      toast.error("Failed to update task");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm("Delete this writing task?")) return;
+    try {
+      await writingTasksApi.delete(taskId);
+      toast.success("Task deleted");
+      fetchData();
+    } catch {
+      toast.error("Failed to delete task");
+    }
+  };
+
+  const handleDeleteWriting = async () => {
+    if (!confirm("Delete this entire writing section and all its tasks?"))
+      return;
+    try {
+      await writingApi.delete(id!);
+      toast.success("Writing section deleted");
+      navigate(-1);
+    } catch {
+      toast.error("Failed to delete writing");
+    }
+  };
+
   const usedTasks = (writing?.tasks || []).map((t: IeltsWritingTask) => t.task);
   const availableTasks = Object.values(WritingTask).filter(
     (t) => !usedTasks.includes(t),
@@ -86,6 +137,13 @@ export default function WritingBuilderPage() {
           <ArrowLeft size={16} /> Back
         </button>
         <h2>Writing: {writing.title || "Writing Section"}</h2>
+        <button
+          className="btn btn-danger btn-sm"
+          onClick={handleDeleteWriting}
+          style={{ marginLeft: "auto" }}
+        >
+          <Trash2 size={14} /> Delete Writing
+        </button>
       </div>
 
       {/* Existing tasks */}
@@ -104,25 +162,126 @@ export default function WritingBuilderPage() {
                   <span className="muted">{task.suggested_time} min</span>
                 )}
               </div>
-            </div>
-            <div className="part-card-passage">
-              {task.prompt ? (
-                <p>
-                  {task.prompt.substring(0, 300)}
-                  {task.prompt.length > 300 ? "..." : ""}
-                </p>
-              ) : (
-                <p className="muted">No prompt set</p>
-              )}
-            </div>
-            {task.image_url && (
-              <div className="task-image">
-                <img
-                  src={task.image_url}
-                  alt="Task visual"
-                  style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 8 }}
-                />
+              <div style={{ display: "flex", gap: 6 }}>
+                {editingTaskId !== task.id && (
+                  <>
+                    <button
+                      className="icon-btn"
+                      title="Edit"
+                      onClick={() => handleEditTask(task)}
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      className="icon-btn danger"
+                      title="Delete"
+                      onClick={() => handleDeleteTask(task.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </>
+                )}
               </div>
+            </div>
+
+            {editingTaskId === task.id ? (
+              <div className="part-card-body" style={{ padding: "12px 16px" }}>
+                <div className="form-row">
+                  <div className="form-group" style={{ flex: "0 0 120px" }}>
+                    <label>Min Words</label>
+                    <input
+                      type="number"
+                      value={editTaskForm.min_words ?? ""}
+                      onChange={(e) =>
+                        setEditTaskForm({
+                          ...editTaskForm,
+                          min_words: parseInt(e.target.value) || undefined,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="form-group" style={{ flex: "0 0 120px" }}>
+                    <label>Time (min)</label>
+                    <input
+                      type="number"
+                      value={editTaskForm.suggested_time ?? ""}
+                      onChange={(e) =>
+                        setEditTaskForm({
+                          ...editTaskForm,
+                          suggested_time: parseInt(e.target.value) || undefined,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Prompt</label>
+                  <textarea
+                    rows={6}
+                    value={editTaskForm.prompt ?? ""}
+                    onChange={(e) =>
+                      setEditTaskForm({
+                        ...editTaskForm,
+                        prompt: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Image URL</label>
+                  <input
+                    value={editTaskForm.image_url ?? ""}
+                    onChange={(e) =>
+                      setEditTaskForm({
+                        ...editTaskForm,
+                        image_url: e.target.value,
+                      })
+                    }
+                    placeholder="https://example.com/image.png"
+                  />
+                </div>
+                <div className="form-actions">
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setEditingTaskId(null)}
+                  >
+                    <X size={14} /> Cancel
+                  </button>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={handleUpdateTask}
+                    disabled={saving}
+                  >
+                    <Save size={14} /> {saving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="part-card-passage">
+                  {task.prompt ? (
+                    <p>
+                      {task.prompt.substring(0, 300)}
+                      {task.prompt.length > 300 ? "..." : ""}
+                    </p>
+                  ) : (
+                    <p className="muted">No prompt set</p>
+                  )}
+                </div>
+                {task.image_url && (
+                  <div className="task-image">
+                    <img
+                      src={task.image_url}
+                      alt="Task visual"
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: 200,
+                        borderRadius: 8,
+                      }}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}

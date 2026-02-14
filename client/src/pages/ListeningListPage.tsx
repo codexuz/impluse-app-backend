@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Headphones, Eye } from "lucide-react";
+import { Headphones, Eye, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { listeningApi } from "../services/api";
 import type { IeltsListening, ListeningQuery } from "../types";
@@ -24,6 +24,17 @@ export default function ListeningListPage() {
       toast.error("Failed to fetch listenings");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this listening section?")) return;
+    try {
+      await listeningApi.delete(id);
+      toast.success("Listening deleted");
+      fetchData();
+    } catch {
+      toast.error("Failed to delete listening");
     }
   };
 
@@ -87,12 +98,21 @@ export default function ListeningListPage() {
                   </td>
                   <td>{new Date(l.createdAt).toLocaleDateString()}</td>
                   <td>
-                    <button
-                      className="icon-btn"
-                      onClick={() => navigate(`/listening/${l.id}`)}
-                    >
-                      <Eye size={15} />
-                    </button>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button
+                        className="icon-btn"
+                        onClick={() => navigate(`/listening/${l.id}`)}
+                      >
+                        <Eye size={15} />
+                      </button>
+                      <button
+                        className="icon-btn danger"
+                        onClick={() => handleDelete(l.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
