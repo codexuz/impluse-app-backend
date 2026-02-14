@@ -60,42 +60,6 @@ export class IeltsWritingController {
     return await this.ieltsTestsService.findAllWritings(query);
   }
 
-  @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get a writing section by ID" })
-  @ApiParam({ name: "id", description: "The writing ID" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "Return the requested writing section.",
-  })
-  async findWritingById(@Param("id") id: string) {
-    return await this.ieltsTestsService.findWritingById(id);
-  }
-
-  @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Update a writing section" })
-  @ApiParam({ name: "id", description: "The writing ID" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "The writing section has been successfully updated.",
-  })
-  async updateWriting(
-    @Param("id") id: string,
-    @Body() updateWritingDto: UpdateWritingDto,
-  ) {
-    return await this.ieltsTestsService.updateWriting(id, updateWritingDto);
-  }
-
-  @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Delete a writing section" })
-  @ApiParam({ name: "id", description: "The writing ID" })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteWriting(@Param("id") id: string) {
-    return await this.ieltsTestsService.deleteWriting(id);
-  }
-
   // ========== Writing Tasks ==========
   @Post("task")
   @HttpCode(HttpStatus.CREATED)
@@ -157,5 +121,41 @@ export class IeltsWritingController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteWritingTask(@Param("id") id: string) {
     return await this.ieltsTestsService.deleteWritingTask(id);
+  }
+
+  @Get(":id")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: "Get a writing section by ID" })
+  @ApiParam({ name: "id", description: "The writing ID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Return the requested writing section.",
+  })
+  async findWritingById(@Param("id") id: string) {
+    return await this.ieltsTestsService.findWritingById(id);
+  }
+
+  @Patch(":id")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Update a writing section" })
+  @ApiParam({ name: "id", description: "The writing ID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "The writing section has been successfully updated.",
+  })
+  async updateWriting(
+    @Param("id") id: string,
+    @Body() updateWritingDto: UpdateWritingDto,
+  ) {
+    return await this.ieltsTestsService.updateWriting(id, updateWritingDto);
+  }
+
+  @Delete(":id")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Delete a writing section" })
+  @ApiParam({ name: "id", description: "The writing ID" })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteWriting(@Param("id") id: string) {
+    return await this.ieltsTestsService.deleteWriting(id);
   }
 }
