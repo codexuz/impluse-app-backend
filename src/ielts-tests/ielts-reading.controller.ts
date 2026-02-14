@@ -86,7 +86,7 @@ export class IeltsReadingController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Delete a reading section" })
   @ApiParam({ name: "id", description: "The reading ID" })
   @HttpCode(HttpStatus.NO_CONTENT)
