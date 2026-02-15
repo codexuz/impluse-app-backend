@@ -478,13 +478,19 @@ export class IeltsTestsService {
     id: string,
     updateReadingDto: UpdateReadingDto,
   ): Promise<IeltsReading> {
-    const reading = await this.findReadingById(id);
+    const reading = await this.ieltsReadingModel.findByPk(id);
+    if (!reading) {
+      throw new NotFoundException(`Reading with ID ${id} not found`);
+    }
     await reading.update(updateReadingDto);
     return reading;
   }
 
   async deleteReading(id: string): Promise<void> {
-    const reading = await this.findReadingById(id);
+    const reading = await this.ieltsReadingModel.findByPk(id);
+    if (!reading) {
+      throw new NotFoundException(`Reading with ID ${id} not found`);
+    }
     await reading.destroy();
   }
 
@@ -587,13 +593,19 @@ export class IeltsTestsService {
     id: string,
     updateReadingPartDto: UpdateReadingPartDto,
   ): Promise<IeltsReadingPart> {
-    const part = await this.findReadingPartById(id);
+    const part = await this.ieltsReadingPartModel.findByPk(id);
+    if (!part) {
+      throw new NotFoundException(`Reading part with ID ${id} not found`);
+    }
     await part.update(updateReadingPartDto as any);
     return part;
   }
 
   async deleteReadingPart(id: string): Promise<void> {
-    const part = await this.findReadingPartById(id);
+    const part = await this.ieltsReadingPartModel.findByPk(id);
+    if (!part) {
+      throw new NotFoundException(`Reading part with ID ${id} not found`);
+    }
     await part.destroy();
   }
 
@@ -705,7 +717,10 @@ export class IeltsTestsService {
   }
 
   async deleteListening(id: string): Promise<void> {
-    const listening = await this.findListeningById(id);
+    const listening = await this.ieltsListeningModel.findByPk(id);
+    if (!listening) {
+      throw new NotFoundException(`Listening with ID ${id} not found`);
+    }
     await listening.destroy();
   }
 
@@ -788,13 +803,19 @@ export class IeltsTestsService {
     id: string,
     updateListeningPartDto: UpdateListeningPartDto,
   ): Promise<IeltsListeningPart> {
-    const part = await this.findListeningPartById(id);
+    const part = await this.ieltsListeningPartModel.findByPk(id);
+    if (!part) {
+      throw new NotFoundException(`Listening part with ID ${id} not found`);
+    }
     await part.update(updateListeningPartDto as any);
     return part;
   }
 
   async deleteListeningPart(id: string): Promise<void> {
-    const part = await this.findListeningPartById(id);
+    const part = await this.ieltsListeningPartModel.findByPk(id);
+    if (!part) {
+      throw new NotFoundException(`Listening part with ID ${id} not found`);
+    }
     await part.destroy();
   }
 
