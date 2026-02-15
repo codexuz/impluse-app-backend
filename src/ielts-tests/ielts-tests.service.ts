@@ -126,6 +126,11 @@ export class IeltsTestsService {
       }));
     };
 
+    // If data itself has headingOptions (single question)
+    if (plain.headingOptions) {
+      plain.headingOptions = this.sortHeadingOptions(plain.headingOptions);
+    }
+
     // If data has questions directly
     if (plain.questions) {
       plain.questions = sortQuestions(plain.questions);
@@ -894,10 +899,7 @@ export class IeltsTestsService {
       throw new NotFoundException(`Question with ID ${id} not found`);
     }
 
-    const plain =
-      typeof question.toJSON === "function" ? question.toJSON() : question;
-    plain.headingOptions = this.sortHeadingOptions(plain.headingOptions);
-    return plain;
+    return question;
   }
 
   async updateQuestion(
@@ -920,7 +922,7 @@ export class IeltsTestsService {
       }
     }
 
-    return await this.findQuestionById(id);
+    return this.sortQuestionsHeadingOptions(await this.findQuestionById(id));
   }
 
   async deleteQuestion(id: string): Promise<void> {
