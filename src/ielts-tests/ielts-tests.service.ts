@@ -728,11 +728,18 @@ export class IeltsTestsService {
   async createListeningPart(
     createListeningPartDto: CreateListeningPartDto,
   ): Promise<IeltsListeningPart> {
-    return await this.ieltsListeningPartModel.create(
-      createListeningPartDto as any,
+    const { audio, ...partData } = createListeningPartDto;
+
+    // Create audio record first if nested audio data is provided
+    if (audio && !partData.audio_id) {
+      const createdAudio = await this.ieltsAudioModel.create(audio as any);
+      partData.audio_id = createdAudio.id;
+    }
+
+    const listeningPart = await this.ieltsListeningPartModel.create(
+      partData as any,
       {
         include: [
-          { model: IeltsAudio, as: "audio" },
           {
             model: IeltsQuestion,
             as: "questions",
@@ -744,6 +751,37 @@ export class IeltsTestsService {
         ],
       },
     );
+
+    // Re-fetch with all associations
+    return await this.ieltsListeningPartModel.findByPk(listeningPart.id, {
+      include: [
+        { model: IeltsListening, as: "listening" },
+        { model: IeltsAudio, as: "audio" },
+        {
+          model: IeltsQuestion,
+          as: "questions",
+          include: [
+            { model: IeltsSubQuestion, as: "questions" },
+            { model: IeltsQuestionOption, as: "options" },
+          ],
+        },
+      ],
+      order: [
+        [{ model: IeltsQuestion, as: "questions" }, "questionNumber", "ASC"],
+        [
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsSubQuestion, as: "questions" },
+          "order",
+          "ASC",
+        ],
+        [
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsQuestionOption, as: "options" },
+          "orderIndex",
+          "ASC",
+        ],
+      ],
+    });
   }
 
   async findAllListeningParts(query: ListeningPartQueryDto) {
@@ -807,8 +845,43 @@ export class IeltsTestsService {
     if (!part) {
       throw new NotFoundException(`Listening part with ID ${id} not found`);
     }
-    await part.update(updateListeningPartDto as any);
-    return part;
+
+    const { audio, ...partData } = updateListeningPartDto;
+
+    // Create or update audio if nested audio data is provided
+    if (audio) {
+      if (part.audio_id) {
+        // Update existing audio
+        await this.ieltsAudioModel.update(audio as any, {
+          where: { id: part.audio_id },
+        });
+      } else {
+        // Create new audio and link it
+        const createdAudio = await this.ieltsAudioModel.create(audio as any);
+        (partData as any).audio_id = createdAudio.id;
+      }
+    }
+
+    await part.update(partData as any);
+
+    // Re-fetch with all associations
+    return await this.ieltsListeningPartModel.findByPk(id, {
+      include: [
+        { model: IeltsListening, as: "listening" },
+        { model: IeltsAudio, as: "audio" },
+        {
+          model: IeltsQuestion,
+          as: "questions",
+          include: [
+            { model: IeltsSubQuestion, as: "questions" },
+            { model: IeltsQuestionOption, as: "options" },
+          ],
+        },
+      ],
+      order: [
+        [{ model: IeltsQuestion, as: "questions" }, "questionNumber", "ASC"],
+      ],
+    });
   }
 
   async deleteListeningPart(id: string): Promise<void> {
