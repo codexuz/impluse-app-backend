@@ -22,7 +22,7 @@ import {
 import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateTestDto } from "./dto/create-test.dto.js";
 import { UpdateTestDto } from "./dto/update-test.dto.js";
-import { TestQueryDto } from "./dto/query.dto.js";
+import { TestQueryDto, CombinedSkillsQueryDto } from "./dto/query.dto.js";
 import { CreateAudioDto } from "./dto/create-audio.dto.js";
 import { CreateQuestionDto } from "./dto/create-question.dto.js";
 import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
@@ -72,6 +72,21 @@ export class IeltsTestsController {
   })
   async findAllTests(@Query() query: TestQueryDto) {
     return await this.ieltsTestsService.findAllTests(query);
+  }
+
+  // ========== Skills (Reading, Listening, Writing combined) ==========
+  @Get("skills")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({
+    summary: "Get reading, listening, and writing with filters and pagination",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      "Return reading, listening, and writing entries with optional filters.",
+  })
+  async findAllSkills(@Query() query: CombinedSkillsQueryDto) {
+    return await this.ieltsTestsService.findAllSkills(query);
   }
 
   // ========== Audio ==========

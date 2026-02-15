@@ -42,6 +42,7 @@ import {
   QuestionQueryDto,
   QuestionOptionQueryDto,
   SubQuestionQueryDto,
+  CombinedSkillsQueryDto,
 } from "./dto/query.dto.js";
 import { User } from "../users/entities/user.entity.js";
 import { Op } from "sequelize";
@@ -183,6 +184,152 @@ export class IeltsTestsService {
       page,
       limit,
       totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  async findAllSkills(query: CombinedSkillsQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      type,
+      testId,
+      mode,
+      status,
+      category,
+      isActive,
+    } = query;
+
+    const buildTestWhere = () => {
+      const testWhere: any = {};
+      if (mode) testWhere.mode = mode;
+      if (status) testWhere.status = status;
+      if (category) testWhere.category = category;
+      return Object.keys(testWhere).length ? testWhere : undefined;
+    };
+
+    const fetchReadings = async () => {
+      const where: any = {};
+      if (search) where.title = { [Op.like]: `%${search}%` };
+      if (testId) where.test_id = testId;
+
+      const { rows, count } = await this.ieltsReadingModel.findAndCountAll({
+        where,
+        include: [{ model: IeltsTest, as: "test", where: buildTestWhere() }],
+        order: [["createdAt", "DESC"]],
+        limit,
+        offset: (page - 1) * limit,
+        distinct: true,
+      });
+
+      return {
+        data: rows.map((r) => ({ ...r.toJSON(), skill: "reading" })),
+        total: count,
+      };
+    };
+
+    const fetchListenings = async () => {
+      const where: any = {};
+      if (search) where.title = { [Op.like]: `%${search}%` };
+      if (testId) where.test_id = testId;
+      if (isActive !== undefined) where.is_active = isActive;
+
+      const { rows, count } = await this.ieltsListeningModel.findAndCountAll({
+        where,
+        include: [{ model: IeltsTest, as: "test", where: buildTestWhere() }],
+        order: [["createdAt", "DESC"]],
+        limit,
+        offset: (page - 1) * limit,
+      });
+
+      return {
+        data: rows.map((r) => ({ ...r.toJSON(), skill: "listening" })),
+        total: count,
+      };
+    };
+
+    const fetchWritings = async () => {
+      const where: any = {};
+      if (search) where.title = { [Op.like]: `%${search}%` };
+      if (testId) where.test_id = testId;
+      if (isActive !== undefined) where.is_active = isActive;
+
+      const { rows, count } = await this.ieltsWritingModel.findAndCountAll({
+        where,
+        include: [{ model: IeltsTest, as: "test", where: buildTestWhere() }],
+        order: [["createdAt", "DESC"]],
+        limit,
+        offset: (page - 1) * limit,
+      });
+
+      return {
+        data: rows.map((r) => ({ ...r.toJSON(), skill: "writing" })),
+        total: count,
+      };
+    };
+
+    if (type === "reading") {
+      const result = await fetchReadings();
+      return {
+        data: result.data,
+        total: result.total,
+        page,
+        limit,
+        totalPages: Math.ceil(result.total / limit),
+      };
+    }
+
+    if (type === "listening") {
+      const result = await fetchListenings();
+      return {
+        data: result.data,
+        total: result.total,
+        page,
+        limit,
+        totalPages: Math.ceil(result.total / limit),
+      };
+    }
+
+    if (type === "writing") {
+      const result = await fetchWritings();
+      return {
+        data: result.data,
+        total: result.total,
+        page,
+        limit,
+        totalPages: Math.ceil(result.total / limit),
+      };
+    }
+
+    // No type filter — fetch all three skills
+    const [readings, listenings, writings] = await Promise.all([
+      fetchReadings(),
+      fetchListenings(),
+      fetchWritings(),
+    ]);
+
+    const combined = [
+      ...readings.data,
+      ...listenings.data,
+      ...writings.data,
+    ].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    const totalAll = readings.total + listenings.total + writings.total;
+
+    return {
+      data: combined,
+      total: totalAll,
+      page,
+      limit,
+      totalPages: Math.ceil(totalAll / limit),
+      breakdown: {
+        reading: readings.total,
+        listening: listenings.total,
+        writing: writings.total,
+      },
     };
   }
 

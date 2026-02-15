@@ -245,3 +245,57 @@ export class SubQuestionQueryDto extends PaginationDto {
   @IsOptional()
   questionId?: string;
 }
+
+export class CombinedSkillsQueryDto extends PaginationDto {
+  @ApiProperty({
+    description: "Filter by skill type",
+    enum: ["reading", "listening", "writing"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  type?: "reading" | "listening" | "writing";
+
+  @ApiProperty({
+    description: "Filter by test ID",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  testId?: string;
+
+  @ApiProperty({
+    description: "Filter by test mode",
+    enum: ["practice", "mock"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  mode?: string;
+
+  @ApiProperty({
+    description: "Filter by test status",
+    enum: ["draft", "published"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  @ApiProperty({
+    description: "Filter by test category",
+    enum: ["authentic", "pre-test", "cambridge books"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @ApiProperty({
+    description: "Filter by active status (listening/writing only)",
+    required: false,
+  })
+  @Transform(({ value }) => value === "true" || value === true)
+  @IsOptional()
+  isActive?: boolean;
+}
