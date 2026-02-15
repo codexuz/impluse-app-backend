@@ -48,24 +48,6 @@ export enum QuestionTypeEnum {
   MULTIPLE_ANSWER = "MULTIPLE_ANSWER",
 }
 
-export class ListeningPartAudioDto {
-  @ApiProperty({ example: "https://example.com/audio/part1.mp3" })
-  @IsString()
-  @IsNotEmpty()
-  url: string;
-
-  @ApiProperty({ example: "listening-part1.mp3", required: false })
-  @IsString()
-  @IsOptional()
-  file_name?: string;
-
-  @ApiProperty({ example: 180, required: false })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  duration?: number;
-}
-
 // ========== Sub-question nested DTO ==========
 export class ListeningPartSubQuestionDto {
   @ApiProperty({ example: 1, required: false })
@@ -243,23 +225,13 @@ export class CreateListeningPartDto {
   title?: string;
 
   @ApiProperty({
-    description: "The audio ID for this part",
-    example: "123e4567-e89b-12d3-a456-426614174000",
+    description: "The audio URL for this part",
+    example: "https://example.com/audio/part1.mp3",
     required: false,
   })
-  @IsUUID()
+  @IsString()
   @IsOptional()
-  audio_id?: string;
-
-  @ApiProperty({
-    description: "Audio for this listening part",
-    type: ListeningPartAudioDto,
-    required: false,
-  })
-  @ValidateNested()
-  @Type(() => ListeningPartAudioDto)
-  @IsOptional()
-  audio?: ListeningPartAudioDto;
+  audio_url?: string;
 
   @ApiProperty({
     description: "Time limit in minutes",

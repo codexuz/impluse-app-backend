@@ -96,7 +96,6 @@ import { IeltsListening } from "../ielts-tests/entities/ielts-listening.entity.j
 import { IeltsListeningPart } from "../ielts-tests/entities/ielts-listening-part.entity.js";
 import { IeltsWriting } from "../ielts-tests/entities/ielts-writing.entity.js";
 import { IeltsWritingTask } from "../ielts-tests/entities/ielts-writing-task.entity.js";
-import { IeltsAudio } from "../ielts-tests/entities/ielts-audio.entity.js";
 import { IeltsQuestion } from "../ielts-tests/entities/ielts-question.entity.js";
 import { IeltsQuestionOption } from "../ielts-tests/entities/ielts-question-option.entity.js";
 import { IeltsSubQuestion } from "../ielts-tests/entities/ielts-multiple-choice-question.entity.js";
@@ -209,7 +208,6 @@ export const Models = [
   IeltsListeningPart,
   IeltsWriting,
   IeltsWritingTask,
-  IeltsAudio,
   IeltsQuestion,
   IeltsQuestionOption,
   IeltsSubQuestion,
@@ -1357,10 +1355,6 @@ export function initializeAssociations() {
   IeltsListeningPart.hasMany(IeltsQuestion, {
     foreignKey: "listening_part_id",
     as: "questions",
-  });
-  IeltsListeningPart.belongsTo(IeltsAudio, {
-    foreignKey: "audio_id",
-    as: "audio",
   });
 
   // IeltsWritingTask associations

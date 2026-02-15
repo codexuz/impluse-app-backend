@@ -129,7 +129,7 @@ export interface IeltsListeningPart {
   listening_id?: string;
   part: ListeningPart;
   title?: string;
-  audio_id?: string;
+  audio_url?: string;
   timeLimitMinutes?: number;
   difficulty?: DifficultyLevel;
   isActive?: boolean;
@@ -137,7 +137,6 @@ export interface IeltsListeningPart {
   createdAt: string;
   updatedAt: string;
   questions?: IeltsQuestion[];
-  audio?: IeltsAudio;
   listening?: IeltsListening;
 }
 
@@ -213,15 +212,6 @@ export interface IeltsQuestionOption {
   updatedAt: string;
 }
 
-export interface IeltsAudio {
-  id: string;
-  url: string;
-  file_name?: string;
-  duration?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // ==================== DTOs ====================
 
 export interface CreateTestDto {
@@ -282,8 +272,7 @@ export interface CreateListeningPartDto {
   listening_id: string;
   part: ListeningPart;
   title?: string;
-  audio_id?: string;
-  audio?: CreateAudioDto;
+  audio_url?: string;
   timeLimitMinutes?: number;
   difficulty?: DifficultyLevel;
   isActive?: boolean;
@@ -371,12 +360,6 @@ export interface CreateQuestionOptionDto {
 }
 
 export type UpdateQuestionOptionDto = Partial<CreateQuestionOptionDto>;
-
-export interface CreateAudioDto {
-  url: string;
-  file_name?: string;
-  duration?: number;
-}
 
 // ==================== QUERY DTOs ====================
 

@@ -95,7 +95,7 @@ export default function ListeningBuilderPage() {
         listening_id: id!,
         part: part.part,
         title: part.title || "",
-        audio_id: part.audio_id || undefined,
+        audio_url: part.audio_url || undefined,
         timeLimitMinutes: part.timeLimitMinutes,
         difficulty: part.difficulty,
         isActive: part.isActive,

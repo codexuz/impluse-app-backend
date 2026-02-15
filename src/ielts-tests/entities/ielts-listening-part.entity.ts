@@ -8,7 +8,6 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsListening } from "./ielts-listening.entity.js";
-import { IeltsAudio } from "./ielts-audio.entity.js";
 
 export enum ListeningPart {
   PART_1 = "PART_1",
@@ -54,12 +53,11 @@ export class IeltsListeningPart extends Model<IeltsListeningPart> {
   })
   title: string;
 
-  @ForeignKey(() => IeltsAudio)
   @Column({
-    type: DataType.UUID,
+    type: DataType.TEXT,
     allowNull: true,
   })
-  audio_id: string;
+  audio_url: string;
 
   @Column({
     type: DataType.INTEGER,

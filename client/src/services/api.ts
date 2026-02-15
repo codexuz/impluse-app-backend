@@ -10,7 +10,6 @@ import type {
   IeltsQuestion,
   IeltsSubQuestion,
   IeltsQuestionOption,
-  IeltsAudio,
   CreateTestDto,
   UpdateTestDto,
   CreateReadingDto,
@@ -30,7 +29,6 @@ import type {
   UpdateSubQuestionDto,
   CreateQuestionOptionDto,
   UpdateQuestionOptionDto,
-  CreateAudioDto,
   TestQuery,
   ReadingQuery,
   ReadingPartQuery,
@@ -320,18 +318,6 @@ export const questionOptionsApi = {
 
   delete: (id: string) =>
     api.delete(`/ielts-question-choices/${id}`).then((r) => r.data),
-};
-
-// ==================== AUDIO ====================
-
-export const audioApi = {
-  create: (data: CreateAudioDto) =>
-    api.post<IeltsAudio>("/ielts-tests/audio", data).then((r) => r.data),
-
-  getAll: () => api.get<IeltsAudio[]>("/ielts-tests/audio").then((r) => r.data),
-
-  getById: (id: string) =>
-    api.get<IeltsAudio>(`/ielts-tests/audio/${id}`).then((r) => r.data),
 };
 
 export default api;

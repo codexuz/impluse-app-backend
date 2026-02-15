@@ -7,7 +7,6 @@ import { IeltsListening } from "./entities/ielts-listening.entity.js";
 import { IeltsListeningPart } from "./entities/ielts-listening-part.entity.js";
 import { IeltsWriting } from "./entities/ielts-writing.entity.js";
 import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
-import { IeltsAudio } from "./entities/ielts-audio.entity.js";
 import { IeltsQuestion } from "./entities/ielts-question.entity.js";
 import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
 import { IeltsSubQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
@@ -22,7 +21,6 @@ import { CreateWritingDto } from "./dto/create-writing.dto.js";
 import { CreateWritingTaskDto } from "./dto/create-writing-task.dto.js";
 import { UpdateWritingDto } from "./dto/update-writing.dto.js";
 import { UpdateWritingTaskDto } from "./dto/update-writing-task.dto.js";
-import { CreateAudioDto } from "./dto/create-audio.dto.js";
 import { CreateQuestionDto } from "./dto/create-question.dto.js";
 import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
 import { CreateSubQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
@@ -64,8 +62,6 @@ export class IeltsTestsService {
     private readonly ieltsWritingModel: typeof IeltsWriting,
     @InjectModel(IeltsWritingTask)
     private readonly ieltsWritingTaskModel: typeof IeltsWritingTask,
-    @InjectModel(IeltsAudio)
-    private readonly ieltsAudioModel: typeof IeltsAudio,
     @InjectModel(IeltsQuestion)
     private readonly ieltsQuestionModel: typeof IeltsQuestion,
     @InjectModel(IeltsQuestionOption)
@@ -666,7 +662,6 @@ export class IeltsTestsService {
           model: IeltsListeningPart,
           as: "parts",
           include: [
-            { model: IeltsAudio, as: "audio" },
             {
               model: IeltsQuestion,
               as: "questions",
@@ -728,16 +723,8 @@ export class IeltsTestsService {
   async createListeningPart(
     createListeningPartDto: CreateListeningPartDto,
   ): Promise<IeltsListeningPart> {
-    const { audio, ...partData } = createListeningPartDto;
-
-    // Create audio record first if nested audio data is provided
-    if (audio && !partData.audio_id) {
-      const createdAudio = await this.ieltsAudioModel.create(audio as any);
-      partData.audio_id = createdAudio.id;
-    }
-
     const listeningPart = await this.ieltsListeningPartModel.create(
-      partData as any,
+      createListeningPartDto as any,
       {
         include: [
           {
@@ -756,7 +743,6 @@ export class IeltsTestsService {
     return await this.ieltsListeningPartModel.findByPk(listeningPart.id, {
       include: [
         { model: IeltsListening, as: "listening" },
-        { model: IeltsAudio, as: "audio" },
         {
           model: IeltsQuestion,
           as: "questions",
@@ -800,10 +786,7 @@ export class IeltsTestsService {
 
     const { rows, count } = await this.ieltsListeningPartModel.findAndCountAll({
       where,
-      include: [
-        { model: IeltsListening, as: "listening" },
-        { model: IeltsAudio, as: "audio" },
-      ],
+      include: [{ model: IeltsListening, as: "listening" }],
       order: [["createdAt", "DESC"]],
       limit,
       offset: (page - 1) * limit,
@@ -823,7 +806,6 @@ export class IeltsTestsService {
       include: [
         { model: IeltsListening, as: "listening" },
         { model: IeltsQuestion, as: "questions" },
-        { model: IeltsAudio, as: "audio" },
       ],
       order: [
         [{ model: IeltsQuestion, as: "questions" }, "questionNumber", "ASC"],
@@ -846,29 +828,12 @@ export class IeltsTestsService {
       throw new NotFoundException(`Listening part with ID ${id} not found`);
     }
 
-    const { audio, ...partData } = updateListeningPartDto;
-
-    // Create or update audio if nested audio data is provided
-    if (audio) {
-      if (part.audio_id) {
-        // Update existing audio
-        await this.ieltsAudioModel.update(audio as any, {
-          where: { id: part.audio_id },
-        });
-      } else {
-        // Create new audio and link it
-        const createdAudio = await this.ieltsAudioModel.create(audio as any);
-        (partData as any).audio_id = createdAudio.id;
-      }
-    }
-
-    await part.update(partData as any);
+    await part.update(updateListeningPartDto as any);
 
     // Re-fetch with all associations
     return await this.ieltsListeningPartModel.findByPk(id, {
       include: [
         { model: IeltsListening, as: "listening" },
-        { model: IeltsAudio, as: "audio" },
         {
           model: IeltsQuestion,
           as: "questions",
@@ -1032,27 +997,6 @@ export class IeltsTestsService {
   async deleteWritingTask(id: string): Promise<void> {
     const task = await this.findWritingTaskById(id);
     await task.destroy();
-  }
-
-  // ========== Audio ==========
-  async createAudio(createAudioDto: CreateAudioDto): Promise<IeltsAudio> {
-    return await this.ieltsAudioModel.create(createAudioDto as any);
-  }
-
-  async findAllAudios(): Promise<IeltsAudio[]> {
-    return await this.ieltsAudioModel.findAll({
-      order: [["createdAt", "DESC"]],
-    });
-  }
-
-  async findAudioById(id: string): Promise<IeltsAudio> {
-    const audio = await this.ieltsAudioModel.findByPk(id);
-
-    if (!audio) {
-      throw new NotFoundException(`Audio with ID ${id} not found`);
-    }
-
-    return audio;
   }
 
   // ========== Questions ==========

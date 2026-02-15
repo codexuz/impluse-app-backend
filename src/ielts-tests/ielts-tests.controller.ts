@@ -23,7 +23,6 @@ import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateTestDto } from "./dto/create-test.dto.js";
 import { UpdateTestDto } from "./dto/update-test.dto.js";
 import { TestQueryDto, CombinedSkillsQueryDto } from "./dto/query.dto.js";
-import { CreateAudioDto } from "./dto/create-audio.dto.js";
 import { CreateQuestionDto } from "./dto/create-question.dto.js";
 import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
 import { CreateSubQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
@@ -87,38 +86,6 @@ export class IeltsTestsController {
   })
   async findAllSkills(@Query() query: CombinedSkillsQueryDto) {
     return await this.ieltsTestsService.findAllSkills(query);
-  }
-
-  // ========== Audio ==========
-  @Post("audio")
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Create a new audio file" })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: "The audio has been successfully created.",
-  })
-  async createAudio(@Body() createAudioDto: CreateAudioDto) {
-    return await this.ieltsTestsService.createAudio(createAudioDto);
-  }
-
-  @Get("audio")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get all audio files" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "Return all audio files.",
-  })
-  async findAllAudios() {
-    return await this.ieltsTestsService.findAllAudios();
-  }
-
-  @Get("audio/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get an audio file by ID" })
-  @ApiParam({ name: "id", description: "The audio ID" })
-  async findAudioById(@Param("id") id: string) {
-    return await this.ieltsTestsService.findAudioById(id);
   }
 
   // ========== Questions ==========

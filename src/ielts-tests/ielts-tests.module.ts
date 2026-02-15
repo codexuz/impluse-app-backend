@@ -17,7 +17,6 @@ import { IeltsListening } from "./entities/ielts-listening.entity.js";
 import { IeltsListeningPart } from "./entities/ielts-listening-part.entity.js";
 import { IeltsWriting } from "./entities/ielts-writing.entity.js";
 import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
-import { IeltsAudio } from "./entities/ielts-audio.entity.js";
 import { IeltsQuestion } from "./entities/ielts-question.entity.js";
 import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
 import { IeltsSubQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
@@ -38,7 +37,6 @@ import { IeltsAnswersController } from "./ielts-answers.controller.js";
       IeltsListeningPart,
       IeltsWriting,
       IeltsWritingTask,
-      IeltsAudio,
       IeltsQuestion,
       IeltsQuestionOption,
       IeltsSubQuestion,
