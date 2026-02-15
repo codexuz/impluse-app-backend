@@ -33,6 +33,42 @@ export enum QuestionTypeEnum {
   MULTIPLE_ANSWER = "MULTIPLE_ANSWER",
 }
 
+export class InlineQuestionOptionDto {
+  @ApiProperty({ description: "Option key (e.g. A, B, C)", required: false })
+  @IsString()
+  @IsOptional()
+  optionKey?: string;
+
+  @ApiProperty({ description: "Option text", required: false })
+  @IsString()
+  @IsOptional()
+  optionText?: string;
+
+  @ApiProperty({
+    description: "Whether this option is correct",
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isCorrect?: boolean;
+
+  @ApiProperty({ description: "Display order index", required: false })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  orderIndex?: number;
+
+  @ApiProperty({ description: "Explanation", required: false })
+  @IsString()
+  @IsOptional()
+  explanation?: string;
+
+  @ApiProperty({ description: "Reference to passage", required: false })
+  @IsString()
+  @IsOptional()
+  fromPassage?: string;
+}
+
 export class InlineSubQuestionDto {
   @ApiProperty({ description: "Sub-question number", example: 8 })
   @IsInt()
@@ -200,4 +236,16 @@ export class CreateQuestionDto {
   @Type(() => InlineSubQuestionDto)
   @IsOptional()
   questions?: InlineSubQuestionDto[];
+
+  @ApiProperty({
+    description:
+      "Array of options (e.g. for MULTIPLE_CHOICE, MULTIPLE_ANSWER, etc.)",
+    required: false,
+    type: [InlineQuestionOptionDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InlineQuestionOptionDto)
+  @IsOptional()
+  options?: InlineQuestionOptionDto[];
 }

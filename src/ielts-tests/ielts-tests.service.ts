@@ -818,7 +818,7 @@ export class IeltsTestsService {
   async createQuestion(
     createQuestionDto: CreateQuestionDto,
   ): Promise<IeltsQuestion> {
-    const { questions, ...questionData } = createQuestionDto;
+    const { questions, options, ...questionData } = createQuestionDto;
     const question = await this.ieltsQuestionModel.create(questionData as any);
 
     if (questions && questions.length > 0) {
@@ -829,11 +829,23 @@ export class IeltsTestsService {
       await this.ieltsSubQuestionModel.bulkCreate(subQuestions as any);
     }
 
+    if (options && options.length > 0) {
+      const questionOptions = options.map((opt) => ({
+        ...opt,
+        question_id: question.id,
+      }));
+      await this.ieltsQuestionOptionModel.bulkCreate(questionOptions as any);
+    }
+
     return await this.ieltsQuestionModel.findByPk(question.id, {
-      include: [{ model: IeltsSubQuestion, as: "questions" }],
+      include: [
+        { model: IeltsSubQuestion, as: "questions" },
+        { model: IeltsQuestionOption, as: "options" },
+      ],
       order: [
         [{ model: IeltsSubQuestion, as: "questions" }, "order", "ASC"],
         [{ model: IeltsSubQuestion, as: "questions" }, "questionNumber", "ASC"],
+        [{ model: IeltsQuestionOption, as: "options" }, "orderIndex", "ASC"],
       ],
     });
   }
@@ -906,7 +918,7 @@ export class IeltsTestsService {
     id: string,
     updateQuestionDto: UpdateQuestionDto,
   ): Promise<IeltsQuestion> {
-    const { questions, ...questionData } = updateQuestionDto;
+    const { questions, options, ...questionData } = updateQuestionDto;
     const question = await this.findQuestionById(id);
     await question.update(questionData as any);
 
@@ -919,6 +931,20 @@ export class IeltsTestsService {
           question_id: id,
         }));
         await this.ieltsSubQuestionModel.bulkCreate(subQuestions as any);
+      }
+    }
+
+    if (options !== undefined) {
+      // Remove existing options and replace with new ones
+      await this.ieltsQuestionOptionModel.destroy({
+        where: { question_id: id },
+      });
+      if (options && options.length > 0) {
+        const questionOptions = options.map((opt) => ({
+          ...opt,
+          question_id: id,
+        }));
+        await this.ieltsQuestionOptionModel.bulkCreate(questionOptions as any);
       }
     }
 
