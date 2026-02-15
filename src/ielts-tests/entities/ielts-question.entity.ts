@@ -89,6 +89,39 @@ export class IeltsQuestion extends Model<IeltsQuestion> {
   @Column({
     type: DataType.JSON,
     allowNull: true,
+    get() {
+      const value = this.getDataValue("headingOptions");
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return value;
+      }
+      const romanOrder: Record<string, number> = {
+        i: 1,
+        ii: 2,
+        iii: 3,
+        iv: 4,
+        v: 5,
+        vi: 6,
+        vii: 7,
+        viii: 8,
+        ix: 9,
+        x: 10,
+        xi: 11,
+        xii: 12,
+        xiii: 13,
+        xiv: 14,
+        xv: 15,
+      };
+      const sortedKeys = Object.keys(value).sort((a, b) => {
+        const orderA = romanOrder[a.toLowerCase()] ?? 999;
+        const orderB = romanOrder[b.toLowerCase()] ?? 999;
+        return orderA - orderB;
+      });
+      const sorted: Record<string, any> = {};
+      for (const key of sortedKeys) {
+        sorted[key] = value[key];
+      }
+      return sorted;
+    },
   })
   headingOptions: any;
 
