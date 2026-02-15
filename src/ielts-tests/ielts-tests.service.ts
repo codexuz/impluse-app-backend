@@ -73,6 +73,75 @@ export class IeltsTestsService {
     private readonly ieltsSubQuestionModel: typeof IeltsSubQuestion,
   ) {}
 
+  // ========== Helpers ==========
+  private readonly romanOrder: Record<string, number> = {
+    i: 1,
+    ii: 2,
+    iii: 3,
+    iv: 4,
+    v: 5,
+    vi: 6,
+    vii: 7,
+    viii: 8,
+    ix: 9,
+    x: 10,
+    xi: 11,
+    xii: 12,
+    xiii: 13,
+    xiv: 14,
+    xv: 15,
+  };
+
+  private sortHeadingOptions(
+    headingOptions: Record<string, any> | null,
+  ): Record<string, any> | null {
+    if (
+      !headingOptions ||
+      typeof headingOptions !== "object" ||
+      Array.isArray(headingOptions)
+    ) {
+      return headingOptions;
+    }
+    const sortedKeys = Object.keys(headingOptions).sort((a, b) => {
+      const orderA = this.romanOrder[a.toLowerCase()] ?? 999;
+      const orderB = this.romanOrder[b.toLowerCase()] ?? 999;
+      return orderA - orderB;
+    });
+    const sorted: Record<string, any> = {};
+    for (const key of sortedKeys) {
+      sorted[key] = headingOptions[key];
+    }
+    return sorted;
+  }
+
+  private sortQuestionsHeadingOptions(data: any): any {
+    if (!data) return data;
+    const plain = typeof data.toJSON === "function" ? data.toJSON() : data;
+
+    const sortQuestions = (questions: any[]) => {
+      if (!questions) return questions;
+      return questions.map((q: any) => ({
+        ...q,
+        headingOptions: this.sortHeadingOptions(q.headingOptions),
+      }));
+    };
+
+    // If data has questions directly
+    if (plain.questions) {
+      plain.questions = sortQuestions(plain.questions);
+    }
+
+    // If data has parts with questions
+    if (plain.parts) {
+      plain.parts = plain.parts.map((part: any) => ({
+        ...part,
+        questions: sortQuestions(part.questions),
+      }));
+    }
+
+    return plain;
+  }
+
   // ========== Tests ==========
   async createTest(createTestDto: CreateTestDto): Promise<IeltsTest> {
     return await this.ieltsTestModel.create(createTestDto as any);
@@ -250,7 +319,7 @@ export class IeltsTestsService {
       throw new NotFoundException(`Reading with ID ${id} not found`);
     }
 
-    return reading;
+    return this.sortQuestionsHeadingOptions(reading);
   }
 
   async updateReading(
@@ -359,7 +428,7 @@ export class IeltsTestsService {
       throw new NotFoundException(`Reading part with ID ${id} not found`);
     }
 
-    return part;
+    return this.sortQuestionsHeadingOptions(part);
   }
 
   async updateReadingPart(
@@ -480,7 +549,7 @@ export class IeltsTestsService {
       throw new NotFoundException(`Listening with ID ${id} not found`);
     }
 
-    return listening;
+    return this.sortQuestionsHeadingOptions(listening);
   }
 
   async deleteListening(id: string): Promise<void> {
@@ -560,7 +629,7 @@ export class IeltsTestsService {
       throw new NotFoundException(`Listening part with ID ${id} not found`);
     }
 
-    return part;
+    return this.sortQuestionsHeadingOptions(part);
   }
 
   async updateListeningPart(
@@ -825,7 +894,10 @@ export class IeltsTestsService {
       throw new NotFoundException(`Question with ID ${id} not found`);
     }
 
-    return question;
+    const plain =
+      typeof question.toJSON === "function" ? question.toJSON() : question;
+    plain.headingOptions = this.sortHeadingOptions(plain.headingOptions);
+    return plain;
   }
 
   async updateQuestion(
