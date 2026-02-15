@@ -215,6 +215,35 @@ export class IeltsTestsService {
           ],
         },
       ],
+      order: [
+        [
+          { model: IeltsReadingPart, as: "parts" },
+          { model: IeltsQuestion, as: "questions" },
+          "questionNumber",
+          "ASC",
+        ],
+        [
+          { model: IeltsReadingPart, as: "parts" },
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsSubQuestion, as: "questions" },
+          "order",
+          "ASC",
+        ],
+        [
+          { model: IeltsReadingPart, as: "parts" },
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsSubQuestion, as: "questions" },
+          "questionNumber",
+          "ASC",
+        ],
+        [
+          { model: IeltsReadingPart, as: "parts" },
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsQuestionOption, as: "options" },
+          "orderIndex",
+          "ASC",
+        ],
+      ],
     });
 
     if (!reading) {
@@ -295,6 +324,9 @@ export class IeltsTestsService {
       include: [
         { model: IeltsReading, as: "reading" },
         { model: IeltsQuestion, as: "questions" },
+      ],
+      order: [
+        [{ model: IeltsQuestion, as: "questions" }, "questionNumber", "ASC"],
       ],
     });
 
@@ -388,6 +420,35 @@ export class IeltsTestsService {
           ],
         },
       ],
+      order: [
+        [
+          { model: IeltsListeningPart, as: "parts" },
+          { model: IeltsQuestion, as: "questions" },
+          "questionNumber",
+          "ASC",
+        ],
+        [
+          { model: IeltsListeningPart, as: "parts" },
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsSubQuestion, as: "questions" },
+          "order",
+          "ASC",
+        ],
+        [
+          { model: IeltsListeningPart, as: "parts" },
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsSubQuestion, as: "questions" },
+          "questionNumber",
+          "ASC",
+        ],
+        [
+          { model: IeltsListeningPart, as: "parts" },
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsQuestionOption, as: "options" },
+          "orderIndex",
+          "ASC",
+        ],
+      ],
     });
 
     if (!listening) {
@@ -464,6 +525,9 @@ export class IeltsTestsService {
         { model: IeltsListening, as: "listening" },
         { model: IeltsQuestion, as: "questions" },
         { model: IeltsAudio, as: "audio" },
+      ],
+      order: [
+        [{ model: IeltsQuestion, as: "questions" }, "questionNumber", "ASC"],
       ],
     });
 
@@ -668,6 +732,10 @@ export class IeltsTestsService {
 
     return await this.ieltsQuestionModel.findByPk(question.id, {
       include: [{ model: IeltsSubQuestion, as: "questions" }],
+      order: [
+        [{ model: IeltsSubQuestion, as: "questions" }, "order", "ASC"],
+        [{ model: IeltsSubQuestion, as: "questions" }, "questionNumber", "ASC"],
+      ],
     });
   }
 
@@ -694,7 +762,12 @@ export class IeltsTestsService {
         { model: IeltsSubQuestion, as: "questions" },
         { model: IeltsQuestionOption, as: "options" },
       ],
-      order: [["createdAt", "DESC"]],
+      order: [
+        ["questionNumber", "ASC"],
+        [{ model: IeltsSubQuestion, as: "questions" }, "order", "ASC"],
+        [{ model: IeltsSubQuestion, as: "questions" }, "questionNumber", "ASC"],
+        [{ model: IeltsQuestionOption, as: "options" }, "orderIndex", "ASC"],
+      ],
       limit,
       offset: (page - 1) * limit,
     });
@@ -715,6 +788,11 @@ export class IeltsTestsService {
         { model: IeltsListeningPart, as: "listeningPart" },
         { model: IeltsSubQuestion, as: "questions" },
         { model: IeltsQuestionOption, as: "options" },
+      ],
+      order: [
+        [{ model: IeltsSubQuestion, as: "questions" }, "order", "ASC"],
+        [{ model: IeltsSubQuestion, as: "questions" }, "questionNumber", "ASC"],
+        [{ model: IeltsQuestionOption, as: "options" }, "orderIndex", "ASC"],
       ],
     });
 
