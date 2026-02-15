@@ -805,10 +805,35 @@ export class IeltsTestsService {
     const part = await this.ieltsListeningPartModel.findByPk(id, {
       include: [
         { model: IeltsListening, as: "listening" },
-        { model: IeltsQuestion, as: "questions" },
+        {
+          model: IeltsQuestion,
+          as: "questions",
+          include: [
+            { model: IeltsSubQuestion, as: "questions" },
+            { model: IeltsQuestionOption, as: "options" },
+          ],
+        },
       ],
       order: [
         [{ model: IeltsQuestion, as: "questions" }, "questionNumber", "ASC"],
+        [
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsSubQuestion, as: "questions" },
+          "order",
+          "ASC",
+        ],
+        [
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsSubQuestion, as: "questions" },
+          "questionNumber",
+          "ASC",
+        ],
+        [
+          { model: IeltsQuestion, as: "questions" },
+          { model: IeltsQuestionOption, as: "options" },
+          "orderIndex",
+          "ASC",
+        ],
       ],
     });
 
