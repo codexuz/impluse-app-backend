@@ -7,8 +7,11 @@ import {
   IsInt,
   IsBoolean,
   IsObject,
+  IsArray,
+  ValidateNested,
   Min,
 } from "class-validator";
+import { Type } from "class-transformer";
 
 export enum QuestionTypeEnum {
   NOTE_COMPLETION = "NOTE_COMPLETION",
@@ -28,6 +31,46 @@ export enum QuestionTypeEnum {
   MATCHING_SENTENCE_ENDINGS = "MATCHING_SENTENCE_ENDINGS",
   PLAN_MAP_LABELLING = "PLAN_MAP_LABELLING",
   MULTIPLE_ANSWER = "MULTIPLE_ANSWER",
+}
+
+export class InlineSubQuestionDto {
+  @ApiProperty({ description: "Sub-question number", example: 8 })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  questionNumber?: number;
+
+  @ApiProperty({ description: "Sub-question text", required: false })
+  @IsString()
+  @IsOptional()
+  questionText?: string;
+
+  @ApiProperty({ description: "Correct answer", required: false })
+  @IsString()
+  @IsOptional()
+  correctAnswer?: string;
+
+  @ApiProperty({ description: "Explanation", required: false })
+  @IsString()
+  @IsOptional()
+  explanation?: string;
+
+  @ApiProperty({ description: "Reference to passage", required: false })
+  @IsString()
+  @IsOptional()
+  fromPassage?: string;
+
+  @ApiProperty({ description: "Points", example: 1, required: false })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  points?: number;
+
+  @ApiProperty({ description: "Display order", example: 1, required: false })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  order?: number;
 }
 
 export class CreateQuestionDto {
@@ -145,4 +188,16 @@ export class CreateQuestionDto {
   @IsString()
   @IsOptional()
   fromPassage?: string;
+
+  @ApiProperty({
+    description:
+      "Array of sub-questions (e.g. for NOTE_COMPLETION, SENTENCE_COMPLETION, etc.)",
+    required: false,
+    type: [InlineSubQuestionDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InlineSubQuestionDto)
+  @IsOptional()
+  questions?: InlineSubQuestionDto[];
 }

@@ -655,7 +655,20 @@ export class IeltsTestsService {
   async createQuestion(
     createQuestionDto: CreateQuestionDto,
   ): Promise<IeltsQuestion> {
-    return await this.ieltsQuestionModel.create(createQuestionDto as any);
+    const { questions, ...questionData } = createQuestionDto;
+    const question = await this.ieltsQuestionModel.create(questionData as any);
+
+    if (questions && questions.length > 0) {
+      const subQuestions = questions.map((sq) => ({
+        ...sq,
+        question_id: question.id,
+      }));
+      await this.ieltsSubQuestionModel.bulkCreate(subQuestions as any);
+    }
+
+    return await this.ieltsQuestionModel.findByPk(question.id, {
+      include: [{ model: IeltsSubQuestion, as: "questions" }],
+    });
   }
 
   async findAllQuestions(query: QuestionQueryDto) {
@@ -716,9 +729,23 @@ export class IeltsTestsService {
     id: string,
     updateQuestionDto: UpdateQuestionDto,
   ): Promise<IeltsQuestion> {
+    const { questions, ...questionData } = updateQuestionDto;
     const question = await this.findQuestionById(id);
-    await question.update(updateQuestionDto as any);
-    return question;
+    await question.update(questionData as any);
+
+    if (questions !== undefined) {
+      // Remove existing sub-questions and replace with new ones
+      await this.ieltsSubQuestionModel.destroy({ where: { question_id: id } });
+      if (questions && questions.length > 0) {
+        const subQuestions = questions.map((sq) => ({
+          ...sq,
+          question_id: id,
+        }));
+        await this.ieltsSubQuestionModel.bulkCreate(subQuestions as any);
+      }
+    }
+
+    return await this.findQuestionById(id);
   }
 
   async deleteQuestion(id: string): Promise<void> {
