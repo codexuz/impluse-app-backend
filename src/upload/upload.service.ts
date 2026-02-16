@@ -62,9 +62,7 @@ export class UploadService {
 
   // Database operations
   async create(createUploadDto: CreateUploadDto): Promise<UploadResponseDto> {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const extension = this.getExtensionFromMimeType(createUploadDto.mime_type);
-    const filename = `uploads/file-${uniqueSuffix}${extension}`;
+    const filename = `uploads/${createUploadDto.original_name}`;
 
     const upload = await this.uploadModel.create({
       ...createUploadDto,

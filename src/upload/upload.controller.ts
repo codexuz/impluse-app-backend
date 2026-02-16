@@ -14,7 +14,6 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
-import { extname } from "path";
 import {
   ApiConsumes,
   ApiBody,
@@ -27,7 +26,7 @@ import {
 import { UploadService } from "./upload.service.js";
 import { FileUploadDto } from "./dto/file-upload.dto.js";
 import { Base64UploadDto } from "./dto/base64-upload.dto.js";
-import { CreateUploadDto } from "./dto/create-upload.dto.js";
+import { CreateUploadDto, UploadType } from "./dto/create-upload.dto.js";
 import { UpdateUploadDto } from "./dto/update-upload.dto.js";
 import {
   UploadResponseDto,
@@ -76,9 +75,7 @@ export class UploadController {
       throw new BadRequestException("No file provided");
     }
 
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = extname(file.originalname);
-    const filename = `uploads/${file.fieldname}-${uniqueSuffix}${ext}`;
+    const filename = `uploads/${file.originalname}`;
 
     // Upload to AWS S3
     const storageService = this.uploadService.getStorageService();
@@ -89,7 +86,16 @@ export class UploadController {
     // Get presigned URL
     const fileUrl = await this.uploadService.getFileUrl(filename);
 
+    // Save record to database
+    const uploadRecord = await this.uploadService.create({
+      original_name: file.originalname,
+      mime_type: file.mimetype,
+      file_size: file.size,
+      file_path: fileUrl,
+    });
+
     return {
+      id: uploadRecord.id,
       originalName: file.originalname,
       filename: filename,
       url: fileUrl,
@@ -155,9 +161,7 @@ export class UploadController {
       throw new BadRequestException("No video file provided");
     }
 
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = extname(file.originalname);
-    const filename = `uploads/video-${uniqueSuffix}${ext}`;
+    const filename = `uploads/${file.originalname}`;
 
     // Upload to AWS S3
     const storageService = this.uploadService.getStorageService();
@@ -168,7 +172,17 @@ export class UploadController {
     // Get presigned URL
     const fileUrl = await this.uploadService.getFileUrl(filename);
 
+    // Save record to database
+    const uploadRecord = await this.uploadService.create({
+      original_name: file.originalname,
+      mime_type: file.mimetype,
+      file_size: file.size,
+      file_path: fileUrl,
+      upload_type: UploadType.VIDEO,
+    });
+
     return {
+      id: uploadRecord.id,
       originalName: file.originalname,
       filename: filename,
       url: fileUrl,
