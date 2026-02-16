@@ -17,8 +17,6 @@ import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
 import { IeltsListeningPart } from "./entities/ielts-listening-part.entity.js";
 import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
 import { IeltsQuestion } from "./entities/ielts-question.entity.js";
-import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
-import { IeltsSubQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import {
@@ -40,10 +38,6 @@ export class IeltsAnswersService {
     private readonly listeningAnswerModel: typeof IeltsListeningAnswer,
     @InjectModel(IeltsWritingAnswer)
     private readonly writingAnswerModel: typeof IeltsWritingAnswer,
-    @InjectModel(IeltsQuestionOption)
-    private readonly questionOptionModel: typeof IeltsQuestionOption,
-    @InjectModel(IeltsSubQuestion)
-    private readonly subQuestionModel: typeof IeltsSubQuestion,
   ) {}
 
   // ========== Attempts ==========
@@ -153,29 +147,14 @@ export class IeltsAnswersService {
   async saveReadingAnswers(userId: string, dto: SaveReadingAnswersDto) {
     const attempt = await this.validateAttempt(dto.attempt_id, userId);
 
-    // Fetch correct answers for all questions in this batch
-    const questionIds = [...new Set(dto.answers.map((a) => a.question_id))];
-    const correctAnswersMap = await this.buildCorrectAnswersMap(questionIds);
-
-    const answersData = dto.answers.map((answer) => {
-      const correctAnswer = correctAnswersMap.get(answer.question_id);
-      const isCorrect = correctAnswer
-        ? this.checkAnswer(answer.answer, correctAnswer, answer.question_number)
-        : null;
-
-      return {
-        attempt_id: dto.attempt_id,
-        user_id: userId,
-        part_id: answer.part_id,
-        question_id: answer.question_id,
-        question_number: answer.question_number || null,
-        answer: answer.answer,
-        is_correct: isCorrect,
-        correct_answer: correctAnswer
-          ? this.getCorrectAnswerText(correctAnswer, answer.question_number)
-          : null,
-      };
-    });
+    const answersData = dto.answers.map((answer) => ({
+      attempt_id: dto.attempt_id,
+      user_id: userId,
+      part_id: answer.part_id,
+      question_id: answer.question_id,
+      question_number: answer.question_number || null,
+      answer: answer.answer,
+    }));
 
     // Upsert: delete existing answers for this attempt + part combo, then bulk create
     const partIds = [...new Set(dto.answers.map((a) => a.part_id))];
@@ -191,26 +170,16 @@ export class IeltsAnswersService {
       answersData as any[],
     );
 
-    const correctCount = saved.filter((a: any) => a.is_correct === true).length;
-
     return {
       message: "Reading answers saved successfully",
       count: saved.length,
-      correctCount,
-      incorrectCount: saved.length - correctCount,
     };
   }
 
   async getReadingAnswers(attemptId: string, userId: string) {
-    const attempt = await this.attemptModel.findOne({
-      where: { id: attemptId, user_id: userId },
-    });
+    await this.validateAttempt(attemptId, userId);
 
-    if (!attempt) {
-      throw new NotFoundException("Attempt not found");
-    }
-
-    const answers = await this.readingAnswerModel.findAll({
+    return await this.readingAnswerModel.findAll({
       where: { attempt_id: attemptId, user_id: userId },
       include: [
         { model: IeltsReadingPart, as: "readingPart" },
@@ -218,19 +187,6 @@ export class IeltsAnswersService {
       ],
       order: [["question_number", "ASC"]],
     });
-
-    const total = answers.length;
-    const correctCount = answers.filter(
-      (a: any) => a.is_correct === true,
-    ).length;
-
-    return {
-      data: answers,
-      total,
-      correctCount,
-      incorrectCount: total - correctCount,
-      score: total > 0 ? Math.round((correctCount / total) * 100) : 0,
-    };
   }
 
   // ========== Listening Answers ==========
@@ -238,29 +194,14 @@ export class IeltsAnswersService {
   async saveListeningAnswers(userId: string, dto: SaveListeningAnswersDto) {
     const attempt = await this.validateAttempt(dto.attempt_id, userId);
 
-    // Fetch correct answers for all questions in this batch
-    const questionIds = [...new Set(dto.answers.map((a) => a.question_id))];
-    const correctAnswersMap = await this.buildCorrectAnswersMap(questionIds);
-
-    const answersData = dto.answers.map((answer) => {
-      const correctAnswer = correctAnswersMap.get(answer.question_id);
-      const isCorrect = correctAnswer
-        ? this.checkAnswer(answer.answer, correctAnswer, answer.question_number)
-        : null;
-
-      return {
-        attempt_id: dto.attempt_id,
-        user_id: userId,
-        part_id: answer.part_id,
-        question_id: answer.question_id,
-        question_number: answer.question_number || null,
-        answer: answer.answer,
-        is_correct: isCorrect,
-        correct_answer: correctAnswer
-          ? this.getCorrectAnswerText(correctAnswer, answer.question_number)
-          : null,
-      };
-    });
+    const answersData = dto.answers.map((answer) => ({
+      attempt_id: dto.attempt_id,
+      user_id: userId,
+      part_id: answer.part_id,
+      question_id: answer.question_id,
+      question_number: answer.question_number || null,
+      answer: answer.answer,
+    }));
 
     const partIds = [...new Set(dto.answers.map((a) => a.part_id))];
     await this.listeningAnswerModel.destroy({
@@ -275,26 +216,16 @@ export class IeltsAnswersService {
       answersData as any[],
     );
 
-    const correctCount = saved.filter((a: any) => a.is_correct === true).length;
-
     return {
       message: "Listening answers saved successfully",
       count: saved.length,
-      correctCount,
-      incorrectCount: saved.length - correctCount,
     };
   }
 
   async getListeningAnswers(attemptId: string, userId: string) {
-    const attempt = await this.attemptModel.findOne({
-      where: { id: attemptId, user_id: userId },
-    });
+    await this.validateAttempt(attemptId, userId);
 
-    if (!attempt) {
-      throw new NotFoundException("Attempt not found");
-    }
-
-    const answers = await this.listeningAnswerModel.findAll({
+    return await this.listeningAnswerModel.findAll({
       where: { attempt_id: attemptId, user_id: userId },
       include: [
         { model: IeltsListeningPart, as: "listeningPart" },
@@ -302,19 +233,6 @@ export class IeltsAnswersService {
       ],
       order: [["question_number", "ASC"]],
     });
-
-    const total = answers.length;
-    const correctCount = answers.filter(
-      (a: any) => a.is_correct === true,
-    ).length;
-
-    return {
-      data: answers,
-      total,
-      correctCount,
-      incorrectCount: total - correctCount,
-      score: total > 0 ? Math.round((correctCount / total) * 100) : 0,
-    };
   }
 
   // ========== Writing Answers ==========
@@ -359,114 +277,6 @@ export class IeltsAnswersService {
   }
 
   // ========== Helpers ==========
-
-  /**
-   * Build a map of question_id -> { options, subQuestions } for answer checking
-   */
-  private async buildCorrectAnswersMap(
-    questionIds: string[],
-  ): Promise<
-    Map<
-      string,
-      { options: IeltsQuestionOption[]; subQuestions: IeltsSubQuestion[] }
-    >
-  > {
-    const questions = await IeltsQuestion.findAll({
-      where: { id: questionIds },
-      include: [
-        { model: IeltsSubQuestion, as: "questions" },
-        { model: IeltsQuestionOption, as: "options" },
-      ],
-    });
-
-    const map = new Map<
-      string,
-      { options: IeltsQuestionOption[]; subQuestions: IeltsSubQuestion[] }
-    >();
-
-    for (const q of questions) {
-      map.set(q.id, {
-        options: (q as any).options || [],
-        subQuestions: (q as any).questions || [],
-      });
-    }
-
-    return map;
-  }
-
-  /**
-   * Check if the user's answer is correct
-   */
-  private checkAnswer(
-    userAnswer: string,
-    correctData: {
-      options: IeltsQuestionOption[];
-      subQuestions: IeltsSubQuestion[];
-    },
-    questionNumber?: string,
-  ): boolean {
-    if (!userAnswer) return false;
-
-    const normalized = userAnswer.trim().toLowerCase();
-
-    // If sub-questions exist, match by question number
-    if (correctData.subQuestions.length > 0) {
-      const sub = questionNumber
-        ? correctData.subQuestions.find(
-            (sq) => String(sq.questionNumber) === String(questionNumber),
-          )
-        : correctData.subQuestions[0];
-
-      if (sub?.correctAnswer) {
-        return normalized === sub.correctAnswer.trim().toLowerCase();
-      }
-    }
-
-    // If options exist, check against the correct option
-    if (correctData.options.length > 0) {
-      const correctOption = correctData.options.find((o) => o.isCorrect);
-      if (correctOption) {
-        return (
-          normalized === correctOption.optionKey?.trim().toLowerCase() ||
-          normalized === correctOption.optionText?.trim().toLowerCase()
-        );
-      }
-    }
-
-    return false;
-  }
-
-  /**
-   * Get the correct answer text for storage
-   */
-  private getCorrectAnswerText(
-    correctData: {
-      options: IeltsQuestionOption[];
-      subQuestions: IeltsSubQuestion[];
-    },
-    questionNumber?: string,
-  ): string | null {
-    if (correctData.subQuestions.length > 0) {
-      const sub = questionNumber
-        ? correctData.subQuestions.find(
-            (sq) => String(sq.questionNumber) === String(questionNumber),
-          )
-        : correctData.subQuestions[0];
-
-      if (sub?.correctAnswer) return sub.correctAnswer;
-    }
-
-    if (correctData.options.length > 0) {
-      const correctOption = correctData.options.find((o) => o.isCorrect);
-      if (correctOption) {
-        return correctOption.optionKey
-          ? `${correctOption.optionKey}: ${correctOption.optionText}`
-          : correctOption.optionText;
-      }
-    }
-
-    return null;
-  }
 
   private async validateAttempt(
     attemptId: string,
