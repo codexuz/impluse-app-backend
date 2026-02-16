@@ -371,24 +371,23 @@ export class IeltsAnswersService {
       { options: IeltsQuestionOption[]; subQuestions: IeltsSubQuestion[] }
     >
   > {
-    const [options, subQuestions] = await Promise.all([
-      this.questionOptionModel.findAll({
-        where: { question_id: questionIds },
-      }),
-      this.subQuestionModel.findAll({
-        where: { question_id: questionIds },
-      }),
-    ]);
+    const questions = await IeltsQuestion.findAll({
+      where: { id: questionIds },
+      include: [
+        { model: IeltsSubQuestion, as: "questions" },
+        { model: IeltsQuestionOption, as: "options" },
+      ],
+    });
 
     const map = new Map<
       string,
       { options: IeltsQuestionOption[]; subQuestions: IeltsSubQuestion[] }
     >();
 
-    for (const qId of questionIds) {
-      map.set(qId, {
-        options: options.filter((o) => o.question_id === qId),
-        subQuestions: subQuestions.filter((sq) => sq.question_id === qId),
+    for (const q of questions) {
+      map.set(q.id, {
+        options: (q as any).options || [],
+        subQuestions: (q as any).questions || [],
       });
     }
 
