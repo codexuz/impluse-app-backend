@@ -26,6 +26,7 @@ import {
   AttemptQueryDto,
   StatisticsQueryDto,
   UnfinishedQueryDto,
+  GradeWritingAnswerDto,
 } from "./dto/ielts-answers.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
@@ -227,5 +228,26 @@ export class IeltsAnswersController {
       attemptId,
       user.userId,
     );
+  }
+
+  @Patch("writing/:answerId/grade")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({
+    summary: "Grade a writing answer with IELTS criteria scores and feedback",
+  })
+  @ApiParam({ name: "answerId", description: "The writing answer ID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Writing answer graded successfully.",
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Writing answer not found.",
+  })
+  async gradeWritingAnswer(
+    @Param("answerId") answerId: string,
+    @Body() dto: GradeWritingAnswerDto,
+  ) {
+    return await this.ieltsAnswersService.gradeWritingAnswer(answerId, dto);
   }
 }

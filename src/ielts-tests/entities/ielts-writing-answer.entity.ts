@@ -57,10 +57,16 @@ export class IeltsWritingAnswer extends Model<IeltsWritingAnswer> {
   word_count: number;
 
   @Column({
-    type: DataType.FLOAT,
+    type: DataType.JSON,
     allowNull: true,
   })
-  score: number;
+  score: {
+    task_response: number | null;
+    lexical_resources: number | null;
+    grammar_range_and_accuracy: number | null;
+    coherence_and_cohesion: number | null;
+    overall: number | null;
+  };
 
   @Column({
     type: DataType.TEXT("long"),

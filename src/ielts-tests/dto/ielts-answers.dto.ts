@@ -178,6 +178,50 @@ export class SaveListeningAnswersDto {
   answers: SaveListeningAnswerDto[];
 }
 
+// ========== Writing Score DTO ==========
+
+export class WritingScoreDto {
+  @ApiPropertyOptional({
+    description: "Task Response / Task Achievement score (0-9)",
+    example: 7.0,
+  })
+  @IsNumber()
+  @IsOptional()
+  task_response?: number;
+
+  @ApiPropertyOptional({
+    description: "Lexical Resources score (0-9)",
+    example: 6.5,
+  })
+  @IsNumber()
+  @IsOptional()
+  lexical_resources?: number;
+
+  @ApiPropertyOptional({
+    description: "Grammatical Range and Accuracy score (0-9)",
+    example: 6.0,
+  })
+  @IsNumber()
+  @IsOptional()
+  grammar_range_and_accuracy?: number;
+
+  @ApiPropertyOptional({
+    description: "Coherence and Cohesion score (0-9)",
+    example: 6.5,
+  })
+  @IsNumber()
+  @IsOptional()
+  coherence_and_cohesion?: number;
+
+  @ApiPropertyOptional({
+    description: "Overall band score (0-9), auto-calculated if omitted",
+    example: 6.5,
+  })
+  @IsNumber()
+  @IsOptional()
+  overall?: number;
+}
+
 // ========== Writing Answer DTOs ==========
 
 export class SaveWritingAnswerDto {
@@ -204,6 +248,15 @@ export class SaveWritingAnswerDto {
   @IsNumber()
   @IsOptional()
   word_count?: number;
+
+  @ApiPropertyOptional({
+    description: "Writing score breakdown by IELTS criteria",
+    type: WritingScoreDto,
+  })
+  @ValidateNested()
+  @Type(() => WritingScoreDto)
+  @IsOptional()
+  score?: WritingScoreDto;
 }
 
 export class SaveWritingAnswersDto {
@@ -328,4 +381,26 @@ export class UnfinishedQueryDto {
   @Type(() => Boolean)
   @IsBoolean()
   include_abandoned?: boolean;
+}
+
+// ========== Grade Writing Answer DTO ==========
+
+export class GradeWritingAnswerDto {
+  @ApiProperty({
+    description: "Writing score breakdown by IELTS criteria",
+    type: WritingScoreDto,
+  })
+  @ValidateNested()
+  @Type(() => WritingScoreDto)
+  @IsNotEmpty()
+  score: WritingScoreDto;
+
+  @ApiPropertyOptional({
+    description: "Detailed feedback text from the grader",
+    example:
+      "Your essay demonstrates a clear position throughout. However, the range of vocabulary could be improved...",
+  })
+  @IsString()
+  @IsOptional()
+  feedback?: string;
 }

@@ -32,6 +32,7 @@ import {
   AttemptQueryDto,
   StatisticsQueryDto,
   UnfinishedQueryDto,
+  GradeWritingAnswerDto,
 } from "./dto/ielts-answers.dto.js";
 
 @Injectable()
@@ -316,13 +317,29 @@ export class IeltsAnswersService {
   async saveWritingAnswers(userId: string, dto: SaveWritingAnswersDto) {
     const attempt = await this.validateAttempt(dto.attempt_id, userId);
 
-    const answersData = dto.answers.map((answer) => ({
-      attempt_id: dto.attempt_id,
-      user_id: userId,
-      task_id: answer.task_id,
-      answer_text: answer.answer_text,
-      word_count: answer.word_count || null,
-    }));
+    const answersData = dto.answers.map((answer) => {
+      const score = answer.score
+        ? {
+            task_response: answer.score.task_response ?? null,
+            lexical_resources: answer.score.lexical_resources ?? null,
+            grammar_range_and_accuracy:
+              answer.score.grammar_range_and_accuracy ?? null,
+            coherence_and_cohesion: answer.score.coherence_and_cohesion ?? null,
+            overall:
+              answer.score.overall ??
+              this.calculateWritingOverall(answer.score),
+          }
+        : null;
+
+      return {
+        attempt_id: dto.attempt_id,
+        user_id: userId,
+        task_id: answer.task_id,
+        answer_text: answer.answer_text,
+        word_count: answer.word_count || null,
+        score,
+      };
+    });
 
     const taskIds = [...new Set(dto.answers.map((a) => a.task_id))];
     await this.writingAnswerModel.destroy({
@@ -350,6 +367,34 @@ export class IeltsAnswersService {
       where: { attempt_id: attemptId, user_id: userId },
       include: [{ model: IeltsWritingTask, as: "task" }],
     });
+  }
+
+  async gradeWritingAnswer(answerId: string, dto: GradeWritingAnswerDto) {
+    const writingAnswer = await this.writingAnswerModel.findByPk(answerId);
+
+    if (!writingAnswer) {
+      throw new NotFoundException(
+        `Writing answer with ID ${answerId} not found`,
+      );
+    }
+
+    const score = {
+      task_response: dto.score.task_response ?? null,
+      lexical_resources: dto.score.lexical_resources ?? null,
+      grammar_range_and_accuracy: dto.score.grammar_range_and_accuracy ?? null,
+      coherence_and_cohesion: dto.score.coherence_and_cohesion ?? null,
+      overall: dto.score.overall ?? this.calculateWritingOverall(dto.score),
+    };
+
+    await writingAnswer.update({
+      score,
+      feedback: dto.feedback ?? writingAnswer.feedback,
+    });
+
+    return {
+      message: "Writing answer graded successfully",
+      data: writingAnswer,
+    };
   }
 
   // ========== Statistics ==========
@@ -393,6 +438,14 @@ export class IeltsAnswersService {
     let totalListeningQuestions = 0;
     let totalWritingAnswers = 0;
     let totalWritingWordCount = 0;
+    const writingScoreSums = {
+      task_response: 0,
+      lexical_resources: 0,
+      grammar_range_and_accuracy: 0,
+      coherence_and_cohesion: 0,
+      overall: 0,
+    };
+    let writingScoredCount = 0;
     const bandScores: number[] = [];
     const timeSpentList: number[] = [];
 
@@ -467,6 +520,20 @@ export class IeltsAnswersService {
         0,
       );
 
+      for (const w of writingAnswers) {
+        const s = (w as any).score;
+        if (s && typeof s === "object") {
+          writingScoredCount++;
+          writingScoreSums.task_response += s.task_response || 0;
+          writingScoreSums.lexical_resources += s.lexical_resources || 0;
+          writingScoreSums.grammar_range_and_accuracy +=
+            s.grammar_range_and_accuracy || 0;
+          writingScoreSums.coherence_and_cohesion +=
+            s.coherence_and_cohesion || 0;
+          writingScoreSums.overall += s.overall || 0;
+        }
+      }
+
       const allResults = [...readingResults, ...listeningResults];
       const totalQ = allResults.length + allScopeQuestions.length;
       const correctCount = rCorrect + lCorrect;
@@ -537,6 +604,37 @@ export class IeltsAnswersService {
           totalWritingAnswers > 0
             ? Math.round(totalWritingWordCount / totalWritingAnswers)
             : 0,
+        averageScores:
+          writingScoredCount > 0
+            ? {
+                task_response:
+                  Math.round(
+                    (writingScoreSums.task_response / writingScoredCount) * 10,
+                  ) / 10,
+                lexical_resources:
+                  Math.round(
+                    (writingScoreSums.lexical_resources / writingScoredCount) *
+                      10,
+                  ) / 10,
+                grammar_range_and_accuracy:
+                  Math.round(
+                    (writingScoreSums.grammar_range_and_accuracy /
+                      writingScoredCount) *
+                      10,
+                  ) / 10,
+                coherence_and_cohesion:
+                  Math.round(
+                    (writingScoreSums.coherence_and_cohesion /
+                      writingScoredCount) *
+                      10,
+                  ) / 10,
+                overall:
+                  Math.round(
+                    (writingScoreSums.overall / writingScoredCount) * 10,
+                  ) / 10,
+              }
+            : null,
+        scoredCount: writingScoredCount,
       },
       time: {
         averageTimeSpentMinutes: avgTimeSpentMinutes,
@@ -769,6 +867,7 @@ export class IeltsAnswersService {
         taskId: w.task_id,
         answerText: w.answer_text,
         wordCount: w.word_count,
+        score: w.score || null,
       })),
     };
   }
@@ -986,6 +1085,26 @@ export class IeltsAnswersService {
     const normalizedUser = userAnswer.trim().toLowerCase();
     const normalizedCorrect = correctAnswer.trim().toLowerCase();
     return normalizedUser === normalizedCorrect;
+  }
+
+  private calculateWritingOverall(score: {
+    task_response?: number;
+    lexical_resources?: number;
+    grammar_range_and_accuracy?: number;
+    coherence_and_cohesion?: number;
+  }): number | null {
+    const values = [
+      score.task_response,
+      score.lexical_resources,
+      score.grammar_range_and_accuracy,
+      score.coherence_and_cohesion,
+    ].filter((v): v is number => v != null);
+
+    if (values.length === 0) return null;
+
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    // Round to nearest 0.5 (IELTS convention)
+    return Math.round(avg * 2) / 2;
   }
 
   private calculateBandScore(
