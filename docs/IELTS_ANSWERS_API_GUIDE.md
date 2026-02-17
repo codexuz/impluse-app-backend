@@ -19,6 +19,7 @@
    - [Listening Answers](#45-listening-answers)
    - [Writing Answers](#46-writing-answers)
    - [Grade Writing](#47-grade-writing)
+    - [Teacher Tools](#48-teacher-tools)
 5. [Complete Usage Flow](#5-complete-usage-flow)
 6. [Error Handling](#6-error-handling)
 
@@ -814,6 +815,132 @@ Grades a specific writing answer with IELTS criteria scores and optional feedbac
 
 ---
 
+### 4.8 Teacher Tools
+
+#### Get My Students
+
+```
+GET /api/ielts-answers/my-students
+```
+
+**Roles:** TEACHER only
+
+Returns all active students across the current teacher's groups.
+
+**Response (200):**
+
+```json
+[
+  {
+    "id": "group-student-uuid",
+    "group_id": "group-uuid",
+    "student_id": "student-uuid",
+    "status": "active",
+    "student": {
+      "user_id": "student-uuid",
+      "username": "student_1",
+      "first_name": "Ali",
+      "last_name": "Karimov",
+      "avatar_url": "https://...",
+      "phone": "+998901234567"
+    },
+    "group": {
+      "id": "group-uuid",
+      "name": "IELTS Upper Intermediate",
+      "level_id": "level-uuid",
+      "teacher": {
+        "user_id": "teacher-uuid",
+        "username": "teacher_1",
+        "first_name": "Sara",
+        "last_name": "Smith",
+        "avatar_url": "https://..."
+      }
+    }
+  }
+]
+```
+
+---
+
+#### Get My Students' Ungraded Writing Tasks
+
+```
+GET /api/ielts-answers/my-students-attempts-results
+```
+
+**Roles:** TEACHER only
+
+Returns only writing answers that still need grading for the teacher's students.
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | Number | 1 | Page number for ungraded writing items |
+| `limit` | Number | 10 | Page size for ungraded writing items |
+| `student_id` | UUID | — | Filter by one student in teacher's groups |
+| `test_id` | UUID | — | Filter attempts by IELTS test |
+| `from` | String (ISO 8601) | — | Filter attempts by `finished_at` >= from |
+| `to` | String (ISO 8601) | — | Filter attempts by `finished_at` <= to |
+| `only_ungraded` | Boolean | `true` | Kept for backward compatibility (endpoint already returns only ungraded writing responses) |
+
+**Example:**
+
+```
+GET /api/ielts-answers/my-students-attempts-results?page=1&limit=10&test_id=123e4567-e89b-12d3-a456-426614174000&from=2026-01-01T00:00:00.000Z&to=2026-12-31T23:59:59.999Z&only_ungraded=true
+```
+
+**Response (200):**
+
+```json
+{
+  "writingTasksToGrade": [
+    {
+      "student": {
+        "user_id": "student-uuid",
+        "username": "student_1",
+        "first_name": "Ali",
+        "last_name": "Karimov"
+      },
+      "writingTasks": [
+        {
+          "writingAnswerId": "writing-answer-uuid",
+          "attemptId": "attempt-uuid",
+          "submittedAt": "2026-02-10T10:00:00.000Z",
+          "test": {
+            "id": "test-uuid",
+            "title": "IELTS Academic Test 1"
+          },
+          "task": {
+            "id": "task-uuid",
+            "task": "TASK_1",
+            "prompt": "Summarize the chart..."
+          },
+          "answerText": "The chart illustrates...",
+          "wordCount": 187,
+          "feedback": null
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "students": 8,
+    "writingTasksToGrade": 5
+  },
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "writingTasksToGradeTotalPages": 1
+  }
+}
+```
+
+> **Notes:**
+> - The response is nested by student: `writingTasksToGrade[] -> { student, writingTasks[] }`.
+> - Pagination is applied to `writingTasksToGrade` using `page` and `limit`.
+
+---
+
 ## 5. Complete Usage Flow
 
 ### Full Test Flow (Frontend Example)
@@ -887,6 +1014,16 @@ const stats = await api.get('/ielts-answers/statistics');
 // Get unfinished tests to show "Continue" buttons
 const unfinished = await api.get('/ielts-answers/unfinished');
 // unfinished.data includes attempts with progress info
+
+// Teacher dashboard: load students' pending writing grades
+const teacherReview = await api.get('/ielts-answers/my-students-attempts-results', {
+  params: {
+    page: 1,
+    limit: 10,
+    only_ungraded: true
+  }
+});
+// teacherReview.data includes: writingTasksToGrade (nested by student), totals, pagination
 ```
 
 ### Auto-Save Pattern (Recommended)

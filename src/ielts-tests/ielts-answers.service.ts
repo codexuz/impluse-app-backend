@@ -789,15 +789,7 @@ export class IeltsAnswersService {
     teacherId: string,
     query: TeacherStudentsAttemptsQueryDto,
   ) {
-    const {
-      page = 1,
-      limit = 10,
-      student_id,
-      test_id,
-      from,
-      to,
-      only_ungraded,
-    } = query;
+    const { page = 1, limit = 10, student_id, test_id, from, to } = query;
 
     const currentPage = Math.max(1, Number(page) || 1);
     const currentLimit = Math.max(1, Number(limit) || 10);
@@ -809,17 +801,14 @@ export class IeltsAnswersService {
 
     if (teacherGroups.length === 0) {
       return {
-        attemptResults: [],
         writingTasksToGrade: [],
         totals: {
           students: 0,
-          attempts: 0,
           writingTasksToGrade: 0,
         },
         pagination: {
           page: currentPage,
           limit: currentLimit,
-          attemptResultsTotalPages: 0,
           writingTasksToGradeTotalPages: 0,
         },
       };
@@ -859,17 +848,14 @@ export class IeltsAnswersService {
 
     if (filteredStudentIds.length === 0) {
       return {
-        attemptResults: [],
         writingTasksToGrade: [],
         totals: {
           students: 0,
-          attempts: 0,
           writingTasksToGrade: 0,
         },
         pagination: {
           page: currentPage,
           limit: currentLimit,
-          attemptResultsTotalPages: 0,
           writingTasksToGradeTotalPages: 0,
         },
       };
@@ -908,72 +894,13 @@ export class IeltsAnswersService {
           as: "writingAnswers",
           include: [{ model: IeltsWritingTask, as: "task" }],
         },
-        { model: IeltsReadingAnswer, as: "readingAnswers" },
-        { model: IeltsListeningAnswer, as: "listeningAnswers" },
       ],
       order: [["finished_at", "DESC"]],
     });
 
-    const attemptResults: any[] = [];
     const writingTasksToGrade: any[] = [];
 
     for (const attempt of attempts as any[]) {
-      const readingAnswers = attempt.readingAnswers || [];
-      const listeningAnswers = attempt.listeningAnswers || [];
-
-      const allAnswers = [...readingAnswers, ...listeningAnswers];
-      const questionIds = [
-        ...new Set(allAnswers.map((a: any) => a.question_id).filter(Boolean)),
-      ];
-
-      const questions =
-        questionIds.length > 0
-          ? await this.questionModel.findAll({
-              where: { id: questionIds },
-              include: [
-                { model: IeltsSubQuestion, as: "questions" },
-                { model: IeltsQuestionOption, as: "options" },
-              ],
-            })
-          : [];
-
-      const questionMap = new Map(questions.map((q) => [q.id, q]));
-      const foundIds = new Set(questions.map((q) => q.id));
-      const missingIds = questionIds.filter((id: string) => !foundIds.has(id));
-
-      const subQuestionDirectMap = new Map<string, any>();
-      if (missingIds.length > 0) {
-        const directSubQuestions = await this.subQuestionModel.findAll({
-          where: { id: missingIds },
-        });
-
-        const parentIds = [
-          ...new Set(directSubQuestions.map((sq) => (sq as any).question_id)),
-        ];
-        const parentQuestions =
-          parentIds.length > 0
-            ? await this.questionModel.findAll({ where: { id: parentIds } })
-            : [];
-        const parentMap = new Map(parentQuestions.map((q) => [q.id, q]));
-
-        for (const sq of directSubQuestions) {
-          const plain = (sq as any).get({ plain: true });
-          const parent = parentMap.get(plain.question_id);
-          plain.parentQuestion = parent
-            ? (parent as any).get({ plain: true })
-            : null;
-          subQuestionDirectMap.set(plain.id, plain);
-        }
-      }
-
-      const allScopeQuestions = await this.loadAllQuestionsForAttempt(attempt);
-      const result = this.buildAttemptResults(
-        attempt,
-        questionMap,
-        subQuestionDirectMap,
-        allScopeQuestions,
-      );
-
       const student = studentInfoMap.get(attempt.user_id) || null;
       const test = attempt.test
         ? typeof attempt.test.get === "function"
@@ -981,13 +908,6 @@ export class IeltsAnswersService {
           : attempt.test
         : null;
 
-      attemptResults.push({
-        ...result,
-        student,
-        test,
-      });
-
-      let attemptHasUngradedWriting = false;
       for (const writingAnswer of attempt.writingAnswers || []) {
         const score = (writingAnswer as any).score;
         const hasScore =
@@ -1002,7 +922,6 @@ export class IeltsAnswersService {
           ].some((value) => value != null);
 
         if (hasScore) continue;
-        attemptHasUngradedWriting = true;
 
         const task = (writingAnswer as any).task;
         writingTasksToGrade.push({
@@ -1021,40 +940,51 @@ export class IeltsAnswersService {
           feedback: (writingAnswer as any).feedback,
         });
       }
-
-      if (only_ungraded && !attemptHasUngradedWriting) {
-        attemptResults.pop();
-      }
     }
 
-    const pagedAttemptResults = attemptResults.slice(
-      (currentPage - 1) * currentLimit,
-      currentPage * currentLimit,
-    );
     const pagedWritingTasksToGrade = writingTasksToGrade.slice(
       (currentPage - 1) * currentLimit,
       currentPage * currentLimit,
     );
 
-    const attemptResultsTotalPages = Math.ceil(
-      attemptResults.length / currentLimit,
-    );
+    const nestedByStudentMap = new Map<string, any>();
+    for (const item of pagedWritingTasksToGrade) {
+      const studentKey = item?.student?.user_id || "unknown";
+
+      if (!nestedByStudentMap.has(studentKey)) {
+        nestedByStudentMap.set(studentKey, {
+          student: item.student || null,
+          writingTasks: [],
+        });
+      }
+
+      nestedByStudentMap.get(studentKey).writingTasks.push({
+        writingAnswerId: item.writingAnswerId,
+        attemptId: item.attemptId,
+        test: item.test,
+        submittedAt: item.submittedAt,
+        task: item.task,
+        answerText: item.answerText,
+        wordCount: item.wordCount,
+        feedback: item.feedback,
+      });
+    }
+
+    const nestedWritingTasksToGrade = Array.from(nestedByStudentMap.values());
+
     const writingTasksToGradeTotalPages = Math.ceil(
       writingTasksToGrade.length / currentLimit,
     );
 
     return {
-      attemptResults: pagedAttemptResults,
-      writingTasksToGrade: pagedWritingTasksToGrade,
+      writingTasksToGrade: nestedWritingTasksToGrade,
       totals: {
         students: filteredStudentIds.length,
-        attempts: attemptResults.length,
         writingTasksToGrade: writingTasksToGrade.length,
       },
       pagination: {
         page: currentPage,
         limit: currentLimit,
-        attemptResultsTotalPages,
         writingTasksToGradeTotalPages,
       },
     };
