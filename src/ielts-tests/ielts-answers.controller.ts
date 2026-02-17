@@ -27,6 +27,7 @@ import {
   StatisticsQueryDto,
   UnfinishedQueryDto,
   GradeWritingAnswerDto,
+  TeacherStudentsAttemptsQueryDto,
 } from "./dto/ielts-answers.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
@@ -129,6 +130,40 @@ export class IeltsAnswersController {
     @Query() query: UnfinishedQueryDto,
   ) {
     return await this.ieltsAnswersService.getUnfinishedTests(
+      user.userId,
+      query,
+    );
+  }
+
+  @Get("my-students")
+  @Roles(Role.TEACHER)
+  @ApiOperation({
+    summary: "Get all active students for the current teacher",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Return all active students across teacher's groups.",
+  })
+  async getMyStudents(@CurrentUser() user: any) {
+    return await this.ieltsAnswersService.getMyStudents(user.userId);
+  }
+
+  @Get("my-students-attempts-results")
+  @Roles(Role.TEACHER)
+  @ApiOperation({
+    summary:
+      "Get my students submitted attempt results and writing tasks pending grading",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      "Return students' submitted attempt results and writing answers without scores.",
+  })
+  async getMyStudentsAttemptsResultsAndWritingToGrade(
+    @CurrentUser() user: any,
+    @Query() query: TeacherStudentsAttemptsQueryDto,
+  ) {
+    return await this.ieltsAnswersService.getMyStudentsAttemptsResultsAndWritingToGrade(
       user.userId,
       query,
     );

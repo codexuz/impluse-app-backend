@@ -26,6 +26,8 @@ import { IeltsListeningAnswer } from "./entities/ielts-listening-answer.entity.j
 import { IeltsWritingAnswer } from "./entities/ielts-writing-answer.entity.js";
 import { IeltsAnswersService } from "./ielts-answers.service.js";
 import { IeltsAnswersController } from "./ielts-answers.controller.js";
+import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { Group } from "../groups/entities/group.entity.js";
 
 @Module({
   imports: [
@@ -44,6 +46,8 @@ import { IeltsAnswersController } from "./ielts-answers.controller.js";
       IeltsReadingAnswer,
       IeltsListeningAnswer,
       IeltsWritingAnswer,
+      GroupStudent,
+      Group,
     ]),
   ],
   controllers: [

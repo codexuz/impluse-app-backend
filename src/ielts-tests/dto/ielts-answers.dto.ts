@@ -383,6 +383,62 @@ export class UnfinishedQueryDto {
   include_abandoned?: boolean;
 }
 
+export class TeacherStudentsAttemptsQueryDto {
+  @ApiPropertyOptional({ description: "Page number", example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  page?: number;
+
+  @ApiPropertyOptional({ description: "Results per page", example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number;
+
+  @ApiPropertyOptional({
+    description: "Filter by student ID",
+    example: "123e4567-e89b-12d3-a456-426614174000",
+  })
+  @IsUUID()
+  @IsOptional()
+  student_id?: string;
+
+  @ApiPropertyOptional({
+    description: "Filter by IELTS test ID",
+    example: "123e4567-e89b-12d3-a456-426614174000",
+  })
+  @IsUUID()
+  @IsOptional()
+  test_id?: string;
+
+  @ApiPropertyOptional({
+    description: "Start date filter (ISO 8601)",
+    example: "2025-01-01T00:00:00.000Z",
+  })
+  @IsString()
+  @IsOptional()
+  from?: string;
+
+  @ApiPropertyOptional({
+    description: "End date filter (ISO 8601)",
+    example: "2025-12-31T23:59:59.999Z",
+  })
+  @IsString()
+  @IsOptional()
+  to?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Return only attempts that still have ungraded writing answers",
+    example: false,
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  only_ungraded?: boolean;
+}
+
 // ========== Grade Writing Answer DTO ==========
 
 export class GradeWritingAnswerDto {

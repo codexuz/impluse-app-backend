@@ -25,6 +25,8 @@ import { IeltsSubQuestion } from "./entities/ielts-multiple-choice-question.enti
 import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { Group } from "../groups/entities/group.entity.js";
 import {
   CreateAttemptDto,
   SaveReadingAnswersDto,
@@ -34,6 +36,7 @@ import {
   StatisticsQueryDto,
   UnfinishedQueryDto,
   GradeWritingAnswerDto,
+  TeacherStudentsAttemptsQueryDto,
 } from "./dto/ielts-answers.dto.js";
 
 @Injectable()
@@ -65,6 +68,10 @@ export class IeltsAnswersService {
     private readonly writingModel: typeof IeltsWriting,
     @InjectModel(IeltsWritingTask)
     private readonly writingTaskModel: typeof IeltsWritingTask,
+    @InjectModel(GroupStudent)
+    private readonly groupStudentModel: typeof GroupStudent,
+    @InjectModel(Group)
+    private readonly groupModel: typeof Group,
   ) {}
 
   // ========== Attempts ==========
@@ -722,6 +729,334 @@ export class IeltsAnswersService {
       page,
       limit,
       totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  async getMyStudents(teacherId: string) {
+    const teacherGroups = await this.groupModel.findAll({
+      where: { teacher_id: teacherId },
+      attributes: ["id"],
+    });
+
+    if (teacherGroups.length === 0) {
+      return [];
+    }
+
+    const groupIds = teacherGroups.map((group) => group.id);
+
+    return await this.groupStudentModel.findAll({
+      where: {
+        group_id: groupIds,
+        status: "active",
+      },
+      include: [
+        {
+          model: User,
+          as: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+            "phone",
+          ],
+        },
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "level_id"],
+          include: [
+            {
+              model: User,
+              as: "teacher",
+              attributes: [
+                "user_id",
+                "username",
+                "first_name",
+                "last_name",
+                "avatar_url",
+              ],
+            },
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+  }
+
+  async getMyStudentsAttemptsResultsAndWritingToGrade(
+    teacherId: string,
+    query: TeacherStudentsAttemptsQueryDto,
+  ) {
+    const {
+      page = 1,
+      limit = 10,
+      student_id,
+      test_id,
+      from,
+      to,
+      only_ungraded,
+    } = query;
+
+    const currentPage = Math.max(1, Number(page) || 1);
+    const currentLimit = Math.max(1, Number(limit) || 10);
+
+    const teacherGroups = await this.groupModel.findAll({
+      where: { teacher_id: teacherId },
+      attributes: ["id"],
+    });
+
+    if (teacherGroups.length === 0) {
+      return {
+        attemptResults: [],
+        writingTasksToGrade: [],
+        totals: {
+          students: 0,
+          attempts: 0,
+          writingTasksToGrade: 0,
+        },
+        pagination: {
+          page: currentPage,
+          limit: currentLimit,
+          attemptResultsTotalPages: 0,
+          writingTasksToGradeTotalPages: 0,
+        },
+      };
+    }
+
+    const groupIds = teacherGroups.map((group) => group.id);
+
+    const groupStudents = await this.groupStudentModel.findAll({
+      where: {
+        group_id: groupIds,
+        status: "active",
+      },
+      include: [
+        {
+          model: User,
+          as: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+            "phone",
+          ],
+        },
+      ],
+    });
+
+    const studentIds = [
+      ...new Set(groupStudents.map((gs: any) => gs.student_id).filter(Boolean)),
+    ];
+
+    let filteredStudentIds = studentIds;
+    if (student_id) {
+      filteredStudentIds = studentIds.includes(student_id) ? [student_id] : [];
+    }
+
+    if (filteredStudentIds.length === 0) {
+      return {
+        attemptResults: [],
+        writingTasksToGrade: [],
+        totals: {
+          students: 0,
+          attempts: 0,
+          writingTasksToGrade: 0,
+        },
+        pagination: {
+          page: currentPage,
+          limit: currentLimit,
+          attemptResultsTotalPages: 0,
+          writingTasksToGradeTotalPages: 0,
+        },
+      };
+    }
+
+    const studentInfoMap = new Map<string, any>();
+    for (const gs of groupStudents as any[]) {
+      const student = gs.student;
+      if (student && student.user_id && !studentInfoMap.has(student.user_id)) {
+        const plain =
+          typeof student.get === "function"
+            ? student.get({ plain: true })
+            : student;
+        studentInfoMap.set(student.user_id, plain);
+      }
+    }
+
+    const attemptWhere: any = {
+      user_id: { [Op.in]: filteredStudentIds },
+      status: AttemptStatus.SUBMITTED,
+    };
+
+    if (test_id) attemptWhere.test_id = test_id;
+    if (from || to) {
+      attemptWhere.finished_at = {};
+      if (from) attemptWhere.finished_at[Op.gte] = new Date(from);
+      if (to) attemptWhere.finished_at[Op.lte] = new Date(to);
+    }
+
+    const attempts = await this.attemptModel.findAll({
+      where: attemptWhere,
+      include: [
+        { model: IeltsTest, as: "test" },
+        {
+          model: IeltsWritingAnswer,
+          as: "writingAnswers",
+          include: [{ model: IeltsWritingTask, as: "task" }],
+        },
+        { model: IeltsReadingAnswer, as: "readingAnswers" },
+        { model: IeltsListeningAnswer, as: "listeningAnswers" },
+      ],
+      order: [["finished_at", "DESC"]],
+    });
+
+    const attemptResults: any[] = [];
+    const writingTasksToGrade: any[] = [];
+
+    for (const attempt of attempts as any[]) {
+      const readingAnswers = attempt.readingAnswers || [];
+      const listeningAnswers = attempt.listeningAnswers || [];
+
+      const allAnswers = [...readingAnswers, ...listeningAnswers];
+      const questionIds = [
+        ...new Set(allAnswers.map((a: any) => a.question_id).filter(Boolean)),
+      ];
+
+      const questions =
+        questionIds.length > 0
+          ? await this.questionModel.findAll({
+              where: { id: questionIds },
+              include: [
+                { model: IeltsSubQuestion, as: "questions" },
+                { model: IeltsQuestionOption, as: "options" },
+              ],
+            })
+          : [];
+
+      const questionMap = new Map(questions.map((q) => [q.id, q]));
+      const foundIds = new Set(questions.map((q) => q.id));
+      const missingIds = questionIds.filter((id: string) => !foundIds.has(id));
+
+      const subQuestionDirectMap = new Map<string, any>();
+      if (missingIds.length > 0) {
+        const directSubQuestions = await this.subQuestionModel.findAll({
+          where: { id: missingIds },
+        });
+
+        const parentIds = [
+          ...new Set(directSubQuestions.map((sq) => (sq as any).question_id)),
+        ];
+        const parentQuestions =
+          parentIds.length > 0
+            ? await this.questionModel.findAll({ where: { id: parentIds } })
+            : [];
+        const parentMap = new Map(parentQuestions.map((q) => [q.id, q]));
+
+        for (const sq of directSubQuestions) {
+          const plain = (sq as any).get({ plain: true });
+          const parent = parentMap.get(plain.question_id);
+          plain.parentQuestion = parent
+            ? (parent as any).get({ plain: true })
+            : null;
+          subQuestionDirectMap.set(plain.id, plain);
+        }
+      }
+
+      const allScopeQuestions = await this.loadAllQuestionsForAttempt(attempt);
+      const result = this.buildAttemptResults(
+        attempt,
+        questionMap,
+        subQuestionDirectMap,
+        allScopeQuestions,
+      );
+
+      const student = studentInfoMap.get(attempt.user_id) || null;
+      const test = attempt.test
+        ? typeof attempt.test.get === "function"
+          ? attempt.test.get({ plain: true })
+          : attempt.test
+        : null;
+
+      attemptResults.push({
+        ...result,
+        student,
+        test,
+      });
+
+      let attemptHasUngradedWriting = false;
+      for (const writingAnswer of attempt.writingAnswers || []) {
+        const score = (writingAnswer as any).score;
+        const hasScore =
+          score &&
+          typeof score === "object" &&
+          [
+            score.overall,
+            score.task_response,
+            score.lexical_resources,
+            score.grammar_range_and_accuracy,
+            score.coherence_and_cohesion,
+          ].some((value) => value != null);
+
+        if (hasScore) continue;
+        attemptHasUngradedWriting = true;
+
+        const task = (writingAnswer as any).task;
+        writingTasksToGrade.push({
+          writingAnswerId: writingAnswer.id,
+          attemptId: attempt.id,
+          student,
+          test,
+          submittedAt: attempt.finished_at || attempt.updatedAt,
+          task: task
+            ? typeof task.get === "function"
+              ? task.get({ plain: true })
+              : task
+            : null,
+          answerText: (writingAnswer as any).answer_text,
+          wordCount: (writingAnswer as any).word_count,
+          feedback: (writingAnswer as any).feedback,
+        });
+      }
+
+      if (only_ungraded && !attemptHasUngradedWriting) {
+        attemptResults.pop();
+      }
+    }
+
+    const pagedAttemptResults = attemptResults.slice(
+      (currentPage - 1) * currentLimit,
+      currentPage * currentLimit,
+    );
+    const pagedWritingTasksToGrade = writingTasksToGrade.slice(
+      (currentPage - 1) * currentLimit,
+      currentPage * currentLimit,
+    );
+
+    const attemptResultsTotalPages = Math.ceil(
+      attemptResults.length / currentLimit,
+    );
+    const writingTasksToGradeTotalPages = Math.ceil(
+      writingTasksToGrade.length / currentLimit,
+    );
+
+    return {
+      attemptResults: pagedAttemptResults,
+      writingTasksToGrade: pagedWritingTasksToGrade,
+      totals: {
+        students: filteredStudentIds.length,
+        attempts: attemptResults.length,
+        writingTasksToGrade: writingTasksToGrade.length,
+      },
+      pagination: {
+        page: currentPage,
+        limit: currentLimit,
+        attemptResultsTotalPages,
+        writingTasksToGradeTotalPages,
+      },
     };
   }
 
