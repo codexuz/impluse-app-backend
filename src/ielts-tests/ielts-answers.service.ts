@@ -40,6 +40,12 @@ export class IeltsAnswersService {
     private readonly listeningAnswerModel: typeof IeltsListeningAnswer,
     @InjectModel(IeltsWritingAnswer)
     private readonly writingAnswerModel: typeof IeltsWritingAnswer,
+    @InjectModel(IeltsQuestion)
+    private readonly questionModel: typeof IeltsQuestion,
+    @InjectModel(IeltsSubQuestion)
+    private readonly subQuestionModel: typeof IeltsSubQuestion,
+    @InjectModel(IeltsQuestionOption)
+    private readonly questionOptionModel: typeof IeltsQuestionOption,
   ) {}
 
   // ========== Attempts ==========
@@ -87,34 +93,8 @@ export class IeltsAnswersService {
       where: { id: attemptId, user_id: userId },
       include: [
         { model: IeltsTest, as: "test" },
-        {
-          model: IeltsReadingAnswer,
-          as: "readingAnswers",
-          include: [
-            {
-              model: IeltsQuestion,
-              as: "question",
-              include: [
-                { model: IeltsSubQuestion, as: "questions" },
-                { model: IeltsQuestionOption, as: "options" },
-              ],
-            },
-          ],
-        },
-        {
-          model: IeltsListeningAnswer,
-          as: "listeningAnswers",
-          include: [
-            {
-              model: IeltsQuestion,
-              as: "question",
-              include: [
-                { model: IeltsSubQuestion, as: "questions" },
-                { model: IeltsQuestionOption, as: "options" },
-              ],
-            },
-          ],
-        },
+        { model: IeltsReadingAnswer, as: "readingAnswers" },
+        { model: IeltsListeningAnswer, as: "listeningAnswers" },
         { model: IeltsWritingAnswer, as: "writingAnswers" },
       ],
     });
@@ -123,7 +103,54 @@ export class IeltsAnswersService {
       throw new NotFoundException("Attempt not found");
     }
 
-    return this.buildAttemptResults(attempt);
+    // Collect all question_ids from answers
+    const allAnswers = [
+      ...((attempt as any).readingAnswers || []),
+      ...((attempt as any).listeningAnswers || []),
+    ];
+    const questionIds = [...new Set(allAnswers.map((a: any) => a.question_id))];
+
+    // Load questions with sub-questions and options
+    const questions = await this.questionModel.findAll({
+      where: { id: questionIds },
+      include: [
+        { model: IeltsSubQuestion, as: "questions" },
+        { model: IeltsQuestionOption, as: "options" },
+      ],
+    });
+    const questionMap = new Map(questions.map((q) => [q.id, q]));
+
+    // Some question_ids may actually be sub-question IDs
+    const foundIds = new Set(questions.map((q) => q.id));
+    const missingIds = questionIds.filter((id) => !foundIds.has(id));
+
+    const subQuestionDirectMap = new Map<string, any>();
+    if (missingIds.length > 0) {
+      const directSubQuestions = await this.subQuestionModel.findAll({
+        where: { id: missingIds },
+      });
+
+      // Load parent questions to get the question type
+      const parentIds = [
+        ...new Set(directSubQuestions.map((sq) => (sq as any).question_id)),
+      ];
+      const parentQuestions =
+        parentIds.length > 0
+          ? await this.questionModel.findAll({ where: { id: parentIds } })
+          : [];
+      const parentMap = new Map(parentQuestions.map((q) => [q.id, q]));
+
+      for (const sq of directSubQuestions) {
+        const plain = (sq as any).get({ plain: true });
+        const parent = parentMap.get(plain.question_id);
+        plain.parentQuestion = parent
+          ? (parent as any).get({ plain: true })
+          : null;
+        subQuestionDirectMap.set(plain.id, plain);
+      }
+    }
+
+    return this.buildAttemptResults(attempt, questionMap, subQuestionDirectMap);
   }
 
   async submitAttempt(attemptId: string, userId: string) {
@@ -306,13 +333,25 @@ export class IeltsAnswersService {
 
   // ========== Helpers ==========
 
-  private buildAttemptResults(attempt: any) {
+  private buildAttemptResults(
+    attempt: any,
+    questionMap: Map<string, any>,
+    subQuestionDirectMap: Map<string, any>,
+  ) {
     const readingAnswers = attempt.readingAnswers || [];
     const listeningAnswers = attempt.listeningAnswers || [];
     const writingAnswers = attempt.writingAnswers || [];
 
-    const readingResults = this.gradeAnswers(readingAnswers);
-    const listeningResults = this.gradeAnswers(listeningAnswers);
+    const readingResults = this.gradeAnswers(
+      readingAnswers,
+      questionMap,
+      subQuestionDirectMap,
+    );
+    const listeningResults = this.gradeAnswers(
+      listeningAnswers,
+      questionMap,
+      subQuestionDirectMap,
+    );
 
     const allResults = [...readingResults, ...listeningResults];
     const totalQuestions = allResults.length;
@@ -354,16 +393,57 @@ export class IeltsAnswersService {
     };
   }
 
-  private gradeAnswers(answers: any[]): any[] {
+  private gradeAnswers(
+    answers: any[],
+    questionMap: Map<string, any>,
+    subQuestionDirectMap: Map<string, any>,
+  ): any[] {
     return answers.map((answer) => {
-      const question = answer.question;
+      const questionNumber = parseInt(answer.question_number, 10);
+      const questionId = answer.question_id;
+
+      // Case 1: question_id points directly to ielts_sub_questions
+      const directSubQ = subQuestionDirectMap.get(questionId);
+      if (directSubQ) {
+        const parentQ = directSubQ.parentQuestion;
+        const correctAnswer = directSubQ.correctAnswer || null;
+        const userAnswer = (answer.answer || "").trim();
+        const isCorrect = correctAnswer
+          ? this.compareAnswers(userAnswer, correctAnswer)
+          : null;
+        const points = directSubQ.points ? Number(directSubQ.points) : 1;
+
+        return {
+          questionId,
+          questionNumber,
+          questionType: parentQ?.type || null,
+          questionText:
+            directSubQ.questionText || parentQ?.questionText || null,
+          userAnswer: answer.answer,
+          correctAnswer,
+          isCorrect,
+          points,
+          earnedPoints: isCorrect ? points : 0,
+          explanation: directSubQ.explanation || parentQ?.explanation || null,
+          fromPassage: directSubQ.fromPassage || parentQ?.fromPassage || null,
+          questionParts: [],
+          answerText: null,
+          optionText: null,
+        };
+      }
+
+      // Case 2: question_id points to ielts_questions (parent)
+      const question = questionMap.get(questionId);
       if (!question) {
         return this.buildUngradedResult(answer);
       }
 
-      const subQuestions: any[] = question.questions || [];
-      const options: any[] = question.options || [];
-      const questionNumber = parseInt(answer.question_number, 10);
+      const qPlain =
+        typeof question.get === "function"
+          ? question.get({ plain: true })
+          : question;
+      const subQuestions: any[] = qPlain.questions || [];
+      const options: any[] = qPlain.options || [];
 
       // Find the matching sub-question by questionNumber
       const subQuestion = subQuestions.find(
@@ -373,32 +453,30 @@ export class IeltsAnswersService {
       let correctAnswer: string | null = null;
       let explanation: string | null = null;
       let fromPassage: string | null = null;
-      let questionText: string | null = question.questionText || null;
+      let questionText: string | null = qPlain.questionText || null;
       let points = 1;
       let optionText: string | null = null;
       let answerText: string | null = null;
 
       if (subQuestion) {
         correctAnswer = subQuestion.correctAnswer || null;
-        explanation = subQuestion.explanation || question.explanation || null;
-        fromPassage = subQuestion.fromPassage || question.fromPassage || null;
+        explanation = subQuestion.explanation || qPlain.explanation || null;
+        fromPassage = subQuestion.fromPassage || qPlain.fromPassage || null;
         questionText = subQuestion.questionText || questionText;
         points = subQuestion.points ? Number(subQuestion.points) : 1;
       } else if (options.length > 0) {
         const correctOption = options.find((opt: any) => opt.isCorrect);
         if (correctOption) {
           correctAnswer = correctOption.optionKey || null;
-          explanation =
-            correctOption.explanation || question.explanation || null;
-          fromPassage =
-            correctOption.fromPassage || question.fromPassage || null;
+          explanation = correctOption.explanation || qPlain.explanation || null;
+          fromPassage = correctOption.fromPassage || qPlain.fromPassage || null;
           optionText = correctOption.optionText || null;
         }
-        points = question.points ? Number(question.points) : 1;
+        points = qPlain.points ? Number(qPlain.points) : 1;
       } else {
-        explanation = question.explanation || null;
-        fromPassage = question.fromPassage || null;
-        points = question.points ? Number(question.points) : 1;
+        explanation = qPlain.explanation || null;
+        fromPassage = qPlain.fromPassage || null;
+        points = qPlain.points ? Number(qPlain.points) : 1;
       }
 
       const userAnswer = (answer.answer || "").trim();
@@ -408,9 +486,9 @@ export class IeltsAnswersService {
       const earnedPoints = isCorrect ? points : 0;
 
       return {
-        questionId: answer.question_id,
+        questionId,
         questionNumber,
-        questionType: question.type || null,
+        questionType: qPlain.type || null,
         questionText,
         userAnswer: answer.answer,
         correctAnswer,
