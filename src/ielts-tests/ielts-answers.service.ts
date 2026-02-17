@@ -60,6 +60,8 @@ export class IeltsAnswersService {
     private readonly listeningModel: typeof IeltsListening,
     @InjectModel(IeltsListeningPart)
     private readonly listeningPartModel: typeof IeltsListeningPart,
+    @InjectModel(IeltsWritingTask)
+    private readonly writingTaskModel: typeof IeltsWritingTask,
   ) {}
 
   // ========== Attempts ==========
@@ -93,8 +95,11 @@ export class IeltsAnswersService {
       offset: (page - 1) * limit,
     });
 
+    // Enrich attempts with related entity info for part_id, module_id, task_id
+    const enriched = await this.enrichAttemptsWithRelatedInfo(rows);
+
     return {
-      data: rows,
+      data: enriched,
       total: count,
       page,
       limit,
@@ -718,6 +723,98 @@ export class IeltsAnswersService {
   }
 
   // ========== Helpers ==========
+
+  /**
+   * Enrich attempt rows with related entity info for part_id, module_id, and task_id.
+   * Since part_id can be a reading or listening part, and module_id can be reading or listening,
+   * we query both tables and merge results.
+   */
+  private async enrichAttemptsWithRelatedInfo(
+    attempts: IeltsAnswerAttempt[],
+  ): Promise<any[]> {
+    const partIds = [
+      ...new Set(attempts.map((a) => a.part_id).filter(Boolean)),
+    ];
+    const moduleIds = [
+      ...new Set(attempts.map((a) => a.module_id).filter(Boolean)),
+    ];
+    const taskIds = [
+      ...new Set(attempts.map((a) => a.task_id).filter(Boolean)),
+    ];
+
+    // Lookup maps
+    const partMap = new Map<string, any>();
+    const moduleMap = new Map<string, any>();
+    const taskMap = new Map<string, any>();
+
+    // Parts: could be reading or listening parts
+    if (partIds.length > 0) {
+      const [readingParts, listeningParts] = await Promise.all([
+        this.readingPartModel.findAll({
+          where: { id: { [Op.in]: partIds } },
+        }),
+        this.listeningPartModel.findAll({
+          where: { id: { [Op.in]: partIds } },
+        }),
+      ]);
+
+      for (const p of readingParts) {
+        const plain = (p as any).get({ plain: true });
+        partMap.set(plain.id, { ...plain, type: "reading" });
+      }
+      for (const p of listeningParts) {
+        const plain = (p as any).get({ plain: true });
+        partMap.set(plain.id, { ...plain, type: "listening" });
+      }
+    }
+
+    // Modules: could be reading or listening
+    if (moduleIds.length > 0) {
+      const [readings, listenings] = await Promise.all([
+        this.readingModel.findAll({
+          where: { id: { [Op.in]: moduleIds } },
+        }),
+        this.listeningModel.findAll({
+          where: { id: { [Op.in]: moduleIds } },
+        }),
+      ]);
+
+      for (const m of readings) {
+        const plain = (m as any).get({ plain: true });
+        moduleMap.set(plain.id, { ...plain, type: "reading" });
+      }
+      for (const m of listenings) {
+        const plain = (m as any).get({ plain: true });
+        moduleMap.set(plain.id, { ...plain, type: "listening" });
+      }
+    }
+
+    // Tasks: writing tasks
+    if (taskIds.length > 0) {
+      const tasks = await this.writingTaskModel.findAll({
+        where: { id: { [Op.in]: taskIds } },
+      });
+
+      for (const t of tasks) {
+        const plain = (t as any).get({ plain: true });
+        taskMap.set(plain.id, plain);
+      }
+    }
+
+    return attempts.map((attempt) => {
+      const plain =
+        typeof (attempt as any).toJSON === "function"
+          ? (attempt as any).toJSON()
+          : attempt;
+
+      return {
+        ...plain,
+        part: plain.part_id ? partMap.get(plain.part_id) || null : null,
+        module: plain.module_id ? moduleMap.get(plain.module_id) || null : null,
+        task: plain.task_id ? taskMap.get(plain.task_id) || null : null,
+      };
+    });
+  }
 
   /**
    * Load ALL questions belonging to the attempt's scope (test/module/part).
