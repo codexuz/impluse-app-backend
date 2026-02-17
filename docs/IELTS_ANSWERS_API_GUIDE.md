@@ -13,9 +13,12 @@
 3. [Enums](#3-enums)
 4. [API Endpoints](#4-api-endpoints)
    - [Attempts](#41-attempts)
-   - [Reading Answers](#42-reading-answers)
-   - [Listening Answers](#43-listening-answers)
-   - [Writing Answers](#44-writing-answers)
+   - [Statistics](#42-statistics)
+   - [Unfinished Tests](#43-unfinished-tests)
+   - [Reading Answers](#44-reading-answers)
+   - [Listening Answers](#45-listening-answers)
+   - [Writing Answers](#46-writing-answers)
+   - [Grade Writing](#47-grade-writing)
 5. [Complete Usage Flow](#5-complete-usage-flow)
 6. [Error Handling](#6-error-handling)
 
@@ -105,10 +108,20 @@ An attempt can target different levels of the test hierarchy:
 | `task_id` | UUID | Writing task ID |
 | `answer_text` | String | The user's essay/response |
 | `word_count` | Number \| null | Word count |
-| `score` | Float \| null | Set after grading |
+| `score` | JSON \| null | Grading scores breakdown (see Writing Score below) |
 | `feedback` | String \| null | Set after grading |
 | `createdAt` | Date | Record creation timestamp |
 | `updatedAt` | Date | Record update timestamp |
+
+### Writing Score (JSON structure)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `task_response` | Number \| null | Task Response / Task Achievement score (0–9) |
+| `lexical_resources` | Number \| null | Lexical Resources score (0–9) |
+| `grammar_range_and_accuracy` | Number \| null | Grammatical Range and Accuracy score (0–9) |
+| `coherence_and_cohesion` | Number \| null | Coherence and Cohesion score (0–9) |
+| `overall` | Number \| null | Overall band score (auto-calculated if omitted, rounded to nearest 0.5) |
 
 ---
 
@@ -313,7 +326,144 @@ Marks the attempt as `ABANDONED` and sets `finished_at`. Only works when status 
 
 ---
 
-### 4.2 Reading Answers
+### 4.2 Statistics
+
+#### Get User Statistics
+
+```
+GET /api/ielts-answers/statistics
+```
+
+**Roles:** ADMIN, TEACHER, STUDENT
+
+Returns comprehensive statistics for the current user's IELTS test activity.
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `scope` | String | — | Filter by scope (`TEST`, `MODULE`, `PART`, `TASK`) |
+| `test_id` | UUID | — | Filter by specific test |
+| `from` | String (ISO 8601) | — | Start date filter |
+| `to` | String (ISO 8601) | — | End date filter |
+
+**Example:**
+
+```
+GET /api/ielts-answers/statistics?from=2025-01-01T00:00:00.000Z&to=2026-12-31T23:59:59.999Z
+```
+
+**Response (200):**
+
+```json
+{
+  "overview": {
+    "totalSubmitted": 12,
+    "totalInProgress": 2,
+    "totalAbandoned": 1,
+    "totalAttempts": 15
+  },
+  "scores": {
+    "averageBandScore": 6.5,
+    "bestBandScore": 7.5
+  },
+  "reading": {
+    "totalQuestions": 120,
+    "correctAnswers": 89,
+    "accuracy": 74.17
+  },
+  "listening": {
+    "totalQuestions": 80,
+    "correctAnswers": 62,
+    "accuracy": 77.5
+  },
+  "writing": {
+    "totalAnswers": 24,
+    "averageWordCount": 267,
+    "averageScores": {
+      "task_response": 6.5,
+      "lexical_resources": 6.0,
+      "grammar_range_and_accuracy": 5.5,
+      "coherence_and_cohesion": 6.0,
+      "overall": 6.0
+    },
+    "scoredCount": 18
+  },
+  "time": {
+    "averageTimeSpentMinutes": 45.32,
+    "totalTimeSpentMinutes": 543.84
+  },
+  "recentScores": [7.0, 6.5, 7.5, 6.0, 6.5, 7.0, 5.5, 6.5, 6.0, 7.0]
+}
+```
+
+> **Note:** `writing.averageScores` is `null` if no writing answers have been graded yet.
+
+---
+
+### 4.3 Unfinished Tests
+
+#### Get Unfinished Tests
+
+```
+GET /api/ielts-answers/unfinished
+```
+
+**Roles:** ADMIN, TEACHER, STUDENT
+
+Returns the current user's in-progress (and optionally abandoned) attempts with answer progress information.
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | Number | 1 | Page number |
+| `limit` | Number | 10 | Results per page |
+| `scope` | String | — | Filter by scope (`TEST`, `MODULE`, `PART`, `TASK`) |
+| `include_abandoned` | Boolean | `false` | Include abandoned attempts |
+
+**Example:**
+
+```
+GET /api/ielts-answers/unfinished?page=1&limit=10&include_abandoned=true
+```
+
+**Response (200):**
+
+```json
+{
+  "data": [
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "user_id": "user-uuid",
+      "scope": "TEST",
+      "test_id": "123e4567-e89b-12d3-a456-426614174000",
+      "status": "IN_PROGRESS",
+      "started_at": "2026-02-16T10:00:00.000Z",
+      "finished_at": null,
+      "test": {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "title": "IELTS Academic Test 1"
+      },
+      "progress": {
+        "readingAnswers": 13,
+        "listeningAnswers": 20,
+        "writingAnswers": 1,
+        "totalAnswers": 34
+      },
+      "elapsedMinutes": 32.45
+    }
+  ],
+  "total": 2,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 1
+}
+```
+
+---
+
+### 4.4 Reading Answers
 
 #### Save Reading Answers
 
@@ -407,7 +557,7 @@ Returns all reading answers for a specific attempt, ordered by `question_number`
 
 ---
 
-### 4.3 Listening Answers
+### 4.5 Listening Answers
 
 #### Save Listening Answers
 
@@ -495,7 +645,7 @@ Returns all listening answers for a specific attempt, ordered by `question_numbe
 
 ---
 
-### 4.4 Writing Answers
+### 4.6 Writing Answers
 
 #### Save Writing Answers
 
@@ -514,7 +664,13 @@ Saves (or replaces) writing answers for a given attempt. Same upsert behavior.
     {
       "task_id": "writing-task-uuid-1",
       "answer_text": "The bar chart illustrates the percentage of households that owned various types of technology...",
-      "word_count": 187
+      "word_count": 187,
+      "score": {
+        "task_response": 6.5,
+        "lexical_resources": 6.0,
+        "grammar_range_and_accuracy": 5.5,
+        "coherence_and_cohesion": 6.0
+      }
     },
     {
       "task_id": "writing-task-uuid-2",
@@ -532,6 +688,12 @@ Saves (or replaces) writing answers for a given attempt. Same upsert behavior.
 | `answers[].task_id` | UUID | Yes | Writing task ID |
 | `answers[].answer_text` | String | Yes | The user's essay/response |
 | `answers[].word_count` | Number | No | Word count (can be calculated on frontend) |
+| `answers[].score` | Object | No | Writing score breakdown (see below) |
+| `answers[].score.task_response` | Number | No | Task Response score (0–9) |
+| `answers[].score.lexical_resources` | Number | No | Lexical Resources score (0–9) |
+| `answers[].score.grammar_range_and_accuracy` | Number | No | Grammatical Range and Accuracy score (0–9) |
+| `answers[].score.coherence_and_cohesion` | Number | No | Coherence and Cohesion score (0–9) |
+| `answers[].score.overall` | Number | No | Overall score (auto-calculated if omitted) |
 
 **Response (201):**
 
@@ -563,8 +725,14 @@ Returns all writing answers for a specific attempt.
     "task_id": "writing-task-uuid-1",
     "answer_text": "The bar chart illustrates...",
     "word_count": 187,
-    "score": null,
-    "feedback": null,
+    "score": {
+      "task_response": 6.5,
+      "lexical_resources": 6.0,
+      "grammar_range_and_accuracy": 5.5,
+      "coherence_and_cohesion": 6.0,
+      "overall": 6.0
+    },
+    "feedback": "Good structure but needs wider vocabulary range.",
     "task": {
       "id": "writing-task-uuid-1",
       "task_number": 1,
@@ -572,6 +740,76 @@ Returns all writing answers for a specific attempt.
     }
   }
 ]
+```
+
+---
+
+### 4.7 Grade Writing
+
+#### Grade a Writing Answer
+
+```
+PATCH /api/ielts-answers/writing/:answerId/grade
+```
+
+**Roles:** ADMIN, TEACHER only
+
+Grades a specific writing answer with IELTS criteria scores and optional feedback.
+
+**URL Parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `answerId` | UUID | The writing answer ID |
+
+**Request Body:**
+
+```json
+{
+  "score": {
+    "task_response": 7.0,
+    "lexical_resources": 6.5,
+    "grammar_range_and_accuracy": 6.0,
+    "coherence_and_cohesion": 6.5
+  },
+  "feedback": "Your essay demonstrates a clear position throughout. However, the range of vocabulary could be improved. Grammar is generally accurate with some minor errors."
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `score` | Object | Yes | Writing score breakdown |
+| `score.task_response` | Number | No | Task Response / Task Achievement (0–9) |
+| `score.lexical_resources` | Number | No | Lexical Resources (0–9) |
+| `score.grammar_range_and_accuracy` | Number | No | Grammatical Range and Accuracy (0–9) |
+| `score.coherence_and_cohesion` | Number | No | Coherence and Cohesion (0–9) |
+| `score.overall` | Number | No | Overall band score (auto-calculated if omitted, rounded to nearest 0.5) |
+| `feedback` | String | No | Detailed feedback text from the grader |
+
+> **Note:** If `overall` is not provided, it is auto-calculated as the average of the four criteria, rounded to the nearest 0.5 (following IELTS convention).
+
+**Response (200):**
+
+```json
+{
+  "message": "Writing answer graded successfully",
+  "data": {
+    "id": "answer-uuid-1",
+    "attempt_id": "attempt-uuid",
+    "user_id": "user-uuid",
+    "task_id": "writing-task-uuid-1",
+    "answer_text": "The bar chart illustrates...",
+    "word_count": 187,
+    "score": {
+      "task_response": 7.0,
+      "lexical_resources": 6.5,
+      "grammar_range_and_accuracy": 6.0,
+      "coherence_and_cohesion": 6.5,
+      "overall": 6.5
+    },
+    "feedback": "Your essay demonstrates a clear position throughout..."
+  }
+}
 ```
 
 ---
@@ -621,6 +859,34 @@ await api.post('/ielts-answers/writing', {
 
 // Step 3: User finishes — submit the attempt
 await api.patch(`/ielts-answers/attempts/${attemptId}/submit`);
+```
+
+### Grading Flow (Teacher/Admin)
+
+```typescript
+// Teacher grades a student's writing answer
+await api.patch(`/ielts-answers/writing/${writingAnswerId}/grade`, {
+  score: {
+    task_response: 7.0,
+    lexical_resources: 6.5,
+    grammar_range_and_accuracy: 6.0,
+    coherence_and_cohesion: 6.5
+    // overall is auto-calculated: 6.5
+  },
+  feedback: 'Good structure but vocabulary range could be improved.'
+});
+```
+
+### Dashboard Data Flow
+
+```typescript
+// Get user's statistics for the dashboard
+const stats = await api.get('/ielts-answers/statistics');
+// stats.data includes: overview, scores, reading, listening, writing, time, recentScores
+
+// Get unfinished tests to show "Continue" buttons
+const unfinished = await api.get('/ielts-answers/unfinished');
+// unfinished.data includes attempts with progress info
 ```
 
 ### Auto-Save Pattern (Recommended)
@@ -676,6 +942,7 @@ const writingAnswers = await api.get(`/ielts-answers/writing/${attemptId}`);
 | `401` | Unauthorized | Missing or invalid JWT token |
 | `403` | Forbidden | User doesn't have required role |
 | `404` | `"Attempt not found"` | Invalid attempt ID or attempt belongs to another user |
+| `404` | `"Writing answer with ID ... not found"` | Invalid writing answer ID (grading) |
 
 ### Validation Errors (422)
 
@@ -698,3 +965,5 @@ If request body validation fails, you'll get a response like:
 - **Upsert behavior:** Saving answers for the same `attempt_id` + `part_id` (reading/listening) or `attempt_id` + `task_id` (writing) will **replace** existing answers.
 - **Immutable after submit:** Once an attempt is submitted or abandoned, no further answer modifications are allowed.
 - **Scope validation:** Provide the correct ID field matching the scope (e.g., `test_id` for scope `TEST`).
+- **Writing grading:** Only ADMIN and TEACHER roles can grade writing answers. The `overall` score is auto-calculated from the four criteria if not provided.
+- **Score structure:** Writing scores are stored as JSON with individual IELTS criteria (task_response, lexical_resources, grammar_range_and_accuracy, coherence_and_cohesion, overall).
