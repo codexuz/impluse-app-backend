@@ -75,7 +75,10 @@ export class UploadController {
       throw new BadRequestException("No file provided");
     }
 
-    const filename = `uploads/${file.originalname}`;
+    const encodedOriginalName = this.uploadService.encodeOriginalName(
+      file.originalname,
+    );
+    const filename = `uploads/${encodedOriginalName}`;
 
     // Upload to AWS S3
     const storageService = this.uploadService.getStorageService();
@@ -88,7 +91,7 @@ export class UploadController {
 
     // Save record to database
     const uploadRecord = await this.uploadService.create({
-      original_name: file.originalname,
+      original_name: encodedOriginalName,
       mime_type: file.mimetype,
       file_size: file.size,
       file_path: fileUrl,
@@ -96,7 +99,7 @@ export class UploadController {
 
     return {
       id: uploadRecord.id,
-      originalName: file.originalname,
+      originalName: uploadRecord.original_name,
       filename: filename,
       url: fileUrl,
       size: file.size,
@@ -161,7 +164,10 @@ export class UploadController {
       throw new BadRequestException("No video file provided");
     }
 
-    const filename = `uploads/${file.originalname}`;
+    const encodedOriginalName = this.uploadService.encodeOriginalName(
+      file.originalname,
+    );
+    const filename = `uploads/${encodedOriginalName}`;
 
     // Upload to AWS S3
     const storageService = this.uploadService.getStorageService();
@@ -174,7 +180,7 @@ export class UploadController {
 
     // Save record to database
     const uploadRecord = await this.uploadService.create({
-      original_name: file.originalname,
+      original_name: encodedOriginalName,
       mime_type: file.mimetype,
       file_size: file.size,
       file_path: fileUrl,
@@ -183,7 +189,7 @@ export class UploadController {
 
     return {
       id: uploadRecord.id,
-      originalName: file.originalname,
+      originalName: uploadRecord.original_name,
       filename: filename,
       url: fileUrl,
       size: file.size,

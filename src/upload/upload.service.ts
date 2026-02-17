@@ -37,6 +37,14 @@ export class UploadService {
     return this.storageBucket;
   }
 
+  encodeOriginalName(originalName: string): string {
+    try {
+      return encodeURIComponent(decodeURIComponent(originalName));
+    } catch {
+      return encodeURIComponent(originalName);
+    }
+  }
+
   async getFileUrl(objectName: string): Promise<string> {
     try {
       // Ensure objectName includes uploads/ prefix
@@ -62,10 +70,14 @@ export class UploadService {
 
   // Database operations
   async create(createUploadDto: CreateUploadDto): Promise<UploadResponseDto> {
-    const filename = `uploads/${createUploadDto.original_name}`;
+    const encodedOriginalName = this.encodeOriginalName(
+      createUploadDto.original_name,
+    );
+    const filename = `uploads/${encodedOriginalName}`;
 
     const upload = await this.uploadModel.create({
       ...createUploadDto,
+      original_name: encodedOriginalName,
       filename,
       uploaded_at: new Date(),
     });
@@ -201,10 +213,12 @@ export class UploadService {
 
   async deleteFile(filename: string) {
     try {
-      // Ensure filename includes uploads/ prefix
-      const fullObjectName = filename.startsWith("uploads/")
-        ? filename
-        : `uploads/${filename}`;
+      // Accept both raw and URL-encoded names from clients
+      const normalizedFilename = filename.startsWith("uploads/")
+        ? filename.substring("uploads/".length)
+        : filename;
+      const encodedFilename = this.encodeOriginalName(normalizedFilename);
+      const fullObjectName = `uploads/${encodedFilename}`;
 
       await this.awsStorageService.deleteFile(
         this.storageBucket,
