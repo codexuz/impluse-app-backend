@@ -190,6 +190,10 @@ export class IeltsAnswersService {
     );
   }
 
+  async findStudentAttemptByIdForTeacher(attemptId: string, studentId: string) {
+    return await this.findAttemptById(attemptId, studentId);
+  }
+
   async submitAttempt(attemptId: string, userId: string) {
     const attempt = await this.attemptModel.findOne({
       where: { id: attemptId, user_id: userId },

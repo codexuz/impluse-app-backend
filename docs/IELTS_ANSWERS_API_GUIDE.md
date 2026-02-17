@@ -941,6 +941,73 @@ GET /api/ielts-answers/my-students-attempts-results?page=1&limit=10&test_id=123e
 
 ---
 
+#### Get All Attempts of a Specific Student
+
+```
+GET /api/ielts-answers/my-students/:studentId/attempts
+```
+
+**Roles:** TEACHER only
+
+Returns all attempts for the specified student.
+
+**Path Parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `studentId` | UUID | The student's `user_id` |
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | Number | 1 | Page number |
+| `limit` | Number | 10 | Results per page |
+| `test_id` | UUID | — | Filter by test |
+| `scope` | String | — | Filter by scope (`TEST`, `MODULE`, `PART`, `TASK`) |
+| `status` | String | — | Filter by status (`IN_PROGRESS`, `SUBMITTED`, `ABANDONED`) |
+
+**Example:**
+
+```
+GET /api/ielts-answers/my-students/7a25a73c-a62f-4655-8556-df2165a64fbf/attempts?page=1&limit=10&status=SUBMITTED
+```
+
+**Response (200):**
+
+Same response shape as `GET /api/ielts-answers/attempts`.
+
+---
+
+#### Get One Attempt Result of a Specific Student
+
+```
+GET /api/ielts-answers/my-students/:studentId/attempts/:id
+```
+
+**Roles:** TEACHER only
+
+Returns one attempt result for the specified student.
+
+**Path Parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `studentId` | UUID | The student's `user_id` |
+| `id` | UUID | The attempt ID |
+
+**Example:**
+
+```
+GET /api/ielts-answers/my-students/7a25a73c-a62f-4655-8556-df2165a64fbf/attempts/cd7aadec-fc44-4ebd-89a8-3628338448e8
+```
+
+**Response (200):**
+
+Same response shape as `GET /api/ielts-answers/attempts/:id`.
+
+---
+
 ## 5. Complete Usage Flow
 
 ### Full Test Flow (Frontend Example)
@@ -1024,6 +1091,19 @@ const teacherReview = await api.get('/ielts-answers/my-students-attempts-results
   }
 });
 // teacherReview.data includes: writingTasksToGrade (nested by student), totals, pagination
+
+// Teacher: list one student's attempts
+const studentAttempts = await api.get(
+  '/ielts-answers/my-students/7a25a73c-a62f-4655-8556-df2165a64fbf/attempts',
+  {
+    params: { page: 1, limit: 10, status: 'SUBMITTED' }
+  }
+);
+
+// Teacher: get one specific attempt result of that student
+const studentAttempt = await api.get(
+  '/ielts-answers/my-students/7a25a73c-a62f-4655-8556-df2165a64fbf/attempts/cd7aadec-fc44-4ebd-89a8-3628338448e8'
+);
 ```
 
 ### Auto-Save Pattern (Recommended)

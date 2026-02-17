@@ -70,12 +70,47 @@ export class IeltsAnswersController {
     return await this.ieltsAnswersService.findAllAttempts(user.userId, query);
   }
 
+  @Get("my-students/:studentId/attempts")
+  @Roles(Role.TEACHER)
+  @ApiOperation({
+    summary: "Get all attempts for a specific student",
+  })
+  @ApiParam({ name: "studentId", description: "The student user_id" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Return all attempts for the specified student.",
+  })
+  async findAllAttemptsByStudentId(
+    @Param("studentId") studentId: string,
+    @Query() query: AttemptQueryDto,
+  ) {
+    return await this.ieltsAnswersService.findAllAttempts(studentId, query);
+  }
+
   @Get("attempts/:id")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get an attempt by ID with all answers" })
   @ApiParam({ name: "id", description: "The attempt ID" })
   async findAttemptById(@CurrentUser() user: any, @Param("id") id: string) {
     return await this.ieltsAnswersService.findAttemptById(id, user.userId);
+  }
+
+  @Get("my-students/:studentId/attempts/:id")
+  @Roles(Role.TEACHER)
+  @ApiOperation({
+    summary: "Get a student's attempt result by ID for the current teacher",
+  })
+  @ApiParam({ name: "studentId", description: "The student user_id" })
+  @ApiParam({ name: "id", description: "The attempt ID" })
+  async findStudentAttemptByIdForTeacher(
+    @CurrentUser() user: any,
+    @Param("studentId") studentId: string,
+    @Param("id") id: string,
+  ) {
+    return await this.ieltsAnswersService.findStudentAttemptByIdForTeacher(
+      id,
+      studentId,
+    );
   }
 
   @Patch("attempts/:id/submit")
