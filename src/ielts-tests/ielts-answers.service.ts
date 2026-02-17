@@ -17,6 +17,8 @@ import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
 import { IeltsListeningPart } from "./entities/ielts-listening-part.entity.js";
 import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
 import { IeltsQuestion } from "./entities/ielts-question.entity.js";
+import { IeltsSubQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
+import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import {
@@ -85,8 +87,34 @@ export class IeltsAnswersService {
       where: { id: attemptId, user_id: userId },
       include: [
         { model: IeltsTest, as: "test" },
-        { model: IeltsReadingAnswer, as: "readingAnswers" },
-        { model: IeltsListeningAnswer, as: "listeningAnswers" },
+        {
+          model: IeltsReadingAnswer,
+          as: "readingAnswers",
+          include: [
+            {
+              model: IeltsQuestion,
+              as: "question",
+              include: [
+                { model: IeltsSubQuestion, as: "questions" },
+                { model: IeltsQuestionOption, as: "options" },
+              ],
+            },
+          ],
+        },
+        {
+          model: IeltsListeningAnswer,
+          as: "listeningAnswers",
+          include: [
+            {
+              model: IeltsQuestion,
+              as: "question",
+              include: [
+                { model: IeltsSubQuestion, as: "questions" },
+                { model: IeltsQuestionOption, as: "options" },
+              ],
+            },
+          ],
+        },
         { model: IeltsWritingAnswer, as: "writingAnswers" },
       ],
     });
@@ -95,7 +123,7 @@ export class IeltsAnswersService {
       throw new NotFoundException("Attempt not found");
     }
 
-    return attempt;
+    return this.buildAttemptResults(attempt);
   }
 
   async submitAttempt(attemptId: string, userId: string) {
@@ -277,6 +305,182 @@ export class IeltsAnswersService {
   }
 
   // ========== Helpers ==========
+
+  private buildAttemptResults(attempt: any) {
+    const readingAnswers = attempt.readingAnswers || [];
+    const listeningAnswers = attempt.listeningAnswers || [];
+    const writingAnswers = attempt.writingAnswers || [];
+
+    const readingResults = this.gradeAnswers(readingAnswers);
+    const listeningResults = this.gradeAnswers(listeningAnswers);
+
+    const allResults = [...readingResults, ...listeningResults];
+    const totalQuestions = allResults.length;
+    const correctAnswers = allResults.filter((r) => r.isCorrect).length;
+    const totalPoints = allResults.reduce((sum, r) => sum + r.points, 0);
+    const earnedPoints = allResults.reduce((sum, r) => sum + r.earnedPoints, 0);
+    const score =
+      totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+
+    const timeSpentMinutes =
+      attempt.started_at && attempt.finished_at
+        ? (new Date(attempt.finished_at).getTime() -
+            new Date(attempt.started_at).getTime()) /
+          60000
+        : 0;
+
+    return {
+      attemptId: attempt.id,
+      readingId: attempt.module_id,
+      userId: attempt.user_id,
+      totalQuestions,
+      correctAnswers,
+      totalPoints,
+      earnedPoints,
+      score,
+      ieltsBandScore: this.calculateBandScore(correctAnswers, totalQuestions),
+      timeSpentMinutes: Math.round(timeSpentMinutes * 100) / 100,
+      isCompleted: attempt.status === AttemptStatus.SUBMITTED,
+      startedAt: attempt.started_at,
+      completedAt: attempt.finished_at,
+      questionResults: allResults.sort(
+        (a, b) => a.questionNumber - b.questionNumber,
+      ),
+      writingAnswers: writingAnswers.map((w: any) => ({
+        taskId: w.task_id,
+        answerText: w.answer_text,
+        wordCount: w.word_count,
+      })),
+    };
+  }
+
+  private gradeAnswers(answers: any[]): any[] {
+    return answers.map((answer) => {
+      const question = answer.question;
+      if (!question) {
+        return this.buildUngradedResult(answer);
+      }
+
+      const subQuestions: any[] = question.questions || [];
+      const options: any[] = question.options || [];
+      const questionNumber = parseInt(answer.question_number, 10);
+
+      // Find the matching sub-question by questionNumber
+      const subQuestion = subQuestions.find(
+        (sq: any) => sq.questionNumber === questionNumber,
+      );
+
+      let correctAnswer: string | null = null;
+      let explanation: string | null = null;
+      let fromPassage: string | null = null;
+      let questionText: string | null = question.questionText || null;
+      let points = 1;
+      let optionText: string | null = null;
+      let answerText: string | null = null;
+
+      if (subQuestion) {
+        correctAnswer = subQuestion.correctAnswer || null;
+        explanation = subQuestion.explanation || question.explanation || null;
+        fromPassage = subQuestion.fromPassage || question.fromPassage || null;
+        questionText = subQuestion.questionText || questionText;
+        points = subQuestion.points ? Number(subQuestion.points) : 1;
+      } else if (options.length > 0) {
+        const correctOption = options.find((opt: any) => opt.isCorrect);
+        if (correctOption) {
+          correctAnswer = correctOption.optionKey || null;
+          explanation =
+            correctOption.explanation || question.explanation || null;
+          fromPassage =
+            correctOption.fromPassage || question.fromPassage || null;
+          optionText = correctOption.optionText || null;
+        }
+        points = question.points ? Number(question.points) : 1;
+      } else {
+        explanation = question.explanation || null;
+        fromPassage = question.fromPassage || null;
+        points = question.points ? Number(question.points) : 1;
+      }
+
+      const userAnswer = (answer.answer || "").trim();
+      const isCorrect = correctAnswer
+        ? this.compareAnswers(userAnswer, correctAnswer)
+        : null;
+      const earnedPoints = isCorrect ? points : 0;
+
+      return {
+        questionId: answer.question_id,
+        questionNumber,
+        questionType: question.type || null,
+        questionText,
+        userAnswer: answer.answer,
+        correctAnswer,
+        isCorrect,
+        points,
+        earnedPoints,
+        explanation,
+        fromPassage,
+        questionParts: [],
+        answerText,
+        optionText,
+      };
+    });
+  }
+
+  private buildUngradedResult(answer: any) {
+    return {
+      questionId: answer.question_id,
+      questionNumber: parseInt(answer.question_number, 10),
+      questionType: null,
+      questionText: null,
+      userAnswer: answer.answer,
+      correctAnswer: null,
+      isCorrect: null,
+      points: 1,
+      earnedPoints: 0,
+      explanation: null,
+      fromPassage: null,
+      questionParts: [],
+      answerText: null,
+      optionText: null,
+    };
+  }
+
+  private compareAnswers(userAnswer: string, correctAnswer: string): boolean {
+    const normalizedUser = userAnswer.trim().toLowerCase();
+    const normalizedCorrect = correctAnswer.trim().toLowerCase();
+    return normalizedUser === normalizedCorrect;
+  }
+
+  private calculateBandScore(
+    correctAnswers: number,
+    totalQuestions: number,
+  ): number {
+    // Normalize to a 40-question scale (standard IELTS reading)
+    const normalized =
+      totalQuestions > 0
+        ? Math.round((correctAnswers / totalQuestions) * 40)
+        : 0;
+
+    // Standard IELTS Academic Reading band score mapping
+    if (normalized >= 39) return 9.0;
+    if (normalized >= 37) return 8.5;
+    if (normalized >= 35) return 8.0;
+    if (normalized >= 33) return 7.5;
+    if (normalized >= 30) return 7.0;
+    if (normalized >= 27) return 6.5;
+    if (normalized >= 23) return 6.0;
+    if (normalized >= 19) return 5.5;
+    if (normalized >= 15) return 5.0;
+    if (normalized >= 13) return 4.5;
+    if (normalized >= 10) return 4.0;
+    if (normalized >= 8) return 3.5;
+    if (normalized >= 6) return 3.0;
+    if (normalized >= 4) return 2.5;
+    if (normalized >= 3) return 2.0;
+    if (normalized >= 2) return 1.5;
+    if (normalized >= 1) return 1.0;
+    return 0;
+  }
 
   private async validateAttempt(
     attemptId: string,
