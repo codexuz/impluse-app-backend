@@ -19,6 +19,7 @@ import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
 import { IeltsListening } from "./entities/ielts-listening.entity.js";
 import { IeltsListeningPart } from "./entities/ielts-listening-part.entity.js";
 import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
+import { IeltsWriting } from "./entities/ielts-writing.entity.js";
 import { IeltsQuestion } from "./entities/ielts-question.entity.js";
 import { IeltsSubQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
 import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
@@ -60,6 +61,8 @@ export class IeltsAnswersService {
     private readonly listeningModel: typeof IeltsListening,
     @InjectModel(IeltsListeningPart)
     private readonly listeningPartModel: typeof IeltsListeningPart,
+    @InjectModel(IeltsWriting)
+    private readonly writingModel: typeof IeltsWriting,
     @InjectModel(IeltsWritingTask)
     private readonly writingTaskModel: typeof IeltsWritingTask,
   ) {}
@@ -768,13 +771,16 @@ export class IeltsAnswersService {
       }
     }
 
-    // Modules: could be reading or listening
+    // Modules: could be reading, listening, or writing
     if (moduleIds.length > 0) {
-      const [readings, listenings] = await Promise.all([
+      const [readings, listenings, writings] = await Promise.all([
         this.readingModel.findAll({
           where: { id: { [Op.in]: moduleIds } },
         }),
         this.listeningModel.findAll({
+          where: { id: { [Op.in]: moduleIds } },
+        }),
+        this.writingModel.findAll({
           where: { id: { [Op.in]: moduleIds } },
         }),
       ]);
@@ -786,6 +792,10 @@ export class IeltsAnswersService {
       for (const m of listenings) {
         const plain = (m as any).get({ plain: true });
         moduleMap.set(plain.id, { ...plain, type: "listening" });
+      }
+      for (const m of writings) {
+        const plain = (m as any).get({ plain: true });
+        moduleMap.set(plain.id, { ...plain, type: "writing" });
       }
     }
 
