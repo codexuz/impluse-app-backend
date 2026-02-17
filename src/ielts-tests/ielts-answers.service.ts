@@ -1190,8 +1190,11 @@ export class IeltsAnswersService {
 
   private compareAnswers(userAnswer: string, correctAnswer: string): boolean {
     const normalizedUser = userAnswer.trim().toLowerCase();
-    const normalizedCorrect = correctAnswer.trim().toLowerCase();
-    return normalizedUser === normalizedCorrect;
+    // Support multiple accepted answers separated by "/"
+    const acceptedAnswers = correctAnswer
+      .split("/")
+      .map((a) => a.trim().toLowerCase());
+    return acceptedAnswers.some((accepted) => normalizedUser === accepted);
   }
 
   private calculateWritingOverall(score: {
