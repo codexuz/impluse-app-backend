@@ -24,6 +24,8 @@ import {
   SaveListeningAnswersDto,
   SaveWritingAnswersDto,
   AttemptQueryDto,
+  StatisticsQueryDto,
+  UnfinishedQueryDto,
 } from "./dto/ielts-answers.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
@@ -88,6 +90,47 @@ export class IeltsAnswersController {
   @ApiParam({ name: "id", description: "The attempt ID" })
   async abandonAttempt(@CurrentUser() user: any, @Param("id") id: string) {
     return await this.ieltsAnswersService.abandonAttempt(id, user.userId);
+  }
+
+  // ========== Statistics ==========
+
+  @Get("statistics")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({
+    summary: "Get IELTS test statistics for the current user",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      "Return statistics including scores, accuracy, and time spent.",
+  })
+  async getStatistics(
+    @CurrentUser() user: any,
+    @Query() query: StatisticsQueryDto,
+  ) {
+    return await this.ieltsAnswersService.getStatistics(user.userId, query);
+  }
+
+  // ========== Unfinished Tests ==========
+
+  @Get("unfinished")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({
+    summary: "Get unfinished (in-progress) tests for the current user",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      "Return in-progress attempts with answer progress information.",
+  })
+  async getUnfinishedTests(
+    @CurrentUser() user: any,
+    @Query() query: UnfinishedQueryDto,
+  ) {
+    return await this.ieltsAnswersService.getUnfinishedTests(
+      user.userId,
+      query,
+    );
   }
 
   // ========== Reading Answers ==========

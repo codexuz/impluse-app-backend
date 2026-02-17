@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import {
   IeltsAnswerAttempt,
   AttemptScope,
@@ -30,6 +30,8 @@ import {
   SaveListeningAnswersDto,
   SaveWritingAnswersDto,
   AttemptQueryDto,
+  StatisticsQueryDto,
+  UnfinishedQueryDto,
 } from "./dto/ielts-answers.dto.js";
 
 @Injectable()
@@ -348,6 +350,273 @@ export class IeltsAnswersService {
       where: { attempt_id: attemptId, user_id: userId },
       include: [{ model: IeltsWritingTask, as: "task" }],
     });
+  }
+
+  // ========== Statistics ==========
+
+  async getStatistics(userId: string, query: StatisticsQueryDto) {
+    const where: any = { user_id: userId, status: AttemptStatus.SUBMITTED };
+
+    if (query.scope) where.scope = query.scope;
+    if (query.test_id) where.test_id = query.test_id;
+    if (query.from || query.to) {
+      where.finished_at = {};
+      if (query.from) where.finished_at[Op.gte] = new Date(query.from);
+      if (query.to) where.finished_at[Op.lte] = new Date(query.to);
+    }
+
+    // Overall counts
+    const totalAttempts = await this.attemptModel.count({ where });
+    const totalInProgress = await this.attemptModel.count({
+      where: { user_id: userId, status: AttemptStatus.IN_PROGRESS },
+    });
+    const totalAbandoned = await this.attemptModel.count({
+      where: { user_id: userId, status: AttemptStatus.ABANDONED },
+    });
+
+    // Submitted attempts with answers
+    const submittedAttempts = await this.attemptModel.findAll({
+      where,
+      include: [
+        { model: IeltsTest, as: "test" },
+        { model: IeltsReadingAnswer, as: "readingAnswers" },
+        { model: IeltsListeningAnswer, as: "listeningAnswers" },
+        { model: IeltsWritingAnswer, as: "writingAnswers" },
+      ],
+      order: [["finished_at", "DESC"]],
+    });
+
+    // Per-skill statistics
+    let totalReadingCorrect = 0;
+    let totalReadingQuestions = 0;
+    let totalListeningCorrect = 0;
+    let totalListeningQuestions = 0;
+    let totalWritingAnswers = 0;
+    let totalWritingWordCount = 0;
+    const bandScores: number[] = [];
+    const timeSpentList: number[] = [];
+
+    for (const attempt of submittedAttempts) {
+      const readingAnswers = (attempt as any).readingAnswers || [];
+      const listeningAnswers = (attempt as any).listeningAnswers || [];
+      const writingAnswers = (attempt as any).writingAnswers || [];
+
+      // Load scope questions to compute correct counts
+      const allScopeQuestions = await this.loadAllQuestionsForAttempt(attempt);
+      const questionIds = [
+        ...new Set([
+          ...readingAnswers.map((a: any) => a.question_id),
+          ...listeningAnswers.map((a: any) => a.question_id),
+        ]),
+      ];
+      const questions = await this.questionModel.findAll({
+        where: { id: questionIds },
+        include: [
+          { model: IeltsSubQuestion, as: "questions" },
+          { model: IeltsQuestionOption, as: "options" },
+        ],
+      });
+      const questionMap = new Map(questions.map((q) => [q.id, q]));
+
+      const foundIds = new Set(questions.map((q) => q.id));
+      const missingIds = questionIds.filter((id: string) => !foundIds.has(id));
+      const subQuestionDirectMap = new Map<string, any>();
+      if (missingIds.length > 0) {
+        const directSubQuestions = await this.subQuestionModel.findAll({
+          where: { id: missingIds },
+        });
+        const parentIds = [
+          ...new Set(directSubQuestions.map((sq) => (sq as any).question_id)),
+        ];
+        const parentQuestions =
+          parentIds.length > 0
+            ? await this.questionModel.findAll({ where: { id: parentIds } })
+            : [];
+        const parentMap = new Map(parentQuestions.map((q) => [q.id, q]));
+        for (const sq of directSubQuestions) {
+          const plain = (sq as any).get({ plain: true });
+          const parent = parentMap.get(plain.question_id);
+          plain.parentQuestion = parent
+            ? (parent as any).get({ plain: true })
+            : null;
+          subQuestionDirectMap.set(plain.id, plain);
+        }
+      }
+
+      const readingResults = this.gradeAnswers(
+        readingAnswers,
+        questionMap,
+        subQuestionDirectMap,
+      );
+      const listeningResults = this.gradeAnswers(
+        listeningAnswers,
+        questionMap,
+        subQuestionDirectMap,
+      );
+
+      const rCorrect = readingResults.filter((r) => r.isCorrect).length;
+      const lCorrect = listeningResults.filter((r) => r.isCorrect).length;
+
+      totalReadingCorrect += rCorrect;
+      totalReadingQuestions += readingResults.length;
+      totalListeningCorrect += lCorrect;
+      totalListeningQuestions += listeningResults.length;
+      totalWritingAnswers += writingAnswers.length;
+      totalWritingWordCount += writingAnswers.reduce(
+        (sum: number, w: any) => sum + (w.word_count || 0),
+        0,
+      );
+
+      const allResults = [...readingResults, ...listeningResults];
+      const totalQ = allResults.length + allScopeQuestions.length;
+      const correctCount = rCorrect + lCorrect;
+      if (totalQ > 0) {
+        bandScores.push(this.calculateBandScore(correctCount, totalQ));
+      }
+
+      if (attempt.started_at && attempt.finished_at) {
+        const mins =
+          (new Date(attempt.finished_at).getTime() -
+            new Date(attempt.started_at).getTime()) /
+          60000;
+        timeSpentList.push(mins);
+      }
+    }
+
+    const avgBandScore =
+      bandScores.length > 0
+        ? Math.round(
+            (bandScores.reduce((a, b) => a + b, 0) / bandScores.length) * 10,
+          ) / 10
+        : 0;
+    const bestBandScore = bandScores.length > 0 ? Math.max(...bandScores) : 0;
+    const avgTimeSpentMinutes =
+      timeSpentList.length > 0
+        ? Math.round(
+            (timeSpentList.reduce((a, b) => a + b, 0) / timeSpentList.length) *
+              100,
+          ) / 100
+        : 0;
+    const totalTimeSpentMinutes =
+      Math.round(timeSpentList.reduce((a, b) => a + b, 0) * 100) / 100;
+
+    return {
+      overview: {
+        totalSubmitted: totalAttempts,
+        totalInProgress,
+        totalAbandoned,
+        totalAttempts: totalAttempts + totalInProgress + totalAbandoned,
+      },
+      scores: {
+        averageBandScore: avgBandScore,
+        bestBandScore,
+      },
+      reading: {
+        totalQuestions: totalReadingQuestions,
+        correctAnswers: totalReadingCorrect,
+        accuracy:
+          totalReadingQuestions > 0
+            ? Math.round(
+                (totalReadingCorrect / totalReadingQuestions) * 10000,
+              ) / 100
+            : 0,
+      },
+      listening: {
+        totalQuestions: totalListeningQuestions,
+        correctAnswers: totalListeningCorrect,
+        accuracy:
+          totalListeningQuestions > 0
+            ? Math.round(
+                (totalListeningCorrect / totalListeningQuestions) * 10000,
+              ) / 100
+            : 0,
+      },
+      writing: {
+        totalAnswers: totalWritingAnswers,
+        averageWordCount:
+          totalWritingAnswers > 0
+            ? Math.round(totalWritingWordCount / totalWritingAnswers)
+            : 0,
+      },
+      time: {
+        averageTimeSpentMinutes: avgTimeSpentMinutes,
+        totalTimeSpentMinutes,
+      },
+      recentScores: bandScores.slice(0, 10),
+    };
+  }
+
+  // ========== Unfinished Tests ==========
+
+  async getUnfinishedTests(userId: string, query: UnfinishedQueryDto) {
+    const { page = 1, limit = 10, scope, include_abandoned } = query;
+
+    const statusFilter = include_abandoned
+      ? [AttemptStatus.IN_PROGRESS, AttemptStatus.ABANDONED]
+      : [AttemptStatus.IN_PROGRESS];
+
+    const where: any = {
+      user_id: userId,
+      status: { [Op.in]: statusFilter },
+    };
+
+    if (scope) where.scope = scope;
+
+    const { rows, count } = await this.attemptModel.findAndCountAll({
+      where,
+      include: [{ model: IeltsTest, as: "test" }],
+      order: [["updatedAt", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
+    });
+
+    // Enrich each attempt with answer progress info
+    const enriched = await Promise.all(
+      rows.map(async (attempt) => {
+        const plain =
+          typeof attempt.toJSON === "function" ? attempt.toJSON() : attempt;
+
+        const readingCount = await this.readingAnswerModel.count({
+          where: { attempt_id: attempt.id, user_id: userId },
+        });
+        const listeningCount = await this.listeningAnswerModel.count({
+          where: { attempt_id: attempt.id, user_id: userId },
+        });
+        const writingCount = await this.writingAnswerModel.count({
+          where: { attempt_id: attempt.id, user_id: userId },
+        });
+
+        const elapsedMinutes = attempt.started_at
+          ? Math.round(
+              (((attempt.finished_at
+                ? new Date(attempt.finished_at).getTime()
+                : Date.now()) -
+                new Date(attempt.started_at).getTime()) /
+                60000) *
+                100,
+            ) / 100
+          : 0;
+
+        return {
+          ...plain,
+          progress: {
+            readingAnswers: readingCount,
+            listeningAnswers: listeningCount,
+            writingAnswers: writingCount,
+            totalAnswers: readingCount + listeningCount + writingCount,
+          },
+          elapsedMinutes,
+        };
+      }),
+    );
+
+    return {
+      data: enriched,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   // ========== Helpers ==========

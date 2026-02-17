@@ -264,3 +264,68 @@ export class AttemptQueryDto {
   @IsOptional()
   status?: string;
 }
+
+export class StatisticsQueryDto {
+  @ApiPropertyOptional({
+    description: "Filter by scope",
+    enum: AttemptScope,
+  })
+  @IsEnum(AttemptScope)
+  @IsOptional()
+  scope?: AttemptScope;
+
+  @ApiPropertyOptional({
+    description: "Filter by test ID",
+    example: "123e4567-e89b-12d3-a456-426614174000",
+  })
+  @IsUUID()
+  @IsOptional()
+  test_id?: string;
+
+  @ApiPropertyOptional({
+    description: "Start date filter (ISO 8601)",
+    example: "2025-01-01T00:00:00.000Z",
+  })
+  @IsString()
+  @IsOptional()
+  from?: string;
+
+  @ApiPropertyOptional({
+    description: "End date filter (ISO 8601)",
+    example: "2025-12-31T23:59:59.999Z",
+  })
+  @IsString()
+  @IsOptional()
+  to?: string;
+}
+
+export class UnfinishedQueryDto {
+  @ApiPropertyOptional({ description: "Page number", example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  page?: number;
+
+  @ApiPropertyOptional({ description: "Results per page", example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number;
+
+  @ApiPropertyOptional({
+    description: "Filter by scope",
+    enum: AttemptScope,
+  })
+  @IsEnum(AttemptScope)
+  @IsOptional()
+  scope?: AttemptScope;
+
+  @ApiPropertyOptional({
+    description: "Include abandoned attempts as well",
+    example: false,
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  include_abandoned?: boolean;
+}
