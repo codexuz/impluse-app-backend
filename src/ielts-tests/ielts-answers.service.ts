@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { Op } from "sequelize";
 import {
   IeltsAnswerAttempt,
   AttemptScope,
@@ -13,7 +14,9 @@ import {
 import { IeltsReadingAnswer } from "./entities/ielts-reading-answer.entity.js";
 import { IeltsListeningAnswer } from "./entities/ielts-listening-answer.entity.js";
 import { IeltsWritingAnswer } from "./entities/ielts-writing-answer.entity.js";
+import { IeltsReading } from "./entities/ielts-reading.entity.js";
 import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
+import { IeltsListening } from "./entities/ielts-listening.entity.js";
 import { IeltsListeningPart } from "./entities/ielts-listening-part.entity.js";
 import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
 import { IeltsQuestion } from "./entities/ielts-question.entity.js";
@@ -46,6 +49,14 @@ export class IeltsAnswersService {
     private readonly subQuestionModel: typeof IeltsSubQuestion,
     @InjectModel(IeltsQuestionOption)
     private readonly questionOptionModel: typeof IeltsQuestionOption,
+    @InjectModel(IeltsReading)
+    private readonly readingModel: typeof IeltsReading,
+    @InjectModel(IeltsReadingPart)
+    private readonly readingPartModel: typeof IeltsReadingPart,
+    @InjectModel(IeltsListening)
+    private readonly listeningModel: typeof IeltsListening,
+    @InjectModel(IeltsListeningPart)
+    private readonly listeningPartModel: typeof IeltsListeningPart,
   ) {}
 
   // ========== Attempts ==========
@@ -150,7 +161,15 @@ export class IeltsAnswersService {
       }
     }
 
-    return this.buildAttemptResults(attempt, questionMap, subQuestionDirectMap);
+    // Load ALL questions for this attempt's scope (to include unanswered ones)
+    const allScopeQuestions = await this.loadAllQuestionsForAttempt(attempt);
+
+    return this.buildAttemptResults(
+      attempt,
+      questionMap,
+      subQuestionDirectMap,
+      allScopeQuestions,
+    );
   }
 
   async submitAttempt(attemptId: string, userId: string) {
@@ -333,10 +352,86 @@ export class IeltsAnswersService {
 
   // ========== Helpers ==========
 
+  /**
+   * Load ALL questions belonging to the attempt's scope (test/module/part).
+   */
+  private async loadAllQuestionsForAttempt(attempt: any): Promise<any[]> {
+    const whereConditions: any[] = [];
+
+    if (attempt.part_id) {
+      // Scope is PART — part_id could be reading or listening part
+      whereConditions.push({ reading_part_id: attempt.part_id });
+      whereConditions.push({ listening_part_id: attempt.part_id });
+    } else if (attempt.module_id) {
+      // Scope is MODULE — module_id could be a reading or listening module
+      const readingParts = await this.readingPartModel.findAll({
+        where: { reading_id: attempt.module_id },
+        attributes: ["id"],
+      });
+      const listeningParts = await this.listeningPartModel.findAll({
+        where: { listening_id: attempt.module_id },
+        attributes: ["id"],
+      });
+
+      const rPartIds = readingParts.map((p: any) => p.id);
+      const lPartIds = listeningParts.map((p: any) => p.id);
+
+      if (rPartIds.length > 0)
+        whereConditions.push({ reading_part_id: { [Op.in]: rPartIds } });
+      if (lPartIds.length > 0)
+        whereConditions.push({ listening_part_id: { [Op.in]: lPartIds } });
+    } else if (attempt.test_id) {
+      // Scope is TEST — find all reading & listening modules, then parts
+      const readings = await this.readingModel.findAll({
+        where: { test_id: attempt.test_id },
+        attributes: ["id"],
+      });
+      const listenings = await this.listeningModel.findAll({
+        where: { test_id: attempt.test_id },
+        attributes: ["id"],
+      });
+
+      const readingIds = readings.map((r: any) => r.id);
+      const listeningIds = listenings.map((l: any) => l.id);
+
+      if (readingIds.length > 0) {
+        const rParts = await this.readingPartModel.findAll({
+          where: { reading_id: { [Op.in]: readingIds } },
+          attributes: ["id"],
+        });
+        const rPartIds = rParts.map((p: any) => p.id);
+        if (rPartIds.length > 0)
+          whereConditions.push({ reading_part_id: { [Op.in]: rPartIds } });
+      }
+
+      if (listeningIds.length > 0) {
+        const lParts = await this.listeningPartModel.findAll({
+          where: { listening_id: { [Op.in]: listeningIds } },
+          attributes: ["id"],
+        });
+        const lPartIds = lParts.map((p: any) => p.id);
+        if (lPartIds.length > 0)
+          whereConditions.push({ listening_part_id: { [Op.in]: lPartIds } });
+      }
+    }
+
+    if (whereConditions.length === 0) return [];
+
+    return await this.questionModel.findAll({
+      where: { [Op.or]: whereConditions },
+      include: [
+        { model: IeltsSubQuestion, as: "questions" },
+        { model: IeltsQuestionOption, as: "options" },
+      ],
+      order: [["questionNumber", "ASC"]],
+    });
+  }
+
   private buildAttemptResults(
     attempt: any,
     questionMap: Map<string, any>,
     subQuestionDirectMap: Map<string, any>,
+    allScopeQuestions: any[] = [],
   ) {
     const readingAnswers = attempt.readingAnswers || [];
     const listeningAnswers = attempt.listeningAnswers || [];
@@ -353,11 +448,27 @@ export class IeltsAnswersService {
       subQuestionDirectMap,
     );
 
-    const allResults = [...readingResults, ...listeningResults];
+    const answeredResults = [...readingResults, ...listeningResults];
+
+    // Build set of answered question numbers to detect unanswered questions
+    const answeredQuestionNumbers = new Set(
+      answeredResults.map((r) => r.questionNumber),
+    );
+
+    // Enumerate all answerable items from scope questions and add unanswered ones
+    const unansweredResults = this.buildUnansweredResults(
+      allScopeQuestions,
+      answeredQuestionNumbers,
+    );
+
+    const allResults = [...answeredResults, ...unansweredResults];
     const totalQuestions = allResults.length;
-    const correctAnswers = allResults.filter((r) => r.isCorrect).length;
+    const correctAnswers = answeredResults.filter((r) => r.isCorrect).length;
     const totalPoints = allResults.reduce((sum, r) => sum + r.points, 0);
-    const earnedPoints = allResults.reduce((sum, r) => sum + r.earnedPoints, 0);
+    const earnedPoints = answeredResults.reduce(
+      (sum, r) => sum + r.earnedPoints,
+      0,
+    );
     const score =
       totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
 
@@ -521,6 +632,85 @@ export class IeltsAnswersService {
       answerText: null,
       optionText: null,
     };
+  }
+
+  /**
+   * Build result entries for all questions the user did NOT answer.
+   * userAnswer and earnedPoints are set to null.
+   */
+  private buildUnansweredResults(
+    allScopeQuestions: any[],
+    answeredQuestionNumbers: Set<number>,
+  ): any[] {
+    const unanswered: any[] = [];
+
+    for (const q of allScopeQuestions) {
+      const qPlain = typeof q.get === "function" ? q.get({ plain: true }) : q;
+      const subQuestions: any[] = qPlain.questions || [];
+      const options: any[] = qPlain.options || [];
+
+      if (subQuestions.length > 0) {
+        // Each sub-question is an answerable item
+        for (const sq of subQuestions) {
+          const sqNumber = sq.questionNumber;
+          if (sqNumber != null && !answeredQuestionNumbers.has(sqNumber)) {
+            let correctAnswer: string | null = sq.correctAnswer || null;
+            let optionText: string | null = null;
+
+            unanswered.push({
+              questionId: sq.id,
+              questionNumber: sqNumber,
+              questionType: qPlain.type || null,
+              questionText: sq.questionText || qPlain.questionText || null,
+              userAnswer: null,
+              correctAnswer,
+              isCorrect: null,
+              points: sq.points ? Number(sq.points) : 1,
+              earnedPoints: null,
+              explanation: sq.explanation || qPlain.explanation || null,
+              fromPassage: sq.fromPassage || qPlain.fromPassage || null,
+              questionParts: [],
+              answerText: null,
+              optionText,
+            });
+          }
+        }
+      } else {
+        // Parent question itself is the answerable item
+        const qNumber = qPlain.questionNumber;
+        if (qNumber != null && !answeredQuestionNumbers.has(qNumber)) {
+          let correctAnswer: string | null = null;
+          let optionText: string | null = null;
+
+          if (options.length > 0) {
+            const correctOption = options.find((opt: any) => opt.isCorrect);
+            if (correctOption) {
+              correctAnswer = correctOption.optionKey || null;
+              optionText = correctOption.optionText || null;
+            }
+          }
+
+          unanswered.push({
+            questionId: qPlain.id,
+            questionNumber: qNumber,
+            questionType: qPlain.type || null,
+            questionText: qPlain.questionText || null,
+            userAnswer: null,
+            correctAnswer,
+            isCorrect: null,
+            points: qPlain.points ? Number(qPlain.points) : 1,
+            earnedPoints: null,
+            explanation: qPlain.explanation || null,
+            fromPassage: qPlain.fromPassage || null,
+            questionParts: [],
+            answerText: null,
+            optionText,
+          });
+        }
+      }
+    }
+
+    return unanswered;
   }
 
   private compareAnswers(userAnswer: string, correctAnswer: string): boolean {
