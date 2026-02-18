@@ -108,12 +108,12 @@ export class IeltsMockTest extends Model<IeltsMockTest> {
   archived: boolean;
 
   @Column({
-    type: DataType.JSONB,
+    type: DataType.JSON,
     allowNull: false,
     defaultValue: {
-      listening_videoUrl: "",
-      reading_videoUrl: "",
-      writing_videoUrl: "",
+      listening_videoUrl: "https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/uploads/listening.mp4",
+      reading_videoUrl: "https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/uploads/reading.mp4",
+      writing_videoUrl: "https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/uploads/writing.mp4",
     },
   })
   meta: {
