@@ -52,8 +52,9 @@ export class CreateGroupDto {
     example: "09:00",
     required: false,
   })
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: "lesson_start must be in HH:MM format (e.g., 09:00)",
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, {
+    message:
+      "lesson_start must be in HH:MM or HH:MM:SS format (e.g., 09:00 or 09:00:00)",
   })
   @IsOptional()
   lesson_start?: string;
@@ -63,8 +64,9 @@ export class CreateGroupDto {
     example: "10:30",
     required: false,
   })
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: "lesson_end must be in HH:MM format (e.g., 10:30)",
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, {
+    message:
+      "lesson_end must be in HH:MM or HH:MM:SS format (e.g., 10:30 or 10:30:00)",
   })
   @IsOptional()
   lesson_end?: string;
