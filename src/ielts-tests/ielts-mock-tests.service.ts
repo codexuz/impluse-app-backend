@@ -58,7 +58,7 @@ export class IeltsMockTestsService {
       include: [
         {
           model: User,
-          attributes: ["id", "firstName", "lastName"],
+          attributes: ["user_id", "firstName", "lastName"],
         },
         {
           model: IeltsTest,
@@ -85,7 +85,7 @@ export class IeltsMockTestsService {
       include: [
         {
           model: User,
-          attributes: ["id", "firstName", "lastName"],
+          attributes: ["user_id", "firstName", "lastName"],
         },
         {
           model: IeltsTest,
@@ -152,7 +152,7 @@ export class IeltsMockTestsService {
       include: [
         {
           model: User,
-          attributes: ["id", "firstName", "lastName"],
+          attributes: ["user_id", "firstName", "lastName"],
         },
         {
           model: IeltsTest,
