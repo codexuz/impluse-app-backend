@@ -512,7 +512,7 @@ export class IeltsTestsService {
   }
 
   async findAllReadingParts(query: ReadingPartQueryDto) {
-    const { page = 1, limit = 10, search, readingId, part } = query;
+    const { page = 1, limit = 10, search, readingId, part, mode } = query;
     const where: any = {};
 
     if (search) {
@@ -523,6 +523,9 @@ export class IeltsTestsService {
     }
     if (part) {
       where.part = part;
+    }
+    if (mode) {
+      where.mode = mode;
     }
 
     const { rows, count } = await this.ieltsReadingPartModel.findAndCountAll({
@@ -771,7 +774,7 @@ export class IeltsTestsService {
   }
 
   async findAllListeningParts(query: ListeningPartQueryDto) {
-    const { page = 1, limit = 10, search, listeningId, part } = query;
+    const { page = 1, limit = 10, search, listeningId, part, mode } = query;
     const where: any = {};
 
     if (search) {
@@ -782,6 +785,9 @@ export class IeltsTestsService {
     }
     if (part) {
       where.part = part;
+    }
+    if (mode) {
+      where.mode = mode;
     }
 
     const { rows, count } = await this.ieltsListeningPartModel.findAndCountAll({
@@ -968,7 +974,7 @@ export class IeltsTestsService {
   }
 
   async findAllWritingTasks(query: WritingTaskQueryDto) {
-    const { page = 1, limit = 10, search, writingId, task } = query;
+    const { page = 1, limit = 10, search, writingId, task, mode } = query;
     const where: any = {};
 
     if (search) {
@@ -979,6 +985,9 @@ export class IeltsTestsService {
     }
     if (task) {
       where.task = task;
+    }
+    if (mode) {
+      where.mode = mode;
     }
 
     const { rows, count } = await this.ieltsWritingTaskModel.findAndCountAll({

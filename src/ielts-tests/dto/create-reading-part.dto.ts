@@ -27,6 +27,11 @@ export enum DifficultyEnum {
   HARD = "HARD",
 }
 
+export enum TestModeEnum {
+  PRACTICE = "practice",
+  MOCK = "mock",
+}
+
 export enum QuestionTypeEnum {
   NOTE_COMPLETION = "NOTE_COMPLETION",
   TRUE_FALSE_NOT_GIVEN = "TRUE_FALSE_NOT_GIVEN",
@@ -213,6 +218,15 @@ export class CreateReadingPartDto {
   @IsEnum(ReadingPartEnum)
   @IsNotEmpty()
   part: ReadingPartEnum;
+
+  @ApiProperty({
+    description: "Test mode for this part",
+    enum: TestModeEnum,
+    example: TestModeEnum.MOCK,
+  })
+  @IsEnum(TestModeEnum)
+  @IsNotEmpty()
+  mode: TestModeEnum;
 
   @ApiProperty({
     description: "The reading part title",

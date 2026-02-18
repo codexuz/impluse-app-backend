@@ -40,6 +40,12 @@ export class IeltsWritingTask extends Model<IeltsWritingTask> {
   task: WritingTask;
 
   @Column({
+    type: DataType.ENUM("practice", "mock"),
+    allowNull: false,
+  })
+  mode: "practice" | "mock";
+
+  @Column({
     type: DataType.TEXT("long"),
     allowNull: true,
   })

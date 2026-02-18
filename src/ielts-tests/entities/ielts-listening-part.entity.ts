@@ -48,6 +48,12 @@ export class IeltsListeningPart extends Model<IeltsListeningPart> {
   part: ListeningPart;
 
   @Column({
+    type: DataType.ENUM("practice", "mock"),
+    allowNull: false,
+  })
+  mode: "practice" | "mock";
+
+  @Column({
     type: DataType.STRING,
     allowNull: true,
   })

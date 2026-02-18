@@ -168,6 +168,15 @@ export class ReadingPartQueryDto extends PaginationDto {
   @IsString()
   @IsOptional()
   part?: string;
+
+  @ApiProperty({
+    description: "Filter by mode",
+    enum: ["practice", "mock"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  mode?: string;
 }
 
 export class ListeningPartQueryDto extends PaginationDto {
@@ -187,6 +196,15 @@ export class ListeningPartQueryDto extends PaginationDto {
   @IsString()
   @IsOptional()
   part?: string;
+
+  @ApiProperty({
+    description: "Filter by mode",
+    enum: ["practice", "mock"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  mode?: string;
 }
 
 export class WritingTaskQueryDto extends PaginationDto {
@@ -206,6 +224,15 @@ export class WritingTaskQueryDto extends PaginationDto {
   @IsString()
   @IsOptional()
   task?: string;
+
+  @ApiProperty({
+    description: "Filter by mode",
+    enum: ["practice", "mock"],
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  mode?: string;
 }
 
 export class QuestionQueryDto extends PaginationDto {

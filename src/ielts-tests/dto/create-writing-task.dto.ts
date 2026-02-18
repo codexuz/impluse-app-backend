@@ -14,6 +14,11 @@ export enum WritingTaskEnum {
   TASK_2 = "TASK_2",
 }
 
+export enum TestModeEnum {
+  PRACTICE = "practice",
+  MOCK = "mock",
+}
+
 export class CreateWritingTaskDto {
   @ApiProperty({
     description: "The writing ID this task belongs to",
@@ -31,6 +36,15 @@ export class CreateWritingTaskDto {
   @IsEnum(WritingTaskEnum)
   @IsNotEmpty()
   task: WritingTaskEnum;
+
+  @ApiProperty({
+    description: "Test mode for this task",
+    enum: TestModeEnum,
+    example: TestModeEnum.MOCK,
+  })
+  @IsEnum(TestModeEnum)
+  @IsNotEmpty()
+  mode: TestModeEnum;
 
   @ApiProperty({
     description: "The writing prompt/question",

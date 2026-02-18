@@ -47,6 +47,12 @@ export class IeltsReadingPart extends Model<IeltsReadingPart> {
   part: ReadingPart;
 
   @Column({
+    type: DataType.ENUM("practice", "mock"),
+    allowNull: false,
+  })
+  mode: "practice" | "mock";
+
+  @Column({
     type: DataType.STRING,
     allowNull: true,
   })
