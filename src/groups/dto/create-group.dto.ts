@@ -5,6 +5,7 @@ import {
   IsUUID,
   IsOptional,
   IsEnum,
+  IsBoolean,
   Matches,
 } from "class-validator";
 import { DaysEnum } from "../entities/group.entity.js";
@@ -67,4 +68,14 @@ export class CreateGroupDto {
   })
   @IsOptional()
   lesson_end?: string;
+
+  @ApiProperty({
+    description: "Whether the group is IELTS-specific",
+    example: false,
+    required: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isIELTS?: boolean;
 }

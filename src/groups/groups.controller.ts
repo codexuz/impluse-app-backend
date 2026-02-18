@@ -61,6 +61,7 @@ export class GroupsController {
     @Query("level_id") level_id?: string,
     @Query("teacher_id") teacher_id?: string,
     @Query("days") days?: string,
+    @Query("isIELTS") isIELTS?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -75,6 +76,7 @@ export class GroupsController {
       level_id,
       teacher_id,
       days,
+      isIELTS,
     );
   }
 
@@ -143,6 +145,7 @@ export class GroupsController {
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("query") query?: string,
+    @Query("isIELTS") isIELTS?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -155,6 +158,7 @@ export class GroupsController {
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 10,
       query,
+      isIELTS,
     );
   }
 

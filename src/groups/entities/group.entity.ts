@@ -74,6 +74,13 @@ export class Group extends Model {
   })
   isDeleted: boolean;
 
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  isIELTS: boolean;
+
   @CreatedAt
   createdAt: Date;
 
