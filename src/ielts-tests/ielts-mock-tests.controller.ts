@@ -110,7 +110,7 @@ export class IeltsMockTestsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Update a mock test" })
   @ApiParam({ name: "id", description: "Mock test ID" })
   @ApiResponse({
