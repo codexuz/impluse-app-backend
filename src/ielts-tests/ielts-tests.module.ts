@@ -26,6 +26,9 @@ import { IeltsListeningAnswer } from "./entities/ielts-listening-answer.entity.j
 import { IeltsWritingAnswer } from "./entities/ielts-writing-answer.entity.js";
 import { IeltsAnswersService } from "./ielts-answers.service.js";
 import { IeltsAnswersController } from "./ielts-answers.controller.js";
+import { IeltsMockTest } from "./entities/ielts-mock-test.entity.js";
+import { IeltsMockTestsService } from "./ielts-mock-tests.service.js";
+import { IeltsMockTestsController } from "./ielts-mock-tests.controller.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 
@@ -46,6 +49,7 @@ import { Group } from "../groups/entities/group.entity.js";
       IeltsReadingAnswer,
       IeltsListeningAnswer,
       IeltsWritingAnswer,
+      IeltsMockTest,
       GroupStudent,
       Group,
     ]),
@@ -61,8 +65,9 @@ import { Group } from "../groups/entities/group.entity.js";
     IeltsQuestionsController,
     IeltsQuestionChoicesController,
     IeltsSubQuestionsController,
+    IeltsMockTestsController,
   ],
-  providers: [IeltsTestsService, IeltsAnswersService],
-  exports: [IeltsTestsService, IeltsAnswersService],
+  providers: [IeltsTestsService, IeltsAnswersService, IeltsMockTestsService],
+  exports: [IeltsTestsService, IeltsAnswersService, IeltsMockTestsService],
 })
 export class IeltsTestsModule {}
