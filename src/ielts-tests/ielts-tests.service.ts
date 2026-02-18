@@ -331,7 +331,11 @@ export class IeltsTestsService {
 
   async findTestById(id: string): Promise<IeltsTest> {
     const test = await this.ieltsTestModel.findByPk(id, {
-      include: [{ model: User, as: "creator" }],
+      include: [
+        { model: IeltsReading, as: "readings" },
+        { model: IeltsListening, as: "listenings" },
+        { model: IeltsWriting, as: "writings" },
+      ],
     });
 
     if (!test) {

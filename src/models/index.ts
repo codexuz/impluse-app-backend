@@ -1306,6 +1306,18 @@ export function initializeAssociations() {
     foreignKey: "created_by",
     as: "creator",
   });
+  IeltsTest.hasMany(IeltsReading, {
+    foreignKey: "test_id",
+    as: "readings",
+  });
+  IeltsTest.hasMany(IeltsListening, {
+    foreignKey: "test_id",
+    as: "listenings",
+  });
+  IeltsTest.hasMany(IeltsWriting, {
+    foreignKey: "test_id",
+    as: "writings",
+  });
 
   // IeltsReading associations
   IeltsReading.belongsTo(IeltsTest, {
