@@ -1253,7 +1253,7 @@ export class IeltsAnswersService {
     questionMap: Map<string, any>,
     subQuestionDirectMap: Map<string, any>,
   ): any[] {
-    return answers.map((answer) => {
+    const results = answers.map((answer) => {
       const questionNumber = parseInt(answer.question_number, 10);
       const questionId = answer.question_id;
 
@@ -1284,6 +1284,7 @@ export class IeltsAnswersService {
           questionParts: [],
           answerText: null,
           optionText: null,
+          _parentQuestionId: parentQ?.id || questionId,
         };
       }
 
@@ -1355,8 +1356,68 @@ export class IeltsAnswersService {
         questionParts: [],
         answerText,
         optionText,
+        _parentQuestionId: questionId,
       };
     });
+
+    // Post-process MULTIPLE_ANSWER: accept correct answers in any order
+    this.postProcessMultipleAnswers(results);
+
+    return results;
+  }
+
+  /**
+   * For MULTIPLE_ANSWER questions, the correct answers should be accepted
+   * in any order across sub-questions of the same parent question.
+   * e.g. if Q12=C, Q13=D are correct, then Q12=D, Q13=C is also correct.
+   */
+  private postProcessMultipleAnswers(results: any[]): void {
+    // Group MULTIPLE_ANSWER results by parent question ID
+    const multipleAnswerGroups = new Map<string, number[]>();
+
+    for (let i = 0; i < results.length; i++) {
+      if (
+        results[i].questionType === "MULTIPLE_ANSWER" &&
+        results[i]._parentQuestionId
+      ) {
+        const parentId = results[i]._parentQuestionId;
+        if (!multipleAnswerGroups.has(parentId)) {
+          multipleAnswerGroups.set(parentId, []);
+        }
+        multipleAnswerGroups.get(parentId)!.push(i);
+      }
+    }
+
+    for (const [, indices] of multipleAnswerGroups) {
+      const correctAnswers = indices
+        .map((i) => results[i].correctAnswer)
+        .filter(Boolean)
+        .map((a: string) => a.trim().toLowerCase())
+        .sort();
+
+      const userAnswers = indices
+        .map((i) => (results[i].userAnswer || "").trim().toLowerCase())
+        .filter((a: string) => a !== "")
+        .sort();
+
+      // If user answers as a sorted set match correct answers as a sorted set,
+      // mark all sub-questions as correct
+      if (
+        correctAnswers.length > 0 &&
+        correctAnswers.length === userAnswers.length &&
+        correctAnswers.every((val, idx) => val === userAnswers[idx])
+      ) {
+        for (const idx of indices) {
+          results[idx].isCorrect = true;
+          results[idx].earnedPoints = results[idx].points;
+        }
+      }
+    }
+
+    // Clean up internal tracking field
+    for (const result of results) {
+      delete result._parentQuestionId;
+    }
   }
 
   private buildUngradedResult(answer: any) {
