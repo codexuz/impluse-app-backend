@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Param,
@@ -19,6 +20,7 @@ import {
 } from "@nestjs/swagger";
 import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateListeningDto } from "./dto/create-listening.dto.js";
+import { UpdateListeningDto } from "./dto/update-listening.dto.js";
 import { ListeningQueryDto } from "./dto/query.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
@@ -62,6 +64,21 @@ export class IeltsListeningController {
   @ApiParam({ name: "id", description: "The listening ID" })
   async findListeningById(@Param("id") id: string) {
     return await this.ieltsTestsService.findListeningById(id);
+  }
+
+  @Patch(":id")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Update a listening section" })
+  @ApiParam({ name: "id", description: "The listening ID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "The listening section has been successfully updated.",
+  })
+  async updateListening(
+    @Param("id") id: string,
+    @Body() updateListeningDto: UpdateListeningDto,
+  ) {
+    return await this.ieltsTestsService.updateListening(id, updateListeningDto);
   }
 
   @Delete(":id")

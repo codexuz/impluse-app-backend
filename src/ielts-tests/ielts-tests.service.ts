@@ -16,6 +16,7 @@ import { CreateReadingDto } from "./dto/create-reading.dto.js";
 import { UpdateReadingDto } from "./dto/update-reading.dto.js";
 import { CreateReadingPartDto } from "./dto/create-reading-part.dto.js";
 import { CreateListeningDto } from "./dto/create-listening.dto.js";
+import { UpdateListeningDto } from "./dto/update-listening.dto.js";
 import { CreateListeningPartDto } from "./dto/create-listening-part.dto.js";
 import { CreateWritingDto } from "./dto/create-writing.dto.js";
 import { CreateWritingTaskDto } from "./dto/create-writing-task.dto.js";
@@ -716,6 +717,18 @@ export class IeltsTestsService {
     }
 
     return this.sortQuestionsHeadingOptions(listening);
+  }
+
+  async updateListening(
+    id: string,
+    updateListeningDto: UpdateListeningDto,
+  ): Promise<IeltsListening> {
+    const listening = await this.ieltsListeningModel.findByPk(id);
+    if (!listening) {
+      throw new NotFoundException(`Listening with ID ${id} not found`);
+    }
+    await listening.update(updateListeningDto);
+    return listening;
   }
 
   async deleteListening(id: string): Promise<void> {
