@@ -1,6 +1,61 @@
 import { IsString, MinLength, IsNotEmpty } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
+export class RequestPasswordResetDto {
+  @ApiProperty({
+    description: "Phone number associated with the account",
+    example: "+998901234567",
+  })
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+}
+
+export class VerifyResetCodeDto {
+  @ApiProperty({
+    description: "Phone number associated with the account",
+    example: "+998901234567",
+  })
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+
+  @ApiProperty({
+    description: "Verification code received via SMS",
+    example: "123456",
+  })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({
+    description: "Phone number associated with the account",
+    example: "+998901234567",
+  })
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+
+  @ApiProperty({
+    description: "Verification code received via SMS",
+    example: "123456",
+  })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+
+  @ApiProperty({
+    description: "New password",
+    minLength: 6,
+    example: "newpassword123",
+  })
+  @IsString()
+  @MinLength(6)
+  new_password: string;
+}
+
 export class LoginDto {
   @ApiProperty({
     description: "Username for authentication",

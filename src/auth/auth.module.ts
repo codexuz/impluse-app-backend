@@ -15,13 +15,16 @@ import { Permission } from "../users/entities/permission.model.js";
 import { RolePermission } from "../users/entities/role-permission.model.js";
 import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
 import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
+import { SmsVerification } from "../users/entities/sms-verification.model.js";
 import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
+import { SmsModule } from "../sms/sms.module.js";
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule,
     AwsStorageModule,
+    SmsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -41,6 +44,7 @@ import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
       RolePermission,
       StudentWallet,
       StudentParent,
+      SmsVerification,
     ]),
   ],
   controllers: [AuthController],

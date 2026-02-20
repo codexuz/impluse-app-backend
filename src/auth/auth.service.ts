@@ -3,10 +3,18 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectModel } from "@nestjs/sequelize";
-import { LoginDto, RegisterDto, JwtPayload } from "./dto/auth.dto.js";
+import {
+  LoginDto,
+  RegisterDto,
+  JwtPayload,
+  RequestPasswordResetDto,
+  VerifyResetCodeDto,
+  ResetPasswordDto,
+} from "./dto/auth.dto.js";
 import { RefreshTokenDto } from "./dto/refresh-token.dto.js";
 import { AuthResponse, SessionInfo } from "./interfaces/auth.interface.js";
 import { v4 as uuidv4 } from "uuid";
@@ -16,7 +24,9 @@ import { Role } from "../users/entities/role.model.js";
 import { UserSession } from "../users/entities/user-session.model.js";
 import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
 import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
+import { SmsVerification } from "../users/entities/sms-verification.model.js";
 import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
+import { SmsService } from "../sms/sms.service.js";
 import * as bcrypt from "bcrypt";
 
 @Injectable()
@@ -32,8 +42,11 @@ export class AuthService {
     private studentWalletModel: typeof StudentWallet,
     @InjectModel(StudentParent)
     private studentParentModel: typeof StudentParent,
+    @InjectModel(SmsVerification)
+    private smsVerificationModel: typeof SmsVerification,
     private jwtService: JwtService,
     private awsStorageService: AwsStorageService,
+    private smsService: SmsService,
   ) {}
 
   async validateUser(username: string, pass: string): Promise<User | null> {
@@ -322,6 +335,19 @@ export class AuthService {
         await user.$add("roles", guestRole);
       }
 
+      // Send SMS with credentials
+      if (registerDto.phone) {
+        const smsMessage = `Impulse Mockmee ilovasiga kirish uchun: login: ${registerDto.username} parol: ${registerDto.password}`;
+        try {
+          await this.smsService.sendSms({
+            mobile_phone: registerDto.phone,
+            message: smsMessage,
+          });
+        } catch (error) {
+          console.error("Failed to send SMS to guest user:", error);
+        }
+      }
+
       return this.userModel.findByPk(user.user_id, {
         include: [
           {
@@ -566,5 +592,132 @@ export class AuthService {
       expiresAt,
       refreshExpiresAt,
     };
+  }
+
+  async requestPasswordReset(
+    dto: RequestPasswordResetDto,
+  ): Promise<{ message: string }> {
+    const user = await this.userModel.findOne({
+      where: { phone: dto.phone, is_active: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException("User with this phone number not found");
+    }
+
+    // Invalidate any existing unused codes for this phone
+    await this.smsVerificationModel.update(
+      { isVerified: true },
+      {
+        where: {
+          phone: dto.phone,
+          isVerified: false,
+          expiresAt: { [Op.gt]: new Date() },
+        },
+      },
+    );
+
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Code expires in 5 minutes
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+    // Save verification record
+    await this.smsVerificationModel.create({
+      userId: user.user_id,
+      phone: dto.phone,
+      code,
+      isVerified: false,
+      expiresAt,
+      attempts: 0,
+    });
+
+    // Send SMS
+    const smsMessage = `Kodni hech kimga bermang! Impulse App ilovasida parolni qayta tiklash kodingiz: ${code}`;
+    try {
+      await this.smsService.sendSms({
+        mobile_phone: dto.phone,
+        message: smsMessage,
+      });
+    } catch (error) {
+      console.error("Failed to send password reset SMS:", error);
+      throw new BadRequestException("Failed to send SMS. Please try again.");
+    }
+
+    return { message: "Verification code sent to your phone" };
+  }
+
+  async verifyResetCode(
+    dto: VerifyResetCodeDto,
+  ): Promise<{ message: string; verified: boolean }> {
+    const verification = await this.smsVerificationModel.findOne({
+      where: {
+        phone: dto.phone,
+        isVerified: false,
+        expiresAt: { [Op.gt]: new Date() },
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (!verification) {
+      throw new BadRequestException(
+        "No active verification code found. Please request a new one.",
+      );
+    }
+
+    if (verification.attempts >= 5) {
+      await verification.update({ isVerified: true });
+      throw new BadRequestException(
+        "Too many attempts. Please request a new code.",
+      );
+    }
+
+    if (verification.code !== dto.code) {
+      await verification.update({ attempts: verification.attempts + 1 });
+      throw new BadRequestException("Invalid verification code");
+    }
+
+    return { message: "Code verified successfully", verified: true };
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    const verification = await this.smsVerificationModel.findOne({
+      where: {
+        phone: dto.phone,
+        code: dto.code,
+        isVerified: false,
+        expiresAt: { [Op.gt]: new Date() },
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (!verification) {
+      throw new BadRequestException("Invalid or expired verification code");
+    }
+
+    const user = await this.userModel.findOne({
+      where: { phone: dto.phone, is_active: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(dto.new_password, saltRounds);
+
+    // Update password
+    await user.update({ password_hash: hashedPassword });
+
+    // Mark verification as used
+    await verification.update({ isVerified: true });
+
+    // Terminate all existing sessions
+    await this.terminateUserSessions(user.user_id);
+
+    return { message: "Password reset successfully" };
   }
 }

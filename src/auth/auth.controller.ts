@@ -19,7 +19,13 @@ import {
   ApiHeader,
 } from "@nestjs/swagger";
 import { AuthService } from "./auth.service.js";
-import { LoginDto, RegisterDto } from "./dto/auth.dto.js";
+import {
+  LoginDto,
+  RegisterDto,
+  RequestPasswordResetDto,
+  VerifyResetCodeDto,
+  ResetPasswordDto,
+} from "./dto/auth.dto.js";
 import { RefreshTokenDto } from "./dto/refresh-token.dto.js";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard.js";
 import { CurrentUser } from "./decorators/current-user.decorator.js";
@@ -361,5 +367,62 @@ export class AuthController {
   })
   usersRead() {
     return { message: "Users read permission granted" };
+  }
+
+  @Post("password-reset/request")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Request password reset via SMS" })
+  @ApiBody({ type: RequestPasswordResetDto })
+  @ApiResponse({
+    status: 200,
+    description: "Verification code sent to phone",
+    schema: {
+      properties: {
+        message: { type: "string" },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: "User not found" })
+  @ApiResponse({ status: 400, description: "Failed to send SMS" })
+  async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
+    return this.authService.requestPasswordReset(dto);
+  }
+
+  @Post("password-reset/verify")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify SMS code for password reset" })
+  @ApiBody({ type: VerifyResetCodeDto })
+  @ApiResponse({
+    status: 200,
+    description: "Code verified successfully",
+    schema: {
+      properties: {
+        message: { type: "string" },
+        verified: { type: "boolean" },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: "Invalid or expired code" })
+  async verifyResetCode(@Body() dto: VerifyResetCodeDto) {
+    return this.authService.verifyResetCode(dto);
+  }
+
+  @Post("password-reset/confirm")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Reset password with verified SMS code" })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: "Password reset successfully",
+    schema: {
+      properties: {
+        message: { type: "string" },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: "Invalid or expired code" })
+  @ApiResponse({ status: 404, description: "User not found" })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 }
