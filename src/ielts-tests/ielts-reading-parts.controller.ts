@@ -48,14 +48,14 @@ export class IeltsReadingPartsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all reading parts" })
   async findAllReadingParts(@Query() query: ReadingPartQueryDto) {
     return await this.ieltsTestsService.findAllReadingParts(query);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a reading part by ID" })
   @ApiParam({ name: "id", description: "The reading part ID" })
   async findReadingPartById(@Param("id") id: string) {

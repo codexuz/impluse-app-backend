@@ -442,6 +442,62 @@ export class UsersService {
     };
   }
 
+  async getAllGuestStudents(
+    page: number = 1,
+    limit: number = 10,
+    query?: string,
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {
+      is_active: true,
+    };
+
+    if (query) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.like]: `%${query}%` } },
+        { last_name: { [Op.like]: `%${query}%` } },
+        { username: { [Op.like]: `%${query}%` } },
+        { phone: { [Op.like]: `%${query}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.userModel.findAndCountAll({
+      where: whereClause,
+      attributes: {
+        exclude: ["password_hash"],
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          where: { name: "guest" },
+          through: { attributes: [] },
+        },
+        {
+          model: StudentProfile,
+          as: "student_profile",
+        },
+      ],
+      limit,
+      offset,
+      distinct: true,
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
   async getArchivedStudents(
     page: number = 1,
     limit: number = 10,

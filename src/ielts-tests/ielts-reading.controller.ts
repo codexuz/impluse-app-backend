@@ -48,7 +48,7 @@ export class IeltsReadingController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all reading sections" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -59,7 +59,7 @@ export class IeltsReadingController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a reading section by ID" })
   @ApiParam({ name: "id", description: "The reading ID" })
   @ApiResponse({

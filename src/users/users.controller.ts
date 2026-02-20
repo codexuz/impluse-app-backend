@@ -142,6 +142,22 @@ export class UsersController {
     );
   }
 
+  @Get("guest-students")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Get all guest students" })
+  @ApiResponse({ status: 200, description: "List of all guest students" })
+  getAllGuestStudents(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string,
+  ) {
+    return this.usersService.getAllGuestStudents(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query,
+    );
+  }
+
   @Get()
   @Roles(Role.ADMIN)
   findAll() {
@@ -149,13 +165,13 @@ export class UsersController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   findOne(@Param("id") id: string) {
     return this.usersService.findOne(id);
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   update(@Param("id") id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
@@ -178,7 +194,6 @@ export class UsersController {
   activate(@Param("id") id: string) {
     return this.usersService.activate(id);
   }
-
 
   @Patch(":id/update-password")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)

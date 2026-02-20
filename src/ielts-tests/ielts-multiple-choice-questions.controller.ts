@@ -47,14 +47,14 @@ export class IeltsSubQuestionsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all sub questions" })
   async findAll(@Query() query: SubQuestionQueryDto) {
     return await this.ieltsTestsService.findAllSubQuestions(query);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a sub question by ID" })
   @ApiParam({ name: "id", description: "The sub question ID" })
   async findOne(@Param("id") id: string) {

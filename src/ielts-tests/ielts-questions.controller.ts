@@ -47,14 +47,14 @@ export class IeltsQuestionsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all questions" })
   async findAll(@Query() query: QuestionQueryDto) {
     return await this.ieltsTestsService.findAllQuestions(query);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a question by ID" })
   @ApiParam({ name: "id", description: "The question ID" })
   async findOne(@Param("id") id: string) {

@@ -63,7 +63,7 @@ export class IeltsTestsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all IELTS tests" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -75,7 +75,7 @@ export class IeltsTestsController {
 
   // ========== Skills (Reading, Listening, Writing combined) ==========
   @Get("skills")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({
     summary: "Get reading, listening, and writing with filters and pagination",
   })
@@ -102,7 +102,7 @@ export class IeltsTestsController {
   }
 
   @Get("question/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a question by ID" })
   @ApiParam({ name: "id", description: "The question ID" })
   async findQuestionById(@Param("id") id: string) {
@@ -123,7 +123,7 @@ export class IeltsTestsController {
   }
 
   @Get("sub-question/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a sub question by ID" })
   @ApiParam({ name: "id", description: "The sub question ID" })
   async findSubQuestionById(@Param("id") id: string) {
@@ -132,7 +132,7 @@ export class IeltsTestsController {
 
   // ========== Test by ID (must be LAST to avoid catching named routes) ==========
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get an IELTS test by ID" })
   @ApiParam({ name: "id", description: "The test ID" })
   @ApiResponse({

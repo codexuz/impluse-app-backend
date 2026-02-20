@@ -52,14 +52,14 @@ export class IeltsListeningPartsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all listening parts" })
   async findAllListeningParts(@Query() query: ListeningPartQueryDto) {
     return await this.ieltsTestsService.findAllListeningParts(query);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a listening part by ID" })
   @ApiParam({ name: "id", description: "The listening part ID" })
   async findListeningPartById(@Param("id") id: string) {

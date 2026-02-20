@@ -48,7 +48,7 @@ export class IeltsListeningController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all listening sections" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -59,7 +59,7 @@ export class IeltsListeningController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a listening section by ID" })
   @ApiParam({ name: "id", description: "The listening ID" })
   async findListeningById(@Param("id") id: string) {

@@ -50,7 +50,7 @@ export class IeltsWritingController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all writing sections" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -74,7 +74,7 @@ export class IeltsWritingController {
   }
 
   @Get("tasks")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all writing tasks" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -85,7 +85,7 @@ export class IeltsWritingController {
   }
 
   @Get("task/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a writing task by ID" })
   @ApiParam({ name: "id", description: "The writing task ID" })
   @ApiResponse({
@@ -124,7 +124,7 @@ export class IeltsWritingController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a writing section by ID" })
   @ApiParam({ name: "id", description: "The writing ID" })
   @ApiResponse({

@@ -48,7 +48,7 @@ export class IeltsMockTestsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all mock tests with filters" })
   @ApiQuery({ name: "user_id", required: false })
   @ApiQuery({ name: "test_id", required: false })
@@ -94,7 +94,7 @@ export class IeltsMockTestsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a mock test by ID" })
   @ApiParam({ name: "id", description: "Mock test ID" })
   @ApiResponse({
@@ -110,7 +110,7 @@ export class IeltsMockTestsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Update a mock test" })
   @ApiParam({ name: "id", description: "Mock test ID" })
   @ApiResponse({
