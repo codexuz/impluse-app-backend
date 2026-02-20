@@ -62,7 +62,7 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Request() req,
     @Ip() ip: string,
-    @Headers("user-agent") userAgent?: string
+    @Headers("user-agent") userAgent?: string,
   ) {
     return this.authService.login(loginDto, userAgent, ip, "student");
   }
@@ -96,7 +96,7 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Request() req,
     @Ip() ip: string,
-    @Headers("user-agent") userAgent?: string
+    @Headers("user-agent") userAgent?: string,
   ) {
     return this.authService.login(loginDto, userAgent, ip, "teacher");
   }
@@ -130,7 +130,7 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Request() req,
     @Ip() ip: string,
-    @Headers("user-agent") userAgent?: string
+    @Headers("user-agent") userAgent?: string,
   ) {
     return this.authService.login(loginDto, userAgent, ip, "admin");
   }
@@ -164,6 +164,63 @@ export class AuthController {
   @ApiResponse({ status: 409, description: "User already exists" })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Post("guest/register")
+  @ApiOperation({ summary: "Register a new guest account" })
+  @ApiBody({ type: RegisterDto })
+  @ApiResponse({
+    status: 201,
+    description: "Guest registration successful",
+    schema: {
+      properties: {
+        id: { type: "string" },
+        username: { type: "string" },
+        phone: { type: "string" },
+        first_name: { type: "string" },
+        last_name: { type: "string" },
+        roles: { type: "array", items: { type: "string" } },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 409, description: "User already exists" })
+  async guestRegister(@Body() registerDto: RegisterDto) {
+    return this.authService.guestRegister(registerDto);
+  }
+
+  @Post("guest/login")
+  @ApiOperation({ summary: "Login as an existing guest user" })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 200,
+    description: "Guest login successful",
+    schema: {
+      properties: {
+        access_token: { type: "string" },
+        refresh_token: { type: "string" },
+        user: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            username: { type: "string" },
+            phone: { type: "string" },
+            first_name: { type: "string" },
+            last_name: { type: "string" },
+            roles: { type: "array", items: { type: "string" } },
+          },
+        },
+        sessionId: { type: "string" },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized - Must be a guest" })
+  async guestLogin(
+    @Body() loginDto: LoginDto,
+    @Ip() ip: string,
+    @Headers("user-agent") userAgent?: string,
+  ) {
+    return this.authService.guestLogin(loginDto, userAgent, ip);
   }
 
   @UseGuards(JwtAuthGuard)

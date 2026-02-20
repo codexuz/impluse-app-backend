@@ -70,7 +70,7 @@ export class AuthService {
     loginDto: LoginDto,
     userAgent?: string,
     ipAddress?: string,
-    requiredRole?: "student" | "teacher" | "admin",
+    requiredRole?: "student" | "teacher" | "admin" | "guest",
   ): Promise<AuthResponse> {
     console.log("Login attempt for username:", loginDto.username);
     console.log("Required role:", requiredRole);
@@ -284,6 +284,65 @@ export class AuthService {
       console.error("Error creating user:", error);
       throw error;
     }
+  }
+
+  async guestRegister(registerDto: RegisterDto): Promise<User> {
+    const existingUser = await this.userModel.findOne({
+      where: {
+        [Op.or]: [
+          { phone: registerDto.phone },
+          { username: registerDto.username },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      throw new ConflictException("User already exists");
+    }
+
+    try {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(
+        registerDto.password,
+        saltRounds,
+      );
+
+      const { password, ...userDataWithoutPassword } = registerDto;
+      const user = await this.userModel.create({
+        ...userDataWithoutPassword,
+        password_hash: hashedPassword,
+        is_active: true,
+        avatar_url:
+          "https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/avatars/avatar.png",
+      });
+
+      // Assign guest role
+      const guestRole = await Role.findOne({ where: { name: "guest" } });
+      if (guestRole) {
+        await user.$add("roles", guestRole);
+      }
+
+      return this.userModel.findByPk(user.user_id, {
+        include: [
+          {
+            model: Role,
+            as: "roles",
+            through: { attributes: [] },
+          },
+        ],
+      });
+    } catch (error) {
+      console.error("Error creating guest user:", error);
+      throw error;
+    }
+  }
+
+  async guestLogin(
+    loginDto: LoginDto,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<AuthResponse> {
+    return this.login(loginDto, userAgent, ipAddress, "guest");
   }
 
   async logout(sessionId: string): Promise<void> {
