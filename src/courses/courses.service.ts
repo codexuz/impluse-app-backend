@@ -10,6 +10,9 @@ import { LessonProgress } from "../lesson_progress/entities/lesson_progress.enti
 import { User } from "../users/entities/user.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
+import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
+import { HomeworkSubmission } from "../homework_submissions/entities/homework_submission.entity.js";
+import { HomeworkSection } from "../homework_submissions/entities/homework_sections.entity.js";
 
 @Injectable()
 export class CoursesService {
@@ -135,15 +138,67 @@ export class CoursesService {
     if (!course) throw new NotFoundException("Course not found");
 
     const allLessons = course.units.flatMap((unit) => unit.lessons);
-    const completedLessonIds = await this.lessonProgressModel.findAll({
+    const allLessonIds = allLessons.map((l) => l.id);
+
+    // Get group homeworks for the student's group
+    const groupHomeworks = await GroupHomework.findAll({
       where: {
-        student_id,
-        lesson_id: allLessons.map((l) => l.id),
+        group_id: studentGroup.group_id,
+        lesson_id: allLessonIds,
       },
-      attributes: ["lesson_id"],
     });
 
-    const completedCount = completedLessonIds.length;
+    // Get homework submissions for this student
+    const submissions = await HomeworkSubmission.findAll({
+      where: {
+        student_id,
+        lesson_id: allLessonIds,
+      },
+    });
+
+    const submissionIds = submissions.map((s) => s.id);
+
+    // Get homework sections for these submissions
+    const homeworkSections = submissionIds.length
+      ? await HomeworkSection.findAll({
+          where: { submission_id: submissionIds },
+        })
+      : [];
+
+    // Build lookup maps
+    const homeworksByLessonId = new Map<string, GroupHomework[]>();
+    for (const hw of groupHomeworks) {
+      const list = homeworksByLessonId.get(hw.lesson_id) || [];
+      list.push(hw);
+      homeworksByLessonId.set(hw.lesson_id, list);
+    }
+
+    const submissionsByLessonId = new Map<string, HomeworkSubmission[]>();
+    for (const sub of submissions) {
+      if (sub.lesson_id) {
+        const list = submissionsByLessonId.get(sub.lesson_id) || [];
+        list.push(sub);
+        submissionsByLessonId.set(sub.lesson_id, list);
+      }
+    }
+
+    const sectionsBySubmissionId = new Map<string, HomeworkSection[]>();
+    for (const sec of homeworkSections) {
+      const list = sectionsBySubmissionId.get(sec.submission_id) || [];
+      list.push(sec);
+      sectionsBySubmissionId.set(sec.submission_id, list);
+    }
+
+    // Count completed lessons (all homeworks submitted)
+    let completedCount = 0;
+    for (const lessonId of allLessonIds) {
+      const lessonHws = homeworksByLessonId.get(lessonId) || [];
+      const lessonSubs = submissionsByLessonId.get(lessonId) || [];
+      if (lessonHws.length > 0 && lessonSubs.length >= lessonHws.length) {
+        completedCount++;
+      }
+    }
+
     const total = allLessons.length;
 
     return {
