@@ -9,6 +9,8 @@ import { Group } from "../groups/entities/group.entity.js";
 import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
 import { HomeworkSubmission } from "../homework_submissions/entities/homework_submission.entity.js";
 import { HomeworkSection } from "../homework_submissions/entities/homework_sections.entity.js";
+import { Exercise } from "../exercise/entities/exercise.entity.js";
+import { Speaking } from "../speaking/entities/speaking.entity.js";
 
 @Injectable()
 export class ModuleService {
@@ -109,23 +111,37 @@ export class ModuleService {
     // Extract all lesson IDs
     const allLessonIds = units.flatMap((unit) => unit.lessons.map((l) => l.id));
 
+    if (!allLessonIds.length) {
+      return units.map((unit) => ({
+        unit_id: unit.id,
+        unit_title: unit.title,
+        unit_order: unit.order,
+        status: "unlocked",
+        completed: 0,
+        total: 0,
+        percentage: 0,
+        lessons: [],
+      }));
+    }
+
     const groupIds = studentGroups.map((sg) => sg.group_id);
 
-    // Get group homeworks for these groups and lessons
-    const groupHomeworks = await GroupHomework.findAll({
-      where: {
-        group_id: groupIds,
-        lesson_id: allLessonIds,
-      },
-    });
-
-    // Get homework submissions for this student
-    const submissions = await HomeworkSubmission.findAll({
-      where: {
-        student_id,
-        lesson_id: allLessonIds,
-      },
-    });
+    // Fetch all needed data in parallel
+    const [groupHomeworks, exercises, speakingTasks, submissions] =
+      await Promise.all([
+        GroupHomework.findAll({
+          where: { group_id: groupIds, lesson_id: allLessonIds },
+        }),
+        Exercise.findAll({
+          where: { lessonId: allLessonIds, isActive: true },
+        }),
+        Speaking.findAll({
+          where: { lessonId: allLessonIds },
+        }),
+        HomeworkSubmission.findAll({
+          where: { student_id, lesson_id: allLessonIds },
+        }),
+      ]);
 
     const submissionIds = submissions.map((s) => s.id);
 
@@ -137,6 +153,20 @@ export class ModuleService {
       : [];
 
     // Build lookup maps
+    const exercisesByLessonId = new Map<string, Exercise[]>();
+    for (const ex of exercises) {
+      const list = exercisesByLessonId.get(ex.lessonId) || [];
+      list.push(ex);
+      exercisesByLessonId.set(ex.lessonId, list);
+    }
+
+    const speakingByLessonId = new Map<string, Speaking[]>();
+    for (const sp of speakingTasks) {
+      const list = speakingByLessonId.get(sp.lessonId) || [];
+      list.push(sp);
+      speakingByLessonId.set(sp.lessonId, list);
+    }
+
     const homeworksByLessonId = new Map<string, GroupHomework[]>();
     for (const hw of groupHomeworks) {
       const list = homeworksByLessonId.get(hw.lesson_id) || [];
@@ -160,29 +190,56 @@ export class ModuleService {
       sectionsBySubmissionId.set(sec.submission_id, list);
     }
 
-    const sectionTypes = [
-      "reading",
-      "listening",
-      "grammar",
-      "writing",
-      "speaking",
-    ];
-
     const result = units.map((unit) => {
       const lessonResults = unit.lessons.map((l) => {
+        const lessonExercises = exercisesByLessonId.get(l.id) || [];
+        const lessonSpeaking = speakingByLessonId.get(l.id) || [];
         const lessonHomeworks = homeworksByLessonId.get(l.id) || [];
         const lessonSubmissions = submissionsByLessonId.get(l.id) || [];
 
+        // Collect all homework sections for this lesson's submissions
         const lessonSections: HomeworkSection[] = [];
         for (const sub of lessonSubmissions) {
           const subSections = sectionsBySubmissionId.get(sub.id) || [];
           lessonSections.push(...subSections);
         }
 
-        const completedSections = sectionTypes.filter((type) =>
+        // Total tasks = exercises + speaking tasks in this lesson
+        const totalExercises = lessonExercises.length;
+        const totalSpeaking = lessonSpeaking.length;
+        const totalTasks = totalExercises + totalSpeaking;
+
+        // Completed exercises: exercises that have a matching homework_section by exercise_id
+        const completedExerciseIds = new Set(
+          lessonSections.filter((s) => s.exercise_id).map((s) => s.exercise_id),
+        );
+        const completedExercises = lessonExercises.filter((ex) =>
+          completedExerciseIds.has(ex.id),
+        ).length;
+
+        // Completed speaking: speaking tasks that have a matching homework_section by speaking_id
+        const completedSpeakingIds = new Set(
+          lessonSections.filter((s) => s.speaking_id).map((s) => s.speaking_id),
+        );
+        const completedSpeakingCount = lessonSpeaking.filter((sp) =>
+          completedSpeakingIds.has(sp.id),
+        ).length;
+
+        const completedTasks = completedExercises + completedSpeakingCount;
+
+        // Section type breakdown
+        const sectionTypes = [
+          "reading",
+          "listening",
+          "grammar",
+          "writing",
+          "speaking",
+        ];
+        const completedSectionTypes = sectionTypes.filter((type) =>
           lessonSections.some((s) => s.section === type),
         );
 
+        // Score calculation
         const scoredSections = lessonSections.filter(
           (s) => s.score !== null && s.score !== undefined,
         );
@@ -202,16 +259,24 @@ export class ModuleService {
           status: "unlocked",
           total_homeworks: lessonHomeworks.length,
           submitted_count: lessonSubmissions.length,
-          completed_sections: completedSections,
-          completed_sections_count: completedSections.length,
+          total_tasks: totalTasks,
+          completed_tasks: completedTasks,
+          total_exercises: totalExercises,
+          completed_exercises: completedExercises,
+          total_speaking: totalSpeaking,
+          completed_speaking: completedSpeakingCount,
+          completed_sections: completedSectionTypes,
+          completed_sections_count: completedSectionTypes.length,
           total_sections: sectionTypes.length,
           section_percentage: Math.round(
-            (completedSections.length / sectionTypes.length) * 100,
+            (completedSectionTypes.length / sectionTypes.length) * 100,
           ),
+          task_percentage:
+            totalTasks > 0
+              ? Math.round((completedTasks / totalTasks) * 100)
+              : 0,
           average_score: averageScore,
-          is_completed:
-            lessonHomeworks.length > 0 &&
-            lessonSubmissions.length >= lessonHomeworks.length,
+          is_completed: totalTasks > 0 && completedTasks >= totalTasks,
         };
       });
 

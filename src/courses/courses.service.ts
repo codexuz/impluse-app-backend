@@ -13,6 +13,8 @@ import { Group } from "../groups/entities/group.entity.js";
 import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
 import { HomeworkSubmission } from "../homework_submissions/entities/homework_submission.entity.js";
 import { HomeworkSection } from "../homework_submissions/entities/homework_sections.entity.js";
+import { Exercise } from "../exercise/entities/exercise.entity.js";
+import { Speaking } from "../speaking/entities/speaking.entity.js";
 
 @Injectable()
 export class CoursesService {
@@ -140,21 +142,18 @@ export class CoursesService {
     const allLessons = course.units.flatMap((unit) => unit.lessons);
     const allLessonIds = allLessons.map((l) => l.id);
 
-    // Get group homeworks for the student's group
-    const groupHomeworks = await GroupHomework.findAll({
-      where: {
-        group_id: studentGroup.group_id,
-        lesson_id: allLessonIds,
-      },
-    });
-
-    // Get homework submissions for this student
-    const submissions = await HomeworkSubmission.findAll({
-      where: {
-        student_id,
-        lesson_id: allLessonIds,
-      },
-    });
+    // Fetch all needed data in parallel
+    const [exercises, speakingTasks, submissions] = await Promise.all([
+      Exercise.findAll({
+        where: { lessonId: allLessonIds, isActive: true },
+      }),
+      Speaking.findAll({
+        where: { lessonId: allLessonIds },
+      }),
+      HomeworkSubmission.findAll({
+        where: { student_id, lesson_id: allLessonIds },
+      }),
+    ]);
 
     const submissionIds = submissions.map((s) => s.id);
 
@@ -166,11 +165,18 @@ export class CoursesService {
       : [];
 
     // Build lookup maps
-    const homeworksByLessonId = new Map<string, GroupHomework[]>();
-    for (const hw of groupHomeworks) {
-      const list = homeworksByLessonId.get(hw.lesson_id) || [];
-      list.push(hw);
-      homeworksByLessonId.set(hw.lesson_id, list);
+    const exercisesByLessonId = new Map<string, Exercise[]>();
+    for (const ex of exercises) {
+      const list = exercisesByLessonId.get(ex.lessonId) || [];
+      list.push(ex);
+      exercisesByLessonId.set(ex.lessonId, list);
+    }
+
+    const speakingByLessonId = new Map<string, Speaking[]>();
+    for (const sp of speakingTasks) {
+      const list = speakingByLessonId.get(sp.lessonId) || [];
+      list.push(sp);
+      speakingByLessonId.set(sp.lessonId, list);
     }
 
     const submissionsByLessonId = new Map<string, HomeworkSubmission[]>();
@@ -189,12 +195,37 @@ export class CoursesService {
       sectionsBySubmissionId.set(sec.submission_id, list);
     }
 
-    // Count completed lessons (all homeworks submitted)
+    // Count completed lessons based on exercises + speaking tasks
     let completedCount = 0;
     for (const lessonId of allLessonIds) {
-      const lessonHws = homeworksByLessonId.get(lessonId) || [];
+      const lessonExercises = exercisesByLessonId.get(lessonId) || [];
+      const lessonSpeaking = speakingByLessonId.get(lessonId) || [];
+      const totalTasks = lessonExercises.length + lessonSpeaking.length;
+
+      if (totalTasks === 0) continue;
+
       const lessonSubs = submissionsByLessonId.get(lessonId) || [];
-      if (lessonHws.length > 0 && lessonSubs.length >= lessonHws.length) {
+      const lessonSections: HomeworkSection[] = [];
+      for (const sub of lessonSubs) {
+        const subSections = sectionsBySubmissionId.get(sub.id) || [];
+        lessonSections.push(...subSections);
+      }
+
+      const completedExerciseIds = new Set(
+        lessonSections.filter((s) => s.exercise_id).map((s) => s.exercise_id),
+      );
+      const completedExercises = lessonExercises.filter((ex) =>
+        completedExerciseIds.has(ex.id),
+      ).length;
+
+      const completedSpeakingIds = new Set(
+        lessonSections.filter((s) => s.speaking_id).map((s) => s.speaking_id),
+      );
+      const completedSpeakingCount = lessonSpeaking.filter((sp) =>
+        completedSpeakingIds.has(sp.id),
+      ).length;
+
+      if (completedExercises + completedSpeakingCount >= totalTasks) {
         completedCount++;
       }
     }
