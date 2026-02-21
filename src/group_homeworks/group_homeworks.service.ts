@@ -36,7 +36,7 @@ export class GroupHomeworksService {
     private lessonVocabularySetModel: typeof LessonVocabularySet,
     @InjectModel(HomeworkSubmission)
     private homeworkSubmissionModel: typeof HomeworkSubmission,
-    private readonly notificationsService: NotificationsService
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createDto: CreateGroupHomeworkDto): Promise<GroupHomework> {
@@ -99,7 +99,7 @@ export class GroupHomeworksService {
               homework_id: homework.id,
               lesson_id: createDto.lesson_id,
               type: "homework",
-            }
+            },
           );
         }
       } catch (error) {
@@ -239,14 +239,19 @@ export class GroupHomeworksService {
         {
           model: this.lessonModel,
           as: "lesson",
+          where: { isActive: true },
           include: [
             {
               model: this.lessonContentModel,
               as: "theory",
+              where: { isActive: true },
+              required: false,
             },
             {
               model: this.exerciseModel,
               as: "exercises",
+              where: { is_active: true },
+              required: false,
             },
             {
               model: this.speakingModel,
@@ -264,7 +269,7 @@ export class GroupHomeworksService {
 
   async update(
     id: string,
-    updateDto: UpdateGroupHomeworkDto
+    updateDto: UpdateGroupHomeworkDto,
   ): Promise<GroupHomework> {
     const [affectedCount] = await this.groupHomeworkModel.update(updateDto, {
       where: { id },
@@ -338,7 +343,7 @@ export class GroupHomeworksService {
             return {
               ...exercise,
             };
-          }
+          },
         );
       }
 
@@ -444,7 +449,7 @@ export class GroupHomeworksService {
    * @returns The homework with all related lesson content
    */
   async getHomeworkWithLessonContent(
-    homeworkId: string
+    homeworkId: string,
   ): Promise<GroupHomework> {
     const homework = await this.groupHomeworkModel.findOne({
       where: { id: homeworkId },
@@ -479,7 +484,7 @@ export class GroupHomeworksService {
 
     if (!homework) {
       throw new NotFoundException(
-        `Group homework with ID ${homeworkId} not found`
+        `Group homework with ID ${homeworkId} not found`,
       );
     }
 
@@ -540,7 +545,7 @@ export class GroupHomeworksService {
 
       // Check if homework is finished (has submissions with passed/failed status)
       const isFinished = homeworkSubmissions.some(
-        (sub) => sub.status === "passed" || sub.status === "failed"
+        (sub) => sub.status === "passed" || sub.status === "failed",
       );
 
       const homeworkData = {
@@ -621,7 +626,7 @@ export class GroupHomeworksService {
         const studentSubmissionsList = submissionMap.get(key) || [];
 
         const isFinished = studentSubmissionsList.some(
-          (sub) => sub.status === "passed" || sub.status === "failed"
+          (sub) => sub.status === "passed" || sub.status === "failed",
         );
 
         studentSubmissions.push({
