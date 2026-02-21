@@ -6,6 +6,9 @@ import { UpdateUnitDto } from "./dto/update-unit.dto.js";
 import { LessonProgress } from "../lesson_progress/entities/lesson_progress.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
+import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
+import { HomeworkSubmission } from "../homework_submissions/entities/homework_submission.entity.js";
+import { HomeworkSection } from "../homework_submissions/entities/homework_sections.entity.js";
 
 @Injectable()
 export class ModuleService {
@@ -106,22 +109,114 @@ export class ModuleService {
     // Extract all lesson IDs
     const allLessonIds = units.flatMap((unit) => unit.lessons.map((l) => l.id));
 
-    const completedLessons = await LessonProgress.findAll({
+    const groupIds = studentGroups.map((sg) => sg.group_id);
+
+    // Get group homeworks for these groups and lessons
+    const groupHomeworks = await GroupHomework.findAll({
+      where: {
+        group_id: groupIds,
+        lesson_id: allLessonIds,
+      },
+    });
+
+    // Get homework submissions for this student
+    const submissions = await HomeworkSubmission.findAll({
       where: {
         student_id,
         lesson_id: allLessonIds,
       },
-      attributes: ["lesson_id"],
     });
 
-    const completedLessonIds = completedLessons.map((p) => p.lesson_id);
+    const submissionIds = submissions.map((s) => s.id);
+
+    // Get homework sections for these submissions
+    const homeworkSections = submissionIds.length
+      ? await HomeworkSection.findAll({
+          where: { submission_id: submissionIds },
+        })
+      : [];
+
+    // Build lookup maps
+    const homeworksByLessonId = new Map<string, GroupHomework[]>();
+    for (const hw of groupHomeworks) {
+      const list = homeworksByLessonId.get(hw.lesson_id) || [];
+      list.push(hw);
+      homeworksByLessonId.set(hw.lesson_id, list);
+    }
+
+    const submissionsByLessonId = new Map<string, HomeworkSubmission[]>();
+    for (const sub of submissions) {
+      if (sub.lesson_id) {
+        const list = submissionsByLessonId.get(sub.lesson_id) || [];
+        list.push(sub);
+        submissionsByLessonId.set(sub.lesson_id, list);
+      }
+    }
+
+    const sectionsBySubmissionId = new Map<string, HomeworkSection[]>();
+    for (const sec of homeworkSections) {
+      const list = sectionsBySubmissionId.get(sec.submission_id) || [];
+      list.push(sec);
+      sectionsBySubmissionId.set(sec.submission_id, list);
+    }
+
+    const sectionTypes = [
+      "reading",
+      "listening",
+      "grammar",
+      "writing",
+      "speaking",
+    ];
 
     const result = units.map((unit) => {
-      const lessonIds = unit.lessons.map((l) => l.id);
-      const completedCount = lessonIds.filter((id) =>
-        completedLessonIds.includes(id),
-      ).length;
-      const total = lessonIds.length;
+      const lessonResults = unit.lessons.map((l) => {
+        const lessonHomeworks = homeworksByLessonId.get(l.id) || [];
+        const lessonSubmissions = submissionsByLessonId.get(l.id) || [];
+
+        const lessonSections: HomeworkSection[] = [];
+        for (const sub of lessonSubmissions) {
+          const subSections = sectionsBySubmissionId.get(sub.id) || [];
+          lessonSections.push(...subSections);
+        }
+
+        const completedSections = sectionTypes.filter((type) =>
+          lessonSections.some((s) => s.section === type),
+        );
+
+        const scoredSections = lessonSections.filter(
+          (s) => s.score !== null && s.score !== undefined,
+        );
+        const averageScore = scoredSections.length
+          ? Math.round(
+              (scoredSections.reduce((sum, s) => sum + s.score, 0) /
+                scoredSections.length) *
+                100,
+            ) / 100
+          : null;
+
+        return {
+          lesson_id: l.id,
+          lesson_order: l.order,
+          lesson_title: l.title,
+          lesson_type: l.type,
+          status: "unlocked",
+          total_homeworks: lessonHomeworks.length,
+          submitted_count: lessonSubmissions.length,
+          completed_sections: completedSections,
+          completed_sections_count: completedSections.length,
+          total_sections: sectionTypes.length,
+          section_percentage: Math.round(
+            (completedSections.length / sectionTypes.length) * 100,
+          ),
+          average_score: averageScore,
+          is_completed:
+            lessonHomeworks.length > 0 &&
+            lessonSubmissions.length >= lessonHomeworks.length,
+        };
+      });
+
+      const completedCount = lessonResults.filter((l) => l.is_completed).length;
+      const total = lessonResults.length;
 
       return {
         unit_id: unit.id,
@@ -131,14 +226,7 @@ export class ModuleService {
         completed: completedCount,
         total,
         percentage: total > 0 ? Math.round((completedCount / total) * 100) : 0,
-        lessons: unit.lessons.map((l) => ({
-          lesson_id: l.id,
-          lesson_order: l.order,
-          lesson_title: l.title,
-          lesson_type: l.type,
-          status: "unlocked",
-          is_completed: completedLessonIds.includes(l.id),
-        })),
+        lessons: lessonResults,
       };
     });
 
