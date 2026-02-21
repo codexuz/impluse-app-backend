@@ -127,6 +127,7 @@ export class ModuleService {
         unit_id: unit.id,
         unit_title: unit.title,
         unit_order: unit.order,
+        status: "unlocked",
         completed: completedCount,
         total,
         percentage: total > 0 ? Math.round((completedCount / total) * 100) : 0,
@@ -135,6 +136,7 @@ export class ModuleService {
           lesson_order: l.order,
           lesson_title: l.title,
           lesson_type: l.type,
+          status: "unlocked",
           is_completed: completedLessonIds.includes(l.id),
         })),
       };
