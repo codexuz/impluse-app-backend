@@ -4,6 +4,7 @@ import { CreateGroupHomeworkDto } from "./dto/create-group-homework.dto.js";
 import { UpdateGroupHomeworkDto } from "./dto/update-group_homework.dto.js";
 import { GroupHomework } from "./entities/group_homework.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { Group } from "../groups/entities/group.entity.js";
 import { Lesson } from "../lesson/entities/lesson.entity.js";
 import { Exercise } from "../exercise/entities/exercise.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
@@ -24,6 +25,8 @@ export class GroupHomeworksService {
     private groupHomeworkModel: typeof GroupHomework,
     @InjectModel(GroupStudent)
     private groupStudentModel: typeof GroupStudent,
+    @InjectModel(Group)
+    private groupModel: typeof Group,
     @InjectModel(Lesson)
     private lessonModel: typeof Lesson,
     @InjectModel(Exercise)
@@ -232,9 +235,34 @@ export class GroupHomeworksService {
     });
   }
 
-  async findByLessonId(lessonId: string): Promise<GroupHomework[]> {
+  async findByLessonId(
+    lessonId: string,
+    userId: string,
+  ): Promise<GroupHomework[]> {
+    // Find the student's group
+    const groupStudent = await this.groupStudentModel.findOne({
+      where: { student_id: userId },
+    });
+
+    if (!groupStudent) {
+      throw new NotFoundException("User is not in any group");
+    }
+
+    // Get the group's teacher
+    const group = await this.groupModel.findByPk(groupStudent.group_id, {
+      attributes: ["id", "teacher_id"],
+    });
+
+    if (!group) {
+      throw new NotFoundException("Group not found");
+    }
+
     return await this.groupHomeworkModel.findAll({
-      where: { lesson_id: lessonId },
+      where: {
+        lesson_id: lessonId,
+        group_id: group.id,
+        teacher_id: group.teacher_id,
+      },
       include: [
         {
           model: this.lessonModel,

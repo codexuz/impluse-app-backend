@@ -4,6 +4,7 @@ import { GroupHomeworksService } from "./group_homeworks.service.js";
 import { GroupHomeworksController } from "./group_homeworks.controller.js";
 import { GroupHomework } from "./entities/group_homework.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { Group } from "../groups/entities/group.entity.js";
 import { Lesson } from "../lesson/entities/lesson.entity.js";
 import { Exercise } from "../exercise/entities/exercise.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
@@ -17,6 +18,7 @@ import { NotificationsModule } from "../notifications/notifications.module.js";
     SequelizeModule.forFeature([
       GroupHomework,
       GroupStudent,
+      Group,
       Lesson,
       Exercise,
       Speaking,
