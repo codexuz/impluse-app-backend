@@ -81,6 +81,13 @@ export class Group extends Model {
   })
   isIELTS: boolean;
 
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  isEnglish: boolean;
+
   @CreatedAt
   createdAt: Date;
 

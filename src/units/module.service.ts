@@ -4,9 +4,8 @@ import { Lesson } from "../lesson/entities/lesson.entity.js";
 import { CreateUnitDto } from "./dto/create-unit.dto.js";
 import { UpdateUnitDto } from "./dto/update-unit.dto.js";
 import { LessonProgress } from "../lesson_progress/entities/lesson_progress.entity.js";
-import { GroupAssignedUnit } from "../group_assigned_units/entities/group_assigned_unit.entity.js";
-import { GroupAssignedLesson } from "../group_assigned_lessons/entities/group_assigned_lesson.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { Group } from "../groups/entities/group.entity.js";
 
 @Injectable()
 export class ModuleService {
@@ -51,101 +50,98 @@ export class ModuleService {
     });
   }
 
-   async getRoadMapWithProgress(student_id: string) {
-    // First, find the student's groups
+  async getRoadMapWithProgress(student_id: string) {
+    // First, find the student's groups where isEnglish = true
     const studentGroups = await GroupStudent.findAll({
       where: {
         student_id,
-        status: 'active' // Only include active enrollments
-      },
-      attributes: ['group_id']
-    });
-
-    if (!studentGroups.length) {
-      return []; // Return empty array if student is not in any group
-    }
-
-    // Extract group IDs
-    const groupIds = studentGroups.map(sg => sg.group_id);
-
-    // Get assigned units for these groups only
-    const assignedUnits = await GroupAssignedUnit.findAll({
-      where: {
-        group_id: groupIds
+        status: "active",
       },
       include: [
         {
-          model: Unit,
-          as: 'unit',
-        },
-        {
-          model: GroupAssignedLesson,
-          as: 'lessons',
-          separate: true,
-          include: [
-            {
-              model: Lesson,
-              as: 'lesson',
-            },
-          ],
+          model: Group,
+          as: "group",
+          where: { isEnglish: true, isDeleted: false },
+          attributes: ["id", "level_id"],
         },
       ],
-      order: [[{ model: Unit, as: 'unit' }, 'order', 'ASC']]
-    }) as (GroupAssignedUnit & {
-      unit: Unit;
-      lessons: (GroupAssignedLesson & {
-        lesson: Lesson;
-      })[];
-    })[];
-  
+    });
+
+    if (!studentGroups.length) {
+      return [];
+    }
+
+    // Extract unique course IDs (level_id) from the groups
+    const courseIds = [
+      ...new Set(
+        studentGroups
+          .map((sg) => sg.group?.level_id)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+
+    if (!courseIds.length) {
+      return [];
+    }
+
+    // Get units for these courses directly
+    const units = (await Unit.findAll({
+      where: {
+        courseId: courseIds,
+        isActive: true,
+      },
+      order: [["order", "ASC"]],
+      include: [
+        {
+          model: Lesson,
+          as: "lessons",
+          where: { isActive: true },
+          required: false,
+          separate: true,
+          order: [["order", "ASC"]],
+        },
+      ],
+    })) as (Unit & { lessons: Lesson[] })[];
+
     // Extract all lesson IDs
-    const allAssignedLessons = assignedUnits.flatMap((unit) =>
-      unit.lessons.map((l) => l.lesson.id)
-    );
-  
+    const allLessonIds = units.flatMap((unit) => unit.lessons.map((l) => l.id));
+
     const completedLessons = await LessonProgress.findAll({
       where: {
         student_id,
-        lesson_id: allAssignedLessons,
+        lesson_id: allLessonIds,
       },
-      attributes: ['lesson_id'],
+      attributes: ["lesson_id"],
     });
-  
-    const completedLessonIds = completedLessons.map((p) => p.lesson_id);
-  
-    const result = assignedUnits.map((unit) => {
-      // Order lessons by the lesson's order property
-      const orderedLessons = [...unit.lessons].sort((a, b) => {
-        // Sort by the lesson's order property
-        return a.lesson.order - b.lesson.order;
-      });
 
-      const lessonIds = orderedLessons.map((l) => l.lesson.id);
+    const completedLessonIds = completedLessons.map((p) => p.lesson_id);
+
+    const result = units.map((unit) => {
+      const lessonIds = unit.lessons.map((l) => l.id);
       const completedCount = lessonIds.filter((id) =>
-        completedLessonIds.includes(id)
+        completedLessonIds.includes(id),
       ).length;
       const total = lessonIds.length;
-  
+
       return {
-        unit_id: unit.unit.id,
-        unit_title: unit.unit.title,
-        unit_order: unit.unit.order,
-        status: unit.status,
+        unit_id: unit.id,
+        unit_title: unit.title,
+        unit_order: unit.order,
         completed: completedCount,
         total,
         percentage: total > 0 ? Math.round((completedCount / total) * 100) : 0,
-        lessons: orderedLessons.map(l => ({
-          ...l.toJSON(),
-          lesson_order: l.lesson.order,
-          lesson_title: l.lesson.title,
-          is_completed: completedLessonIds.includes(l.lesson.id)
+        lessons: unit.lessons.map((l) => ({
+          lesson_id: l.id,
+          lesson_order: l.order,
+          lesson_title: l.title,
+          lesson_type: l.type,
+          is_completed: completedLessonIds.includes(l.id),
         })),
       };
     });
-  
+
     return result;
   }
-  
 
   async update(id: string, updateUnitDto: UpdateUnitDto) {
     const unit = await Unit.findByPk(id);
@@ -160,24 +156,27 @@ export class ModuleService {
     return Unit.destroy({
       where: { id },
       force: true,
-    })
+    });
   }
 
-  async findByCourse(courseId: string, throwIfEmpty: boolean = false): Promise<Unit[]> {
+  async findByCourse(
+    courseId: string,
+    throwIfEmpty: boolean = false,
+  ): Promise<Unit[]> {
     const units = await Unit.findAll({
-      where: { 
+      where: {
         courseId,
-        isActive: true 
+        isActive: true,
       },
-      order: [['order', 'ASC']],
+      order: [["order", "ASC"]],
       include: [
         {
           model: Lesson,
-          as: 'lessons',
+          as: "lessons",
           where: { isActive: true },
-          required: false
-        }
-      ]
+          required: false,
+        },
+      ],
     });
 
     if (!units.length && throwIfEmpty) {
@@ -187,36 +186,39 @@ export class ModuleService {
     return units;
   }
 
-  async findByCourseWithProgress(courseId: string, studentId?: string): Promise<any[]> {
-    const units = await Unit.findAll({
-      where: { 
+  async findByCourseWithProgress(
+    courseId: string,
+    studentId?: string,
+  ): Promise<any[]> {
+    const units = (await Unit.findAll({
+      where: {
         courseId,
-        isActive: true 
+        isActive: true,
       },
-      order: [['order', 'ASC']],
+      order: [["order", "ASC"]],
       include: [
         {
           model: Lesson,
-          as: 'lessons',
+          as: "lessons",
           where: { isActive: true },
           required: false,
-          order: [['order', 'ASC']]
-        }
-      ]
-    }) as (Unit & { lessons?: Lesson[] })[];
+          order: [["order", "ASC"]],
+        },
+      ],
+    })) as (Unit & { lessons?: Lesson[] })[];
 
     if (!studentId) {
-      return units.map(unit => ({
+      return units.map((unit) => ({
         ...unit.toJSON(),
         completed: 0,
         total: unit.lessons?.length || 0,
-        percentage: 0
+        percentage: 0,
       }));
     }
 
     // Get all lesson IDs for progress tracking
-    const allLessonIds = units.flatMap(unit => 
-      unit.lessons?.map(lesson => lesson.id) || []
+    const allLessonIds = units.flatMap(
+      (unit) => unit.lessons?.map((lesson) => lesson.id) || [],
     );
 
     const completedLessons = await LessonProgress.findAll({
@@ -224,15 +226,15 @@ export class ModuleService {
         student_id: studentId,
         lesson_id: allLessonIds,
       },
-      attributes: ['lesson_id'],
+      attributes: ["lesson_id"],
     });
 
-    const completedLessonIds = completedLessons.map(p => p.lesson_id);
+    const completedLessonIds = completedLessons.map((p) => p.lesson_id);
 
-    return units.map(unit => {
-      const lessonIds = unit.lessons?.map(lesson => lesson.id) || [];
-      const completedCount = lessonIds.filter(id => 
-        completedLessonIds.includes(id)
+    return units.map((unit) => {
+      const lessonIds = unit.lessons?.map((lesson) => lesson.id) || [];
+      const completedCount = lessonIds.filter((id) =>
+        completedLessonIds.includes(id),
       ).length;
       const total = lessonIds.length;
 

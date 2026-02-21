@@ -8,6 +8,8 @@ import { UpdateCourseDto } from "./dto/update-course.dto.js";
 import { Lesson } from "../lesson/entities/lesson.entity.js";
 import { LessonProgress } from "../lesson_progress/entities/lesson_progress.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { Group } from "../groups/entities/group.entity.js";
 
 @Injectable()
 export class CoursesService {
@@ -96,15 +98,31 @@ export class CoursesService {
   }
 
   async getCourseProgress(student_id: string) {
-    // First find the user to get their level_id (course_id)
-    const user = await this.userModel.findByPk(student_id);
+    // Find the student's group where isEnglish = true
+    const studentGroup = await GroupStudent.findOne({
+      where: {
+        student_id,
+        status: "active",
+      },
+      include: [
+        {
+          model: Group,
+          as: "group",
+          where: { isEnglish: true, isDeleted: false },
+          attributes: ["id", "level_id"],
+        },
+      ],
+    });
 
-    if (!user) throw new NotFoundException("User not found");
-    if (!user.level_id)
-      throw new NotFoundException("User is not assigned to any course");
+    if (!studentGroup || !studentGroup.group)
+      throw new NotFoundException("Student is not in any English group");
 
-    // Get the course using the user's level_id
-    const course = (await this.courseModel.findByPk(user.level_id, {
+    const courseId = studentGroup.group.level_id;
+    if (!courseId)
+      throw new NotFoundException("Group is not assigned to any course");
+
+    // Get the course using the group's level_id
+    const course = (await this.courseModel.findByPk(courseId, {
       include: [
         {
           model: Unit,
@@ -129,7 +147,7 @@ export class CoursesService {
     const total = allLessons.length;
 
     return {
-      course_id: user.level_id,
+      course_id: courseId,
       course_name: course.title,
       completed: completedCount,
       total,

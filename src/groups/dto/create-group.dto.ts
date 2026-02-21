@@ -80,4 +80,14 @@ export class CreateGroupDto {
   @IsBoolean()
   @IsOptional()
   isIELTS?: boolean;
+
+  @ApiProperty({
+    description: "Whether the group is English-specific",
+    example: false,
+    required: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isEnglish?: boolean;
 }

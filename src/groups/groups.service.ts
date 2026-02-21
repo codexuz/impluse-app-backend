@@ -119,6 +119,7 @@ export class GroupsService {
     teacher_id?: string,
     days?: string,
     isIELTS?: string,
+    isEnglish?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -147,6 +148,10 @@ export class GroupsService {
 
     if (isIELTS !== undefined) {
       whereClause.isIELTS = isIELTS === "true";
+    }
+
+    if (isEnglish !== undefined) {
+      whereClause.isEnglish = isEnglish === "true";
     }
 
     const { count, rows } = await this.groupModel.findAndCountAll({
@@ -217,6 +222,7 @@ export class GroupsService {
     limit: number = 10,
     query?: string,
     isIELTS?: string,
+    isEnglish?: string,
   ): Promise<{
     data: Group[];
     total: number;
@@ -233,6 +239,10 @@ export class GroupsService {
 
     if (isIELTS !== undefined) {
       whereClause.isIELTS = isIELTS === "true";
+    }
+
+    if (isEnglish !== undefined) {
+      whereClause.isEnglish = isEnglish === "true";
     }
 
     const { count, rows } = await this.groupModel.findAndCountAll({
