@@ -184,7 +184,7 @@ export class UsersController {
   }
 
   @Delete(":id/hard")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({
     summary: "Permanently delete a user and all associated data",
     description:
