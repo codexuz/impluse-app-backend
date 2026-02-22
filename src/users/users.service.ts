@@ -977,6 +977,7 @@ export class UsersService {
         if (models[modelName]) {
           const deleted = await models[modelName].destroy({
             where: { [fkColumn]: id },
+            force: true, // bypass paranoid soft-delete so FK rows are truly removed
             transaction,
           });
           if (deleted > 0) {
