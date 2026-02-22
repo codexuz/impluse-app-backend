@@ -411,6 +411,7 @@ export class UsersService {
           model: Role,
           as: "roles",
           where: { name: "student" },
+          required: true,
           through: { attributes: [] },
         },
         {

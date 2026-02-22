@@ -329,10 +329,16 @@ export class AuthService {
           "https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/avatars/avatar.png",
       });
 
-      // Assign guest role
-      const guestRole = await Role.findOne({ where: { name: "guest" } });
+      // Assign guest and student roles
+      const [guestRole, studentRole] = await Promise.all([
+        Role.findOne({ where: { name: "guest" } }),
+        Role.findOne({ where: { name: "student" } }),
+      ]);
       if (guestRole) {
         await user.$add("roles", guestRole);
+      }
+      if (studentRole) {
+        await user.$add("roles", studentRole);
       }
 
       // Send SMS with credentials
