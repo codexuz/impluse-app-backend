@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { ConfigService } from "@nestjs/config";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import * as bcrypt from "bcrypt";
 import { User } from "./entities/user.entity.js";
 import { ArchivedStudent } from "./entities/archived-student.entity.js";
@@ -389,6 +389,12 @@ export class UsersService {
     const offset = (page - 1) * limit;
     const whereClause: any = {
       is_active: true,
+      // Exclude users who have multiple roles (e.g. student+teacher, student+guest)
+      [Op.and]: [
+        Sequelize.literal(
+          `(SELECT COUNT(*) FROM user_roles WHERE user_roles.userId = \`User\`.user_id) = 1`,
+        ),
+      ],
     };
 
     // Add search query if provided
