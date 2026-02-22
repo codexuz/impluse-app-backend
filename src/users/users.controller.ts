@@ -200,13 +200,13 @@ export class UsersController {
   }
 
   @Patch(":id/deactivate")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   deactivate(@Param("id") id: string) {
     return this.usersService.deactivate(id);
   }
 
   @Patch(":id/activate")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.TEACHER)
   activate(@Param("id") id: string) {
     return this.usersService.activate(id);
   }
