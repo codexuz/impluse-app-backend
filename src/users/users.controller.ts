@@ -183,6 +183,22 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
+  @Delete(":id/hard")
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "Permanently delete a user and all associated data",
+    description:
+      "Permanently deletes a user and ALL related records (profiles, payments, attendance, sessions, etc.). This action is irreversible.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "User permanently deleted with all associations",
+  })
+  @ApiResponse({ status: 404, description: "User not found" })
+  hardDeleteUser(@Param("id") id: string) {
+    return this.usersService.hardDeleteUser(id);
+  }
+
   @Patch(":id/deactivate")
   @Roles(Role.ADMIN)
   deactivate(@Param("id") id: string) {

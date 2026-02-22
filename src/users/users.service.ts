@@ -461,9 +461,7 @@ export class UsersService {
     totalPages: number;
   }> {
     const offset = (page - 1) * limit;
-    const whereClause: any = {
-      is_active: true,
-    };
+    const whereClause: any = {};
 
     if (query) {
       whereClause[Op.or] = [
@@ -854,5 +852,164 @@ export class UsersService {
       throw new NotFoundException(`Archived student with ID "${id}" not found`);
     }
     await record.destroy();
+  }
+
+  /**
+   * Permanently delete a user and ALL associated records from the database.
+   * This action is irreversible.
+   * @param id The user ID to permanently delete
+   */
+  async hardDeleteUser(
+    id: string,
+  ): Promise<{ message: string; deletedAssociations: Record<string, number> }> {
+    const user = await this.userModel.findByPk(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID "${id}" not found`);
+    }
+
+    const sequelize = this.userModel.sequelize;
+    const transaction = await sequelize.transaction();
+    const deletedAssociations: Record<string, number> = {};
+
+    try {
+      const models = sequelize.models;
+
+      // Delete from junction / child tables that reference user_id or related FK columns
+      // Each entry: [ModelName, foreignKeyColumn]
+      const associatedTables: [string, string][] = [
+        // User identity & auth
+        ["UserRole", "userId"],
+        ["UserSession", "userId"],
+        ["SmsVerification", "userId"],
+
+        // Student-related
+        ["StudentProfile", "user_id"],
+        ["StudentParent", "student_id"],
+        ["StudentWallet", "student_id"],
+        ["StudentTransaction", "student_id"],
+        ["StudentVocabularyProgress", "student_id"],
+        ["StudentPayment", "student_id"],
+
+        // Teacher-related
+        ["TeacherProfile", "user_id"],
+        ["TeacherWallet", "teacher_id"],
+        ["TeacherTransaction", "teacher_id"],
+
+        // Groups
+        ["GroupStudent", "student_id"],
+        ["GroupAssignedLesson", "granted_by"],
+        ["GroupAssignedUnit", "teacher_id"],
+        ["GroupHomework", "teacher_id"],
+
+        // Homework & Attendance
+        ["HomeworkSubmission", "student_id"],
+        ["Attendance", "student_id"],
+        ["AttendanceLog", "student_id"],
+
+        // Lesson progress
+        ["LessonProgress", "student_id"],
+        ["UserCourse", "userId"],
+
+        // Payments & Actions
+        ["PaymentAction", "manager_id"],
+
+        // Exams
+        ["ExamResult", "student_id"],
+
+        // Compensate lessons
+        ["CompensateLesson", "teacher_id"],
+        ["CompensateLesson", "student_id"],
+        ["CompensateTeacherWallet", "teacher_id"],
+
+        // Support
+        ["SupportSchedule", "support_teacher_id"],
+        ["SupportBooking", "student_id"],
+        ["SupportBooking", "support_teacher_id"],
+
+        // Chat
+        ["GroupChatMembers", "user_id"],
+        ["Messages", "sender_id"],
+
+        // Notifications
+        ["UserNotification", "user_id"],
+        ["NotificationToken", "user_id"],
+
+        // AI Chat
+        ["chatHistory", "userId"],
+
+        // Archived students (as student and as teacher)
+        ["ArchivedStudent", "user_id"],
+        ["ArchivedStudent", "teacher_id"],
+
+        // Lead trial lessons
+        ["LeadTrialLesson", "teacher_id"],
+
+        // IELTS
+        ["IeltsMockTest", "user_id"],
+        ["IeltsAnswerAttempt", "user_id"],
+        ["IeltsWritingAnswer", "user_id"],
+        ["IeltsReadingAnswer", "user_id"],
+        ["IeltsListeningAnswer", "user_id"],
+        ["IeltsLessonProgress", "user_id"],
+        ["IeltsQuizAttempt", "user_id"],
+
+        // Expenses
+        ["Expense", "reported_by"],
+        ["Expense", "teacher_id"],
+
+        // Speaking
+        ["SpeakingResponse", "student_id"],
+
+        // CD IELTS
+        ["CdRegister", "student_id"],
+
+        // Audio
+        ["Audio", "studentId"],
+        ["AudioComment", "userId"],
+        ["AudioLike", "userId"],
+        ["AudioJudge", "judgeUserId"],
+
+        // Certificates
+        ["Certificate", "student_id"],
+      ];
+
+      for (const [modelName, fkColumn] of associatedTables) {
+        if (models[modelName]) {
+          const deleted = await models[modelName].destroy({
+            where: { [fkColumn]: id },
+            transaction,
+          });
+          if (deleted > 0) {
+            const key = `${modelName}.${fkColumn}`;
+            deletedAssociations[key] =
+              (deletedAssociations[key] || 0) + deleted;
+          }
+        }
+      }
+
+      // Nullify teacher_id on groups so the group is not deleted, just unassigned
+      if (models.Group) {
+        const [updatedCount] = await models.Group.update(
+          { teacher_id: null },
+          { where: { teacher_id: id }, transaction },
+        );
+        if (updatedCount > 0) {
+          deletedAssociations["Group.teacher_id (nullified)"] = updatedCount;
+        }
+      }
+
+      // Finally, delete the user record itself
+      await user.destroy({ transaction });
+
+      await transaction.commit();
+
+      return {
+        message: `User "${user.first_name} ${user.last_name}" and all associated data have been permanently deleted.`,
+        deletedAssociations,
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 }
