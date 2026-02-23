@@ -215,9 +215,7 @@ export class LeadsService {
     averageTimeInStatus: { status: string; averageDays: number }[];
   }> {
     // Basic statistics
-    const totalLeads = await this.leadModel.count({
-      where: { isarchived: false },
-    });
+    const totalLeads = await this.leadModel.count();
 
     const statusStats = await this.leadModel.findAll({
       attributes: [
@@ -230,7 +228,6 @@ export class LeadsService {
           "count",
         ],
       ],
-      where: { isarchived: false },
       group: ["status"],
       raw: true,
     });
@@ -246,7 +243,6 @@ export class LeadsService {
           "count",
         ],
       ],
-      where: { isarchived: false },
       group: ["source"],
       raw: true,
     });
@@ -301,7 +297,6 @@ export class LeadsService {
         [sequelize.fn("COUNT", sequelize.col("id")), "count"],
       ],
       where: {
-        isarchived: false,
         createdAt: {
           [Op.gte]: new Date(new Date().setDate(new Date().getDate() - 30)),
         },
@@ -321,7 +316,6 @@ export class LeadsService {
         [sequelize.fn("COUNT", sequelize.col("id")), "count"],
       ],
       where: {
-        isarchived: false,
         createdAt: {
           [Op.gte]: new Date(new Date().setDate(new Date().getDate() - 90)),
         },
@@ -346,7 +340,6 @@ export class LeadsService {
         [sequelize.fn("COUNT", sequelize.col("id")), "count"],
       ],
       where: {
-        isarchived: false,
         createdAt: {
           [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 12)),
         },
@@ -388,11 +381,9 @@ export class LeadsService {
     const sequelize = this.leadModel.sequelize;
 
     // Overall conversion rate (leads to enrolled)
-    const totalLeads = await this.leadModel.count({
-      where: { isarchived: false },
-    });
+    const totalLeads = await this.leadModel.count();
     const enrolledLeads = await this.leadModel.count({
-      where: { status: "O'qishga yozildi", isarchived: false },
+      where: { status: "O'qishga yozildi" },
     });
 
     const overallRate = totalLeads > 0 ? (enrolledLeads / totalLeads) * 100 : 0;
@@ -412,7 +403,6 @@ export class LeadsService {
           "converted",
         ],
       ],
-      where: { isarchived: false },
       group: ["source"],
       raw: true,
     });
@@ -432,7 +422,6 @@ export class LeadsService {
         "status",
         [sequelize.fn("COUNT", sequelize.col("id")), "count"],
       ],
-      where: { isarchived: false },
       group: ["status"],
       raw: true,
     });
@@ -512,7 +501,6 @@ export class LeadsService {
           "converted",
         ],
       ],
-      where: { isarchived: false },
       group: ["admin_id"],
       raw: true,
     });
@@ -556,7 +544,6 @@ export class LeadsService {
           "avgTime",
         ],
       ],
-      where: { isarchived: false },
       group: ["status"],
       raw: true,
     });
@@ -585,7 +572,6 @@ export class LeadsService {
     // Total leads in date range
     const totalLeads = await this.leadModel.count({
       where: {
-        isarchived: false,
         createdAt: {
           [Op.between]: [startDate, endDate],
         },
@@ -599,7 +585,6 @@ export class LeadsService {
         [sequelize.fn("COUNT", sequelize.col("status")), "count"],
       ],
       where: {
-        isarchived: false,
         createdAt: {
           [Op.between]: [startDate, endDate],
         },
@@ -615,7 +600,6 @@ export class LeadsService {
         [sequelize.fn("COUNT", sequelize.col("source")), "count"],
       ],
       where: {
-        isarchived: false,
         createdAt: {
           [Op.between]: [startDate, endDate],
         },
@@ -627,7 +611,6 @@ export class LeadsService {
     // Conversion rate
     const enrolledLeads = await this.leadModel.count({
       where: {
-        isarchived: false,
         status: "O'qishga yozildi",
         createdAt: {
           [Op.between]: [startDate, endDate],
@@ -642,7 +625,6 @@ export class LeadsService {
         [sequelize.fn("COUNT", sequelize.col("id")), "count"],
       ],
       where: {
-        isarchived: false,
         createdAt: {
           [Op.between]: [startDate, endDate],
         },

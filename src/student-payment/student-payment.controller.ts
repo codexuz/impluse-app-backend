@@ -47,7 +47,7 @@ export class StudentPaymentController {
   @ApiResponse({ status: 403, description: "Forbidden." })
   create(
     @Body() paymentData: CreateStudentPaymentRequestDto,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ) {
     // Create the full DTO with manager_id from authenticated user
     const createStudentPaymentDto: CreateStudentPaymentDto = {
@@ -75,7 +75,7 @@ export class StudentPaymentController {
     @Query("paymentStartDate") paymentStartDate?: string,
     @Query("paymentEndDate") paymentEndDate?: string,
     @Query("nextPaymentStartDate") nextPaymentStartDate?: string,
-    @Query("nextPaymentEndDate") nextPaymentEndDate?: string
+    @Query("nextPaymentEndDate") nextPaymentEndDate?: string,
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
@@ -101,7 +101,7 @@ export class StudentPaymentController {
       paymentStart,
       paymentEnd,
       nextPaymentStart,
-      nextPaymentEnd
+      nextPaymentEnd,
     );
   }
 
@@ -116,7 +116,7 @@ export class StudentPaymentController {
   @ApiResponse({ status: 403, description: "Forbidden." })
   findByDateRange(
     @Query("start_date") startDate?: string,
-    @Query("end_date") endDate?: string
+    @Query("end_date") endDate?: string,
   ) {
     if (!startDate || !endDate) {
       return [];
@@ -136,13 +136,13 @@ export class StudentPaymentController {
     @Param("studentId", ParseUUIDPipe) studentId: string,
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return this.studentPaymentService.findByStudent(
       studentId,
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -162,7 +162,7 @@ export class StudentPaymentController {
     description: "No payment records found for student.",
   })
   async getStudentPaymentStatus(
-    @Param("studentId", ParseUUIDPipe) studentId: string
+    @Param("studentId", ParseUUIDPipe) studentId: string,
   ) {
     return this.studentPaymentService.calculateStudentPaymentStatus(studentId);
   }
@@ -175,6 +175,22 @@ export class StudentPaymentController {
   @ApiResponse({ status: 403, description: "Forbidden." })
   findUpcomingPayments(@Query("days") days: number) {
     return this.studentPaymentService.findUpcomingPayments(days);
+  }
+
+  @Get("stats")
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary:
+      "Get payment stats: upcoming (next 7 days) and overdue counts and amounts",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Payment statistics returned successfully.",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  getPaymentStats() {
+    return this.studentPaymentService.getPaymentStats();
   }
 
   @Get("status/:status")
@@ -190,13 +206,13 @@ export class StudentPaymentController {
     @Param("status") status: string,
     @Query("page") page?: number,
     @Query("limit") limit?: number,
-    @Query("query") query?: string
+    @Query("query") query?: string,
   ) {
     return this.studentPaymentService.findByStatus(
       status as PaymentStatus,
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
-      query
+      query,
     );
   }
 
@@ -220,7 +236,7 @@ export class StudentPaymentController {
   @ApiResponse({ status: 404, description: "Payment not found." })
   update(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() updateStudentPaymentDto: UpdateStudentPaymentDto
+    @Body() updateStudentPaymentDto: UpdateStudentPaymentDto,
   ) {
     return this.studentPaymentService.update(id, updateStudentPaymentDto);
   }
@@ -237,7 +253,7 @@ export class StudentPaymentController {
   @ApiResponse({ status: 404, description: "Payment not found." })
   updateStatus(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body("status") status: "pending" | "completed" | "failed"
+    @Body("status") status: "pending" | "completed" | "failed",
   ) {
     return this.studentPaymentService.updateStatus(id, status as PaymentStatus);
   }
@@ -289,7 +305,7 @@ export class StudentPaymentController {
       return await this.studentPaymentService.checkDuePayments();
     } catch (error) {
       throw new BadRequestException(
-        `Error checking due payments: ${error.message}`
+        `Error checking due payments: ${error.message}`,
       );
     }
   }
@@ -315,7 +331,7 @@ export class StudentPaymentController {
       return await this.studentPaymentService.checkDuePayments();
     } catch (error) {
       throw new BadRequestException(
-        `Error checking due payments: ${error.message}`
+        `Error checking due payments: ${error.message}`,
       );
     }
   }

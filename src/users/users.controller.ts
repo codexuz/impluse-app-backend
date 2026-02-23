@@ -91,6 +91,17 @@ export class UsersController {
     );
   }
 
+  @Get("students/stats")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Get student statistics" })
+  @ApiResponse({
+    status: 200,
+    description: "Active students count and new students this month",
+  })
+  getStudentStats() {
+    return this.usersService.getStudentStats();
+  }
+
   @Get("students")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Get all students" })

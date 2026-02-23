@@ -375,6 +375,68 @@ export class UsersService {
     };
   }
 
+  async getStudentStats(): Promise<{
+    activeStudentsCount: number;
+    newStudentsThisMonth: number;
+  }> {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const studentRole = await this.roleModel.findOne({
+      where: { name: "student" },
+    });
+
+    if (!studentRole) {
+      return { activeStudentsCount: 0, newStudentsThisMonth: 0 };
+    }
+
+    const activeStudentsCount = await this.userModel.count({
+      where: {
+        is_active: true,
+        // Exclude users who have multiple roles (e.g. student+teacher, student+guest)
+        [Op.and]: [
+          Sequelize.literal(
+            `(SELECT COUNT(*) FROM user_roles WHERE user_roles.userId = \`User\`.user_id) = 1`,
+          ),
+        ],
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          where: { name: "student" },
+          through: { attributes: [] },
+        },
+      ],
+      distinct: true,
+    });
+
+    const newStudentsThisMonth = await this.userModel.count({
+      where: {
+        is_active: true,
+        createdAt: { [Op.gte]: startOfMonth },
+        // Exclude users who have multiple roles (e.g. student+teacher, student+guest)
+        [Op.and]: [
+          Sequelize.literal(
+            `(SELECT COUNT(*) FROM user_roles WHERE user_roles.userId = \`User\`.user_id) = 1`,
+          ),
+        ],
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          where: { name: "student" },
+          through: { attributes: [] },
+        },
+      ],
+      distinct: true,
+    });
+
+    return { activeStudentsCount, newStudentsThisMonth };
+  }
+
   async getAllStudents(
     page: number = 1,
     limit: number = 10,

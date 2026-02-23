@@ -904,4 +904,59 @@ export class StudentPaymentService {
       );
     }
   }
+
+  async getPaymentStats(): Promise<{
+    upcoming: { count: number; totalAmount: number };
+    overdue: { count: number; totalAmount: number };
+  }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const sevenDaysLater = new Date(today);
+    sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+
+    // Upcoming payments: pending, next_payment_date within the next 7 days (today included)
+    const upcomingPayments = await this.studentPaymentModel.findAll({
+      where: {
+        status: "pending",
+        next_payment_date: {
+          [Op.between]: [today, sevenDaysLater],
+        },
+      },
+      attributes: [
+        [fn("COUNT", col("id")), "count"],
+        [fn("COALESCE", fn("SUM", col("amount")), 0), "totalAmount"],
+      ],
+      raw: true,
+    });
+
+    // Overdue payments: pending, next_payment_date before today
+    const overduePayments = await this.studentPaymentModel.findAll({
+      where: {
+        status: "pending",
+        next_payment_date: {
+          [Op.lt]: today,
+        },
+      },
+      attributes: [
+        [fn("COUNT", col("id")), "count"],
+        [fn("COALESCE", fn("SUM", col("amount")), 0), "totalAmount"],
+      ],
+      raw: true,
+    });
+
+    const upcoming = upcomingPayments[0] as any;
+    const overdue = overduePayments[0] as any;
+
+    return {
+      upcoming: {
+        count: parseInt(upcoming?.count) || 0,
+        totalAmount: parseInt(upcoming?.totalAmount) || 0,
+      },
+      overdue: {
+        count: parseInt(overdue?.count) || 0,
+        totalAmount: parseInt(overdue?.totalAmount) || 0,
+      },
+    };
+  }
 }
