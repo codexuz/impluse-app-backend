@@ -915,47 +915,59 @@ export class StudentPaymentService {
     const sevenDaysLater = new Date(today);
     sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
 
-    // Upcoming payments: pending, next_payment_date within the next 7 days (today included)
-    const upcomingPayments = await this.studentPaymentModel.findAll({
-      where: {
-        status: "pending",
-        next_payment_date: {
-          [Op.between]: [today, sevenDaysLater],
+    // Fetch all payments for active students (same approach as checkDuePayments/findUpcomingPayments)
+    const allPayments = await this.studentPaymentModel.findAll({
+      include: [
+        {
+          model: User,
+          as: "student",
+          attributes: ["user_id"],
+          where: { is_active: true },
         },
-      },
-      attributes: [
-        [fn("COUNT", col("id")), "count"],
-        [fn("COALESCE", fn("SUM", col("amount")), 0), "totalAmount"],
       ],
-      raw: true,
+      order: [["next_payment_date", "DESC"]],
     });
 
-    // Overdue payments: pending, next_payment_date before today
-    const overduePayments = await this.studentPaymentModel.findAll({
-      where: {
-        status: "pending",
-        next_payment_date: {
-          [Op.lt]: today,
-        },
-      },
-      attributes: [
-        [fn("COUNT", col("id")), "count"],
-        [fn("COALESCE", fn("SUM", col("amount")), 0), "totalAmount"],
-      ],
-      raw: true,
-    });
+    // Group by student and find each student's latest payment
+    const studentLatestPayments = new Map<string, StudentPayment>();
 
-    const upcoming = upcomingPayments[0] as any;
-    const overdue = overduePayments[0] as any;
+    for (const payment of allPayments) {
+      if (!studentLatestPayments.has(payment.student_id)) {
+        studentLatestPayments.set(payment.student_id, payment);
+      }
+    }
+
+    let upcomingCount = 0;
+    let upcomingTotalAmount = 0;
+    let overdueCount = 0;
+    let overdueTotalAmount = 0;
+
+    for (const [, latestPayment] of studentLatestPayments) {
+      const nextPaymentDate = new Date(latestPayment.next_payment_date);
+      nextPaymentDate.setHours(0, 0, 0, 0);
+
+      if (nextPaymentDate < today) {
+        // Overdue: next_payment_date has passed
+        overdueCount++;
+        overdueTotalAmount += Number(latestPayment.amount);
+      } else if (
+        nextPaymentDate >= today &&
+        nextPaymentDate <= sevenDaysLater
+      ) {
+        // Upcoming: next_payment_date is within the next 7 days
+        upcomingCount++;
+        upcomingTotalAmount += Number(latestPayment.amount);
+      }
+    }
 
     return {
       upcoming: {
-        count: parseInt(upcoming?.count) || 0,
-        totalAmount: parseInt(upcoming?.totalAmount) || 0,
+        count: upcomingCount,
+        totalAmount: upcomingTotalAmount,
       },
       overdue: {
-        count: parseInt(overdue?.count) || 0,
-        totalAmount: parseInt(overdue?.totalAmount) || 0,
+        count: overdueCount,
+        totalAmount: overdueTotalAmount,
       },
     };
   }
