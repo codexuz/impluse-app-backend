@@ -95,6 +95,18 @@ export class GroupsController {
     return { count };
   }
 
+  @Get("stats")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Get group statistics" })
+  @ApiResponse({
+    status: 200,
+    description: "Total active groups and groups created this month.",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  getGroupStats() {
+    return this.groupsService.getGroupStats();
+  }
+
   @Get(":id")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a group by id" })

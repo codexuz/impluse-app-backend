@@ -316,4 +316,26 @@ export class GroupsService {
     const group = await this.findOne(id);
     await group.update({ isDeleted: true });
   }
+
+  async getGroupStats(): Promise<{
+    totalGroups: number;
+    createdThisMonth: number;
+  }> {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const totalGroups = await this.groupModel.count({
+      where: { isDeleted: false },
+    });
+
+    const createdThisMonth = await this.groupModel.count({
+      where: {
+        isDeleted: false,
+        createdAt: { [Op.gte]: startOfMonth },
+      },
+    });
+
+    return { totalGroups, createdThisMonth };
+  }
 }
