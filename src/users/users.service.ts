@@ -415,7 +415,7 @@ export class UsersService {
     const newStudentsThisMonth = await this.userModel.count({
       where: {
         is_active: true,
-        createdAt: { [Op.gte]: startOfMonth },
+        created_at: { [Op.gte]: startOfMonth },
         // Exclude users who have multiple roles (e.g. student+teacher, student+guest)
         [Op.and]: [
           Sequelize.literal(
