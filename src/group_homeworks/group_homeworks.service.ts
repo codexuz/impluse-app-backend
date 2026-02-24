@@ -239,23 +239,24 @@ export class GroupHomeworksService {
     lessonId: string,
     userId: string,
   ): Promise<GroupHomework[]> {
-    // Find the student's group
+    // Find the student's group where isEnglish = true
     const groupStudent = await this.groupStudentModel.findOne({
       where: { student_id: userId },
+      include: [
+        {
+          model: this.groupModel,
+          as: "group",
+          where: { isEnglish: true, isDeleted: false },
+          attributes: ["id", "teacher_id"],
+        },
+      ],
     });
 
-    if (!groupStudent) {
-      throw new NotFoundException("User is not in any group");
+    if (!groupStudent || !groupStudent.group) {
+      throw new NotFoundException("User is not in any English group");
     }
 
-    // Get the group's teacher
-    const group = await this.groupModel.findByPk(groupStudent.group_id, {
-      attributes: ["id", "teacher_id"],
-    });
-
-    if (!group) {
-      throw new NotFoundException("Group not found");
-    }
+    const group = groupStudent.group;
 
     return await this.groupHomeworkModel.findAll({
       where: {
