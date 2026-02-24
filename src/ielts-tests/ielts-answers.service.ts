@@ -182,7 +182,7 @@ export class IeltsAnswersService {
     // Load ALL questions for this attempt's scope (to include unanswered ones)
     const allScopeQuestions = await this.loadAllQuestionsForAttempt(attempt);
 
-    return this.buildAttemptResults(
+    return await this.buildAttemptResults(
       attempt,
       questionMap,
       subQuestionDirectMap,
@@ -1170,7 +1170,7 @@ export class IeltsAnswersService {
     });
   }
 
-  private buildAttemptResults(
+  private async buildAttemptResults(
     attempt: any,
     questionMap: Map<string, any>,
     subQuestionDirectMap: Map<string, any>,
@@ -1222,9 +1222,47 @@ export class IeltsAnswersService {
           60000
         : 0;
 
+    // Detect module type (reading, listening, or writing)
+    let moduleType: "reading" | "listening" | "writing" | null = null;
+    if (attempt.module_id) {
+      const [isReading, isListening, isWriting] = await Promise.all([
+        this.readingModel.findOne({
+          where: { id: attempt.module_id },
+          attributes: ["id"],
+        }),
+        this.listeningModel.findOne({
+          where: { id: attempt.module_id },
+          attributes: ["id"],
+        }),
+        this.writingModel.findOne({
+          where: { id: attempt.module_id },
+          attributes: ["id"],
+        }),
+      ]);
+      if (isReading) moduleType = "reading";
+      else if (isListening) moduleType = "listening";
+      else if (isWriting) moduleType = "writing";
+    } else if (attempt.task_id) {
+      moduleType = "writing";
+    } else if (attempt.part_id) {
+      const [isReadingPart, isListeningPart] = await Promise.all([
+        this.readingPartModel.findOne({
+          where: { id: attempt.part_id },
+          attributes: ["id"],
+        }),
+        this.listeningPartModel.findOne({
+          where: { id: attempt.part_id },
+          attributes: ["id"],
+        }),
+      ]);
+      if (isReadingPart) moduleType = "reading";
+      else if (isListeningPart) moduleType = "listening";
+    }
+
     return {
       attemptId: attempt.id,
-      readingId: attempt.module_id,
+      moduleId: attempt.module_id,
+      moduleType,
       userId: attempt.user_id,
       totalQuestions,
       correctAnswers,
