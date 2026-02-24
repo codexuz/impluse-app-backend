@@ -248,6 +248,15 @@ export class CreateListeningPartDto {
   audio_url?: string;
 
   @ApiProperty({
+    description: "The transcript URL (VTT) for this part",
+    example: "https://example.com/transcripts/part1.vtt",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  transcript_url?: string;
+
+  @ApiProperty({
     description: "Time limit in minutes",
     example: 20,
     required: false,

@@ -66,6 +66,12 @@ export class IeltsListeningPart extends Model<IeltsListeningPart> {
   audio_url: string;
 
   @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  transcript_url: string;
+
+  @Column({
     type: DataType.INTEGER,
     allowNull: true,
   })
