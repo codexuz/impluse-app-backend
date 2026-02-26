@@ -268,6 +268,17 @@ export class AttendanceService {
       whereClause.date = {
         [Op.between]: [startDate, endDate],
       };
+    } else {
+      // Default to current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      whereClause.date = {
+        [Op.between]: [
+          startOfMonth.toISOString().split("T")[0],
+          endOfMonth.toISOString().split("T")[0],
+        ],
+      };
     }
 
     const { count, rows } = await Attendance.findAndCountAll({

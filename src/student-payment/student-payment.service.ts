@@ -196,7 +196,7 @@ export class StudentPaymentService {
       whereClause.payment_method = payment_method;
     }
 
-    // Filter by createdAt date range
+    // Filter by createdAt date range (default to current month)
     if (startDate && endDate) {
       whereClause.createdAt = {
         [Op.between]: [startDate, endDate],
@@ -208,6 +208,22 @@ export class StudentPaymentService {
     } else if (endDate) {
       whereClause.createdAt = {
         [Op.lte]: endDate,
+      };
+    } else {
+      // Default to current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
+      whereClause.createdAt = {
+        [Op.between]: [startOfMonth, endOfMonth],
       };
     }
 
@@ -267,7 +283,7 @@ export class StudentPaymentService {
       ],
       limit,
       offset,
-      order: [["payment_date", "DESC"]],
+      order: [["createdAt", "DESC"]],
       distinct: true,
     });
 
