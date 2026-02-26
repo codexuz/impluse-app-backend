@@ -144,7 +144,7 @@ export class AuthService {
     console.log("Role validation successful for user:", loginDto.username);
 
     // Ensure maximum 2 sessions per user
-    await this.limitUserSessions(user.user_id, 2);
+    await this.limitUserSessions(user.user_id, 20);
 
     // Create new session
     const sessionId = uuidv4();
@@ -411,7 +411,7 @@ export class AuthService {
 
   async limitUserSessions(
     userId: string,
-    maxSessions: number = 2,
+    maxSessions: number = 20,
   ): Promise<void> {
     // Get all active sessions for the user, ordered by last accessed (oldest first)
     const activeSessions = await this.userSessionModel.findAll({
