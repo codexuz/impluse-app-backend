@@ -25,6 +25,7 @@ import {
   RequestPasswordResetDto,
   VerifyResetCodeDto,
   ResetPasswordDto,
+  VerifyAdminOtpDto,
 } from "./dto/auth.dto.js";
 import { RefreshTokenDto } from "./dto/refresh-token.dto.js";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard.js";
@@ -108,14 +109,43 @@ export class AuthController {
   }
 
   @Post("admin/login")
-  @ApiOperation({ summary: "Admin login" })
+  @ApiOperation({ summary: "Admin login - sends OTP to phone" })
   @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
-    description: "Admin login successful",
+    description: "Credentials verified, OTP sent to admin phone",
+    schema: {
+      properties: {
+        otpRequired: { type: "boolean", example: true },
+        otpToken: { type: "string" },
+        message: { type: "string" },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: "Unauthorized - Invalid credentials or not an admin",
+  })
+  async adminLogin(
+    @Body() loginDto: LoginDto,
+    @Request() req,
+    @Ip() ip: string,
+    @Headers("user-agent") userAgent?: string,
+  ) {
+    return this.authService.adminLoginWithOtp(loginDto, userAgent, ip);
+  }
+
+  @Post("admin/verify-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify OTP code for admin login" })
+  @ApiBody({ type: VerifyAdminOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: "OTP verified, admin login successful",
     schema: {
       properties: {
         access_token: { type: "string" },
+        refresh_token: { type: "string" },
         user: {
           type: "object",
           properties: {
@@ -131,14 +161,13 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ status: 401, description: "Unauthorized - Must be an admin" })
-  async adminLogin(
-    @Body() loginDto: LoginDto,
-    @Request() req,
+  @ApiResponse({ status: 400, description: "Invalid or expired OTP" })
+  async verifyAdminOtp(
+    @Body() dto: VerifyAdminOtpDto,
     @Ip() ip: string,
     @Headers("user-agent") userAgent?: string,
   ) {
-    return this.authService.login(loginDto, userAgent, ip, "admin");
+    return this.authService.verifyAdminOtp(dto, userAgent, ip);
   }
 
   @Post("register")

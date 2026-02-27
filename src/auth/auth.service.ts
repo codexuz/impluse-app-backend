@@ -14,6 +14,7 @@ import {
   RequestPasswordResetDto,
   VerifyResetCodeDto,
   ResetPasswordDto,
+  VerifyAdminOtpDto,
 } from "./dto/auth.dto.js";
 import { RefreshTokenDto } from "./dto/refresh-token.dto.js";
 import { AuthResponse, SessionInfo } from "./interfaces/auth.interface.js";
@@ -297,6 +298,217 @@ export class AuthService {
       console.error("Error creating user:", error);
       throw error;
     }
+  }
+
+  async adminLoginWithOtp(
+    loginDto: LoginDto,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<{ otpRequired: boolean; otpToken: string; message: string }> {
+    const user = await this.userModel.findOne({
+      where: {
+        username: loginDto.username,
+        is_active: true,
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          include: ["permissions"],
+        },
+      ],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("Invalid username or password");
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password_hash,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("Invalid username or password");
+    }
+
+    // Check if user has admin role
+    const userRoles = user.roles.map((role) => role.name.toLowerCase());
+    if (!userRoles.includes("admin")) {
+      throw new UnauthorizedException("Access denied. User is not an admin");
+    }
+
+    // Invalidate any existing unused OTP codes for this user
+    await this.smsVerificationModel.update(
+      { isVerified: true },
+      {
+        where: {
+          userId: user.user_id,
+          isVerified: false,
+          expiresAt: { [Op.gt]: new Date() },
+        },
+      },
+    );
+
+    // Generate 6-digit OTP code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // OTP expires in 3 minutes
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 3);
+
+    // Generate an OTP token to identify this login attempt
+    const otpToken = uuidv4();
+
+    // Save verification record
+    await this.smsVerificationModel.create({
+      id: otpToken,
+      userId: user.user_id,
+      phone: user.phone,
+      code,
+      isVerified: false,
+      expiresAt,
+      attempts: 0,
+    });
+
+    // Send SMS with OTP
+    const smsMessage = `Impulse CRMga kirish kodingiz: ${code}`;
+    try {
+      await this.smsService.sendSms({
+        mobile_phone: user.phone,
+        message: smsMessage,
+      });
+    } catch (error) {
+      console.error("Failed to send admin OTP SMS:", error);
+      throw new BadRequestException("Failed to send OTP. Please try again.");
+    }
+
+    return {
+      otpRequired: true,
+      otpToken,
+      message: "OTP code sent to your phone",
+    };
+  }
+
+  async verifyAdminOtp(
+    dto: VerifyAdminOtpDto,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<AuthResponse> {
+    const verification = await this.smsVerificationModel.findOne({
+      where: {
+        id: dto.otpToken,
+        isVerified: false,
+        expiresAt: { [Op.gt]: new Date() },
+      },
+    });
+
+    if (!verification) {
+      throw new BadRequestException(
+        "Invalid or expired OTP. Please login again.",
+      );
+    }
+
+    if (verification.attempts >= 5) {
+      await verification.update({ isVerified: true });
+      throw new BadRequestException("Too many attempts. Please login again.");
+    }
+
+    if (verification.code !== dto.code) {
+      await verification.update({ attempts: verification.attempts + 1 });
+      throw new BadRequestException("Invalid OTP code");
+    }
+
+    // Mark OTP as verified (used)
+    await verification.update({ isVerified: true });
+
+    // Get user and create session
+    const user = await this.userModel.findOne({
+      where: {
+        user_id: verification.userId,
+        is_active: true,
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          include: ["permissions"],
+        },
+      ],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    // Ensure maximum sessions per user
+    await this.limitUserSessions(user.user_id, 20);
+
+    // Create new session
+    const sessionId = uuidv4();
+    const roles = user.roles.map((role) => role.name);
+    const permissions = user.roles.reduce((acc, role) => {
+      const rolePermissions = role.permissions.map(
+        (p) => `${p.resource}:${p.action}`,
+      );
+      return [...acc, ...rolePermissions];
+    }, []);
+
+    const payload: JwtPayload = {
+      sub: user.user_id,
+      username: user.username,
+      phone: user.phone,
+      sessionId,
+      roles,
+      permissions,
+    };
+
+    // Generate access token
+    const accessToken = this.jwtService.sign(payload, { expiresIn: "30d" });
+    const decodedToken = this.jwtService.decode(accessToken) as any;
+    const expiresAt = new Date(decodedToken.exp * 1000);
+
+    // Generate refresh token (valid for 60 days)
+    const refreshToken = this.generateRefreshToken();
+    const refreshExpiresAt = new Date();
+    refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 60);
+
+    // Save session to database
+    await this.userSessionModel.create({
+      id: sessionId,
+      userId: user.user_id,
+      jwtToken: accessToken,
+      userAgent,
+      ipAddress,
+      expiresAt,
+      isActive: true,
+      lastAccessedAt: new Date(),
+      refreshToken,
+      refreshTokenExpiresAt: refreshExpiresAt,
+    });
+
+    // Update user's current session
+    await user.update({
+      currentSessionId: sessionId,
+      last_login: new Date(),
+    });
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: {
+        id: user.user_id,
+        username: user.username,
+        phone: user.phone,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        avatar_url: user.avatar_url,
+        roles,
+      },
+      sessionId,
+      expiresAt,
+      refreshExpiresAt,
+    };
   }
 
   async guestRegister(registerDto: RegisterDto): Promise<User> {

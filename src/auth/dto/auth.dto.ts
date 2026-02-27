@@ -75,6 +75,24 @@ export class LoginDto {
   password: string;
 }
 
+export class VerifyAdminOtpDto {
+  @ApiProperty({
+    description: "OTP token received from admin login",
+    example: "550e8400-e29b-41d4-a716-446655440000",
+  })
+  @IsString()
+  @IsNotEmpty()
+  otpToken: string;
+
+  @ApiProperty({
+    description: "6-digit OTP code received via SMS",
+    example: "123456",
+  })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+}
+
 export class RegisterDto {
   @ApiProperty({
     description: "User phone number with country code",
