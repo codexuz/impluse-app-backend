@@ -178,6 +178,112 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  // ==================== Archived Students ====================
+
+  @Post("archived-students")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Archive a student" })
+  @ApiResponse({ status: 201, description: "Student archived successfully" })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  createArchivedStudent(@Body() dto: CreateArchivedStudentDto) {
+    return this.usersService.createArchivedStudent(dto);
+  }
+
+  @Get("archived-students")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get all archived students" })
+  @ApiResponse({ status: 200, description: "List of archived students" })
+  findAllArchivedStudents(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("reason") reason?: string,
+  ) {
+    return this.usersService.findAllArchivedStudents(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      reason,
+    );
+  }
+
+  @Get("archived-students/:id")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get one archived student by ID" })
+  @ApiResponse({ status: 200, description: "Archived student details" })
+  @ApiResponse({ status: 404, description: "Not found" })
+  findOneArchivedStudent(@Param("id") id: string) {
+    return this.usersService.findOneArchivedStudent(id);
+  }
+
+  @Delete("archived-students/:id")
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete an archived student record" })
+  @ApiResponse({ status: 204, description: "Deleted successfully" })
+  @ApiResponse({ status: 404, description: "Not found" })
+  deleteArchivedStudent(@Param("id") id: string) {
+    return this.usersService.deleteArchivedStudent(id);
+  }
+
+  // ==================== Roles CRUD ====================
+
+  @Get("roles")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get all roles" })
+  @ApiResponse({ status: 200, description: "List of all roles" })
+  findAllRoles() {
+    return this.usersService.findAllRoles();
+  }
+
+  @Get("roles/:id")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get a role by ID" })
+  @ApiResponse({ status: 200, description: "Role details" })
+  @ApiResponse({ status: 404, description: "Role not found" })
+  findOneRole(@Param("id") id: number) {
+    return this.usersService.findOneRole(Number(id));
+  }
+
+  @Post("roles")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Create a new role" })
+  @ApiResponse({ status: 201, description: "Role created successfully" })
+  @ApiResponse({
+    status: 409,
+    description: "Role with this name already exists",
+  })
+  createRole(@Body() createRoleDto: CreateRoleDto) {
+    return this.usersService.createRole(createRoleDto);
+  }
+
+  @Patch("roles/:id")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Update a role" })
+  @ApiResponse({ status: 200, description: "Role updated successfully" })
+  @ApiResponse({ status: 404, description: "Role not found" })
+  @ApiResponse({
+    status: 409,
+    description: "Role with this name already exists",
+  })
+  updateRole(@Param("id") id: number, @Body() updateRoleDto: UpdateRoleDto) {
+    return this.usersService.updateRole(Number(id), updateRoleDto);
+  }
+
+  @Delete("roles/:id")
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete a role" })
+  @ApiResponse({ status: 204, description: "Role deleted successfully" })
+  @ApiResponse({
+    status: 400,
+    description: "Cannot delete protected or assigned role",
+  })
+  @ApiResponse({ status: 404, description: "Role not found" })
+  deleteRole(@Param("id") id: number) {
+    return this.usersService.deleteRole(Number(id));
+  }
+
+  // ==================== Parameterized :id routes ====================
+
   @Get(":id")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
   findOne(@Param("id") id: string) {
@@ -316,110 +422,6 @@ export class UsersController {
     @Body() updateAvatarDto: UpdateAvatarDto,
   ) {
     return this.usersService.updateAvatarUrl(id, updateAvatarDto.avatar_url);
-  }
-
-  // ==================== Archived Students ====================
-
-  @Post("archived-students")
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Archive a student" })
-  @ApiResponse({ status: 201, description: "Student archived successfully" })
-  @ApiResponse({ status: 400, description: "Bad request" })
-  createArchivedStudent(@Body() dto: CreateArchivedStudentDto) {
-    return this.usersService.createArchivedStudent(dto);
-  }
-
-  @Get("archived-students")
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Get all archived students" })
-  @ApiResponse({ status: 200, description: "List of archived students" })
-  findAllArchivedStudents(
-    @Query("page") page?: number,
-    @Query("limit") limit?: number,
-    @Query("reason") reason?: string,
-  ) {
-    return this.usersService.findAllArchivedStudents(
-      page ? Number(page) : 1,
-      limit ? Number(limit) : 10,
-      reason,
-    );
-  }
-
-  @Get("archived-students/:id")
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Get one archived student by ID" })
-  @ApiResponse({ status: 200, description: "Archived student details" })
-  @ApiResponse({ status: 404, description: "Not found" })
-  findOneArchivedStudent(@Param("id") id: string) {
-    return this.usersService.findOneArchivedStudent(id);
-  }
-
-  @Delete("archived-students/:id")
-  @Roles(Role.ADMIN)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete an archived student record" })
-  @ApiResponse({ status: 204, description: "Deleted successfully" })
-  @ApiResponse({ status: 404, description: "Not found" })
-  deleteArchivedStudent(@Param("id") id: string) {
-    return this.usersService.deleteArchivedStudent(id);
-  }
-
-  // ==================== Roles CRUD ====================
-
-  @Get("roles")
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Get all roles" })
-  @ApiResponse({ status: 200, description: "List of all roles" })
-  findAllRoles() {
-    return this.usersService.findAllRoles();
-  }
-
-  @Get("roles/:id")
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Get a role by ID" })
-  @ApiResponse({ status: 200, description: "Role details" })
-  @ApiResponse({ status: 404, description: "Role not found" })
-  findOneRole(@Param("id") id: number) {
-    return this.usersService.findOneRole(Number(id));
-  }
-
-  @Post("roles")
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Create a new role" })
-  @ApiResponse({ status: 201, description: "Role created successfully" })
-  @ApiResponse({
-    status: 409,
-    description: "Role with this name already exists",
-  })
-  createRole(@Body() createRoleDto: CreateRoleDto) {
-    return this.usersService.createRole(createRoleDto);
-  }
-
-  @Patch("roles/:id")
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Update a role" })
-  @ApiResponse({ status: 200, description: "Role updated successfully" })
-  @ApiResponse({ status: 404, description: "Role not found" })
-  @ApiResponse({
-    status: 409,
-    description: "Role with this name already exists",
-  })
-  updateRole(@Param("id") id: number, @Body() updateRoleDto: UpdateRoleDto) {
-    return this.usersService.updateRole(Number(id), updateRoleDto);
-  }
-
-  @Delete("roles/:id")
-  @Roles(Role.ADMIN)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete a role" })
-  @ApiResponse({ status: 204, description: "Role deleted successfully" })
-  @ApiResponse({
-    status: 400,
-    description: "Cannot delete protected or assigned role",
-  })
-  @ApiResponse({ status: 404, description: "Role not found" })
-  deleteRole(@Param("id") id: number) {
-    return this.usersService.deleteRole(Number(id));
   }
 
   // ==================== User Roles Management ====================
