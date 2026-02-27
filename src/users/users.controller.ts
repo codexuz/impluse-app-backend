@@ -28,6 +28,9 @@ import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { UpdatePasswordDto } from "./dto/update-password.dto.js";
 import { UpdateAvatarDto } from "./dto/update-avatar.dto.js";
 import { CreateArchivedStudentDto } from "./dto/create-archived-student.dto.js";
+import { CreateRoleDto } from "./dto/create-role.dto.js";
+import { UpdateRoleDto } from "./dto/update-role.dto.js";
+import { AssignRoleDto } from "./dto/assign-role.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -359,5 +362,100 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "Not found" })
   deleteArchivedStudent(@Param("id") id: string) {
     return this.usersService.deleteArchivedStudent(id);
+  }
+
+  // ==================== Roles CRUD ====================
+
+  @Get("roles")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get all roles" })
+  @ApiResponse({ status: 200, description: "List of all roles" })
+  findAllRoles() {
+    return this.usersService.findAllRoles();
+  }
+
+  @Get("roles/:id")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get a role by ID" })
+  @ApiResponse({ status: 200, description: "Role details" })
+  @ApiResponse({ status: 404, description: "Role not found" })
+  findOneRole(@Param("id") id: number) {
+    return this.usersService.findOneRole(Number(id));
+  }
+
+  @Post("roles")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Create a new role" })
+  @ApiResponse({ status: 201, description: "Role created successfully" })
+  @ApiResponse({
+    status: 409,
+    description: "Role with this name already exists",
+  })
+  createRole(@Body() createRoleDto: CreateRoleDto) {
+    return this.usersService.createRole(createRoleDto);
+  }
+
+  @Patch("roles/:id")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Update a role" })
+  @ApiResponse({ status: 200, description: "Role updated successfully" })
+  @ApiResponse({ status: 404, description: "Role not found" })
+  @ApiResponse({
+    status: 409,
+    description: "Role with this name already exists",
+  })
+  updateRole(@Param("id") id: number, @Body() updateRoleDto: UpdateRoleDto) {
+    return this.usersService.updateRole(Number(id), updateRoleDto);
+  }
+
+  @Delete("roles/:id")
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete a role" })
+  @ApiResponse({ status: 204, description: "Role deleted successfully" })
+  @ApiResponse({
+    status: 400,
+    description: "Cannot delete protected or assigned role",
+  })
+  @ApiResponse({ status: 404, description: "Role not found" })
+  deleteRole(@Param("id") id: number) {
+    return this.usersService.deleteRole(Number(id));
+  }
+
+  // ==================== User Roles Management ====================
+
+  @Get(":id/roles")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get all roles assigned to a user" })
+  @ApiResponse({ status: 200, description: "List of user roles" })
+  @ApiResponse({ status: 404, description: "User not found" })
+  getUserRoles(@Param("id") id: string) {
+    return this.usersService.getUserRoles(id);
+  }
+
+  @Post(":id/roles")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Assign a role to a user" })
+  @ApiResponse({ status: 201, description: "Role assigned successfully" })
+  @ApiResponse({ status: 404, description: "User or role not found" })
+  @ApiResponse({ status: 409, description: "User already has this role" })
+  assignRoleToUser(
+    @Param("id") id: string,
+    @Body() assignRoleDto: AssignRoleDto,
+  ) {
+    return this.usersService.assignRoleToUser(id, assignRoleDto);
+  }
+
+  @Delete(":id/roles/:roleId")
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Remove a role from a user" })
+  @ApiResponse({ status: 204, description: "Role removed successfully" })
+  @ApiResponse({
+    status: 404,
+    description: "User, role, or assignment not found",
+  })
+  removeRoleFromUser(@Param("id") id: string, @Param("roleId") roleId: number) {
+    return this.usersService.removeRoleFromUser(id, Number(roleId));
   }
 }

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { ConfigService } from "@nestjs/config";
@@ -15,7 +16,11 @@ import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
 import { CreateAdminDto } from "./dto/create-admin.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
+import { CreateRoleDto } from "./dto/create-role.dto.js";
+import { UpdateRoleDto } from "./dto/update-role.dto.js";
+import { AssignRoleDto } from "./dto/assign-role.dto.js";
 import { Role } from "./entities/role.model.js";
+import { UserRole } from "./entities/user-role.model.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { UserSession } from "./entities/user-session.model.js";
@@ -40,6 +45,8 @@ export class UsersService {
     private archivedStudentModel: typeof ArchivedStudent,
     @InjectModel(GroupStudent)
     private groupStudentModel: typeof GroupStudent,
+    @InjectModel(UserRole)
+    private userRoleModel: typeof UserRole,
     private configService: ConfigService,
     private awsStorageService: AwsStorageService,
   ) {}
@@ -1074,5 +1081,164 @@ export class UsersService {
       await transaction.rollback();
       throw error;
     }
+  }
+
+  // ==================== Roles CRUD ====================
+
+  async findAllRoles(): Promise<Role[]> {
+    return this.roleModel.findAll({
+      order: [["id", "ASC"]],
+    });
+  }
+
+  async findOneRole(id: number): Promise<Role> {
+    const role = await this.roleModel.findByPk(id);
+    if (!role) {
+      throw new NotFoundException(`Role with ID "${id}" not found`);
+    }
+    return role;
+  }
+
+  async createRole(createRoleDto: CreateRoleDto): Promise<Role> {
+    const existing = await this.roleModel.findOne({
+      where: { name: createRoleDto.name },
+    });
+    if (existing) {
+      throw new ConflictException(
+        `Role with name "${createRoleDto.name}" already exists`,
+      );
+    }
+    return this.roleModel.create({
+      ...createRoleDto,
+    });
+  }
+
+  async updateRole(id: number, updateRoleDto: UpdateRoleDto): Promise<Role> {
+    const role = await this.findOneRole(id);
+
+    if (updateRoleDto.name && updateRoleDto.name !== role.name) {
+      const existing = await this.roleModel.findOne({
+        where: { name: updateRoleDto.name },
+      });
+      if (existing) {
+        throw new ConflictException(
+          `Role with name "${updateRoleDto.name}" already exists`,
+        );
+      }
+    }
+
+    await role.update(updateRoleDto);
+    return role;
+  }
+
+  async deleteRole(id: number): Promise<void> {
+    const role = await this.findOneRole(id);
+
+    // Prevent deletion of protected system roles
+    const protectedRoles = [
+      "admin",
+      "teacher",
+      "student",
+      "support_teacher",
+      "guest",
+    ];
+    if (protectedRoles.includes(role.name)) {
+      throw new BadRequestException(
+        `Cannot delete protected system role "${role.name}"`,
+      );
+    }
+
+    // Check if any users are assigned to this role
+    const assignedCount = await this.userRoleModel.count({
+      where: { roleId: id },
+    });
+    if (assignedCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete role "${role.name}" — it is assigned to ${assignedCount} user(s). Remove assignments first.`,
+      );
+    }
+
+    await role.destroy();
+  }
+
+  // ==================== User Roles Management ====================
+
+  async getUserRoles(userId: string): Promise<Role[]> {
+    const user = await this.userModel.findByPk(userId, {
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          through: { attributes: ["assignedAt", "expiresAt"] },
+        },
+      ],
+    });
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+    return user.roles || [];
+  }
+
+  async assignRoleToUser(
+    userId: string,
+    assignRoleDto: AssignRoleDto,
+  ): Promise<{ message: string }> {
+    // Verify user exists
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+
+    // Verify role exists
+    const role = await this.roleModel.findByPk(assignRoleDto.roleId);
+    if (!role) {
+      throw new NotFoundException(
+        `Role with ID "${assignRoleDto.roleId}" not found`,
+      );
+    }
+
+    // Check if already assigned
+    const existing = await this.userRoleModel.findOne({
+      where: { userId, roleId: assignRoleDto.roleId },
+    });
+    if (existing) {
+      throw new ConflictException(`User already has role "${role.name}"`);
+    }
+
+    await this.userRoleModel.create({
+      userId,
+      roleId: assignRoleDto.roleId,
+      assignedAt: new Date(),
+      expiresAt: assignRoleDto.expiresAt
+        ? new Date(assignRoleDto.expiresAt)
+        : null,
+    });
+
+    return { message: `Role "${role.name}" assigned to user successfully` };
+  }
+
+  async removeRoleFromUser(
+    userId: string,
+    roleId: number,
+  ): Promise<{ message: string }> {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+
+    const role = await this.roleModel.findByPk(roleId);
+    if (!role) {
+      throw new NotFoundException(`Role with ID "${roleId}" not found`);
+    }
+
+    const deleted = await this.userRoleModel.destroy({
+      where: { userId, roleId },
+    });
+
+    if (deleted === 0) {
+      throw new NotFoundException(`User does not have role "${role.name}"`);
+    }
+
+    return { message: `Role "${role.name}" removed from user successfully` };
   }
 }
