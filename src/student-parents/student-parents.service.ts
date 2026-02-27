@@ -58,19 +58,12 @@ export class StudentParentsService {
         ];
       }
 
-      // Filter by student full name
+      // Filter by student first_name, last_name, or username
       if (queryDto?.student_name) {
         studentWhere[Op.or] = [
-          {
-            [Op.and]: [
-              { first_name: { [Op.like]: `%${queryDto.student_name}%` } },
-            ],
-          },
-          {
-            [Op.and]: [
-              { last_name: { [Op.like]: `%${queryDto.student_name}%` } },
-            ],
-          },
+          { first_name: { [Op.like]: `%${queryDto.student_name}%` } },
+          { last_name: { [Op.like]: `%${queryDto.student_name}%` } },
+          { username: { [Op.like]: `%${queryDto.student_name}%` } },
         ];
       }
 
@@ -83,7 +76,7 @@ export class StudentParentsService {
               as: "student",
               where:
                 Object.keys(studentWhere).length > 0 ? studentWhere : undefined,
-              attributes: ["user_id", "first_name", "last_name", "phone"],
+              attributes: ["user_id", "first_name", "last_name", "username", "phone"],
               required: queryDto?.student_name ? true : false,
             },
           ],

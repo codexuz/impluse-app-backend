@@ -79,8 +79,8 @@ export class StudentParentsController {
   @ApiQuery({
     name: "student_name",
     required: false,
-    description: "Search by student full name",
-    example: "Jane Doe",
+    description: "Search by student first name, last name, or username",
+    example: "Jane",
   })
   @ApiResponse({
     status: 200,

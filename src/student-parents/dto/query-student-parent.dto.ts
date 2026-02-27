@@ -44,8 +44,8 @@ export class QueryStudentParentDto {
   parent_phone?: string;
 
   @ApiProperty({
-    description: "Search by student full name",
-    example: "Jane Doe",
+    description: "Search by student first name, last name, or username",
+    example: "Jane",
     required: false,
   })
   @IsOptional()
