@@ -126,8 +126,31 @@ export class UsersService {
     return this.findOne(user.user_id);
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userModel.findAll({
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    query?: string,
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {};
+
+    if (query) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.like]: `%${query}%` } },
+        { last_name: { [Op.like]: `%${query}%` } },
+        { username: { [Op.like]: `%${query}%` } },
+        { phone: { [Op.like]: `%${query}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.userModel.findAndCountAll({
+      where: whereClause,
       attributes: {
         exclude: ["password_hash"],
       },
@@ -138,7 +161,18 @@ export class UsersService {
           through: { attributes: [] },
         },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findOne(id: string): Promise<User> {

@@ -174,8 +174,18 @@ export class UsersController {
 
   @Get()
   @Roles(Role.ADMIN)
-  findAll() {
-    return this.usersService.findAll();
+  @ApiOperation({ summary: "Get all users" })
+  @ApiResponse({ status: 200, description: "Paginated list of all users" })
+  findAll(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string,
+  ) {
+    return this.usersService.findAll(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query,
+    );
   }
 
   // ==================== Archived Students ====================
