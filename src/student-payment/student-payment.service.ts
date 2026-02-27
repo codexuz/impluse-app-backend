@@ -40,6 +40,21 @@ export class StudentPaymentService {
   async create(
     createStudentPaymentDto: CreateStudentPaymentDto,
   ): Promise<StudentPayment> {
+    // Check for duplicate payment (same student, payment_date, and next_payment_date)
+    const existingPayment = await this.studentPaymentModel.findOne({
+      where: {
+        student_id: createStudentPaymentDto.student_id,
+        payment_date: createStudentPaymentDto.payment_date,
+        next_payment_date: createStudentPaymentDto.next_payment_date,
+      },
+    });
+
+    if (existingPayment) {
+      throw new BadRequestException(
+        `A payment already exists for this student with payment date ${createStudentPaymentDto.payment_date} and next payment date ${createStudentPaymentDto.next_payment_date}`,
+      );
+    }
+
     // Start a transaction to ensure atomicity
     const transaction = await this.studentPaymentModel.sequelize.transaction();
 
