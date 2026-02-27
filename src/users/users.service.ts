@@ -126,6 +126,62 @@ export class UsersService {
     return this.findOne(user.user_id);
   }
 
+  async getUsersByRole(
+    roleName: string,
+    page: number = 1,
+    limit: number = 10,
+    query?: string,
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const role = await this.roleModel.findOne({ where: { name: roleName } });
+    if (!role) {
+      throw new NotFoundException(`Role "${roleName}" not found`);
+    }
+
+    const offset = (page - 1) * limit;
+    const whereClause: any = {};
+
+    if (query) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.like]: `%${query}%` } },
+        { last_name: { [Op.like]: `%${query}%` } },
+        { username: { [Op.like]: `%${query}%` } },
+        { phone: { [Op.like]: `%${query}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.userModel.findAndCountAll({
+      where: whereClause,
+      attributes: {
+        exclude: ["password_hash"],
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          where: { name: roleName },
+          through: { attributes: [] },
+        },
+      ],
+      limit,
+      offset,
+      distinct: true,
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
   async findAll(
     page: number = 1,
     limit: number = 10,

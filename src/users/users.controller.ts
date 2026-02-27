@@ -172,6 +172,28 @@ export class UsersController {
     );
   }
 
+  @Get("by-role/:roleName")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get users by role name" })
+  @ApiResponse({
+    status: 200,
+    description: "Paginated list of users with the specified role",
+  })
+  @ApiResponse({ status: 404, description: "Role not found" })
+  getUsersByRole(
+    @Param("roleName") roleName: string,
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string,
+  ) {
+    return this.usersService.getUsersByRole(
+      roleName,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query,
+    );
+  }
+
   @Get()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Get all users" })
