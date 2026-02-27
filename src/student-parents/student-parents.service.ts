@@ -76,7 +76,13 @@ export class StudentParentsService {
               as: "student",
               where:
                 Object.keys(studentWhere).length > 0 ? studentWhere : undefined,
-              attributes: ["user_id", "first_name", "last_name", "username", "phone"],
+              attributes: [
+                "user_id",
+                "first_name",
+                "last_name",
+                "username",
+                "phone",
+              ],
               required: queryDto?.student_name ? true : false,
             },
           ],
