@@ -1363,12 +1363,23 @@ export class IeltsTestsService {
 
   async getLinkedReadingParts(
     readingId: string,
-  ): Promise<IeltsReadingReadingPart[]> {
-    return await this.ieltsReadingReadingPartModel.findAll({
-      where: { reading_id: readingId },
-      include: [{ model: IeltsReadingPart, as: "readingPart" }],
-      order: [["order", "ASC"]],
+  ) {
+    const reading = await this.ieltsReadingModel.findByPk(readingId, {
+      include: [
+        {
+          model: IeltsReadingPart,
+          as: "linkedParts",
+          through: { attributes: ["id", "order"] },
+        },
+      ],
+      order: [
+        [{ model: IeltsReadingPart, as: "linkedParts" }, IeltsReadingReadingPart, "order", "ASC"],
+      ],
     });
+    if (!reading) {
+      throw new NotFoundException(`Reading with ID ${readingId} not found`);
+    }
+    return (reading as any).linkedParts || [];
   }
 
   // ========== Many-to-Many: Listening ↔ Listening Parts ==========
@@ -1403,12 +1414,23 @@ export class IeltsTestsService {
 
   async getLinkedListeningParts(
     listeningId: string,
-  ): Promise<IeltsListeningListeningPart[]> {
-    return await this.ieltsListeningListeningPartModel.findAll({
-      where: { listening_id: listeningId },
-      include: [{ model: IeltsListeningPart, as: "listeningPart" }],
-      order: [["order", "ASC"]],
+  ) {
+    const listening = await this.ieltsListeningModel.findByPk(listeningId, {
+      include: [
+        {
+          model: IeltsListeningPart,
+          as: "linkedParts",
+          through: { attributes: ["id", "order"] },
+        },
+      ],
+      order: [
+        [{ model: IeltsListeningPart, as: "linkedParts" }, IeltsListeningListeningPart, "order", "ASC"],
+      ],
     });
+    if (!listening) {
+      throw new NotFoundException(`Listening with ID ${listeningId} not found`);
+    }
+    return (listening as any).linkedParts || [];
   }
 
   // ========== Many-to-Many: Writing ↔ Writing Tasks ==========
@@ -1443,11 +1465,22 @@ export class IeltsTestsService {
 
   async getLinkedWritingTasks(
     writingId: string,
-  ): Promise<IeltsWritingWritingTask[]> {
-    return await this.ieltsWritingWritingTaskModel.findAll({
-      where: { writing_id: writingId },
-      include: [{ model: IeltsWritingTask, as: "writingTask" }],
-      order: [["order", "ASC"]],
+  ) {
+    const writing = await this.ieltsWritingModel.findByPk(writingId, {
+      include: [
+        {
+          model: IeltsWritingTask,
+          as: "linkedTasks",
+          through: { attributes: ["id", "order"] },
+        },
+      ],
+      order: [
+        [{ model: IeltsWritingTask, as: "linkedTasks" }, IeltsWritingWritingTask, "order", "ASC"],
+      ],
     });
+    if (!writing) {
+      throw new NotFoundException(`Writing with ID ${writingId} not found`);
+    }
+    return (writing as any).linkedTasks || [];
   }
 }

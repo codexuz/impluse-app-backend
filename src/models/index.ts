@@ -119,6 +119,9 @@ import { IeltsWritingAnswer } from "../ielts-tests/entities/ielts-writing-answer
 import { IeltsReadingAnswer } from "../ielts-tests/entities/ielts-reading-answer.entity.js";
 import { IeltsListeningAnswer } from "../ielts-tests/entities/ielts-listening-answer.entity.js";
 import { ArchivedStudent } from "../users/entities/archived-student.entity.js";
+import { IeltsReadingReadingPart } from "../ielts-tests/entities/ielts-reading-reading-part.entity.js";
+import { IeltsListeningListeningPart } from "../ielts-tests/entities/ielts-listening-listening-part.entity.js";
+import { IeltsWritingWritingTask } from "../ielts-tests/entities/ielts-writing-writing-task.entity.js";
 
 export const Models = [
   User,
@@ -231,6 +234,9 @@ export const Models = [
   IeltsReadingAnswer,
   IeltsListeningAnswer,
   ArchivedStudent,
+  IeltsReadingReadingPart,
+  IeltsListeningListeningPart,
+  IeltsWritingWritingTask,
 ];
 
 // Define associations after all models are loaded
