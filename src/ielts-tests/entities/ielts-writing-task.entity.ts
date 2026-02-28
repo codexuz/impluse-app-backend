@@ -4,12 +4,10 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsToMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsWriting } from "./ielts-writing.entity.js";
-import { IeltsWritingWritingTask } from "./ielts-writing-writing-task.entity.js";
 
 export enum WritingTask {
   TASK_1 = "TASK_1",
@@ -70,9 +68,6 @@ export class IeltsWritingTask extends Model<IeltsWritingTask> {
     allowNull: true,
   })
   suggested_time: number;
-
-  @BelongsToMany(() => IeltsWriting, () => IeltsWritingWritingTask)
-  linkedWritings: IeltsWriting[];
 
   @CreatedAt
   createdAt: Date;

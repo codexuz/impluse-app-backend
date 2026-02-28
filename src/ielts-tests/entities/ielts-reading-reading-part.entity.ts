@@ -13,13 +13,6 @@ import { IeltsReadingPart } from "./ielts-reading-part.entity.js";
 @Table({
     tableName: "ielts_reading_reading_parts",
     timestamps: true,
-    indexes: [
-        {
-            unique: true,
-            fields: ["reading_id", "reading_part_id"],
-            name: "uq_reading_reading_part",
-        },
-    ],
 })
 export class IeltsReadingReadingPart extends Model<IeltsReadingReadingPart> {
     @Column({

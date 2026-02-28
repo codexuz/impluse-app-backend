@@ -4,13 +4,10 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsToMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsTest } from "./ielts-test.entity.js";
-import { IeltsReadingPart } from "./ielts-reading-part.entity.js";
-import { IeltsReadingReadingPart } from "./ielts-reading-reading-part.entity.js";
 
 @Table({
   tableName: "ielts_reading",
@@ -36,9 +33,6 @@ export class IeltsReading extends Model<IeltsReading> {
     allowNull: false,
   })
   test_id: string;
-
-  @BelongsToMany(() => IeltsReadingPart, () => IeltsReadingReadingPart)
-  linkedParts: IeltsReadingPart[];
 
   @CreatedAt
   createdAt: Date;

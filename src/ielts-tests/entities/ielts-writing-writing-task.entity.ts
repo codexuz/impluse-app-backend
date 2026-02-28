@@ -13,13 +13,6 @@ import { IeltsWritingTask } from "./ielts-writing-task.entity.js";
 @Table({
     tableName: "ielts_writing_writing_tasks",
     timestamps: true,
-    indexes: [
-        {
-            unique: true,
-            fields: ["writing_id", "writing_task_id"],
-            name: "uq_writing_writing_task",
-        },
-    ],
 })
 export class IeltsWritingWritingTask extends Model<IeltsWritingWritingTask> {
     @Column({

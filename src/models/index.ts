@@ -1662,4 +1662,52 @@ export function initializeAssociations() {
     foreignKey: "group_id",
     as: "group",
   });
+
+  // IELTS Many-to-Many: Reading ↔ ReadingParts
+  IeltsReading.belongsToMany(IeltsReadingPart, {
+    through: IeltsReadingReadingPart,
+    foreignKey: "reading_id",
+    otherKey: "reading_part_id",
+    as: "linkedParts",
+    uniqueKey: "uq_reading_reading_part",
+  });
+  IeltsReadingPart.belongsToMany(IeltsReading, {
+    through: IeltsReadingReadingPart,
+    foreignKey: "reading_part_id",
+    otherKey: "reading_id",
+    as: "linkedReadings",
+    uniqueKey: "uq_reading_reading_part",
+  });
+
+  // IELTS Many-to-Many: Listening ↔ ListeningParts
+  IeltsListening.belongsToMany(IeltsListeningPart, {
+    through: IeltsListeningListeningPart,
+    foreignKey: "listening_id",
+    otherKey: "listening_part_id",
+    as: "linkedParts",
+    uniqueKey: "uq_listening_listening_part",
+  });
+  IeltsListeningPart.belongsToMany(IeltsListening, {
+    through: IeltsListeningListeningPart,
+    foreignKey: "listening_part_id",
+    otherKey: "listening_id",
+    as: "linkedListenings",
+    uniqueKey: "uq_listening_listening_part",
+  });
+
+  // IELTS Many-to-Many: Writing ↔ WritingTasks
+  IeltsWriting.belongsToMany(IeltsWritingTask, {
+    through: IeltsWritingWritingTask,
+    foreignKey: "writing_id",
+    otherKey: "writing_task_id",
+    as: "linkedTasks",
+    uniqueKey: "uq_writing_writing_task",
+  });
+  IeltsWritingTask.belongsToMany(IeltsWriting, {
+    through: IeltsWritingWritingTask,
+    foreignKey: "writing_task_id",
+    otherKey: "writing_id",
+    as: "linkedWritings",
+    uniqueKey: "uq_writing_writing_task",
+  });
 }

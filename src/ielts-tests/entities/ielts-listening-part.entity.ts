@@ -4,12 +4,10 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsToMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsListening } from "./ielts-listening.entity.js";
-import { IeltsListeningListeningPart } from "./ielts-listening-listening-part.entity.js";
 
 export enum ListeningPart {
   PART_1 = "PART_1",
@@ -97,9 +95,6 @@ export class IeltsListeningPart extends Model<IeltsListeningPart> {
     allowNull: true,
   })
   totalQuestions: number;
-
-  @BelongsToMany(() => IeltsListening, () => IeltsListeningListeningPart)
-  linkedListenings: IeltsListening[];
 
   @CreatedAt
   createdAt: Date;

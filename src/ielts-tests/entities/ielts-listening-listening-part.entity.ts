@@ -13,13 +13,6 @@ import { IeltsListeningPart } from "./ielts-listening-part.entity.js";
 @Table({
     tableName: "ielts_listening_listening_parts",
     timestamps: true,
-    indexes: [
-        {
-            unique: true,
-            fields: ["listening_id", "listening_part_id"],
-            name: "uq_listening_listening_part",
-        },
-    ],
 })
 export class IeltsListeningListeningPart extends Model<IeltsListeningListeningPart> {
     @Column({

@@ -4,13 +4,11 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsToMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsTest } from "./ielts-test.entity.js";
 import { IeltsWritingTask } from "./ielts-writing-task.entity.js";
-import { IeltsWritingWritingTask } from "./ielts-writing-writing-task.entity.js";
 
 @Table({
   tableName: "ielts_writing",
@@ -49,9 +47,6 @@ export class IeltsWriting extends Model<IeltsWriting> {
     defaultValue: true,
   })
   is_active: boolean;
-
-  @BelongsToMany(() => IeltsWritingTask, () => IeltsWritingWritingTask)
-  linkedTasks: IeltsWritingTask[];
 
   @CreatedAt
   createdAt: Date;
