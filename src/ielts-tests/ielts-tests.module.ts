@@ -31,6 +31,9 @@ import { IeltsMockTestsService } from "./ielts-mock-tests.service.js";
 import { IeltsMockTestsController } from "./ielts-mock-tests.controller.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
+import { IeltsReadingReadingPart } from "./entities/ielts-reading-reading-part.entity.js";
+import { IeltsListeningListeningPart } from "./entities/ielts-listening-listening-part.entity.js";
+import { IeltsWritingWritingTask } from "./entities/ielts-writing-writing-task.entity.js";
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { Group } from "../groups/entities/group.entity.js";
       IeltsMockTest,
       GroupStudent,
       Group,
+      IeltsReadingReadingPart,
+      IeltsListeningListeningPart,
+      IeltsWritingWritingTask,
     ]),
   ],
   controllers: [

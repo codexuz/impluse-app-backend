@@ -4,19 +4,17 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsToMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
-import { IeltsTest } from "./ielts-test.entity.js";
+import { IeltsReading } from "./ielts-reading.entity.js";
 import { IeltsReadingPart } from "./ielts-reading-part.entity.js";
-import { IeltsReadingReadingPart } from "./ielts-reading-reading-part.entity.js";
 
 @Table({
-  tableName: "ielts_reading",
+  tableName: "ielts_reading_reading_parts",
   timestamps: true,
 })
-export class IeltsReading extends Model<IeltsReading> {
+export class IeltsReadingReadingPart extends Model<IeltsReadingReadingPart> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,
@@ -24,21 +22,25 @@ export class IeltsReading extends Model<IeltsReading> {
   })
   id: string;
 
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
-  title: string;
-
-  @ForeignKey(() => IeltsTest)
+  @ForeignKey(() => IeltsReading)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
-  test_id: string;
+  reading_id: string;
 
-  @BelongsToMany(() => IeltsReadingPart, () => IeltsReadingReadingPart)
-  parts: IeltsReadingPart[];
+  @ForeignKey(() => IeltsReadingPart)
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+  })
+  reading_part_id: string;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  order: number;
 
   @CreatedAt
   createdAt: Date;

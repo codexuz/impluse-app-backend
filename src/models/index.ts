@@ -118,6 +118,9 @@ import { IeltsAnswerAttempt } from "../ielts-tests/entities/ielts-answer-attempt
 import { IeltsWritingAnswer } from "../ielts-tests/entities/ielts-writing-answer.entity.js";
 import { IeltsReadingAnswer } from "../ielts-tests/entities/ielts-reading-answer.entity.js";
 import { IeltsListeningAnswer } from "../ielts-tests/entities/ielts-listening-answer.entity.js";
+import { IeltsReadingReadingPart } from "../ielts-tests/entities/ielts-reading-reading-part.entity.js";
+import { IeltsListeningListeningPart } from "../ielts-tests/entities/ielts-listening-listening-part.entity.js";
+import { IeltsWritingWritingTask } from "../ielts-tests/entities/ielts-writing-writing-task.entity.js";
 import { ArchivedStudent } from "../users/entities/archived-student.entity.js";
 
 export const Models = [
@@ -230,6 +233,9 @@ export const Models = [
   IeltsWritingAnswer,
   IeltsReadingAnswer,
   IeltsListeningAnswer,
+  IeltsReadingReadingPart,
+  IeltsListeningListeningPart,
+  IeltsWritingWritingTask,
   ArchivedStudent,
 ];
 
@@ -1328,6 +1334,12 @@ export function initializeAssociations() {
     foreignKey: "reading_id",
     as: "parts",
   });
+  IeltsReading.belongsToMany(IeltsReadingPart, {
+    through: IeltsReadingReadingPart,
+    foreignKey: "reading_id",
+    otherKey: "reading_part_id",
+    as: "readingParts",
+  });
 
   // IeltsListening associations
   IeltsListening.belongsTo(IeltsTest, {
@@ -1337,6 +1349,12 @@ export function initializeAssociations() {
   IeltsListening.hasMany(IeltsListeningPart, {
     foreignKey: "listening_id",
     as: "parts",
+  });
+  IeltsListening.belongsToMany(IeltsListeningPart, {
+    through: IeltsListeningListeningPart,
+    foreignKey: "listening_id",
+    otherKey: "listening_part_id",
+    as: "listeningParts",
   });
 
   // IeltsWriting associations
@@ -1348,11 +1366,23 @@ export function initializeAssociations() {
     foreignKey: "writing_id",
     as: "tasks",
   });
+  IeltsWriting.belongsToMany(IeltsWritingTask, {
+    through: IeltsWritingWritingTask,
+    foreignKey: "writing_id",
+    otherKey: "writing_task_id",
+    as: "writingTasks",
+  });
 
   // IeltsReadingPart associations
   IeltsReadingPart.belongsTo(IeltsReading, {
     foreignKey: "reading_id",
     as: "reading",
+  });
+  IeltsReadingPart.belongsToMany(IeltsReading, {
+    through: IeltsReadingReadingPart,
+    foreignKey: "reading_part_id",
+    otherKey: "reading_id",
+    as: "readings",
   });
   IeltsReadingPart.hasMany(IeltsQuestion, {
     foreignKey: "reading_part_id",
@@ -1364,6 +1394,12 @@ export function initializeAssociations() {
     foreignKey: "listening_id",
     as: "listening",
   });
+  IeltsListeningPart.belongsToMany(IeltsListening, {
+    through: IeltsListeningListeningPart,
+    foreignKey: "listening_part_id",
+    otherKey: "listening_id",
+    as: "listenings",
+  });
   IeltsListeningPart.hasMany(IeltsQuestion, {
     foreignKey: "listening_part_id",
     as: "questions",
@@ -1373,6 +1409,12 @@ export function initializeAssociations() {
   IeltsWritingTask.belongsTo(IeltsWriting, {
     foreignKey: "writing_id",
     as: "writing",
+  });
+  IeltsWritingTask.belongsToMany(IeltsWriting, {
+    through: IeltsWritingWritingTask,
+    foreignKey: "writing_task_id",
+    otherKey: "writing_id",
+    as: "writings",
   });
 
   // IeltsQuestion associations
