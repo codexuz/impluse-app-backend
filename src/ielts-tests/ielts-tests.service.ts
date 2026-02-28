@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { IeltsReading } from "./entities/ielts-reading.entity.js";
@@ -10,6 +10,9 @@ import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
 import { IeltsQuestion } from "./entities/ielts-question.entity.js";
 import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
 import { IeltsSubQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
+import { IeltsReadingReadingPart } from "./entities/ielts-reading-reading-part.entity.js";
+import { IeltsListeningListeningPart } from "./entities/ielts-listening-listening-part.entity.js";
+import { IeltsWritingWritingTask } from "./entities/ielts-writing-writing-task.entity.js";
 import { CreateTestDto } from "./dto/create-test.dto.js";
 import { UpdateTestDto } from "./dto/update-test.dto.js";
 import { CreateReadingDto } from "./dto/create-reading.dto.js";
@@ -30,6 +33,9 @@ import { UpdateListeningPartDto } from "./dto/update-listening-part.dto.js";
 import { UpdateQuestionDto } from "./dto/update-question.dto.js";
 import { UpdateQuestionOptionDto } from "./dto/update-question-option.dto.js";
 import { UpdateSubQuestionDto } from "./dto/update-multiple-choice-question.dto.js";
+import { LinkReadingPartDto, UnlinkReadingPartDto } from "./dto/link-reading-part.dto.js";
+import { LinkListeningPartDto, UnlinkListeningPartDto } from "./dto/link-listening-part.dto.js";
+import { LinkWritingTaskDto, UnlinkWritingTaskDto } from "./dto/link-writing-task.dto.js";
 import {
   TestQueryDto,
   ReadingQueryDto,
@@ -69,7 +75,13 @@ export class IeltsTestsService {
     private readonly ieltsQuestionOptionModel: typeof IeltsQuestionOption,
     @InjectModel(IeltsSubQuestion)
     private readonly ieltsSubQuestionModel: typeof IeltsSubQuestion,
-  ) {}
+    @InjectModel(IeltsReadingReadingPart)
+    private readonly ieltsReadingReadingPartModel: typeof IeltsReadingReadingPart,
+    @InjectModel(IeltsListeningListeningPart)
+    private readonly ieltsListeningListeningPartModel: typeof IeltsListeningListeningPart,
+    @InjectModel(IeltsWritingWritingTask)
+    private readonly ieltsWritingWritingTaskModel: typeof IeltsWritingWritingTask,
+  ) { }
 
   // ========== Helpers ==========
   private readonly romanOrder: Record<string, number> = {
@@ -1317,5 +1329,125 @@ export class IeltsTestsService {
   async deleteSubQuestion(id: string): Promise<void> {
     const subQuestion = await this.findSubQuestionById(id);
     await subQuestion.destroy();
+  }
+
+  // ========== Many-to-Many: Reading ↔ Reading Parts ==========
+  async linkReadingPart(
+    dto: LinkReadingPartDto,
+  ): Promise<IeltsReadingReadingPart> {
+    const existing = await this.ieltsReadingReadingPartModel.findOne({
+      where: {
+        reading_id: dto.reading_id,
+        reading_part_id: dto.reading_part_id,
+      },
+    });
+    if (existing) {
+      throw new ConflictException(
+        "This reading part is already linked to the reading section.",
+      );
+    }
+    return await this.ieltsReadingReadingPartModel.create(dto as any);
+  }
+
+  async unlinkReadingPart(dto: UnlinkReadingPartDto): Promise<void> {
+    const deleted = await this.ieltsReadingReadingPartModel.destroy({
+      where: {
+        reading_id: dto.reading_id,
+        reading_part_id: dto.reading_part_id,
+      },
+    });
+    if (!deleted) {
+      throw new NotFoundException("Link not found.");
+    }
+  }
+
+  async getLinkedReadingParts(
+    readingId: string,
+  ): Promise<IeltsReadingReadingPart[]> {
+    return await this.ieltsReadingReadingPartModel.findAll({
+      where: { reading_id: readingId },
+      include: [{ model: IeltsReadingPart, as: "readingPart" }],
+      order: [["order", "ASC"]],
+    });
+  }
+
+  // ========== Many-to-Many: Listening ↔ Listening Parts ==========
+  async linkListeningPart(
+    dto: LinkListeningPartDto,
+  ): Promise<IeltsListeningListeningPart> {
+    const existing = await this.ieltsListeningListeningPartModel.findOne({
+      where: {
+        listening_id: dto.listening_id,
+        listening_part_id: dto.listening_part_id,
+      },
+    });
+    if (existing) {
+      throw new ConflictException(
+        "This listening part is already linked to the listening section.",
+      );
+    }
+    return await this.ieltsListeningListeningPartModel.create(dto as any);
+  }
+
+  async unlinkListeningPart(dto: UnlinkListeningPartDto): Promise<void> {
+    const deleted = await this.ieltsListeningListeningPartModel.destroy({
+      where: {
+        listening_id: dto.listening_id,
+        listening_part_id: dto.listening_part_id,
+      },
+    });
+    if (!deleted) {
+      throw new NotFoundException("Link not found.");
+    }
+  }
+
+  async getLinkedListeningParts(
+    listeningId: string,
+  ): Promise<IeltsListeningListeningPart[]> {
+    return await this.ieltsListeningListeningPartModel.findAll({
+      where: { listening_id: listeningId },
+      include: [{ model: IeltsListeningPart, as: "listeningPart" }],
+      order: [["order", "ASC"]],
+    });
+  }
+
+  // ========== Many-to-Many: Writing ↔ Writing Tasks ==========
+  async linkWritingTask(
+    dto: LinkWritingTaskDto,
+  ): Promise<IeltsWritingWritingTask> {
+    const existing = await this.ieltsWritingWritingTaskModel.findOne({
+      where: {
+        writing_id: dto.writing_id,
+        writing_task_id: dto.writing_task_id,
+      },
+    });
+    if (existing) {
+      throw new ConflictException(
+        "This writing task is already linked to the writing section.",
+      );
+    }
+    return await this.ieltsWritingWritingTaskModel.create(dto as any);
+  }
+
+  async unlinkWritingTask(dto: UnlinkWritingTaskDto): Promise<void> {
+    const deleted = await this.ieltsWritingWritingTaskModel.destroy({
+      where: {
+        writing_id: dto.writing_id,
+        writing_task_id: dto.writing_task_id,
+      },
+    });
+    if (!deleted) {
+      throw new NotFoundException("Link not found.");
+    }
+  }
+
+  async getLinkedWritingTasks(
+    writingId: string,
+  ): Promise<IeltsWritingWritingTask[]> {
+    return await this.ieltsWritingWritingTaskModel.findAll({
+      where: { writing_id: writingId },
+      include: [{ model: IeltsWritingTask, as: "writingTask" }],
+      order: [["order", "ASC"]],
+    });
   }
 }

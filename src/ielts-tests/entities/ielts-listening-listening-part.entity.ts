@@ -1,0 +1,64 @@
+import {
+    Table,
+    Column,
+    Model,
+    DataType,
+    ForeignKey,
+    BelongsTo,
+    CreatedAt,
+    UpdatedAt,
+} from "sequelize-typescript";
+import { IeltsListening } from "./ielts-listening.entity.js";
+import { IeltsListeningPart } from "./ielts-listening-part.entity.js";
+
+@Table({
+    tableName: "ielts_listening_listening_parts",
+    timestamps: true,
+    indexes: [
+        {
+            unique: true,
+            fields: ["listening_id", "listening_part_id"],
+            name: "uq_listening_listening_part",
+        },
+    ],
+})
+export class IeltsListeningListeningPart extends Model<IeltsListeningListeningPart> {
+    @Column({
+        type: DataType.UUID,
+        defaultValue: DataType.UUIDV4,
+        primaryKey: true,
+    })
+    id: string;
+
+    @ForeignKey(() => IeltsListening)
+    @Column({
+        type: DataType.UUID,
+        allowNull: false,
+    })
+    listening_id: string;
+
+    @ForeignKey(() => IeltsListeningPart)
+    @Column({
+        type: DataType.UUID,
+        allowNull: false,
+    })
+    listening_part_id: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+    })
+    order: number;
+
+    @BelongsTo(() => IeltsListening)
+    listening: IeltsListening;
+
+    @BelongsTo(() => IeltsListeningPart)
+    listeningPart: IeltsListeningPart;
+
+    @CreatedAt
+    createdAt: Date;
+
+    @UpdatedAt
+    updatedAt: Date;
+}
