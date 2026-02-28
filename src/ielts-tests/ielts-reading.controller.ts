@@ -22,10 +22,6 @@ import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateReadingDto } from "./dto/create-reading.dto.js";
 import { UpdateReadingDto } from "./dto/update-reading.dto.js";
 import { ReadingQueryDto } from "./dto/query.dto.js";
-import {
-  LinkReadingPartDto,
-  UnlinkReadingPartDto,
-} from "./dto/link-parts.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -96,39 +92,5 @@ export class IeltsReadingController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteReading(@Param("id") id: string) {
     return await this.ieltsTestsService.deleteReading(id);
-  }
-
-  // ========== Reading ↔ ReadingPart Link ==========
-  @Post("link-part")
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({
-    summary:
-      "Link an existing reading part to a reading section (many-to-many)",
-  })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: "Reading part linked successfully.",
-  })
-  async linkReadingPart(@Body() dto: LinkReadingPartDto) {
-    return await this.ieltsTestsService.linkReadingPart(dto);
-  }
-
-  @Delete("unlink-part")
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Unlink a reading part from a reading section" })
-  async unlinkReadingPart(@Body() dto: UnlinkReadingPartDto) {
-    return await this.ieltsTestsService.unlinkReadingPart(dto);
-  }
-
-  @Get(":id/linked-parts")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
-  @ApiOperation({
-    summary: "Get all reading parts linked to a reading section (many-to-many)",
-  })
-  @ApiParam({ name: "id", description: "The reading ID" })
-  async getLinkedReadingParts(@Param("id") id: string) {
-    return await this.ieltsTestsService.getLinkedReadingParts(id);
   }
 }

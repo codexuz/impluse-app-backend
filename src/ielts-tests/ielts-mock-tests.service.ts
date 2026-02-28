@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { IeltsMockTest } from "./entities/ielts-mock-test.entity.js";
 import { CreateMockTestDto } from "./dto/create-mock-test.dto.js";
@@ -20,16 +16,6 @@ export class IeltsMockTestsService {
   ) {}
 
   async create(dto: CreateMockTestDto): Promise<IeltsMockTest> {
-    const existing = await this.mockTestModel.findOne({
-      where: { user_id: dto.user_id, test_id: dto.test_id },
-    });
-
-    if (existing) {
-      throw new ConflictException(
-        `This test has already been assigned to this user`,
-      );
-    }
-
     const defaultMeta = {
       listening_videoUrl:
         "https://18406281-4440-4933-b3cd-7a96648fd82c.srvstatic.uz/uploads/listening.mp4",

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { IeltsReading } from "./entities/ielts-reading.entity.js";
@@ -14,9 +10,6 @@ import { IeltsWritingTask } from "./entities/ielts-writing-task.entity.js";
 import { IeltsQuestion } from "./entities/ielts-question.entity.js";
 import { IeltsQuestionOption } from "./entities/ielts-question-option.entity.js";
 import { IeltsSubQuestion } from "./entities/ielts-multiple-choice-question.entity.js";
-import { IeltsReadingReadingPart } from "./entities/ielts-reading-reading-part.entity.js";
-import { IeltsListeningListeningPart } from "./entities/ielts-listening-listening-part.entity.js";
-import { IeltsWritingWritingTask } from "./entities/ielts-writing-writing-task.entity.js";
 import { CreateTestDto } from "./dto/create-test.dto.js";
 import { UpdateTestDto } from "./dto/update-test.dto.js";
 import { CreateReadingDto } from "./dto/create-reading.dto.js";
@@ -76,12 +69,6 @@ export class IeltsTestsService {
     private readonly ieltsQuestionOptionModel: typeof IeltsQuestionOption,
     @InjectModel(IeltsSubQuestion)
     private readonly ieltsSubQuestionModel: typeof IeltsSubQuestion,
-    @InjectModel(IeltsReadingReadingPart)
-    private readonly readingReadingPartModel: typeof IeltsReadingReadingPart,
-    @InjectModel(IeltsListeningListeningPart)
-    private readonly listeningListeningPartModel: typeof IeltsListeningListeningPart,
-    @InjectModel(IeltsWritingWritingTask)
-    private readonly writingWritingTaskModel: typeof IeltsWritingWritingTask,
   ) {}
 
   // ========== Helpers ==========
@@ -1330,161 +1317,5 @@ export class IeltsTestsService {
   async deleteSubQuestion(id: string): Promise<void> {
     const subQuestion = await this.findSubQuestionById(id);
     await subQuestion.destroy();
-  }
-
-  // ========== Reading ↔ ReadingPart Junction ==========
-
-  async linkReadingPart(dto: {
-    reading_id: string;
-    reading_part_id: string;
-    order?: number;
-  }): Promise<IeltsReadingReadingPart> {
-    await this.findReadingById(dto.reading_id);
-    await this.findReadingPartById(dto.reading_part_id);
-
-    const existing = await this.readingReadingPartModel.findOne({
-      where: {
-        reading_id: dto.reading_id,
-        reading_part_id: dto.reading_part_id,
-      },
-    });
-    if (existing) {
-      throw new ConflictException(
-        "This reading part is already linked to this reading",
-      );
-    }
-
-    return await this.readingReadingPartModel.create(dto as any);
-  }
-
-  async unlinkReadingPart(dto: {
-    reading_id: string;
-    reading_part_id: string;
-  }): Promise<void> {
-    const link = await this.readingReadingPartModel.findOne({
-      where: {
-        reading_id: dto.reading_id,
-        reading_part_id: dto.reading_part_id,
-      },
-    });
-    if (!link) {
-      throw new NotFoundException(
-        "This reading part is not linked to this reading",
-      );
-    }
-    await link.destroy();
-  }
-
-  async getLinkedReadingParts(readingId: string) {
-    await this.findReadingById(readingId);
-    return await this.readingReadingPartModel.findAll({
-      where: { reading_id: readingId },
-      order: [["order", "ASC"]],
-      include: [{ model: IeltsReadingPart }],
-    });
-  }
-
-  // ========== Listening ↔ ListeningPart Junction ==========
-
-  async linkListeningPart(dto: {
-    listening_id: string;
-    listening_part_id: string;
-    order?: number;
-  }): Promise<IeltsListeningListeningPart> {
-    await this.findListeningById(dto.listening_id);
-    await this.findListeningPartById(dto.listening_part_id);
-
-    const existing = await this.listeningListeningPartModel.findOne({
-      where: {
-        listening_id: dto.listening_id,
-        listening_part_id: dto.listening_part_id,
-      },
-    });
-    if (existing) {
-      throw new ConflictException(
-        "This listening part is already linked to this listening",
-      );
-    }
-
-    return await this.listeningListeningPartModel.create(dto as any);
-  }
-
-  async unlinkListeningPart(dto: {
-    listening_id: string;
-    listening_part_id: string;
-  }): Promise<void> {
-    const link = await this.listeningListeningPartModel.findOne({
-      where: {
-        listening_id: dto.listening_id,
-        listening_part_id: dto.listening_part_id,
-      },
-    });
-    if (!link) {
-      throw new NotFoundException(
-        "This listening part is not linked to this listening",
-      );
-    }
-    await link.destroy();
-  }
-
-  async getLinkedListeningParts(listeningId: string) {
-    await this.findListeningById(listeningId);
-    return await this.listeningListeningPartModel.findAll({
-      where: { listening_id: listeningId },
-      order: [["order", "ASC"]],
-      include: [{ model: IeltsListeningPart }],
-    });
-  }
-
-  // ========== Writing ↔ WritingTask Junction ==========
-
-  async linkWritingTask(dto: {
-    writing_id: string;
-    writing_task_id: string;
-    order?: number;
-  }): Promise<IeltsWritingWritingTask> {
-    await this.findWritingById(dto.writing_id);
-    await this.findWritingTaskById(dto.writing_task_id);
-
-    const existing = await this.writingWritingTaskModel.findOne({
-      where: {
-        writing_id: dto.writing_id,
-        writing_task_id: dto.writing_task_id,
-      },
-    });
-    if (existing) {
-      throw new ConflictException(
-        "This writing task is already linked to this writing",
-      );
-    }
-
-    return await this.writingWritingTaskModel.create(dto as any);
-  }
-
-  async unlinkWritingTask(dto: {
-    writing_id: string;
-    writing_task_id: string;
-  }): Promise<void> {
-    const link = await this.writingWritingTaskModel.findOne({
-      where: {
-        writing_id: dto.writing_id,
-        writing_task_id: dto.writing_task_id,
-      },
-    });
-    if (!link) {
-      throw new NotFoundException(
-        "This writing task is not linked to this writing",
-      );
-    }
-    await link.destroy();
-  }
-
-  async getLinkedWritingTasks(writingId: string) {
-    await this.findWritingById(writingId);
-    return await this.writingWritingTaskModel.findAll({
-      where: { writing_id: writingId },
-      order: [["order", "ASC"]],
-      include: [{ model: IeltsWritingTask }],
-    });
   }
 }

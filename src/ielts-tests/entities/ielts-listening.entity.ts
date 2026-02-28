@@ -4,13 +4,11 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsToMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsTest } from "./ielts-test.entity.js";
 import { IeltsListeningPart } from "./ielts-listening-part.entity.js";
-import { IeltsListeningListeningPart } from "./ielts-listening-listening-part.entity.js";
 
 @Table({
   tableName: "ielts_listening",
@@ -55,9 +53,6 @@ export class IeltsListening extends Model<IeltsListening> {
     defaultValue: true,
   })
   is_active: boolean;
-
-  @BelongsToMany(() => IeltsListeningPart, () => IeltsListeningListeningPart)
-  parts: IeltsListeningPart[];
 
   @CreatedAt
   createdAt: Date;

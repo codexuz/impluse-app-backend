@@ -24,10 +24,6 @@ import { UpdateWritingDto } from "./dto/update-writing.dto.js";
 import { CreateWritingTaskDto } from "./dto/create-writing-task.dto.js";
 import { UpdateWritingTaskDto } from "./dto/update-writing-task.dto.js";
 import { WritingQueryDto, WritingTaskQueryDto } from "./dto/query.dto.js";
-import {
-  LinkWritingTaskDto,
-  UnlinkWritingTaskDto,
-} from "./dto/link-parts.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -161,39 +157,5 @@ export class IeltsWritingController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteWriting(@Param("id") id: string) {
     return await this.ieltsTestsService.deleteWriting(id);
-  }
-
-  // ========== Writing ↔ WritingTask Link ==========
-  @Post("link-task")
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({
-    summary:
-      "Link an existing writing task to a writing section (many-to-many)",
-  })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: "Writing task linked successfully.",
-  })
-  async linkWritingTask(@Body() dto: LinkWritingTaskDto) {
-    return await this.ieltsTestsService.linkWritingTask(dto);
-  }
-
-  @Delete("unlink-task")
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Unlink a writing task from a writing section" })
-  async unlinkWritingTask(@Body() dto: UnlinkWritingTaskDto) {
-    return await this.ieltsTestsService.unlinkWritingTask(dto);
-  }
-
-  @Get(":id/linked-tasks")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
-  @ApiOperation({
-    summary: "Get all writing tasks linked to a writing section (many-to-many)",
-  })
-  @ApiParam({ name: "id", description: "The writing ID" })
-  async getLinkedWritingTasks(@Param("id") id: string) {
-    return await this.ieltsTestsService.getLinkedWritingTasks(id);
   }
 }
