@@ -193,6 +193,24 @@ export class StudentPaymentController {
     return this.studentPaymentService.getPaymentStats();
   }
 
+  @Get("statistics/monthly")
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary:
+      "Get monthly payment statistics: total amount and count per month for a given year",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Monthly payment statistics returned successfully.",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  getMonthlyStatistics(@Query("year") year?: number) {
+    return this.studentPaymentService.getMonthlyStatistics(
+      year ? Number(year) : undefined,
+    );
+  }
+
   @Get("status/:status")
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Get payments by status" })

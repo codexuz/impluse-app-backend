@@ -1002,4 +1002,82 @@ export class StudentPaymentService {
       },
     };
   }
+
+  /**
+   * Get monthly payment statistics: total amount and count grouped by month.
+   * Only completed payments are included.
+   * @param year - optional year filter (defaults to current year)
+   * @returns Array of monthly stats sorted chronologically
+   */
+  async getMonthlyStatistics(year?: number): Promise<{
+    year: number;
+    months: {
+      month: number;
+      monthName: string;
+      count: number;
+      totalAmount: number;
+    }[];
+    grandTotal: number;
+  }> {
+    const targetYear = year || new Date().getFullYear();
+
+    const startDate = new Date(targetYear, 0, 1); // Jan 1
+    const endDate = new Date(targetYear, 11, 31, 23, 59, 59, 999); // Dec 31
+
+    const results = (await this.studentPaymentModel.findAll({
+      attributes: [
+        [fn("MONTH", col("createdAt")), "month"],
+        [fn("COUNT", col("id")), "count"],
+        [fn("SUM", col("amount")), "totalAmount"],
+      ],
+      where: {
+        status: "completed",
+        createdAt: {
+          [Op.between]: [startDate, endDate],
+        },
+      },
+      group: [fn("MONTH", col("createdAt"))],
+      order: [[fn("MONTH", col("createdAt")), "ASC"]],
+      raw: true,
+    })) as unknown as { month: number; count: string; totalAmount: string }[];
+
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    // Build a full 12-month array, filling in zeros for months with no data
+    const resultMap = new Map(results.map((r) => [Number(r.month), r]));
+
+    let grandTotal = 0;
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const monthNum = i + 1;
+      const data = resultMap.get(monthNum);
+      const totalAmount = data ? Number(data.totalAmount) : 0;
+      const count = data ? Number(data.count) : 0;
+      grandTotal += totalAmount;
+      return {
+        month: monthNum,
+        monthName: monthNames[i],
+        count,
+        totalAmount,
+      };
+    });
+
+    return {
+      year: targetYear,
+      months,
+      grandTotal,
+    };
+  }
 }
