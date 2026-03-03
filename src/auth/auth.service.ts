@@ -53,7 +53,7 @@ export class AuthService {
   async validateUser(username: string, pass: string): Promise<User | null> {
     const user = await this.userModel.findOne({
       where: {
-        username,
+        [Op.or]: [{ username }, { phone: username }],
         is_active: true,
       },
       include: [
@@ -86,12 +86,19 @@ export class AuthService {
     ipAddress?: string,
     requiredRole?: "student" | "teacher" | "admin" | "guest",
   ): Promise<AuthResponse> {
-    console.log("Login attempt for username:", loginDto.username);
+    const identifier = loginDto.username || loginDto.phone;
+    const identifierType = loginDto.username ? "username" : "phone";
+
+    if (!identifier) {
+      throw new BadRequestException("Either username or phone is required");
+    }
+
+    console.log(`Login attempt for ${identifierType}:`, identifier);
     console.log("Required role:", requiredRole);
 
     const user = await this.userModel.findOne({
       where: {
-        username: loginDto.username,
+        [Op.or]: [{ username: loginDto.username }, { phone: loginDto.phone }],
         is_active: true,
       },
       include: [
@@ -104,8 +111,10 @@ export class AuthService {
     });
 
     if (!user) {
-      console.log("User not found or inactive:", loginDto.username);
-      throw new UnauthorizedException("Invalid username or password");
+      console.log(
+        `User not found or inactive: ${identifierType} = ${identifier}`,
+      );
+      throw new UnauthorizedException("Invalid username/phone or password");
     }
 
     console.log("User found:", user.username);
@@ -120,11 +129,14 @@ export class AuthService {
       user.password_hash,
     );
     if (!isPasswordValid) {
-      console.log("Password validation failed for user:", loginDto.username);
-      throw new UnauthorizedException("Invalid username or password");
+      console.log(
+        `Password validation failed for ${identifierType}:`,
+        identifier,
+      );
+      throw new UnauthorizedException("Invalid username/phone or password");
     }
 
-    console.log("Password validation successful for user:", loginDto.username);
+    console.log("Password validation successful for user:", user.username);
 
     // Check if user has the required role
     if (requiredRole) {
@@ -134,7 +146,7 @@ export class AuthService {
 
       if (!userRoles.includes(requiredRole.toLowerCase())) {
         console.log(
-          `Access denied. User ${loginDto.username} is not a ${requiredRole}`,
+          `Access denied. User ${user.username} is not a ${requiredRole}`,
         );
         throw new UnauthorizedException(
           `Access denied. User is not a ${requiredRole}`,
@@ -142,7 +154,7 @@ export class AuthService {
       }
     }
 
-    console.log("Role validation successful for user:", loginDto.username);
+    console.log("Role validation successful for user:", user.username);
 
     // Ensure maximum 2 sessions per user
     await this.limitUserSessions(user.user_id, 20);
