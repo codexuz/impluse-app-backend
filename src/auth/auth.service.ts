@@ -48,7 +48,7 @@ export class AuthService {
     private jwtService: JwtService,
     private awsStorageService: AwsStorageService,
     private smsService: SmsService,
-  ) {}
+  ) { }
 
   async validateUser(username: string, pass: string): Promise<User | null> {
     const user = await this.userModel.findOne({
@@ -96,9 +96,13 @@ export class AuthService {
     console.log(`Login attempt for ${identifierType}:`, identifier);
     console.log("Required role:", requiredRole);
 
+    const orConditions = [];
+    if (loginDto.username) orConditions.push({ username: loginDto.username });
+    if (loginDto.phone) orConditions.push({ phone: loginDto.phone });
+
     const user = await this.userModel.findOne({
       where: {
-        [Op.or]: [{ username: loginDto.username }, { phone: loginDto.phone }],
+        [Op.or]: orConditions,
         is_active: true,
       },
       include: [
