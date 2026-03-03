@@ -1,14 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsUUID, IsOptional, IsNumber, IsEnum, IsString, Min, Max } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsOptional, IsNumber, IsEnum, IsString, Min, Max, ValidateIf } from 'class-validator';
 
 export class CreateHomeworkSubmissionDto {
     @ApiProperty({
         description: 'UUID of the homework',
-        example: '123e4567-e89b-12d3-a456-426614174000'
+        example: '123e4567-e89b-12d3-a456-426614174000',
+        required: false
     })
+    @ValidateIf((o) => o.homework_id != null && o.homework_id !== '')
     @IsUUID()
-    @IsNotEmpty()
-    homework_id: string;
+    @IsOptional()
+    homework_id?: string;
 
     @ApiProperty({
         description: 'UUID of the student',
@@ -17,7 +19,7 @@ export class CreateHomeworkSubmissionDto {
     @IsUUID()
     @IsNotEmpty()
     student_id: string;
-    
+
     @ApiProperty({
         description: 'UUID of the lesson',
         example: '123e4567-e89b-12d3-a456-426614174000',
@@ -35,7 +37,7 @@ export class CreateHomeworkSubmissionDto {
     @IsUUID()
     @IsOptional()
     exercise_id?: string;
-    
+
     @ApiProperty({
         description: 'UUID of the speaking exercise (for speaking sections)',
         example: '123e4567-e89b-12d3-a456-426614174000',

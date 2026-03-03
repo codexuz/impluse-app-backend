@@ -21,7 +21,7 @@ export class HomeworkSubmission extends Model {
 
   @Column({
     type: DataType.UUID,
-    allowNull: false,
+    allowNull: true,
   })
   homework_id: string;
 

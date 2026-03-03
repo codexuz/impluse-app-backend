@@ -18,7 +18,7 @@ export class LessonService {
     private lessonModel: typeof Lesson,
     @InjectModel(GroupAssignedLesson)
     private groupAssignedLessonModel: typeof GroupAssignedLesson,
-  ) {}
+  ) { }
 
   async create(createLessonDto: CreateLessonDto): Promise<Lesson> {
     const lesson = await this.lessonModel.create({
@@ -62,6 +62,10 @@ export class LessonService {
           model: Speaking,
           as: "speaking",
           order: [["createdAt", "ASC"]],
+        },
+        {
+          model: LessonVocabularySet,
+          as: "lesson_vocabulary",
         },
       ],
     });

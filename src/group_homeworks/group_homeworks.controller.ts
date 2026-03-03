@@ -21,6 +21,7 @@ import { GroupHomeworksService } from "./group_homeworks.service.js";
 import { CreateGroupHomeworkDto } from "./dto/create-group-homework.dto.js";
 import { UpdateGroupHomeworkDto } from "./dto/update-group_homework.dto.js";
 import { GroupHomework } from "./entities/group_homework.entity.js";
+import { Lesson } from "../lesson/entities/lesson.entity.js";
 import {
   StudentHomeworkStatusDto,
   GroupHomeworkStatusDto,
@@ -38,7 +39,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("group-homeworks")
 export class GroupHomeworksController {
-  constructor(private readonly groupHomeworksService: GroupHomeworksService) {}
+  constructor(private readonly groupHomeworksService: GroupHomeworksService) { }
 
   @Post()
   @Roles(Role.ADMIN, Role.TEACHER)
@@ -110,14 +111,14 @@ export class GroupHomeworksController {
   })
   @ApiResponse({
     status: 200,
-    description: "Return all homeworks for the lesson.",
-    type: [GroupHomework],
+    description: "Return the lesson with homework data.",
+    type: Lesson,
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   async findByLessonId(
     @Param("lessonId") lessonId: string,
     @CurrentUser() user: any,
-  ): Promise<GroupHomework[]> {
+  ): Promise<Lesson> {
     return await this.groupHomeworksService.findByLessonId(
       lessonId,
       user.userId,

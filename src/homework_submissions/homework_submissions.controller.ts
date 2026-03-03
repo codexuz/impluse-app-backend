@@ -38,7 +38,7 @@ import { Role } from "../auth/constants/roles.js";
 export class HomeworkSubmissionsController {
   constructor(
     private readonly homeworkSubmissionsService: HomeworkSubmissionsService
-  ) {}
+  ) { }
 
   @Post()
   @Roles(Role.STUDENT)
@@ -496,10 +496,10 @@ export class HomeworkSubmissionsController {
     return await this.homeworkSubmissionsService.remove(id);
   }
 
-  @Get("student/:studentId/homework/:homeworkId/exercises")
+  @Get("student/:studentId/lesson/:lessonId/exercises")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
-    summary: "Get exercises with scores by student ID and homework ID",
+    summary: "Get exercises with scores by student ID and lesson ID",
     description:
       'Optional "section" query parameter can be used to filter by section type (reading, listening, grammar, writing, speaking)',
   })
@@ -511,12 +511,12 @@ export class HomeworkSubmissionsController {
   @ApiResponse({ status: 403, description: "Forbidden." })
   async getExercisesWithScores(
     @Param("studentId") studentId: string,
-    @Param("homeworkId") homeworkId: string,
+    @Param("lessonId") lessonId: string,
     @Query("section") section?: string
   ): Promise<any[]> {
     return await this.homeworkSubmissionsService.getExercisesWithScoresByStudentAndHomework(
       studentId,
-      homeworkId,
+      lessonId,
       section
     );
   }

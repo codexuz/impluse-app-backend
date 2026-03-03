@@ -40,7 +40,7 @@ export class GroupHomeworksService {
     @InjectModel(HomeworkSubmission)
     private homeworkSubmissionModel: typeof HomeworkSubmission,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   async create(createDto: CreateGroupHomeworkDto): Promise<GroupHomework> {
     // Create the homework
@@ -238,7 +238,7 @@ export class GroupHomeworksService {
   async findByLessonId(
     lessonId: string,
     userId: string,
-  ): Promise<GroupHomework[]> {
+  ): Promise<Lesson> {
     // Find the student's group where isEnglish = true
     const groupStudent = await this.groupStudentModel.findOne({
       where: { student_id: userId },
@@ -258,42 +258,49 @@ export class GroupHomeworksService {
 
     const group = groupStudent.group;
 
-    return await this.groupHomeworkModel.findAll({
+    const lesson = await this.lessonModel.findOne({
       where: {
-        lesson_id: lessonId,
-        group_id: group.id,
-        teacher_id: group.teacher_id,
+        id: lessonId,
+        isActive: true,
       },
       include: [
         {
-          model: this.lessonModel,
-          as: "lesson",
+          model: this.groupHomeworkModel,
+          as: "group_homework",
+          where: {
+            group_id: group.id,
+            teacher_id: group.teacher_id,
+          },
+          required: false,
+        },
+        {
+          model: this.lessonContentModel,
+          as: "theory",
           where: { isActive: true },
-          include: [
-            {
-              model: this.lessonContentModel,
-              as: "theory",
-              where: { isActive: true },
-              required: false,
-            },
-            {
-              model: this.exerciseModel,
-              as: "exercises",
-              where: { is_active: true },
-              required: false,
-            },
-            {
-              model: this.speakingModel,
-              as: "speaking",
-            },
-            {
-              model: this.lessonVocabularySetModel,
-              as: "lesson_vocabulary",
-            },
-          ],
+          required: false,
+        },
+        {
+          model: this.exerciseModel,
+          as: "exercises",
+          where: { is_active: true },
+          required: false,
+        },
+        {
+          model: this.speakingModel,
+          as: "speaking",
+        },
+        {
+          model: this.lessonVocabularySetModel,
+          as: "lesson_vocabulary",
         },
       ],
     });
+
+    if (!lesson) {
+      throw new NotFoundException(`Lesson with ID ${lessonId} not found`);
+    }
+
+    return lesson;
   }
 
   async update(

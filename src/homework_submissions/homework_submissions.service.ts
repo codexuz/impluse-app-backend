@@ -37,7 +37,7 @@ export class HomeworkSubmissionsService {
     private lessonProgressService: LessonProgressService,
     private groupStudentsService: GroupStudentsService,
     private openaiService: OpenaiService
-  ) {}
+  ) { }
 
   async create(
     createHomeworkSubmissionDto: CreateHomeworkSubmissionDto
@@ -209,12 +209,18 @@ export class HomeworkSubmissionsService {
     submission: HomeworkSubmission;
     section: HomeworkSection;
   }> {
-    // Check if a submission already exists for this student and homework
+    // Check if a submission already exists for this student and homework/lesson
+    const whereClause: any = {
+      student_id: createHomeworkSubmissionDto.student_id,
+    };
+    if (createHomeworkSubmissionDto.homework_id) {
+      whereClause.homework_id = createHomeworkSubmissionDto.homework_id;
+    } else if (createHomeworkSubmissionDto.lesson_id) {
+      whereClause.lesson_id = createHomeworkSubmissionDto.lesson_id;
+    }
+
     let submission = await this.homeworkSubmissionModel.findOne({
-      where: {
-        student_id: createHomeworkSubmissionDto.student_id,
-        homework_id: createHomeworkSubmissionDto.homework_id,
-      },
+      where: whereClause,
       attributes: [
         "id",
         "homework_id",
@@ -546,22 +552,22 @@ export class HomeworkSubmissionsService {
   }
 
   /**
-   * Get exercises with their scores from homework sections by student_id and homework_id
+   * Get exercises with their scores from homework sections by student_id and lesson_id
    * @param studentId The student's ID
-   * @param homeworkId The homework's ID
+   * @param lessonId The lesson's ID
    * @param section Optional section type to filter by (reading, listening, grammar, writing, speaking)
    * @returns Array of exercises with scores and completion status
    */
   async getExercisesWithScoresByStudentAndHomework(
     studentId: string,
-    homeworkId: string,
+    lessonId: string,
     section?: string
   ): Promise<any[]> {
-    // Find the submission for this student and homework
+    // Find the submission for this student and lesson
     const submission = await this.homeworkSubmissionModel.findOne({
       where: {
         student_id: studentId,
-        homework_id: homeworkId,
+        lesson_id: lessonId,
       },
       attributes: ["id"],
     });
@@ -605,10 +611,10 @@ export class HomeworkSubmissionsService {
         completed: isCompleted,
         exercise: data.exercise
           ? {
-              ...data.exercise,
-              completed: isCompleted, // Adding completion status to exercise object too
-              score: section.score,
-            }
+            ...data.exercise,
+            completed: isCompleted, // Adding completion status to exercise object too
+            score: section.score,
+          }
           : null,
       };
     });

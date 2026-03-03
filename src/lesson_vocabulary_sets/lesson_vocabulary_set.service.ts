@@ -4,13 +4,15 @@ import { LessonVocabularySet } from './entities/lesson_vocabulary_set.entity.js'
 import { CreateLessonVocabularySetDto } from './dto/create-lesson-vocabulary-set.dto.js';
 import { UpdateLessonVocabularySetDto } from './dto/update-lesson-vocabulary-set.dto.js';
 import { VocabularyItem } from '../vocabulary_items/entities/vocabulary_item.entity.js';
+import { StudentVocabularyProgressService } from '../student_vocabulary_progress/student-vocabulary-progress.service.js';
 
 @Injectable()
 export class LessonVocabularySetService {
   constructor(
     @InjectModel(LessonVocabularySet)
     private lessonVocabularySetModel: typeof LessonVocabularySet,
-  ) {}
+    private studentVocabularyProgressService: StudentVocabularyProgressService,
+  ) { }
 
   async create(createLessonVocabularySetDto: CreateLessonVocabularySetDto): Promise<LessonVocabularySet> {
     return await this.lessonVocabularySetModel.create({
@@ -28,7 +30,7 @@ export class LessonVocabularySetService {
 
   async findOne(id: string): Promise<LessonVocabularySet> {
     const vocabularySet = await this.lessonVocabularySetModel.findByPk(id);
-    
+
     if (!vocabularySet) {
       throw new NotFoundException(`Lesson vocabulary set with ID ${id} not found`);
     }
@@ -36,8 +38,8 @@ export class LessonVocabularySetService {
     return vocabularySet;
   }
 
-  async findByLessonId(lesson_id: string): Promise<LessonVocabularySet[]> {
-    return await this.lessonVocabularySetModel.findAll({
+  async findByLessonId(lesson_id: string, student_id?: string): Promise<any[]> {
+    const lessonVocabs = await this.lessonVocabularySetModel.findAll({
       where: { lesson_id },
       include: [
         {
@@ -46,6 +48,26 @@ export class LessonVocabularySetService {
         }
       ]
     });
+
+    if (!student_id) {
+      return lessonVocabs;
+    }
+
+    // Attach student progress status to each vocabulary item
+    const results = [];
+    for (const item of lessonVocabs) {
+      const vocabData = item.toJSON();
+      if (vocabData.vocabulary_set && vocabData.vocabulary_set.id) {
+        const progress = await this.studentVocabularyProgressService.findWordStatus(
+          student_id,
+          vocabData.vocabulary_set.id
+        );
+        vocabData.vocabulary_set.progress_status = progress?.status || null;
+      }
+      results.push(vocabData);
+    }
+
+    return results;
   }
 
   async findByVocabularyItemId(vocabulary_item_id: string): Promise<LessonVocabularySet[]> {

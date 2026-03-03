@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { Role } from '../roles/role.enum.js';
 import { LessonVocabularySetService } from './lesson_vocabulary_set.service.js';
 import { CreateLessonVocabularySetDto } from './dto/create-lesson-vocabulary-set.dto.js';
@@ -14,13 +15,13 @@ import { LessonVocabularySet } from './entities/lesson_vocabulary_set.entity.js'
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('lesson-vocabulary-sets')
 export class LessonVocabularySetController {
-  constructor(private readonly lessonVocabularySetService: LessonVocabularySetService) {}
+  constructor(private readonly lessonVocabularySetService: LessonVocabularySetService) { }
 
   @Post()
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new lesson vocabulary set' })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'The lesson vocabulary set has been successfully created.',
     type: LessonVocabularySet
   })
@@ -31,8 +32,8 @@ export class LessonVocabularySetController {
   @Post('bulk')
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Create multiple lesson vocabulary sets' })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'The lesson vocabulary sets have been successfully created.',
     type: [LessonVocabularySet]
   })
@@ -43,8 +44,8 @@ export class LessonVocabularySetController {
   @Get()
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lesson vocabulary sets' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Returns all lesson vocabulary sets',
     type: [LessonVocabularySet]
   })
@@ -55,8 +56,8 @@ export class LessonVocabularySetController {
   @Get(':id')
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a specific lesson vocabulary set by ID' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Returns the lesson vocabulary set',
     type: LessonVocabularySet
   })
@@ -68,20 +69,23 @@ export class LessonVocabularySetController {
   @Get('lesson/:lesson_id')
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all vocabulary sets for a lesson' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Returns all vocabulary sets for the specified lesson',
     type: [LessonVocabularySet]
   })
-  findByLessonId(@Param('lesson_id') lesson_id: string) {
-    return this.lessonVocabularySetService.findByLessonId(lesson_id);
+  findByLessonId(
+    @Param('lesson_id') lesson_id: string,
+    @CurrentUser() user: any
+  ) {
+    return this.lessonVocabularySetService.findByLessonId(lesson_id, user?.userId);
   }
 
   @Get('vocabulary/:vocabulary_item_id')
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lesson associations for a vocabulary item' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Returns all lesson associations for the specified vocabulary item',
     type: [LessonVocabularySet]
   })
@@ -92,8 +96,8 @@ export class LessonVocabularySetController {
   @Patch(':id')
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'Update a lesson vocabulary set' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'The lesson vocabulary set has been successfully updated.',
     type: LessonVocabularySet
   })
