@@ -1171,28 +1171,68 @@ export class IeltsTestsService {
     await question.update(questionData as any);
 
     if (questions !== undefined) {
-      // Remove existing sub-questions and replace with new ones
-      await this.ieltsSubQuestionModel.destroy({ where: { question_id: id } });
       if (questions && questions.length > 0) {
-        const subQuestions = questions.map((sq) => ({
-          ...sq,
-          question_id: id,
-        }));
-        await this.ieltsSubQuestionModel.bulkCreate(subQuestions as any);
+        const incomingIds = questions
+          .filter((sq: any) => sq.id)
+          .map((sq: any) => sq.id);
+
+        // Delete sub-questions that are no longer in the incoming array
+        await this.ieltsSubQuestionModel.destroy({
+          where: { question_id: id, ...(incomingIds.length > 0 ? { id: { [Op.notIn]: incomingIds } } : {}) },
+        });
+
+        for (const sq of questions) {
+          if (sq.id) {
+            // Update existing sub-question
+            await this.ieltsSubQuestionModel.update(
+              { ...sq, question_id: id } as any,
+              { where: { id: sq.id, question_id: id } },
+            );
+          } else {
+            // Create new sub-question
+            await this.ieltsSubQuestionModel.create({
+              ...sq,
+              question_id: id,
+            } as any);
+          }
+        }
+      } else {
+        // Empty array means remove all sub-questions
+        await this.ieltsSubQuestionModel.destroy({ where: { question_id: id } });
       }
     }
 
     if (options !== undefined) {
-      // Remove existing options and replace with new ones
-      await this.ieltsQuestionOptionModel.destroy({
-        where: { question_id: id },
-      });
       if (options && options.length > 0) {
-        const questionOptions = options.map((opt) => ({
-          ...opt,
-          question_id: id,
-        }));
-        await this.ieltsQuestionOptionModel.bulkCreate(questionOptions as any);
+        const incomingIds = options
+          .filter((opt: any) => opt.id)
+          .map((opt: any) => opt.id);
+
+        // Delete options that are no longer in the incoming array
+        await this.ieltsQuestionOptionModel.destroy({
+          where: { question_id: id, ...(incomingIds.length > 0 ? { id: { [Op.notIn]: incomingIds } } : {}) },
+        });
+
+        for (const opt of options) {
+          if (opt.id) {
+            // Update existing option
+            await this.ieltsQuestionOptionModel.update(
+              { ...opt, question_id: id } as any,
+              { where: { id: opt.id, question_id: id } },
+            );
+          } else {
+            // Create new option
+            await this.ieltsQuestionOptionModel.create({
+              ...opt,
+              question_id: id,
+            } as any);
+          }
+        }
+      } else {
+        // Empty array means remove all options
+        await this.ieltsQuestionOptionModel.destroy({
+          where: { question_id: id },
+        });
       }
     }
 

@@ -34,6 +34,11 @@ export enum QuestionTypeEnum {
 }
 
 export class InlineQuestionOptionDto {
+  @ApiProperty({ description: "Existing option ID (for updates)", required: false })
+  @IsUUID()
+  @IsOptional()
+  id?: string;
+
   @ApiProperty({ description: "Option key (e.g. A, B, C)", required: false })
   @IsString()
   @IsOptional()
@@ -70,6 +75,11 @@ export class InlineQuestionOptionDto {
 }
 
 export class InlineSubQuestionDto {
+  @ApiProperty({ description: "Existing sub-question ID (for updates)", required: false })
+  @IsUUID()
+  @IsOptional()
+  id?: string;
+
   @ApiProperty({ description: "Sub-question number", example: 8 })
   @IsInt()
   @Min(1)
