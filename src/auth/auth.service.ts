@@ -6,6 +6,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/sequelize";
 import {
   LoginDto,
@@ -46,6 +47,7 @@ export class AuthService {
     @InjectModel(SmsVerification)
     private smsVerificationModel: typeof SmsVerification,
     private jwtService: JwtService,
+    private configService: ConfigService,
     private awsStorageService: AwsStorageService,
     private smsService: SmsService,
   ) { }
@@ -183,7 +185,7 @@ export class AuthService {
     };
 
     // Generate access token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: "30d" });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "60d") });
     const decodedToken = this.jwtService.decode(accessToken) as any;
     const expiresAt = new Date(decodedToken.exp * 1000);
 
@@ -294,6 +296,19 @@ export class AuthService {
           phone_number: registerDto.phone_number || "",
           additional_number: registerDto.additional_number || "",
         });
+      }
+
+      // Send SMS with credentials
+      if (registerDto.phone) {
+        const smsMessage = `Impulse Student App ilovasiga kirish uchun: login: ${registerDto.phone}, parol: ${registerDto.password}`;
+        try {
+          await this.smsService.sendSms({
+            mobile_phone: registerDto.phone,
+            message: smsMessage,
+          });
+        } catch (error) {
+          console.error("Failed to send SMS to registered user:", error);
+        }
       }
 
       // Return user with roles and profile included
@@ -480,7 +495,7 @@ export class AuthService {
     };
 
     // Generate access token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: "30d" });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "60d") });
     const decodedToken = this.jwtService.decode(accessToken) as any;
     const expiresAt = new Date(decodedToken.exp * 1000);
 
@@ -792,7 +807,7 @@ export class AuthService {
     };
 
     // Generate new access token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: "1h" });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "90d") });
     const decodedToken = this.jwtService.decode(accessToken) as any;
     const expiresAt = new Date(decodedToken.exp * 1000);
 
