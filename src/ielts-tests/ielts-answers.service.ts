@@ -40,7 +40,6 @@ import {
 } from "./dto/ielts-answers.dto.js";
 import {
   LeaderboardQueryDto,
-  LeaderboardType,
   LeaderboardPeriod,
 } from "./dto/ielts-leaderboard.dto.js";
 
@@ -745,7 +744,6 @@ export class IeltsAnswersService {
 
   async getLeaderboard(query: LeaderboardQueryDto) {
     const {
-      type = LeaderboardType.OVERALL,
       period = LeaderboardPeriod.ALL_TIME,
       limit = 10,
       offset = 0,
@@ -802,12 +800,10 @@ export class IeltsAnswersService {
         userStats.set(userId, {
           user: (attempt as any).user,
           attemptsCount: 0,
-          totalBandScore: 0,
-          bestBandScore: 0,
-          readingScores: [],
-          listeningScores: [],
-          writingScores: [],
-          speakingScores: [],
+          bestReading: 0,
+          bestListening: 0,
+          bestWriting: 0,
+          overall: 0,
         });
       }
 
@@ -853,68 +849,44 @@ export class IeltsAnswersService {
       );
 
       const bandScore = res.ieltsBandScore || 0;
-      stats.totalBandScore += bandScore;
-      if (bandScore > stats.bestBandScore) stats.bestBandScore = bandScore;
 
-      // Section scores
-      if (res.moduleType === "reading") stats.readingScores.push(bandScore);
-      if (res.moduleType === "listening") stats.listeningScores.push(bandScore);
-      if (res.moduleType === "writing") {
-        const avgWriting = res.writingAnswers?.[0]?.score?.overall || bandScore;
-        stats.writingScores.push(avgWriting);
+      // Track best score for each section and overall
+      if (res.moduleType === "reading") {
+        if (bandScore > stats.bestReading) stats.bestReading = bandScore;
+      } else if (res.moduleType === "listening") {
+        if (bandScore > stats.bestListening) stats.bestListening = bandScore;
+      } else if (res.moduleType === "writing") {
+        const writingScore = res.writingAnswers?.[0]?.score?.overall || bandScore;
+        if (writingScore > stats.bestWriting) stats.bestWriting = writingScore;
+      } else if (!attempt.module_id && !attempt.part_id && attempt.test_id) {
+        // Full test attempt
+        if (bandScore > stats.overall) stats.overall = bandScore;
       }
     }
 
     // Transform and rank
     const leaderboardData = Array.from(userStats.values()).map((stats) => {
-      let score = 0;
-      switch (type) {
-        case LeaderboardType.OVERALL:
-          score =
-            stats.attemptsCount > 0
-              ? stats.totalBandScore / stats.attemptsCount
-              : 0;
-          break;
-        case LeaderboardType.MOST_HIGH_SCORE:
-          score = stats.bestBandScore;
-          break;
-        case LeaderboardType.SUBMITTED_ATTEMPTS:
-          score = stats.attemptsCount;
-          break;
-        case LeaderboardType.READING:
-          score =
-            stats.readingScores.length > 0
-              ? Math.max(...stats.readingScores)
-              : 0;
-          break;
-        case LeaderboardType.LISTENING:
-          score =
-            stats.listeningScores.length > 0
-              ? Math.max(...stats.listeningScores)
-              : 0;
-          break;
-        case LeaderboardType.WRITING:
-          score =
-            stats.writingScores.length > 0
-              ? Math.max(...stats.writingScores)
-              : 0;
-          break;
-        case LeaderboardType.SPEAKING:
-          score =
-            stats.speakingScores.length > 0
-              ? Math.max(...stats.speakingScores)
-              : 0;
-          break;
+      // If overall score is not set (i.e. no full test), calculate it as average of bests
+      let overall = stats.overall;
+      if (overall === 0) {
+        const sections = [stats.bestReading, stats.bestListening, stats.bestWriting].filter(s => s > 0);
+        if (sections.length > 0) {
+          overall = sections.reduce((a, b) => a + b, 0) / sections.length;
+        }
       }
+
       return {
         user: stats.user,
-        score: Math.round(score * 10) / 10,
+        reading: Math.round(stats.bestReading * 10) / 10,
+        listening: Math.round(stats.bestListening * 10) / 10,
+        writing: Math.round(stats.bestWriting * 10) / 10,
+        overall: Math.round(overall * 10) / 10,
         attemptsCount: stats.attemptsCount,
       };
     });
 
-    // Sort by score DESC
-    leaderboardData.sort((a, b) => b.score - a.score);
+    // Sort by overall score DESC
+    leaderboardData.sort((a, b) => b.overall - a.overall);
 
     // Apply pagination
     const paginated = leaderboardData.slice(offset, offset + limit);
