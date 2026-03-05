@@ -29,6 +29,7 @@ import {
   GradeWritingAnswerDto,
   TeacherStudentsAttemptsQueryDto,
 } from "./dto/ielts-answers.dto.js";
+import { LeaderboardQueryDto } from "./dto/ielts-leaderboard.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -40,7 +41,7 @@ import { Role } from "../roles/role.enum.js";
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("ielts-answers")
 export class IeltsAnswersController {
-  constructor(private readonly ieltsAnswersService: IeltsAnswersService) {}
+  constructor(private readonly ieltsAnswersService: IeltsAnswersService) { }
 
   // ========== Attempts ==========
 
@@ -146,6 +147,21 @@ export class IeltsAnswersController {
     @Query() query: StatisticsQueryDto,
   ) {
     return await this.ieltsAnswersService.getStatistics(user.userId, query);
+  }
+
+  // ========== Leaderboard ==========
+
+  @Get("leaderboard")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @ApiOperation({
+    summary: "Get IELTS test leaderboard",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Return leaderboard data ranked by score or activity.",
+  })
+  async getLeaderboard(@Query() query: LeaderboardQueryDto) {
+    return await this.ieltsAnswersService.getLeaderboard(query);
   }
 
   // ========== Unfinished Tests ==========

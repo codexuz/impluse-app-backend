@@ -38,6 +38,11 @@ import {
   GradeWritingAnswerDto,
   TeacherStudentsAttemptsQueryDto,
 } from "./dto/ielts-answers.dto.js";
+import {
+  LeaderboardQueryDto,
+  LeaderboardType,
+  LeaderboardPeriod,
+} from "./dto/ielts-leaderboard.dto.js";
 
 @Injectable()
 export class IeltsAnswersService {
@@ -72,7 +77,7 @@ export class IeltsAnswersService {
     private readonly groupStudentModel: typeof GroupStudent,
     @InjectModel(Group)
     private readonly groupModel: typeof Group,
-  ) {}
+  ) { }
 
   // ========== Attempts ==========
 
@@ -339,15 +344,15 @@ export class IeltsAnswersService {
     const answersData = dto.answers.map((answer) => {
       const score = answer.score
         ? {
-            task_response: answer.score.task_response ?? null,
-            lexical_resources: answer.score.lexical_resources ?? null,
-            grammar_range_and_accuracy:
-              answer.score.grammar_range_and_accuracy ?? null,
-            coherence_and_cohesion: answer.score.coherence_and_cohesion ?? null,
-            overall:
-              answer.score.overall ??
-              this.calculateWritingOverall(answer.score),
-          }
+          task_response: answer.score.task_response ?? null,
+          lexical_resources: answer.score.lexical_resources ?? null,
+          grammar_range_and_accuracy:
+            answer.score.grammar_range_and_accuracy ?? null,
+          coherence_and_cohesion: answer.score.coherence_and_cohesion ?? null,
+          overall:
+            answer.score.overall ??
+            this.calculateWritingOverall(answer.score),
+        }
         : null;
 
       return {
@@ -572,16 +577,16 @@ export class IeltsAnswersService {
     const avgBandScore =
       bandScores.length > 0
         ? Math.round(
-            (bandScores.reduce((a, b) => a + b, 0) / bandScores.length) * 10,
-          ) / 10
+          (bandScores.reduce((a, b) => a + b, 0) / bandScores.length) * 10,
+        ) / 10
         : 0;
     const bestBandScore = bandScores.length > 0 ? Math.max(...bandScores) : 0;
     const avgTimeSpentMinutes =
       timeSpentList.length > 0
         ? Math.round(
-            (timeSpentList.reduce((a, b) => a + b, 0) / timeSpentList.length) *
-              100,
-          ) / 100
+          (timeSpentList.reduce((a, b) => a + b, 0) / timeSpentList.length) *
+          100,
+        ) / 100
         : 0;
     const totalTimeSpentMinutes =
       Math.round(timeSpentList.reduce((a, b) => a + b, 0) * 100) / 100;
@@ -603,8 +608,8 @@ export class IeltsAnswersService {
         accuracy:
           totalReadingQuestions > 0
             ? Math.round(
-                (totalReadingCorrect / totalReadingQuestions) * 10000,
-              ) / 100
+              (totalReadingCorrect / totalReadingQuestions) * 10000,
+            ) / 100
             : 0,
       },
       listening: {
@@ -613,8 +618,8 @@ export class IeltsAnswersService {
         accuracy:
           totalListeningQuestions > 0
             ? Math.round(
-                (totalListeningCorrect / totalListeningQuestions) * 10000,
-              ) / 100
+              (totalListeningCorrect / totalListeningQuestions) * 10000,
+            ) / 100
             : 0,
       },
       writing: {
@@ -626,32 +631,32 @@ export class IeltsAnswersService {
         averageScores:
           writingScoredCount > 0
             ? {
-                task_response:
-                  Math.round(
-                    (writingScoreSums.task_response / writingScoredCount) * 10,
-                  ) / 10,
-                lexical_resources:
-                  Math.round(
-                    (writingScoreSums.lexical_resources / writingScoredCount) *
-                      10,
-                  ) / 10,
-                grammar_range_and_accuracy:
-                  Math.round(
-                    (writingScoreSums.grammar_range_and_accuracy /
-                      writingScoredCount) *
-                      10,
-                  ) / 10,
-                coherence_and_cohesion:
-                  Math.round(
-                    (writingScoreSums.coherence_and_cohesion /
-                      writingScoredCount) *
-                      10,
-                  ) / 10,
-                overall:
-                  Math.round(
-                    (writingScoreSums.overall / writingScoredCount) * 10,
-                  ) / 10,
-              }
+              task_response:
+                Math.round(
+                  (writingScoreSums.task_response / writingScoredCount) * 10,
+                ) / 10,
+              lexical_resources:
+                Math.round(
+                  (writingScoreSums.lexical_resources / writingScoredCount) *
+                  10,
+                ) / 10,
+              grammar_range_and_accuracy:
+                Math.round(
+                  (writingScoreSums.grammar_range_and_accuracy /
+                    writingScoredCount) *
+                  10,
+                ) / 10,
+              coherence_and_cohesion:
+                Math.round(
+                  (writingScoreSums.coherence_and_cohesion /
+                    writingScoredCount) *
+                  10,
+                ) / 10,
+              overall:
+                Math.round(
+                  (writingScoreSums.overall / writingScoredCount) * 10,
+                ) / 10,
+            }
             : null,
         scoredCount: writingScoredCount,
       },
@@ -705,13 +710,13 @@ export class IeltsAnswersService {
 
         const elapsedMinutes = attempt.started_at
           ? Math.round(
-              (((attempt.finished_at
-                ? new Date(attempt.finished_at).getTime()
-                : Date.now()) -
-                new Date(attempt.started_at).getTime()) /
-                60000) *
-                100,
-            ) / 100
+            (((attempt.finished_at
+              ? new Date(attempt.finished_at).getTime()
+              : Date.now()) -
+              new Date(attempt.started_at).getTime()) /
+              60000) *
+            100,
+          ) / 100
           : 0;
 
         return {
@@ -734,6 +739,182 @@ export class IeltsAnswersService {
       limit,
       totalPages: Math.ceil(count / limit),
     };
+  }
+
+  // ========== Leaderboard ==========
+
+  async getLeaderboard(query: LeaderboardQueryDto) {
+    const {
+      type = LeaderboardType.OVERALL,
+      period = LeaderboardPeriod.ALL_TIME,
+      limit = 10,
+      offset = 0,
+      group_id,
+    } = query;
+
+    const where: any = { status: AttemptStatus.SUBMITTED };
+    const dateFilter = this.getLeaderboardDateFilter(period);
+    if (dateFilter) {
+      where.finished_at = dateFilter;
+    }
+
+    // Filter by group if group_id is provided
+    if (group_id) {
+      const groupStudents = await this.groupStudentModel.findAll({
+        where: { group_id, status: "active" },
+        attributes: ["student_id"],
+      });
+      const userIds = groupStudents.map((gs) => gs.student_id);
+      where.user_id = { [Op.in]: userIds };
+    }
+
+    const attempts = await this.attemptModel.findAll({
+      where,
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        { model: IeltsReadingAnswer, as: "readingAnswers" },
+        { model: IeltsListeningAnswer, as: "listeningAnswers" },
+        { model: IeltsWritingAnswer, as: "writingAnswers" },
+      ],
+    });
+
+    // Score calculations
+    const userStats = new Map<string, any>();
+
+    for (const attempt of attempts) {
+      const userId = attempt.user_id;
+      if (!userStats.has(userId)) {
+        userStats.set(userId, {
+          user: (attempt as any).user,
+          attemptsCount: 0,
+          totalBandScore: 0,
+          bestBandScore: 0,
+          readingScores: [],
+          listeningScores: [],
+          writingScores: [],
+          speakingScores: [],
+        });
+      }
+
+      const stats = userStats.get(userId);
+      stats.attemptsCount++;
+
+      // We perform minimal enrichment to calculate band score for leaderboard
+      const readingAnswers = (attempt as any).readingAnswers || [];
+      const listeningAnswers = (attempt as any).listeningAnswers || [];
+      const writingAnswers = (attempt as any).writingAnswers || [];
+
+      // For leaderboard performance, we skip full question loading if possible
+      // but here we need correct answers to calculate band score.
+      // This is expensive on-the-fly. In a larger app, results should be cached/stored.
+      const res = await this.buildAttemptResults(
+        attempt,
+        new Map(),
+        new Map(),
+        await this.loadAllQuestionsForAttempt(attempt),
+      );
+
+      const bandScore = res.ieltsBandScore || 0;
+      stats.totalBandScore += bandScore;
+      if (bandScore > stats.bestBandScore) stats.bestBandScore = bandScore;
+
+      // Section scores
+      if (res.moduleType === "reading") stats.readingScores.push(bandScore);
+      if (res.moduleType === "listening") stats.listeningScores.push(bandScore);
+      if (res.moduleType === "writing") {
+        const avgWriting = res.writingAnswers?.[0]?.score?.overall || bandScore;
+        stats.writingScores.push(avgWriting);
+      }
+    }
+
+    // Transform and rank
+    const leaderboardData = Array.from(userStats.values()).map((stats) => {
+      let score = 0;
+      switch (type) {
+        case LeaderboardType.OVERALL:
+          score =
+            stats.attemptsCount > 0
+              ? stats.totalBandScore / stats.attemptsCount
+              : 0;
+          break;
+        case LeaderboardType.MOST_HIGH_SCORE:
+          score = stats.bestBandScore;
+          break;
+        case LeaderboardType.SUBMITTED_ATTEMPTS:
+          score = stats.attemptsCount;
+          break;
+        case LeaderboardType.READING:
+          score =
+            stats.readingScores.length > 0
+              ? Math.max(...stats.readingScores)
+              : 0;
+          break;
+        case LeaderboardType.LISTENING:
+          score =
+            stats.listeningScores.length > 0
+              ? Math.max(...stats.listeningScores)
+              : 0;
+          break;
+        case LeaderboardType.WRITING:
+          score =
+            stats.writingScores.length > 0
+              ? Math.max(...stats.writingScores)
+              : 0;
+          break;
+        case LeaderboardType.SPEAKING:
+          score =
+            stats.speakingScores.length > 0
+              ? Math.max(...stats.speakingScores)
+              : 0;
+          break;
+      }
+      return {
+        user: stats.user,
+        score: Math.round(score * 10) / 10,
+        attemptsCount: stats.attemptsCount,
+      };
+    });
+
+    // Sort by score DESC
+    leaderboardData.sort((a, b) => b.score - a.score);
+
+    // Apply pagination
+    const paginated = leaderboardData.slice(offset, offset + limit);
+
+    return {
+      data: paginated,
+      total: leaderboardData.length,
+      limit,
+      offset,
+    };
+  }
+
+  private getLeaderboardDateFilter(period: LeaderboardPeriod) {
+    const now = new Date();
+    switch (period) {
+      case LeaderboardPeriod.DAILY:
+        return { [Op.gte]: new Date(now.setHours(0, 0, 0, 0)) };
+      case LeaderboardPeriod.WEEKLY: {
+        const day = now.getDay();
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+        return { [Op.gte]: new Date(now.setDate(diff)) };
+      }
+      case LeaderboardPeriod.MONTHLY:
+        return { [Op.gte]: new Date(now.getFullYear(), now.getMonth(), 1) };
+      case LeaderboardPeriod.ALL_TIME:
+      default:
+        return null;
+    }
   }
 
   async getMyStudents(teacherId: string) {
@@ -1218,8 +1399,8 @@ export class IeltsAnswersService {
     const timeSpentMinutes =
       attempt.started_at && attempt.finished_at
         ? (new Date(attempt.finished_at).getTime() -
-            new Date(attempt.started_at).getTime()) /
-          60000
+          new Date(attempt.started_at).getTime()) /
+        60000
         : 0;
 
     // Detect module type (reading, listening, or writing)
