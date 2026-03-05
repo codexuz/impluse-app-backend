@@ -791,6 +791,11 @@ export class IeltsAnswersService {
     // Score calculations
     const userStats = new Map<string, any>();
 
+    // Cache for questions and maps to avoid redundant DB calls and map building
+    const scopeQuestionsCache = new Map<string, any[]>();
+    const questionMapCache = new Map<string, Map<string, any>>();
+    const subQuestionMapCache = new Map<string, Map<string, any>>();
+
     for (const attempt of attempts) {
       const userId = attempt.user_id;
       if (!userStats.has(userId)) {
@@ -809,19 +814,42 @@ export class IeltsAnswersService {
       const stats = userStats.get(userId);
       stats.attemptsCount++;
 
-      // We perform minimal enrichment to calculate band score for leaderboard
-      const readingAnswers = (attempt as any).readingAnswers || [];
-      const listeningAnswers = (attempt as any).listeningAnswers || [];
-      const writingAnswers = (attempt as any).writingAnswers || [];
+      const cacheKey = attempt.test_id || attempt.module_id || attempt.part_id;
+      let allScopeQuestions = scopeQuestionsCache.get(cacheKey);
+      let questionMap = questionMapCache.get(cacheKey);
+      let subQuestionDirectMap = subQuestionMapCache.get(cacheKey);
 
-      // For leaderboard performance, we skip full question loading if possible
-      // but here we need correct answers to calculate band score.
-      // This is expensive on-the-fly. In a larger app, results should be cached/stored.
+      if (!allScopeQuestions || !questionMap || !subQuestionDirectMap) {
+        allScopeQuestions = await this.loadAllQuestionsForAttempt(attempt);
+        scopeQuestionsCache.set(cacheKey, allScopeQuestions);
+
+        questionMap = new Map();
+        subQuestionDirectMap = new Map();
+
+        for (const q of allScopeQuestions) {
+          const qPlain =
+            typeof q.get === "function" ? q.get({ plain: true }) : q;
+          questionMap.set(qPlain.id, qPlain);
+
+          if (qPlain.questions) {
+            for (const sq of qPlain.questions) {
+              const sqPlain =
+                typeof sq.get === "function" ? sq.get({ plain: true }) : sq;
+              sqPlain.parentQuestion = qPlain;
+              subQuestionDirectMap.set(sqPlain.id, sqPlain);
+            }
+          }
+        }
+
+        questionMapCache.set(cacheKey, questionMap);
+        subQuestionMapCache.set(cacheKey, subQuestionDirectMap);
+      }
+
       const res = await this.buildAttemptResults(
         attempt,
-        new Map(),
-        new Map(),
-        await this.loadAllQuestionsForAttempt(attempt),
+        questionMap,
+        subQuestionDirectMap,
+        allScopeQuestions,
       );
 
       const bandScore = res.ieltsBandScore || 0;
