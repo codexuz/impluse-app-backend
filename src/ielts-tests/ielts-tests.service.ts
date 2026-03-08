@@ -187,16 +187,13 @@ export class IeltsTestsService {
       offset: (page - 1) * limit,
     });
 
-    const groupedData = rows.reduce((acc, test) => {
-      const cat = test.category || "other";
-      if (!acc[cat]) {
-        acc[cat] = [];
-      }
-      acc[cat].push(test);
-      return acc;
-    }, {} as Record<string, typeof rows>);
-
-    return groupedData;
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
   }
 
   async findAllSkills(query: CombinedSkillsQueryDto) {
