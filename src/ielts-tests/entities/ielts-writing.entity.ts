@@ -48,6 +48,14 @@ export class IeltsWriting extends Model<IeltsWriting> {
   })
   is_active: boolean;
 
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    unique: true,
+    allowNull: false,
+  })
+  orderId: number;
+
   @CreatedAt
   createdAt: Date;
 

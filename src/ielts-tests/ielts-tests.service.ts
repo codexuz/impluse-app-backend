@@ -246,7 +246,7 @@ export class IeltsTestsService {
       const { rows, count } = await this.ieltsListeningModel.findAndCountAll({
         where,
         include: [{ model: IeltsTest, as: "test", where: buildTestWhere() }],
-        order: [["createdAt", "DESC"]],
+        order: [["orderId", "ASC"]],
         limit,
         offset: (page - 1) * limit,
       });
@@ -266,7 +266,7 @@ export class IeltsTestsService {
       const { rows, count } = await this.ieltsWritingModel.findAndCountAll({
         where,
         include: [{ model: IeltsTest, as: "test", where: buildTestWhere() }],
-        order: [["createdAt", "DESC"]],
+        order: [["orderId", "ASC"]],
         limit,
         offset: (page - 1) * limit,
       });
@@ -349,6 +349,11 @@ export class IeltsTestsService {
         { model: IeltsListening, as: "listenings" },
         { model: IeltsWriting, as: "writings" },
       ],
+      order: [
+        [{ model: IeltsReading, as: "readings" }, "orderId", "ASC"],
+        [{ model: IeltsListening, as: "listenings" }, "orderId", "ASC"],
+        [{ model: IeltsWriting, as: "writings" }, "orderId", "ASC"],
+      ],
     });
 
     if (!test) {
@@ -415,7 +420,7 @@ export class IeltsTestsService {
     const { rows, count } = await this.ieltsReadingModel.findAndCountAll({
       where,
       include: includes,
-      order: [["createdAt", "DESC"]],
+      order: [["orderId", "ASC"]],
       limit,
       offset: (page - 1) * limit,
       distinct: true,
@@ -660,7 +665,7 @@ export class IeltsTestsService {
           where: Object.keys(testWhere).length ? testWhere : undefined,
         },
       ],
-      order: [["createdAt", "DESC"]],
+      order: [["orderId", "ASC"]],
       limit,
       offset: (page - 1) * limit,
     });
@@ -952,7 +957,7 @@ export class IeltsTestsService {
           where: Object.keys(testWhere).length ? testWhere : undefined,
         },
       ],
-      order: [["createdAt", "DESC"]],
+      order: [["orderId", "ASC"]],
       limit,
       offset: (page - 1) * limit,
     });

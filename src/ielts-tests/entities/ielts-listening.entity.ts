@@ -34,6 +34,14 @@ export class IeltsListening extends Model<IeltsListening> {
   })
   description: string;
 
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    unique: true,
+    allowNull: false,
+  })
+  orderId: number;
+
   @ForeignKey(() => IeltsTest)
   @Column({
     type: DataType.UUID,
