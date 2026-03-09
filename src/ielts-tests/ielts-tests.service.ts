@@ -182,7 +182,7 @@ export class IeltsTestsService {
     const { rows, count } = await this.ieltsTestModel.findAndCountAll({
       where,
       include: [{ model: User, as: "creator" }],
-      order: [["createdAt", "DESC"]],
+      order: [["orderId", "ASC"]],
       limit,
       offset: (page - 1) * limit,
     });

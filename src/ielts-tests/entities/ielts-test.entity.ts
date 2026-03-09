@@ -23,6 +23,14 @@ export class IeltsTest extends Model<IeltsTest> {
   id: string;
 
   @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    unique: true,
+    allowNull: false,
+  })
+  orderId: number;
+
+  @Column({
     type: DataType.STRING,
     allowNull: false,
   })
