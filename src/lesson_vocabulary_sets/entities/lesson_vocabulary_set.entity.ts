@@ -29,7 +29,7 @@ export class LessonVocabularySet extends Model {
         type: DataType.UUID,
         allowNull: false,
     })
-    vocabulary_item_id: string;
+    unit_vocabulary_set_id: string;
 
     @CreatedAt
     createdAt: Date;

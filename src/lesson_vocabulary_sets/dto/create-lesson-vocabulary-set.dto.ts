@@ -11,10 +11,10 @@ export class CreateLessonVocabularySetDto {
   lesson_id: string;
 
   @ApiProperty({
-    description: 'The ID of the vocabulary item',
+    description: 'The ID of the unit vocabulary set',
     example: '123e4567-e89b-12d3-a456-426614174000'
   })
   @IsUUID()
   @IsNotEmpty()
-  vocabulary_item_id: string;
+  unit_vocabulary_set_id: string;
 }

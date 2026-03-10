@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { LessonVocabularySet } from './entities/lesson_vocabulary_set.entity.js';
 import { CreateLessonVocabularySetDto } from './dto/create-lesson-vocabulary-set.dto.js';
 import { UpdateLessonVocabularySetDto } from './dto/update-lesson-vocabulary-set.dto.js';
-import { VocabularyItem } from '../vocabulary_items/entities/vocabulary_item.entity.js';
+import { UnitVocabularySet } from '../unit_vocabulary_sets/entities/unit_vocabulary_set.entity.js';
 import { StudentVocabularyProgressService } from '../student_vocabulary_progress/student-vocabulary-progress.service.js';
 
 @Injectable()
@@ -43,8 +43,8 @@ export class LessonVocabularySetService {
       where: { lesson_id },
       include: [
         {
-          model: VocabularyItem,
-          as: 'vocabulary_set',
+          model: UnitVocabularySet,
+          as: 'unit_vocabulary_set',
         }
       ]
     });
@@ -57,12 +57,12 @@ export class LessonVocabularySetService {
     const results = [];
     for (const item of lessonVocabs) {
       const vocabData = item.toJSON();
-      if (vocabData.vocabulary_set && vocabData.vocabulary_set.id) {
+      if (vocabData.unit_vocabulary_set && vocabData.unit_vocabulary_set.id) {
         const progress = await this.studentVocabularyProgressService.findWordStatus(
           student_id,
-          vocabData.vocabulary_set.id
+          vocabData.unit_vocabulary_set.id
         );
-        vocabData.vocabulary_set.progress_status = progress?.status || null;
+        vocabData.unit_vocabulary_set.progress_status = progress?.status || null;
       }
       results.push(vocabData);
     }
@@ -70,9 +70,9 @@ export class LessonVocabularySetService {
     return results;
   }
 
-  async findByVocabularyItemId(vocabulary_item_id: string): Promise<LessonVocabularySet[]> {
+  async findByUnitVocabularySetId(unit_vocabulary_set_id: string): Promise<LessonVocabularySet[]> {
     return await this.lessonVocabularySetModel.findAll({
-      where: { vocabulary_item_id }
+      where: { unit_vocabulary_set_id }
     });
   }
 

@@ -81,16 +81,16 @@ export class LessonVocabularySetController {
     return this.lessonVocabularySetService.findByLessonId(lesson_id, user?.userId);
   }
 
-  @Get('vocabulary/:vocabulary_item_id')
+  @Get('unit-vocabulary-set/:unit_vocabulary_set_id')
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: 'Get all lesson associations for a vocabulary item' })
+  @ApiOperation({ summary: 'Get all lesson associations for a unit vocabulary set' })
   @ApiResponse({
     status: 200,
-    description: 'Returns all lesson associations for the specified vocabulary item',
+    description: 'Returns all lesson associations for the specified unit vocabulary set',
     type: [LessonVocabularySet]
   })
-  findByVocabularyItemId(@Param('vocabulary_item_id') vocabulary_item_id: string) {
-    return this.lessonVocabularySetService.findByVocabularyItemId(vocabulary_item_id);
+  findByUnitVocabularySetId(@Param('unit_vocabulary_set_id') unit_vocabulary_set_id: string) {
+    return this.lessonVocabularySetService.findByUnitVocabularySetId(unit_vocabulary_set_id);
   }
 
   @Patch(':id')

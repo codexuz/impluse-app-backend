@@ -584,13 +584,13 @@ export function initializeAssociations() {
     as: "lesson",
   });
 
-  VocabularyItem.hasMany(LessonVocabularySet, {
-    foreignKey: "vocabulary_item_id",
+  UnitVocabularySet.hasMany(LessonVocabularySet, {
+    foreignKey: "unit_vocabulary_set_id",
     as: "lesson_vocabulary",
   });
-  LessonVocabularySet.belongsTo(VocabularyItem, {
-    foreignKey: "vocabulary_item_id",
-    as: "vocabulary_set",
+  LessonVocabularySet.belongsTo(UnitVocabularySet, {
+    foreignKey: "unit_vocabulary_set_id",
+    as: "unit_vocabulary_set",
   });
 
   //StudentVocabularyProgress Associations
