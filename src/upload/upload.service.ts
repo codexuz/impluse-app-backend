@@ -45,6 +45,14 @@ export class UploadService {
     }
   }
 
+  sanitizeFileName(originalName: string): string {
+    // Replace spaces and special characters with underscores, keep alphanumeric, dots, and hyphens
+    return originalName
+      .replace(/[^a-zA-Z0-9.\-_]/g, '_')
+      .replace(/_{2,}/g, '_') // Replace multiple underscores with single
+      .toLowerCase();
+  }
+
   async getFileUrl(objectName: string): Promise<string> {
     try {
       // Ensure objectName includes uploads/ prefix
@@ -70,14 +78,11 @@ export class UploadService {
 
   // Database operations
   async create(createUploadDto: CreateUploadDto): Promise<UploadResponseDto> {
-    const encodedOriginalName = this.encodeOriginalName(
-      createUploadDto.original_name,
-    );
-    const filename = `uploads/${encodedOriginalName}`;
+    const sanitizedFileName = this.sanitizeFileName(createUploadDto.original_name);
+    const filename = `uploads/${sanitizedFileName}`;
 
     const upload = await this.uploadModel.create({
       ...createUploadDto,
-      original_name: encodedOriginalName,
       filename,
       uploaded_at: new Date(),
     });
@@ -217,8 +222,8 @@ export class UploadService {
       const normalizedFilename = filename.startsWith("uploads/")
         ? filename.substring("uploads/".length)
         : filename;
-      const encodedFilename = this.encodeOriginalName(normalizedFilename);
-      const fullObjectName = `uploads/${encodedFilename}`;
+      const sanitizedFilename = this.sanitizeFileName(normalizedFilename);
+      const fullObjectName = `uploads/${sanitizedFilename}`;
 
       await this.awsStorageService.deleteFile(
         this.storageBucket,
