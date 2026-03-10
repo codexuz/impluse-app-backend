@@ -48,7 +48,6 @@ export class LessonService {
         {
           model: LessonContent,
           as: "theory",
-          where: { isActive: true },
           required: false,
         },
         {
@@ -100,7 +99,6 @@ export class LessonService {
         {
           model: LessonContent,
           as: "lessonContents",
-          where: { isActive: true },
           required: false,
         },
       ],
@@ -183,7 +181,6 @@ export class LessonService {
         {
           model: LessonContent,
           as: "theory",
-          where: { isActive: true },
           required: false,
         },
         {
@@ -249,7 +246,6 @@ export class LessonService {
           {
             model: LessonContent,
             as: "lessonContents",
-            where: { isActive: true },
             required: false,
           },
         ],
@@ -284,7 +280,6 @@ export class LessonService {
       includeOptions.push({
         model: LessonContent,
         as: "lessonContents",
-        where: { isActive: true },
         required: false,
       });
     }

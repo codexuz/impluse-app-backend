@@ -4,6 +4,7 @@ import { LessonVocabularySet } from './entities/lesson_vocabulary_set.entity.js'
 import { CreateLessonVocabularySetDto } from './dto/create-lesson-vocabulary-set.dto.js';
 import { UpdateLessonVocabularySetDto } from './dto/update-lesson-vocabulary-set.dto.js';
 import { UnitVocabularySet } from '../unit_vocabulary_sets/entities/unit_vocabulary_set.entity.js';
+import { VocabularyItem } from '../vocabulary_items/entities/vocabulary_item.entity.js';
 import { StudentVocabularyProgressService } from '../student_vocabulary_progress/student-vocabulary-progress.service.js';
 
 @Injectable()
@@ -45,25 +46,45 @@ export class LessonVocabularySetService {
         {
           model: UnitVocabularySet,
           as: 'unit_vocabulary_set',
+          include: [
+            {
+              model: VocabularyItem,
+              as: 'vocabulary_items',
+              attributes: ['id'],
+            },
+          ],
         }
       ]
     });
 
-    if (!student_id) {
-      return lessonVocabs;
-    }
-
-    // Attach student progress status to each vocabulary item
     const results = [];
     for (const item of lessonVocabs) {
       const vocabData = item.toJSON();
-      if (vocabData.unit_vocabulary_set && vocabData.unit_vocabulary_set.id) {
-        const progress = await this.studentVocabularyProgressService.findWordStatus(
-          student_id,
-          vocabData.unit_vocabulary_set.id
-        );
-        vocabData.unit_vocabulary_set.progress_status = progress?.status || null;
+
+      if (vocabData.unit_vocabulary_set) {
+        const vocabItems = vocabData.unit_vocabulary_set.vocabulary_items || [];
+        vocabData.unit_vocabulary_set.vocabulary_items_count = vocabItems.length;
+
+        if (student_id && vocabItems.length > 0) {
+          // Get student progress for each vocabulary item
+          const itemsWithProgress = [];
+          for (const vocabItem of vocabItems) {
+            const progress = await this.studentVocabularyProgressService.findWordStatus(
+              student_id,
+              vocabItem.id
+            );
+            itemsWithProgress.push({
+              id: vocabItem.id,
+              progress_status: progress?.status || null,
+            });
+          }
+          vocabData.unit_vocabulary_set.vocabulary_items = itemsWithProgress;
+        } else {
+          // Remove raw items, only keep count
+          delete vocabData.unit_vocabulary_set.vocabulary_items;
+        }
       }
+
       results.push(vocabData);
     }
 
