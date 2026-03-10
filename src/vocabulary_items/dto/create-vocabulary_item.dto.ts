@@ -5,6 +5,10 @@ export class CreateVocabularyItemDto {
   @IsNotEmpty()
   set_id: string;
 
+  @IsUUID()
+  @IsOptional()
+  unit_vocabulary_set_id?: string;
+
   @IsString()
   @IsNotEmpty()
   word: string;

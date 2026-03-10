@@ -30,10 +30,10 @@ export class UnitVocabularySetController {
     return await this.unitVocabularySetService.findAll();
   }
 
-  @Get('unit/:unitId')
+  @Get('vocabulary-set/:vocabularySetId')
   @Roles('admin', 'teacher', 'student')
-  async findByUnitId(@Param('unitId') unitId: string) {
-    return await this.unitVocabularySetService.findByUnitId(unitId);
+  async findByVocabularySetId(@Param('vocabularySetId') vocabularySetId: string) {
+    return await this.unitVocabularySetService.findByVocabularySetId(vocabularySetId);
   }
 
   @Get(':id')
@@ -49,17 +49,10 @@ export class UnitVocabularySetController {
     return await this.unitVocabularySetService.remove(id);
   }
 
-  @Delete('unit/:unitId')
+  @Delete('vocabulary-set/:vocabularySetId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles('admin', 'teacher')
-  async removeByUnitId(@Param('unitId') unitId: string) {
-    return await this.unitVocabularySetService.removeByUnitId(unitId);
-  }
-
-  @Delete('vocabulary/:vocabularyItemId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles('admin', 'teacher')
-  async removeByVocabularyItemId(@Param('vocabularyItemId') vocabularyItemId: string) {
-    return await this.unitVocabularySetService.removeByVocabularyItemId(vocabularyItemId);
+  async removeByVocabularySetId(@Param('vocabularySetId') vocabularySetId: string) {
+    return await this.unitVocabularySetService.removeByVocabularySetId(vocabularySetId);
   }
 }

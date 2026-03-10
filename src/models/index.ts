@@ -555,19 +555,23 @@ export function initializeAssociations() {
     as: "vocabulary_set",
   });
 
+  UnitVocabularySet.hasMany(VocabularyItem, {
+    foreignKey: "unit_vocabulary_set_id",
+    as: "vocabulary_items",
+  });
+  VocabularyItem.belongsTo(UnitVocabularySet, {
+    foreignKey: "unit_vocabulary_set_id",
+    as: "unit_vocabulary_set",
+  });
+
   //UnitVocabularySet Associations
-  Unit.hasMany(UnitVocabularySet, {
-    foreignKey: "unit_id",
+  VocabularySet.hasMany(UnitVocabularySet, {
+    foreignKey: "vocabulary_set_id",
     as: "unit_vocabulary_sets",
   });
-  UnitVocabularySet.belongsTo(Unit, { foreignKey: "unit_id", as: "unit" });
-  VocabularyItem.hasMany(UnitVocabularySet, {
-    foreignKey: "vocabulary_item_id",
-    as: "unit_vocabulary_sets",
-  });
-  UnitVocabularySet.belongsTo(VocabularyItem, {
-    foreignKey: "vocabulary_item_id",
-    as: "vocabulary_sets",
+  UnitVocabularySet.belongsTo(VocabularySet, {
+    foreignKey: "vocabulary_set_id",
+    as: "vocabulary_set",
   });
 
   //LessonVocabularySet Associations

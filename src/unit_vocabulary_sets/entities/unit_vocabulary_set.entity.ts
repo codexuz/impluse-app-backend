@@ -21,15 +21,15 @@ export class UnitVocabularySet extends Model {
 
     @Column({
         type: DataType.UUID,
-        allowNull: true,
+        allowNull: false,
     })
-    unit_id: string;
+    vocabulary_set_id: string;
 
     @Column({
-        type: DataType.UUID,
+        type: DataType.STRING,
         allowNull: true,
     })
-    vocabulary_item_id: string;
+    title: string;
 
     @CreatedAt
     createdAt: Date;

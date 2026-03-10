@@ -11,6 +11,7 @@ import {
   PaginatedVocabularyItemsResponse,
 } from "./dto/query-vocabulary_item.dto.js";
 import { VocabularySet } from "../vocabulary_sets/entities/vocabulary_set.entity.js";
+import { UnitVocabularySet } from "../unit_vocabulary_sets/entities/unit_vocabulary_set.entity.js";
 import { CreationAttributes, Op, WhereOptions, literal } from "sequelize";
 
 @Injectable()
@@ -31,6 +32,7 @@ export class VocabularyItemsService {
   ): Promise<VocabularyItem[]> {
     const items = createVocabularyItemDtos.map((dto) => ({
       set_id: dto.set_id,
+      unit_vocabulary_set_id: dto.unit_vocabulary_set_id,
       word: dto.word,
       uzbek: dto.uzbek,
       rus: dto.rus,
@@ -46,6 +48,10 @@ export class VocabularyItemsService {
         {
           model: VocabularySet,
           as: "vocabulary_set",
+        },
+        {
+          model: UnitVocabularySet,
+          as: "unit_vocabulary_set",
         },
       ],
     });
@@ -106,6 +112,10 @@ export class VocabularyItemsService {
         {
           model: VocabularySet,
           as: "vocabulary_set",
+        },
+        {
+          model: UnitVocabularySet,
+          as: "unit_vocabulary_set",
         },
       ],
       limit,
@@ -172,6 +182,10 @@ export class VocabularyItemsService {
           model: VocabularySet,
           as: "vocabulary_set",
         },
+        {
+          model: UnitVocabularySet,
+          as: "unit_vocabulary_set",
+        },
       ],
     });
 
@@ -188,6 +202,10 @@ export class VocabularyItemsService {
         {
           model: VocabularySet,
           as: "vocabulary_set",
+        },
+        {
+          model: UnitVocabularySet,
+          as: "unit_vocabulary_set",
         },
       ],
     });
@@ -249,6 +267,10 @@ export class VocabularyItemsService {
         {
           model: VocabularySet,
           as: "vocabulary_set",
+        },
+        {
+          model: UnitVocabularySet,
+          as: "unit_vocabulary_set",
         },
       ],
       limit,

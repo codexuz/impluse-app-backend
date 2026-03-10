@@ -18,8 +18,8 @@ export class UnitVocabularySetService {
 
   async createMany(createDtos: CreateUnitVocabularySetDto[]): Promise<UnitVocabularySet[]> {
     return this.unitVocabularySetModel.bulkCreate(createDtos.map(dto => ({
-      unit_id: dto.unit_id,
-      vocabulary_item_id: dto.vocabulary_item_id
+      vocabulary_set_id: dto.vocabulary_set_id,
+      title: dto.title
     })));
   }
 
@@ -27,10 +27,10 @@ export class UnitVocabularySetService {
     return this.unitVocabularySetModel.findAll();
   }
 
-  async findByUnitId(unitId: string): Promise<UnitVocabularySet[]> {
+  async findByVocabularySetId(vocabularySetId: string): Promise<UnitVocabularySet[]> {
     return this.unitVocabularySetModel.findAll({
       where: {
-        unit_id: unitId,
+        vocabulary_set_id: vocabularySetId,
       },
     });
   }
@@ -48,18 +48,10 @@ export class UnitVocabularySetService {
     await vocabularySet.destroy();
   }
 
-  async removeByUnitId(unitId: string): Promise<number> {
+  async removeByVocabularySetId(vocabularySetId: string): Promise<number> {
     return this.unitVocabularySetModel.destroy({
       where: {
-        unit_id: unitId,
-      },
-    });
-  }
-
-  async removeByVocabularyItemId(vocabularyItemId: string): Promise<number> {
-    return this.unitVocabularySetModel.destroy({
-      where: {
-        vocabulary_item_id: vocabularyItemId,
+        vocabulary_set_id: vocabularySetId,
       },
     });
   }

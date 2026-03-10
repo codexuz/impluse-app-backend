@@ -26,6 +26,12 @@ export class VocabularyItem extends Model {
     set_id: string;
 
     @Column({
+        type: DataType.UUID,
+        allowNull: true,
+    })
+    unit_vocabulary_set_id: string;
+
+    @Column({
         type: DataType.STRING,
         allowNull: true,
     })

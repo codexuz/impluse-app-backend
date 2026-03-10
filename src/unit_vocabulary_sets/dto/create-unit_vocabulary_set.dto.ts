@@ -1,11 +1,11 @@
-import { IsUUID, IsNotEmpty } from 'class-validator';
+import { IsUUID, IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateUnitVocabularySetDto {
     @IsUUID()
     @IsNotEmpty()
-    unit_id: string;
+    vocabulary_set_id: string;
 
-    @IsUUID()
-    @IsNotEmpty()
-    vocabulary_item_id: string;
+    @IsString()
+    @IsOptional()
+    title?: string;
 }
