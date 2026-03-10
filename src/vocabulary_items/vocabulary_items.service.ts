@@ -13,7 +13,7 @@ import {
 import { VocabularySet } from "../vocabulary_sets/entities/vocabulary_set.entity.js";
 import { UnitVocabularySet } from "../unit_vocabulary_sets/entities/unit_vocabulary_set.entity.js";
 import { CreationAttributes, Op, WhereOptions, literal } from "sequelize";
-import * as ExcelJS from "exceljs";
+import ExcelJS from "exceljs";
 
 @Injectable()
 export class VocabularyItemsService {
