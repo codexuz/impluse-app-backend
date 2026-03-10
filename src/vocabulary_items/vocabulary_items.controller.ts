@@ -108,6 +108,14 @@ export class VocabularyItemsController {
     return this.vocabularyItemsService.findBySetIdPaginated(setId, query);
   }
 
+  @Get("unit-set/:unitSetId/paginated")
+  findByUnitSetIdPaginated(
+    @Param("unitSetId") unitSetId: string,
+    @Query() query: QueryVocabularyItemDto,
+  ) {
+    return this.vocabularyItemsService.findByUnitSetIdPaginated(unitSetId, query);
+  }
+
   @Get("word/:word")
   findByWord(@Param("word") word: string) {
     return this.vocabularyItemsService.findByWord(word);

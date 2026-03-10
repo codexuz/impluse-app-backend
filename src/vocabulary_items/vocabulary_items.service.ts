@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { VocabularyItem } from "./entities/vocabulary_item.entity.js";
 import { CreateVocabularyItemDto } from "./dto/create-vocabulary_item.dto.js";
@@ -25,13 +25,49 @@ export class VocabularyItemsService {
   async create(
     createVocabularyItemDto: CreateVocabularyItemDto,
   ): Promise<VocabularyItem> {
+    const existing = await this.vocabularyItemModel.findOne({
+      where: {
+        word: createVocabularyItemDto.word,
+        uzbek: createVocabularyItemDto.uzbek,
+        set_id: createVocabularyItemDto.set_id,
+        unit_vocabulary_set_id: createVocabularyItemDto.unit_vocabulary_set_id,
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `Vocabulary item "${createVocabularyItemDto.word}" already exists in this set`,
+      );
+    }
+
     return this.vocabularyItemModel.create({ ...createVocabularyItemDto });
   }
 
   async createMany(
     createVocabularyItemDtos: CreateVocabularyItemDto[],
   ): Promise<VocabularyItem[]> {
-    const items = createVocabularyItemDtos.map((dto) => ({
+    const newItems: CreateVocabularyItemDto[] = [];
+
+    for (const dto of createVocabularyItemDtos) {
+      const existing = await this.vocabularyItemModel.findOne({
+        where: {
+          word: dto.word,
+          uzbek: dto.uzbek,
+          set_id: dto.set_id,
+          unit_vocabulary_set_id: dto.unit_vocabulary_set_id,
+        },
+      });
+
+      if (!existing) {
+        newItems.push(dto);
+      }
+    }
+
+    if (newItems.length === 0) {
+      return [];
+    }
+
+    const items = newItems.map((dto) => ({
       set_id: dto.set_id,
       unit_vocabulary_set_id: dto.unit_vocabulary_set_id,
       word: dto.word,
@@ -281,6 +317,86 @@ export class VocabularyItemsService {
 
     // Get stats for this set
     const stats = await this.getStats(setId);
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+      stats,
+    };
+  }
+
+  async findByUnitSetIdPaginated(
+    unitSetId: string,
+    query: QueryVocabularyItemDto,
+  ): Promise<PaginatedVocabularyItemsResponse> {
+    const page = query.page ? parseInt(query.page, 10) : 1;
+    const limit = query.limit ? parseInt(query.limit, 10) : 10;
+    const offset = (page - 1) * limit;
+
+    const whereClause: WhereOptions = { unit_vocabulary_set_id: unitSetId };
+
+    // Search filter
+    if (query.search) {
+      whereClause[Op.or as any] = [
+        { word: { [Op.like]: `%${query.search}%` } },
+        { uzbek: { [Op.like]: `%${query.search}%` } },
+        { rus: { [Op.like]: `%${query.search}%` } },
+      ];
+    }
+
+    // Image filter
+    if (query.imageFilter === MediaFilter.WITH_IMAGES) {
+      whereClause.image_url = {
+        [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }],
+      };
+    } else if (query.imageFilter === MediaFilter.WITHOUT_IMAGES) {
+      whereClause.image_url = { [Op.or]: [{ [Op.is]: null }, { [Op.eq]: "" }] };
+    }
+
+    // Audio filter
+    if (query.audioFilter === MediaFilter.WITH_AUDIOS) {
+      whereClause.audio_url = {
+        [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }],
+      };
+    } else if (query.audioFilter === MediaFilter.WITHOUT_AUDIOS) {
+      whereClause.audio_url = { [Op.or]: [{ [Op.is]: null }, { [Op.eq]: "" }] };
+    }
+
+    // Example filter
+    if (query.exampleFilter === MediaFilter.WITH_EXAMPLES) {
+      whereClause.example = { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }] };
+    } else if (query.exampleFilter === MediaFilter.WITHOUT_EXAMPLES) {
+      whereClause.example = { [Op.or]: [{ [Op.is]: null }, { [Op.eq]: "" }] };
+    }
+
+    // Sort order
+    const order: [string, string][] =
+      query.sort === SortOrder.OLDEST
+        ? [["createdAt", "ASC"]]
+        : [["createdAt", "DESC"]];
+
+    const { count, rows } = await this.vocabularyItemModel.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: VocabularySet,
+          as: "vocabulary_set",
+        },
+        {
+          model: UnitVocabularySet,
+          as: "unit_vocabulary_set",
+        },
+      ],
+      limit,
+      offset,
+      order,
+    });
+
+    // Get stats
+    const stats = await this.getStats();
 
     return {
       data: rows,
