@@ -13,6 +13,7 @@ import {
 import { VocabularySet } from "../vocabulary_sets/entities/vocabulary_set.entity.js";
 import { UnitVocabularySet } from "../unit_vocabulary_sets/entities/unit_vocabulary_set.entity.js";
 import { CreationAttributes, Op, WhereOptions, literal } from "sequelize";
+import * as ExcelJS from "exceljs";
 
 @Injectable()
 export class VocabularyItemsService {
@@ -321,5 +322,55 @@ export class VocabularyItemsService {
     return this.vocabularyItemModel.destroy({
       where: { set_id: setId },
     });
+  }
+
+  async downloadExcelBySetId(setId: string): Promise<Buffer> {
+    const items = await this.findBySetId(setId);
+    return this.generateExcel(items);
+  }
+
+  async downloadExcelByUnitSetId(unitSetId: string): Promise<Buffer> {
+    const items = await this.vocabularyItemModel.findAll({
+      where: { unit_vocabulary_set_id: unitSetId },
+      include: [
+        {
+          model: VocabularySet,
+          as: "vocabulary_set",
+        },
+        {
+          model: UnitVocabularySet,
+          as: "unit_vocabulary_set",
+        },
+      ],
+    });
+    return this.generateExcel(items);
+  }
+
+  private async generateExcel(items: VocabularyItem[]): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Words");
+
+    worksheet.columns = [
+      { header: "word", key: "word", width: 25 },
+      { header: "uzbek", key: "uzbek", width: 25 },
+      { header: "rus", key: "rus", width: 25 },
+      { header: "example", key: "example", width: 40 },
+      { header: "audio_url", key: "audio_url", width: 40 },
+      { header: "image_url", key: "image_url", width: 40 },
+    ];
+
+    items.forEach((item) => {
+      worksheet.addRow({
+        word: item.word,
+        uzbek: item.uzbek,
+        rus: item.rus,
+        example: item.example,
+        audio_url: item.audio_url,
+        image_url: item.image_url,
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer as unknown as Buffer;
   }
 }

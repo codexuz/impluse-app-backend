@@ -10,7 +10,9 @@ import {
   HttpCode,
   HttpStatus,
   Query,
+  Res,
 } from "@nestjs/common";
+import { Response } from "express";
 import { VocabularyItemsService } from "./vocabulary_items.service.js";
 import { CreateVocabularyItemDto } from "./dto/create-vocabulary_item.dto.js";
 import { UpdateVocabularyItemDto } from "./dto/update-vocabulary_item.dto.js";
@@ -59,6 +61,38 @@ export class VocabularyItemsController {
   @Roles("admin", "teacher")
   getStatsBySetId(@Param("setId") setId: string) {
     return this.vocabularyItemsService.getStats(setId);
+  }
+
+  @Get("set/:setId/excel")
+  @UseGuards(RolesGuard)
+  @Roles("admin", "teacher")
+  async downloadExcelBySetId(
+    @Param("setId") setId: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.vocabularyItemsService.downloadExcelBySetId(setId);
+    res.set({
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="words-set-${setId}.xlsx"`,
+    });
+    res.send(buffer);
+  }
+
+  @Get("unit-set/:unitSetId/excel")
+  @UseGuards(RolesGuard)
+  @Roles("admin", "teacher")
+  async downloadExcelByUnitSetId(
+    @Param("unitSetId") unitSetId: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.vocabularyItemsService.downloadExcelByUnitSetId(unitSetId);
+    res.set({
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="words-unit-${unitSetId}.xlsx"`,
+    });
+    res.send(buffer);
   }
 
   @Get("set/:setId")
