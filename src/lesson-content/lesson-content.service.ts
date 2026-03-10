@@ -16,10 +16,7 @@ export class LessonContentService {
   }
 
   async findAll(): Promise<LessonContent[]> {
-    return await this.lessonContentModel.findAll({
-      where: { isActive: true },
-      order: [['order_number', 'ASC']]
-    });
+    return await this.lessonContentModel.findAll();
   }
 
   async findOne(id: string): Promise<LessonContent> {
@@ -30,13 +27,9 @@ export class LessonContentService {
     return content;
   }
 
-    async findByLessonId(lessonId: string): Promise<LessonContent[]> {
+  async findByLessonId(lessonId: string): Promise<LessonContent[]> {
     const contents = await this.lessonContentModel.findAll({
-      where: { 
-        lessonId,
-        isActive: true 
-      },
-      order: [['order_number', 'ASC']]
+      where: { lessonId },
     });
 
     if (!contents.length) {
@@ -53,7 +46,7 @@ export class LessonContentService {
 
   async remove(id: string): Promise<{ id: string }> {
     const content = await this.findOne(id);
-    await content.update({ isActive: false });
+    await content.destroy();
     return { id };
   }
 }

@@ -55,8 +55,8 @@ export class LessonContentController {
 
   @Delete(':id')
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Soft delete a lesson content' })
-  @ApiResponse({ status: 200, description: 'The lesson content has been deactivated successfully.' })
+  @ApiOperation({ summary: 'Delete a lesson content' })
+  @ApiResponse({ status: 200, description: 'The lesson content has been deleted successfully.' })
   remove(@Param('id') id: string) {
     return this.lessonContentService.remove(id);
   }

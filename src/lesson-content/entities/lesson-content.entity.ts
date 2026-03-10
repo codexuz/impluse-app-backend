@@ -7,6 +7,18 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 
+export interface LessonContentItem {
+  id: number;
+  type: "text" | "image" | "audio" | "video" | "youtube_embed" | "iframe";
+  content: string;
+}
+
+export interface LessonResource {
+  id: number;
+  type: "pdf" | "doc" | "excel" | "docx";
+  url: string;
+}
+
 @Table({
   tableName: "lesson_contents",
   timestamps: true,
@@ -26,46 +38,22 @@ export class LessonContent extends Model {
   title: string;
 
   @Column({
-    type: DataType.TEXT,
+    type: DataType.JSON,
     allowNull: true,
   })
-  content: string;
-
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
-  mediaUrl: string;
-
-  @Column({
-    type: DataType.ENUM("url", "youtube_url", "embed"),
-    allowNull: true,
-  })
-  mediaType: string;
+  content: LessonContentItem[];
 
   @Column({
     type: DataType.JSON,
     allowNull: true,
   })
-  resources: string[];
-
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  order_number: number;
+  resources: LessonResource[];
 
   @Column({
     type: DataType.UUID,
     allowNull: true,
   })
   lessonId: string;
-
-  @Column({
-    type: DataType.BOOLEAN,
-    defaultValue: true,
-  })
-  isActive: boolean;
 
   @CreatedAt
   createdAt: Date;

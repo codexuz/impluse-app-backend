@@ -5,24 +5,43 @@ import {
   IsNumber,
   IsUUID,
   IsOptional,
-  IsBoolean,
-  IsEnum,
   IsArray,
+  IsEnum,
   ValidateNested,
 } from "class-validator";
 
-export class ResourceDto {
-  @ApiProperty({ example: "TypeScript Guide" })
+export class LessonContentItemDto {
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  id: number;
+
+  @ApiProperty({
+    example: "text",
+    enum: ["text", "image", "audio", "video", "youtube_embed", "iframe"],
+  })
+  @IsEnum(["text", "image", "audio", "video", "youtube_embed", "iframe"])
+  type: string;
+
+  @ApiProperty({ example: "This is a lesson paragraph..." })
   @IsString()
-  name: string;
+  content: string;
+}
+
+export class ResourceDto {
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  id: number;
+
+  @ApiProperty({
+    example: "pdf",
+    enum: ["pdf", "doc", "excel", "docx"],
+  })
+  @IsEnum(["pdf", "doc", "excel", "docx"])
+  type: string;
 
   @ApiProperty({ example: "https://example.com/resource1.pdf" })
   @IsString()
   url: string;
-
-  @ApiProperty({ example: "pdf" })
-  @IsString()
-  type: string;
 }
 
 export class CreateLessonContentDto {
@@ -31,40 +50,38 @@ export class CreateLessonContentDto {
   title: string;
 
   @ApiProperty({
-    example: "Detailed content about TypeScript...",
+    example: [
+      {
+        id: 1,
+        type: "text",
+        content: "This is the first paragraph...",
+      },
+      {
+        id: 2,
+        type: "image",
+        content: "https://example.com/image.png",
+      },
+    ],
     required: false,
+    type: [LessonContentItemDto],
   })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LessonContentItemDto)
   @IsOptional()
-  content?: string;
-
-  @ApiProperty({
-    example: "https://example.com/media/typescript.mp4",
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  mediaUrl?: string;
-
-  @ApiProperty({
-    example: "url",
-    enum: ["url", "youtube_url", "embed"],
-    required: false,
-  })
-  @IsEnum(["url", "youtube_url", "embed"])
-  @IsOptional()
-  mediaType?: string;
+  content?: LessonContentItemDto[];
 
   @ApiProperty({
     example: [
       {
-        name: "TypeScript Guide",
-        url: "https://example.com/resource1.pdf",
+        id: 1,
         type: "pdf",
+        url: "https://example.com/resource1.pdf",
       },
       {
-        name: "Documentation",
-        url: "https://example.com/resource2.docx",
+        id: 2,
         type: "docx",
+        url: "https://example.com/resource2.docx",
       },
     ],
     required: false,
@@ -76,10 +93,6 @@ export class CreateLessonContentDto {
   @IsOptional()
   resources?: ResourceDto[];
 
-  @ApiProperty({ example: 1 })
-  @IsNumber()
-  order_number: number;
-
   @ApiProperty({
     example: "123e4567-e89b-12d3-a456-426614174000",
     required: false,
@@ -87,9 +100,4 @@ export class CreateLessonContentDto {
   @IsUUID()
   @IsOptional()
   lessonId?: string;
-
-  @ApiProperty({ example: true, default: true })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
 }
