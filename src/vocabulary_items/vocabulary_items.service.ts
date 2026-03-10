@@ -173,8 +173,12 @@ export class VocabularyItemsService {
     };
   }
 
-  async getStats(setId?: string): Promise<VocabularyItemStats> {
-    const whereClause: WhereOptions = setId ? { set_id: setId } : {};
+  async getStats(setId?: string, unitSetId?: string): Promise<VocabularyItemStats> {
+    const whereClause: WhereOptions = unitSetId
+      ? { unit_vocabulary_set_id: unitSetId }
+      : setId
+        ? { set_id: setId }
+        : {};
 
     const totalWords = await this.vocabularyItemModel.count({
       where: whereClause,
@@ -395,8 +399,8 @@ export class VocabularyItemsService {
       order,
     });
 
-    // Get stats
-    const stats = await this.getStats();
+    // Get stats for this unit set
+    const stats = await this.getStats(undefined, unitSetId);
 
     return {
       data: rows,
