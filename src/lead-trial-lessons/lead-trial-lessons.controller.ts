@@ -95,6 +95,12 @@ export class LeadTrialLessonsController {
     type: String,
     description: "Filter by teacher ID",
   })
+  @ApiQuery({
+    name: "isNotified",
+    required: false,
+    type: Boolean,
+    description: "Filter by notification status",
+  })
   @ApiResponse({
     status: 200,
     description: "Trial lessons retrieved successfully",
@@ -110,14 +116,17 @@ export class LeadTrialLessonsController {
     @Query("limit") limit = 10,
     @Query("search") search?: string,
     @Query("status") status?: string,
-    @Query("teacherId") teacherId?: string
+    @Query("teacherId") teacherId?: string,
+    @Query("isNotified") isNotified?: string
   ) {
+    const isNotifiedBool = isNotified !== undefined ? isNotified === 'true' : undefined;
     return this.leadTrialLessonsService.findAll(
       +page,
       +limit,
       search,
       status,
-      teacherId
+      teacherId,
+      isNotifiedBool
     );
   }
 
@@ -292,5 +301,20 @@ export class LeadTrialLessonsController {
   })
   remove(@Param("id") id: string) {
     return this.leadTrialLessonsService.remove(id);
+  }
+
+  @Post(":id/notify")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Send manual SMS reminder to student about their trial lesson" })
+  @ApiParam({ name: "id", description: "Trial lesson ID" })
+  @ApiResponse({
+    status: 200,
+    description: "SMS reminder sent successfully",
+  })
+  @ApiResponse({ status: 400, description: "Bad request - No phone number or other error" })
+  @ApiResponse({ status: 404, description: "Trial lesson not found" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  sendManualReminder(@Param("id") id: string) {
+    return this.leadTrialLessonsService.sendManualReminder(id);
   }
 }

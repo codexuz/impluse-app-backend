@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsUUID, IsEnum, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsEnum, IsDateString, IsBoolean, IsOptional } from 'class-validator';
 
 export enum TrialLessonStatus {
   BELGILANGAN = 'belgilangan',
@@ -47,4 +47,13 @@ export class CreateLeadTrialLessonDto {
   @IsString()
   @IsNotEmpty()
   notes: string;
+
+  @ApiProperty({
+    description: 'Whether the lead has been notified about the trial lesson',
+    example: false,
+    required: false
+  })
+  @IsBoolean()
+  @IsOptional()
+  isNotified?: boolean;
 }

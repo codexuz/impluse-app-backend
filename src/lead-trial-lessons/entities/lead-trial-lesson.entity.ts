@@ -64,4 +64,11 @@ export class LeadTrialLesson extends Model {
     allowNull: false,
   })
   notes: string;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+  })
+  isNotified: boolean;
 }

@@ -38,6 +38,12 @@ export class TrialLessonResponseDto {
   notes: string;
 
   @ApiProperty({
+    description: 'Whether the lead has been notified',
+    example: false
+  })
+  isNotified: boolean;
+
+  @ApiProperty({
     description: 'Creation date',
     example: '2024-01-15T10:30:00Z'
   })

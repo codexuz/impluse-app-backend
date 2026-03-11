@@ -1,6 +1,5 @@
-import { Injectable, NotFoundException, Logger } from "@nestjs/common";
+import { Injectable, NotFoundException, Logger, BadRequestException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
-import { Cron, CronExpression } from "@nestjs/schedule";
 import { CreateLeadTrialLessonDto } from "./dto/create-lead-trial-lesson.dto.js";
 import { UpdateLeadTrialLessonDto } from "./dto/update-lead-trial-lesson.dto.js";
 import { LeadTrialLesson } from "./entities/lead-trial-lesson.entity.js";
@@ -56,6 +55,7 @@ export class LeadTrialLessonsService {
     search?: string,
     status?: string,
     teacherId?: string,
+    isNotified?: boolean,
   ): Promise<{
     trialLessons: LeadTrialLesson[];
     total: number;
@@ -101,6 +101,10 @@ export class LeadTrialLessonsService {
 
     if (teacherId) {
       whereClause.teacher_id = teacherId;
+    }
+
+    if (isNotified !== undefined) {
+      whereClause.isNotified = isNotified;
     }
 
     const { count, rows } = await this.trialLessonModel.findAndCountAll({
@@ -180,6 +184,13 @@ export class LeadTrialLessonsService {
   async remove(id: string): Promise<void> {
     const trialLesson = await this.findOne(id);
     await trialLesson.destroy();
+  }
+
+  async sendManualReminder(id: string): Promise<{ success: boolean; message: string }> {
+    const lesson = await this.findOne(id);
+    await this.sendTrialLessonSms(lesson);
+    await lesson.update({ isNotified: true });
+    return { success: true, message: "SMS reminder sent successfully" };
   }
 
   async getTrialLessonStats(): Promise<{
@@ -268,64 +279,7 @@ export class LeadTrialLessonsService {
     };
   }
 
-  /**
-   * Cron job to send SMS reminders for trial lessons scheduled today
-   * Runs every day at 8:00 AM
-   */
-  @Cron("0 8 * * *", {
-    name: "trial-lesson-sms-reminder",
-    timeZone: "Asia/Tashkent",
-  })
-  async sendTrialLessonReminders(): Promise<void> {
-    this.logger.log("Starting trial lesson SMS reminder job");
 
-    try {
-      // Get today's date range (start and end of day)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      // Find all trial lessons scheduled for today with status "belgilangan"
-      const todayTrialLessons = await this.trialLessonModel.findAll({
-        where: {
-          scheduledAt: {
-            [Op.gte]: today,
-            [Op.lt]: tomorrow,
-          },
-          status: "belgilangan",
-        },
-        include: [
-          {
-            model: Lead,
-            as: "leadInfo",
-            attributes: ["id", "first_name", "last_name", "phone"],
-          },
-        ],
-      });
-
-      this.logger.log(
-        `Found ${todayTrialLessons.length} trial lessons scheduled for today`,
-      );
-
-      // Send SMS to each student
-      for (const lesson of todayTrialLessons) {
-        try {
-          await this.sendTrialLessonSms(lesson);
-        } catch (error) {
-          // Log error but continue with other students
-          this.logger.error(
-            `Failed to send SMS for trial lesson ${lesson.id}:`,
-            error,
-          );
-        }
-      }
-
-      this.logger.log("Trial lesson SMS reminder job completed");
-    } catch (error) {
-      this.logger.error("Error in trial lesson SMS reminder job:", error);
-    }
-  }
 
   /**
    * Send trial lesson reminder SMS to a student
@@ -335,7 +289,7 @@ export class LeadTrialLessonsService {
     try {
       if (!lesson.leadInfo) {
         this.logger.warn(`Lead info not found for trial lesson ${lesson.id}`);
-        return;
+        throw new BadRequestException("Lead information not found");
       }
 
       const lead = lesson.leadInfo;
@@ -344,7 +298,7 @@ export class LeadTrialLessonsService {
         this.logger.warn(
           `Lead ${lead.first_name} ${lead.last_name} has no phone number`,
         );
-        return;
+        throw new BadRequestException("Lead does not have a phone number");
       }
 
       // Format time as HH:MM
