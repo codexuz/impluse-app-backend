@@ -71,8 +71,7 @@ export class GroupHomeworksService {
         // Create notification record
         const notification = await Notifications.create({
           title: "New Homework Assigned",
-          message: `A new homework "${lessonTitle}" has been assigned to your group.${deadlineText}`,
-          img_url: null,
+          body: `A new homework "${lessonTitle}" has been assigned to your group.${deadlineText}`,
         });
 
         // Create user notification records for each student
