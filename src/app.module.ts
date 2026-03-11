@@ -92,6 +92,7 @@ import { BranchesModule } from "./branches/branches.module.js";
 import { IeltsTestsModule } from "./ielts-tests/ielts-tests.module.js";
 import { IeltsVocabularyModule } from "./ielts-vocabulary/ielts-vocabulary.module.js";
 import { IeltsCoursesModule } from "./ielts-courses/ielts-courses.module.js";
+import { GradingsModule } from "./gradings/gradings.module.js";
 
 @Module({
   imports: [
@@ -189,6 +190,7 @@ import { IeltsCoursesModule } from "./ielts-courses/ielts-courses.module.js";
     IeltsTestsModule,
     IeltsVocabularyModule,
     IeltsCoursesModule,
+    GradingsModule,
   ],
   controllers: [AppController],
   providers: [

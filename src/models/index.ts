@@ -123,6 +123,8 @@ import { IeltsReadingReadingPart } from "../ielts-tests/entities/ielts-reading-r
 import { IeltsListeningListeningPart } from "../ielts-tests/entities/ielts-listening-listening-part.entity.js";
 import { IeltsWritingWritingTask } from "../ielts-tests/entities/ielts-writing-writing-task.entity.js";
 
+import { Grading } from "../gradings/entities/grading.entity.js";
+
 export const Models = [
   User,
   Role,
@@ -237,6 +239,7 @@ export const Models = [
   IeltsReadingReadingPart,
   IeltsListeningListeningPart,
   IeltsWritingWritingTask,
+  Grading,
 ];
 
 // Define associations after all models are loaded
@@ -792,6 +795,12 @@ export function initializeAssociations() {
     as: "student_parents",
   });
   StudentParent.belongsTo(User, { foreignKey: "student_id", as: "student" });
+
+  // Grading Associations
+  User.hasMany(Grading, { foreignKey: "student_id", as: "gradings_received" });
+  User.hasMany(Grading, { foreignKey: "teacher_id", as: "gradings_given" });
+  Group.hasMany(Grading, { foreignKey: "group_id", as: "gradings" });
+  Grading.belongsTo(Group, { foreignKey: "group_id", as: "group" });
 
   // StudentPayment Associations
   User.hasMany(StudentPayment, { foreignKey: "student_id", as: "payments" });
