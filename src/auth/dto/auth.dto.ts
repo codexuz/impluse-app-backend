@@ -5,6 +5,7 @@ import {
   IsOptional,
   ValidateIf,
 } from "class-validator";
+import { Transform } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class RequestPasswordResetDto {
@@ -14,6 +15,7 @@ export class RequestPasswordResetDto {
   })
   @IsString()
   @IsNotEmpty()
+  @Transform(({ value }) => typeof value === 'string' ? value.replace(/[\\s-]/g, '') : value)
   phone: string;
 }
 
@@ -24,6 +26,7 @@ export class VerifyResetCodeDto {
   })
   @IsString()
   @IsNotEmpty()
+  @Transform(({ value }) => typeof value === 'string' ? value.replace(/[\\s-]/g, '') : value)
   phone: string;
 
   @ApiProperty({
@@ -42,6 +45,7 @@ export class ResetPasswordDto {
   })
   @IsString()
   @IsNotEmpty()
+  @Transform(({ value }) => typeof value === 'string' ? value.replace(/[\\s-]/g, '') : value)
   phone: string;
 
   @ApiProperty({
@@ -79,6 +83,7 @@ export class LoginDto {
   })
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => typeof value === 'string' ? value.replace(/[\\s-]/g, '') : value)
   phone?: string;
 
   @ApiProperty({
@@ -115,6 +120,7 @@ export class RegisterDto {
     example: "+1234567890",
   })
   @IsString()
+  @Transform(({ value }) => typeof value === 'string' ? value.replace(/[\\s-]/g, '') : value)
   phone: string;
 
   @ApiProperty({
