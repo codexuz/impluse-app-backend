@@ -800,7 +800,6 @@ export function initializeAssociations() {
   User.hasMany(Grading, { foreignKey: "student_id", as: "gradings_received" });
   User.hasMany(Grading, { foreignKey: "teacher_id", as: "gradings_given" });
   Group.hasMany(Grading, { foreignKey: "group_id", as: "gradings" });
-  Grading.belongsTo(Group, { foreignKey: "group_id", as: "group" });
 
   // StudentPayment Associations
   User.hasMany(StudentPayment, { foreignKey: "student_id", as: "payments" });
