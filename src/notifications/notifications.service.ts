@@ -77,12 +77,13 @@ export class NotificationsService {
         await this.notifyMultipleUsers(
           tokens,
           createNotificationDto.title || "New Notification",
-          createNotificationDto.message,
+          createNotificationDto.body,
           {
             notification_id: notification.id,
-            img_url: createNotificationDto.img_url,
+            ...(createNotificationDto.data || {}),
             type: "global",
           },
+          false
         );
       }
     } catch (error) {
@@ -257,11 +258,27 @@ export class NotificationsService {
     body?: string,
     data?: Record<string, string>,
   ) {
+    const customData = data || { customData: "12345" };
+    const notification = await Notifications.create({
+      title: title || "Hello!",
+      body: body || "This is a test push notification 🚀",
+      data: customData,
+    } as any);
+
+    const tokenRecord = await NotificationToken.findOne({ where: { token: deviceToken }});
+    if (tokenRecord && tokenRecord.user_id) {
+       await UserNotification.create({
+         user_id: tokenRecord.user_id,
+         notification_id: notification.id,
+         seen: false
+       });
+    }
+
     return this.firebaseService.sendNotification(
       deviceToken,
       title || "Hello!",
       body || "This is a test push notification 🚀",
-      data || { customData: "12345" },
+      customData,
     );
   }
 
@@ -270,12 +287,35 @@ export class NotificationsService {
     title?: string,
     body?: string,
     data?: Record<string, string>,
+    saveToDb: boolean = true,
   ) {
+    const customData = data || { customData: "12345" };
+
+    if (saveToDb) {
+      const notification = await Notifications.create({
+        title: title || "Hello!",
+        body: body || "This is a test push notification 🚀",
+        data: customData,
+      } as any);
+
+      const tokenRecords = await NotificationToken.findAll({ where: { token: tokens }});
+      const userIds = [...new Set(tokenRecords.map(t => t.user_id).filter(id => id))];
+      
+      if (userIds.length > 0) {
+        const records = userIds.map(user_id => ({
+          user_id,
+          notification_id: notification.id,
+          seen: false
+        }));
+        await UserNotification.bulkCreate(records);
+      }
+    }
+
     return this.firebaseService.sendMulticastNotification(
       tokens,
       title || "Hello!",
       body || "This is a test push notification 🚀",
-      data || { customData: "12345" },
+      customData,
     );
   }
 
@@ -285,11 +325,19 @@ export class NotificationsService {
     body?: string,
     data?: Record<string, string>,
   ) {
+    const customData = data || { customData: "12345" };
+    
+    await Notifications.create({
+      title: title || "Hello!",
+      body: body || "This is a test push notification 🚀",
+      data: { ...customData, topic },
+    } as any);
+
     return this.firebaseService.sendToTopic(
       topic,
       title || "Hello!",
       body || "This is a test push notification 🚀",
-      data || { customData: "12345" },
+      customData,
     );
   }
 

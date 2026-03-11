@@ -12,18 +12,17 @@ export class CreateNotificationDto {
   title: string;
 
   @ApiProperty({ 
-    description: 'Notification message content',
+    description: 'Notification body content',
     example: 'We have added new features to the platform!'
   })
   @IsString()
   @IsNotEmpty()
-  message: string;
+  body: string;
   
   @ApiPropertyOptional({ 
-    description: 'URL to an image for the notification',
-    example: 'https://example.com/images/notification-image.jpg'
+    description: 'Additional data for the notification',
+    example: { key: 'value' }
   })
-  @IsString()
   @IsOptional()
-  img_url?: string;
+  data?: any;
 }

@@ -11,8 +11,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
   interface NotificationCreationAttrs {
   title: string;
-  message: string;
-  img_url?: string;
+  body: string;
+  data?: any;
 }
 
   @Table({
@@ -42,23 +42,23 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
     title: string;
   
     @ApiProperty({
-      description: 'Notification message content',
+      description: 'Notification body content',
       example: 'We have added new features to the platform!'
     })
     @Column({
       type: DataType.TEXT,
     })
-    message!: string;
+    body!: string;
   
-    @ApiProperty({
-      description: 'URL to an image for the notification',
-      example: 'https://example.com/images/notification-image.jpg'
+    @ApiPropertyOptional({
+      description: 'Additional data for the notification',
+      example: { key: 'value' }
     })
     @Column({
-      type: DataType.TEXT,
+      type: DataType.JSON,
       allowNull: true,
     })
-    img_url!: string;
+    data!: any;
   
     @ApiProperty({
       description: 'Date when the notification was created',
