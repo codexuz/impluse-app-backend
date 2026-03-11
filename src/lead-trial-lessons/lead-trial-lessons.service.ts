@@ -311,17 +311,20 @@ export class LeadTrialLessonsService {
 
       const lessonTime = formatTime(lesson.scheduledAt);
 
+      // Sanitize phone number to keep only '+' and digits
+      const sanitizedPhone = lead.phone.replace(/[^\d+]/g, '');
+
       // Build SMS message
       const message = `Assalomu alaykum, ${lead.first_name} ${lead.last_name}! Bugun soat ${lessonTime} da sinov darsiga o'z vaqtida kelishni unutmang. Impulse Study LC`;
 
       // Send SMS
       await this.smsService.sendSms({
-        mobile_phone: lead.phone,
+        mobile_phone: sanitizedPhone,
         message: message,
       });
 
       this.logger.log(
-        `Trial lesson SMS sent successfully to ${lead.first_name} ${lead.last_name} (${lead.phone}) for lesson at ${lessonTime}`,
+        `Trial lesson SMS sent successfully to ${lead.first_name} ${lead.last_name} (${sanitizedPhone}) for lesson at ${lessonTime}`,
       );
     } catch (error) {
       // Re-throw to be caught by the caller's catch block
