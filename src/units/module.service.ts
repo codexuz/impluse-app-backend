@@ -11,6 +11,8 @@ import { HomeworkSubmission } from "../homework_submissions/entities/homework_su
 import { HomeworkSection } from "../homework_submissions/entities/homework_sections.entity.js";
 import { Exercise } from "../exercise/entities/exercise.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
+import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
+
 
 @Injectable()
 export class ModuleService {
@@ -127,21 +129,29 @@ export class ModuleService {
     const groupIds = studentGroups.map((sg) => sg.group_id);
 
     // Fetch all needed data in parallel
-    const [groupHomeworks, exercises, speakingTasks, submissions] =
-      await Promise.all([
-        GroupHomework.findAll({
-          where: { group_id: groupIds, lesson_id: allLessonIds },
-        }),
-        Exercise.findAll({
-          where: { lessonId: allLessonIds, isActive: true },
-        }),
-        Speaking.findAll({
-          where: { lessonId: allLessonIds },
-        }),
-        HomeworkSubmission.findAll({
-          where: { student_id, lesson_id: allLessonIds },
-        }),
-      ]);
+    const [
+      groupHomeworks,
+      exercises,
+      speakingTasks,
+      submissions,
+      speakingResponses,
+    ] = await Promise.all([
+      GroupHomework.findAll({
+        where: { group_id: groupIds, lesson_id: allLessonIds },
+      }),
+      Exercise.findAll({
+        where: { lessonId: allLessonIds, isActive: true },
+      }),
+      Speaking.findAll({
+        where: { lessonId: allLessonIds },
+      }),
+      HomeworkSubmission.findAll({
+        where: { student_id, lesson_id: allLessonIds },
+      }),
+      SpeakingResponse.findAll({
+        where: { student_id },
+      }),
+    ]);
 
     const submissionIds = submissions.map((s) => s.id);
 
@@ -183,6 +193,13 @@ export class ModuleService {
       }
     }
 
+    const responsesBySpeakingId = new Map<string, SpeakingResponse[]>();
+    for (const resp of speakingResponses) {
+      const list = responsesBySpeakingId.get(resp.speaking_id) || [];
+      list.push(resp);
+      responsesBySpeakingId.set(resp.speaking_id, list);
+    }
+
     const sectionsBySubmissionId = new Map<string, HomeworkSection[]>();
     for (const sec of homeworkSections) {
       const list = sectionsBySubmissionId.get(sec.submission_id) || [];
@@ -218,12 +235,22 @@ export class ModuleService {
         ).length;
 
         // Completed speaking: speaking tasks that have a matching homework_section by speaking_id
-        const completedSpeakingIds = new Set(
+        // OR a matching speaking_response (from the separate table)
+        const completedSpeakingIdsFromSections = new Set(
           lessonSections.filter((s) => s.speaking_id).map((s) => s.speaking_id),
         );
-        const completedSpeakingCount = lessonSpeaking.filter((sp) =>
-          completedSpeakingIds.has(sp.id),
-        ).length;
+
+        const completedSpeakingCount = lessonSpeaking.filter((sp) => {
+          // Check if it's in homework sections
+          if (completedSpeakingIdsFromSections.has(sp.id)) return true;
+
+          // Check if it has a valid speaking response with passing score
+          const responses = responsesBySpeakingId.get(sp.id) || [];
+          return responses.some(
+            (r) =>
+              r.pronunciation_score === null || r.pronunciation_score >= 10,
+          );
+        }).length;
 
         const completedTasks = completedExercises + completedSpeakingCount;
 
@@ -235,9 +262,20 @@ export class ModuleService {
           "writing",
           "speaking",
         ];
-        const completedSectionTypes = sectionTypes.filter((type) =>
-          lessonSections.some((s) => s.section === type),
-        );
+
+        const hasAnySpeakingResponse = lessonSpeaking.some((sp) => {
+          if (completedSpeakingIdsFromSections.has(sp.id)) return true;
+          const responses = responsesBySpeakingId.get(sp.id) || [];
+          return responses.some(
+            (r) =>
+              r.pronunciation_score === null || r.pronunciation_score >= 10,
+          );
+        });
+
+        const completedSectionTypes = sectionTypes.filter((type) => {
+          if (type === "speaking" && hasAnySpeakingResponse) return true;
+          return lessonSections.some((s) => s.section === type);
+        });
 
         // Score calculation
         const scoredSections = lessonSections.filter(
