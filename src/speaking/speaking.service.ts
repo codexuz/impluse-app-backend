@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { SpeakingResponseService } from "../speaking-response/speaking-response.service.js";
 import { Speaking } from "./entities/speaking.entity.js";
 import { CreateSpeakingDto } from "./dto/create-speaking.dto.js";
 import { UpdateSpeakingDto } from "./dto/update-speaking.dto.js";
@@ -20,7 +21,8 @@ export class SpeakingService {
     @InjectModel(Ieltspart2Question)
     private ieltspart2Model: typeof Ieltspart2Question,
     @InjectModel(Ieltspart3Question)
-    private ieltspart3Model: typeof Ieltspart3Question
+    private ieltspart3Model: typeof Ieltspart3Question,
+    private speakingResponseService: SpeakingResponseService
   ) {}
 
   async create(createSpeakingDto: CreateSpeakingDto): Promise<Speaking> {
@@ -142,7 +144,8 @@ export class SpeakingService {
 
   async findByLessonAndType(
     lessonId: string,
-    type: "speaking" | "pronunciation"
+    type: "speaking" | "pronunciation",
+    studentId?: string
   ): Promise<any[]> {
     // Get all speaking exercises filtered by both lesson ID and type
     const speakingExercises = await this.speakingModel.findAll({
@@ -153,7 +156,7 @@ export class SpeakingService {
       include: [
         {
           model: this.pronunciationModel,
-          as: "pronunciationExercise", // Changed from 'pronunciationExercises' to 'pronunciationExercise'
+          as: "pronunciationExercise",
           required: false,
           order: [["createdAt", "ASC"]],
         },
@@ -177,7 +180,27 @@ export class SpeakingService {
       order: [["createdAt", "DESC"]],
     });
 
-    return speakingExercises;
+    if (!studentId) {
+      return speakingExercises;
+    }
+
+    // Get submission status for these exercises
+    const submissions = await this.speakingResponseService.checkSubmission(
+      lessonId,
+      studentId
+    );
+
+    // Map submission status to speaking exercises
+    return speakingExercises.map((exercise) => {
+      const exerciseData = exercise.toJSON() as any;
+      const submission = submissions.find((s) => s.speaking_id === exercise.id);
+
+      return {
+        ...exerciseData,
+        isSubmitted: !!submission && submission.completed,
+        submissionDetails: submission || null,
+      };
+    });
   }
 
   async update(

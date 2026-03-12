@@ -28,6 +28,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { Role } from "../auth/constants/roles.js";
+import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 
 @ApiTags("Exercises")
 @ApiBearerAuth()
@@ -118,10 +119,12 @@ export class ExerciseController {
   async findByTypeAndLessonId(
     @Param("exerciseType") exerciseType: string,
     @Param("lessonId") lessonId: string,
-  ): Promise<Exercise[]> {
+    @CurrentUser() user: any,
+  ): Promise<any[]> {
     return await this.exerciseService.findByTypeAndLessonId(
       exerciseType,
       lessonId,
+      user.userId,
     );
   }
 

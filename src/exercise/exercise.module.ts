@@ -9,6 +9,8 @@ import { MatchingExercise } from './entities/matching_pairs.js';
 import { TypingExercise } from './entities/typing_answers.js';
 import { Questions } from './entities/questions.js';
 import { SentenceBuild } from './entities/sentence_build.js';
+import { HomeworkSubmissionsModule } from "../homework_submissions/homework_submissions.module.js";
+
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -19,7 +21,8 @@ import { SentenceBuild } from './entities/sentence_build.js';
       GapFilling,
       MatchingExercise,
       TypingExercise
-    ])
+    ]),
+    HomeworkSubmissionsModule
   ],
   controllers: [ExerciseController],
   providers: [ExerciseService],

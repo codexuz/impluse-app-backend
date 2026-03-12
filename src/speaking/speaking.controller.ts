@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { SpeakingService } from './speaking.service.js';
 import { CreateSpeakingDto } from './dto/create-speaking.dto.js';
 import { UpdateSpeakingDto } from './dto/update-speaking.dto.js';
@@ -48,9 +49,10 @@ export class SpeakingController {
   @ApiResponse({ status: 200, description: 'Return all speaking exercises for the specific lesson and type with related entities.' })
   findByLessonAndType(
     @Param('lessonId') lessonId: string,
-    @Param('type') type: 'speaking' | 'pronunciation'
+    @Param('type') type: 'speaking' | 'pronunciation',
+    @CurrentUser() user: any
   ) {
-    return this.speakingService.findByLessonAndType(lessonId, type);
+    return this.speakingService.findByLessonAndType(lessonId, type, user.userId);
   }
 
   @Get(':id')

@@ -7,6 +7,7 @@ import { PronunciationExercise } from '../pronunciation-exercise/entities/pronun
 import { Ieltspart1Question } from '../ieltspart1-question/entities/ieltspart1-question.entity.js';
 import { Ieltspart2Question } from '../ieltspart2-question/entities/ieltspart2-question.entity.js';
 import { Ieltspart3Question } from '../ieltspart3-question/entities/ieltspart3-question.entity.js';
+import { SpeakingResponseModule } from '../speaking-response/speaking-response.module.js';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { Ieltspart3Question } from '../ieltspart3-question/entities/ieltspart3-q
       Ieltspart1Question,
       Ieltspart2Question,
       Ieltspart3Question
-    ])
+    ]),
+    SpeakingResponseModule
   ],
   controllers: [SpeakingController],
   providers: [SpeakingService],

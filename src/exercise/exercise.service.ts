@@ -18,8 +18,9 @@ import { GapFilling } from "./entities/gap_filling.js";
 import { MatchingExercise } from "./entities/matching_pairs.js";
 import { TypingExercise } from "./entities/typing_answers.js";
 import { SentenceBuild } from "./entities/sentence_build.js";
-import { Transaction } from "sequelize";
+import { Transaction, Op } from "sequelize";
 import { Sequelize } from "sequelize-typescript";
+import { HomeworkSubmissionsService } from "../homework_submissions/homework_submissions.service.js";
 
 @Injectable()
 export class ExerciseService {
@@ -40,6 +41,7 @@ export class ExerciseService {
     private sentenceBuildModel: typeof SentenceBuild,
 
     private sequelize: Sequelize,
+    private homeworkSubmissionsService: HomeworkSubmissionsService,
   ) {}
 
   async create(
@@ -213,8 +215,9 @@ export class ExerciseService {
   async findByTypeAndLessonId(
     exerciseType: string,
     lessonId: string,
-  ): Promise<Exercise[]> {
-    return await this.exerciseModel.findAll({
+    studentId?: string,
+  ): Promise<any[]> {
+    const exercises = await this.exerciseModel.findAll({
       where: {
         exercise_type: exerciseType,
         lessonId: lessonId,
@@ -222,6 +225,32 @@ export class ExerciseService {
       },
       order: [["createdAt", "ASC"]],
       include: this.getIncludeOptions(),
+    });
+
+    if (!studentId) {
+      return exercises;
+    }
+
+    // Get scores for these exercises
+    const exercisesWithScores =
+      await this.homeworkSubmissionsService.getExercisesWithScoresByStudentAndHomework(
+        studentId,
+        lessonId,
+        exerciseType,
+      );
+
+    // Map completion status to exercises
+    return exercises.map((exercise) => {
+      const exerciseData = exercise.toJSON() as any;
+      const scoreData = exercisesWithScores.find(
+        (s) => s.exercise_id === exercise.id,
+      );
+
+      return {
+        ...exerciseData,
+        isCompleted: scoreData ? scoreData.completed : false,
+        score: scoreData ? scoreData.score : null,
+      };
     });
   }
 
