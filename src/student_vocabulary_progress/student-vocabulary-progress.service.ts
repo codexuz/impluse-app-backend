@@ -25,18 +25,28 @@ export class StudentVocabularyProgressService {
     });
 
     if (existingProgress) {
-      // Progress exists, update status based on current status
+      // Progress exists, update status based on current status and attempt status
       let newStatus: VocabularyProgressStatus;
 
-      if (existingProgress.status === VocabularyProgressStatus.LEARNING) {
-        newStatus = VocabularyProgressStatus.REVIEWING;
-      } else if (
-        existingProgress.status === VocabularyProgressStatus.REVIEWING
-      ) {
-        newStatus = VocabularyProgressStatus.MASTERED;
+      if (createDto.status === VocabularyProgressStatus.LEARNING) {
+        // Attempt failed or struggled, demote status
+        if (existingProgress.status === VocabularyProgressStatus.MASTERED) {
+          newStatus = VocabularyProgressStatus.REVIEWING;
+        } else if (existingProgress.status === VocabularyProgressStatus.REVIEWING) {
+          newStatus = VocabularyProgressStatus.LEARNING;
+        } else {
+          newStatus = VocabularyProgressStatus.LEARNING;
+        }
       } else {
-        // Already mastered, keep it mastered
-        newStatus = VocabularyProgressStatus.MASTERED;
+        // Attempt successful, promote status
+        if (existingProgress.status === VocabularyProgressStatus.LEARNING) {
+          newStatus = VocabularyProgressStatus.REVIEWING;
+        } else if (existingProgress.status === VocabularyProgressStatus.REVIEWING) {
+          newStatus = VocabularyProgressStatus.MASTERED;
+        } else {
+          // Already mastered, keep it mastered
+          newStatus = VocabularyProgressStatus.MASTERED;
+        }
       }
 
       await existingProgress.update({
