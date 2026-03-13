@@ -20,6 +20,7 @@ import { QueryVocabularyItemDto } from "./dto/query-vocabulary_item.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
+import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 
 @Controller("vocabulary-items")
 @UseGuards(JwtAuthGuard)
@@ -45,8 +46,11 @@ export class VocabularyItemsController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles("admin", "teacher", "student")
-  findAll(@Query() query: QueryVocabularyItemDto) {
-    return this.vocabularyItemsService.findAllPaginated(query);
+  findAll(
+    @Query() query: QueryVocabularyItemDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.vocabularyItemsService.findAllPaginated(query, user?.userId);
   }
 
   @Get("stats")
@@ -104,16 +108,18 @@ export class VocabularyItemsController {
   findBySetIdPaginated(
     @Param("setId") setId: string,
     @Query() query: QueryVocabularyItemDto,
+    @CurrentUser() user: any,
   ) {
-    return this.vocabularyItemsService.findBySetIdPaginated(setId, query);
+    return this.vocabularyItemsService.findBySetIdPaginated(setId, query, user?.userId);
   }
 
   @Get("unit-set/:unitSetId/paginated")
   findByUnitSetIdPaginated(
     @Param("unitSetId") unitSetId: string,
     @Query() query: QueryVocabularyItemDto,
+    @CurrentUser() user: any,
   ) {
-    return this.vocabularyItemsService.findByUnitSetIdPaginated(unitSetId, query);
+    return this.vocabularyItemsService.findByUnitSetIdPaginated(unitSetId, query, user?.userId);
   }
 
   @Get("word/:word")

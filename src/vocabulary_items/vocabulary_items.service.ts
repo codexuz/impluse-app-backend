@@ -14,12 +14,14 @@ import { VocabularySet } from "../vocabulary_sets/entities/vocabulary_set.entity
 import { UnitVocabularySet } from "../unit_vocabulary_sets/entities/unit_vocabulary_set.entity.js";
 import { CreationAttributes, Op, WhereOptions, literal } from "sequelize";
 import ExcelJS from "exceljs";
+import { StudentVocabularyProgressService } from "../student_vocabulary_progress/student-vocabulary-progress.service.js";
 
 @Injectable()
 export class VocabularyItemsService {
   constructor(
     @InjectModel(VocabularyItem)
     private vocabularyItemModel: typeof VocabularyItem,
+    private studentVocabularyProgressService: StudentVocabularyProgressService,
   ) {}
 
   async create(
@@ -96,6 +98,7 @@ export class VocabularyItemsService {
 
   async findAllPaginated(
     query: QueryVocabularyItemDto,
+    userId?: string,
   ): Promise<PaginatedVocabularyItemsResponse> {
     const page = query.page ? parseInt(query.page, 10) : 1;
     const limit = query.limit ? parseInt(query.limit, 10) : 10;
@@ -163,8 +166,26 @@ export class VocabularyItemsService {
     // Get stats
     const stats = await this.getStats();
 
+    let data = rows.map((row) => row.get({ plain: true }));
+
+    if (userId && data.length > 0) {
+      const itemsWithProgress = await Promise.all(
+        data.map(async (vocabItem) => {
+          const progress = await this.studentVocabularyProgressService.findWordStatus(
+            userId,
+            vocabItem.id,
+          );
+          return {
+            ...vocabItem,
+            progress_status: progress?.status || null,
+          };
+        }),
+      );
+      data = itemsWithProgress;
+    }
+
     return {
-      data: rows,
+      data,
       total: count,
       page,
       limit,
@@ -255,6 +276,7 @@ export class VocabularyItemsService {
   async findBySetIdPaginated(
     setId: string,
     query: QueryVocabularyItemDto,
+    userId?: string,
   ): Promise<PaginatedVocabularyItemsResponse> {
     const page = query.page ? parseInt(query.page, 10) : 1;
     const limit = query.limit ? parseInt(query.limit, 10) : 10;
@@ -322,8 +344,26 @@ export class VocabularyItemsService {
     // Get stats for this set
     const stats = await this.getStats(setId);
 
+    let data = rows.map((row) => row.get({ plain: true }));
+
+    if (userId && data.length > 0) {
+      const itemsWithProgress = await Promise.all(
+        data.map(async (vocabItem) => {
+          const progress = await this.studentVocabularyProgressService.findWordStatus(
+            userId,
+            vocabItem.id,
+          );
+          return {
+            ...vocabItem,
+            progress_status: progress?.status || null,
+          };
+        }),
+      );
+      data = itemsWithProgress;
+    }
+
     return {
-      data: rows,
+      data,
       total: count,
       page,
       limit,
@@ -335,6 +375,7 @@ export class VocabularyItemsService {
   async findByUnitSetIdPaginated(
     unitSetId: string,
     query: QueryVocabularyItemDto,
+    userId?: string,
   ): Promise<PaginatedVocabularyItemsResponse> {
     const page = query.page ? parseInt(query.page, 10) : 1;
     const limit = query.limit ? parseInt(query.limit, 10) : 10;
@@ -402,8 +443,26 @@ export class VocabularyItemsService {
     // Get stats for this unit set
     const stats = await this.getStats(undefined, unitSetId);
 
+    let data = rows.map((row) => row.get({ plain: true }));
+
+    if (userId && data.length > 0) {
+      const itemsWithProgress = await Promise.all(
+        data.map(async (vocabItem) => {
+          const progress = await this.studentVocabularyProgressService.findWordStatus(
+            userId,
+            vocabItem.id,
+          );
+          return {
+            ...vocabItem,
+            progress_status: progress?.status || null,
+          };
+        }),
+      );
+      data = itemsWithProgress;
+    }
+
     return {
-      data: rows,
+      data,
       total: count,
       page,
       limit,
