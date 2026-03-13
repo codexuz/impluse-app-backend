@@ -10,6 +10,7 @@ import { LessonVocabularySet } from "../lesson_vocabulary_sets/entities/lesson_v
 import { VocabularySet } from "../vocabulary_sets/entities/vocabulary_set.entity.js";
 import { VocabularyItem } from "../vocabulary_items/entities/vocabulary_item.entity.js";
 import { GroupAssignedLesson } from "../group_assigned_lessons/entities/group_assigned_lesson.entity.js";
+import { UnitVocabularySet } from "../unit_vocabulary_sets/entities/unit_vocabulary_set.entity.js";
 
 @Injectable()
 export class LessonService {
@@ -38,7 +39,7 @@ export class LessonService {
     });
   }
 
-  async findOne(id: string): Promise<Lesson | null> {
+  async findOne(id: string): Promise<any> {
     const lesson = await this.lessonModel.findOne({
       where: {
         id,
@@ -65,6 +66,19 @@ export class LessonService {
         {
           model: LessonVocabularySet,
           as: "lesson_vocabulary",
+          include: [
+            {
+              model: UnitVocabularySet,
+              as: "unit_vocabulary_set",
+              include: [
+                {
+                  model: VocabularyItem,
+                  as: "vocabulary_items",
+                  attributes: ["id"],
+                },
+              ],
+            },
+          ],
         },
       ],
     });
@@ -73,7 +87,24 @@ export class LessonService {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
     }
 
-    return lesson;
+    const lessonData = lesson.get({ plain: true }) as any;
+    let vocabulary_length = 0;
+
+    if (lessonData.lesson_vocabulary) {
+      for (const lessonVocab of lessonData.lesson_vocabulary) {
+        if (
+          lessonVocab.unit_vocabulary_set &&
+          lessonVocab.unit_vocabulary_set.vocabulary_items
+        ) {
+          vocabulary_length += lessonVocab.unit_vocabulary_set.vocabulary_items.length;
+        }
+      }
+    }
+
+    return {
+      ...lessonData,
+      vocabulary_length,
+    };
   }
 
   async findMyLessons(student_id: string): Promise<GroupAssignedLesson[]> {
