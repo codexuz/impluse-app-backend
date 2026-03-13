@@ -73,7 +73,7 @@ export class LessonVocabularySetService {
               vocabItem.id
             );
             itemsWithProgress.push({
-              id: vocabItem.id,
+              ...vocabItem,
               progress_status: progress?.status || null,
             });
           }
