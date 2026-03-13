@@ -32,12 +32,13 @@ import { UpdateNotificationTokenDto } from "./dto/update-notification-token.dto.
 import { NotificationTokenResponseDto } from "./dto/notification-token-response.dto.js";
 import { Role } from "../roles/role.enum.js";
 import { SendAppUpdateDto } from "./dto/send-app-update.dto.js";
+import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 
 @ApiTags("notifications")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("notifications")
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(private readonly notificationsService: NotificationsService) { }
 
   @Get()
   @Roles(Role.ADMIN)
@@ -178,9 +179,12 @@ export class NotificationsController {
       },
     },
   })
-  async getAllWithUnseenCount(@Param("userId") userId: string) {
+  async getAllWithUnseenCount(
+    @Param("userId") userId: string,
+    @CurrentUser() user: any
+  ) {
     return await this.notificationsService.getAllNotificationsWithUnseenCount(
-      userId
+      user.userId
     );
   }
 
