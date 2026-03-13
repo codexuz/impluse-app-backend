@@ -50,7 +50,6 @@ export class LessonVocabularySetService {
             {
               model: VocabularyItem,
               as: 'vocabulary_items',
-              attributes: ['id'],
             },
           ],
         }
