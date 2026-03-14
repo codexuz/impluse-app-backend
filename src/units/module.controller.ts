@@ -38,11 +38,12 @@ export class ModuleController {
     return await this.moduleService.findOne(id);
   }
 
-  @Get('roadmap/:student_id')
+  @Get('roadmap/:student_id?')
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get student progress roadmap' })
-  async getProgress(@CurrentUser() user: any) {
-    return await this.moduleService.getRoadMapWithProgress(user.userId);
+  async getProgress(@Param('student_id') student_id: string, @CurrentUser() user: any) {
+    const id = student_id || user.userId;
+    return await this.moduleService.getRoadMapWithProgress(id);
   }
 
   @Patch(':id')
