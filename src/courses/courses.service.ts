@@ -15,6 +15,7 @@ import { HomeworkSubmission } from "../homework_submissions/entities/homework_su
 import { HomeworkSection } from "../homework_submissions/entities/homework_sections.entity.js";
 import { Exercise } from "../exercise/entities/exercise.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
+import { SpeakingResponse } from "../speaking-response/entities/speaking-response.entity.js";
 
 @Injectable()
 export class CoursesService {
@@ -143,7 +144,7 @@ export class CoursesService {
     const allLessonIds = allLessons.map((l) => l.id);
 
     // Fetch all needed data in parallel
-    const [exercises, speakingTasks, submissions] = await Promise.all([
+    const [exercises, speakingTasks, submissions, speakingResponses] = await Promise.all([
       Exercise.findAll({
         where: { lessonId: allLessonIds, isActive: true },
       }),
@@ -152,6 +153,9 @@ export class CoursesService {
       }),
       HomeworkSubmission.findAll({
         where: { student_id, lesson_id: allLessonIds },
+      }),
+      SpeakingResponse.findAll({
+        where: { student_id },
       }),
     ]);
 
@@ -188,6 +192,13 @@ export class CoursesService {
       }
     }
 
+    const responsesBySpeakingId = new Map<string, SpeakingResponse[]>();
+    for (const resp of speakingResponses) {
+      const list = responsesBySpeakingId.get(resp.speaking_id) || [];
+      list.push(resp);
+      responsesBySpeakingId.set(resp.speaking_id, list);
+    }
+
     const sectionsBySubmissionId = new Map<string, HomeworkSection[]>();
     for (const sec of homeworkSections) {
       const list = sectionsBySubmissionId.get(sec.submission_id) || [];
@@ -221,9 +232,14 @@ export class CoursesService {
       const completedSpeakingIds = new Set(
         lessonSections.filter((s) => s.speaking_id).map((s) => s.speaking_id),
       );
-      const completedSpeakingCount = lessonSpeaking.filter((sp) =>
-        completedSpeakingIds.has(sp.id),
-      ).length;
+      const completedSpeakingCount = lessonSpeaking.filter((sp) => {
+        if (completedSpeakingIds.has(sp.id)) return true;
+
+        const responses = responsesBySpeakingId.get(sp.id) || [];
+        return responses.some(
+          (r) => r.pronunciation_score === null || r.pronunciation_score >= 0,
+        );
+      }).length;
 
       if (completedExercises + completedSpeakingCount >= totalTasks) {
         completedCount++;
