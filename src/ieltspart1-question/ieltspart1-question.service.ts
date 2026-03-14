@@ -32,7 +32,7 @@ export class Ieltspart1QuestionService {
 
   async findAll(): Promise<Ieltspart1Question[]> {
     return await this.ieltspart1QuestionModel.findAll({
-      order: [["createdAt", "DESC"]],
+      order: [["createdAt", "ASC"]],
     });
   }
 
@@ -51,7 +51,7 @@ export class Ieltspart1QuestionService {
   async findBySpeakingId(speakingId: string): Promise<Ieltspart1Question[]> {
     return await this.ieltspart1QuestionModel.findAll({
       where: { speaking_id: speakingId },
-      order: [["createdAt", "DESC"]],
+      order: [["createdAt", "ASC"]],
     });
   }
 
