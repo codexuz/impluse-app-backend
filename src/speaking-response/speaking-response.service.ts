@@ -33,8 +33,8 @@ export class SpeakingResponseService {
   async create(
     createSpeakingResponseDto: CreateSpeakingResponseDto
   ): Promise<SpeakingResponse> {
-    let assessmentResult = null;
-    let pronunciationScore = 0;
+    let assessmentResult = createSpeakingResponseDto.result || null;
+    let pronunciationScore = createSpeakingResponseDto.pronunciation_score || 0;
 
     // Check if response_type is not "pronunciation" and transcription exists
     if (
@@ -65,7 +65,7 @@ export class SpeakingResponseService {
     const speakingResponse = await this.speakingResponseModel.create({
       ...createSpeakingResponseDto,
       pronunciation_score: pronunciationScore,
-      result: assessmentResult || null,
+      result: assessmentResult,
     });
 
     // Add rewards if score is 80% or higher and student_id exists
