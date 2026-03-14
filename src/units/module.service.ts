@@ -248,7 +248,7 @@ export class ModuleService {
           const responses = responsesBySpeakingId.get(sp.id) || [];
           return responses.some(
             (r) =>
-              r.pronunciation_score === null || r.pronunciation_score >= 10,
+              r.pronunciation_score === null || r.pronunciation_score >= 0,
           );
         }).length;
 
@@ -268,7 +268,7 @@ export class ModuleService {
           const responses = responsesBySpeakingId.get(sp.id) || [];
           return responses.some(
             (r) =>
-              r.pronunciation_score === null || r.pronunciation_score >= 10,
+              r.pronunciation_score === null || r.pronunciation_score >= 0,
           );
         });
 
