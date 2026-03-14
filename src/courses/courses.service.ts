@@ -208,9 +208,6 @@ export class CoursesService {
 
     // Count completed lessons based on exercises + speaking tasks
     let completedCount = 0;
-    console.log('=== DEBUG getCourseProgress ===');
-    console.log('Total speakingResponses fetched:', speakingResponses.length);
-    console.log('responsesBySpeakingId keys:', [...responsesBySpeakingId.keys()]);
     for (const lessonId of allLessonIds) {
       const lessonExercises = exercisesByLessonId.get(lessonId) || [];
       const lessonSpeaking = speakingByLessonId.get(lessonId) || [];
@@ -243,8 +240,6 @@ export class CoursesService {
           (r) => r.pronunciation_score === null || r.pronunciation_score >= 0,
         );
       }).length;
-
-      console.log(`Lesson ${lessonId}: exercises=${completedExercises}/${lessonExercises.length}, speaking=${completedSpeakingCount}/${lessonSpeaking.length}, total=${completedExercises + completedSpeakingCount}/${totalTasks}`);
 
       if (completedExercises + completedSpeakingCount >= totalTasks) {
         completedCount++;

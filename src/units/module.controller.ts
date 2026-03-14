@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Role } from '../roles/role.enum.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Units')
@@ -40,8 +41,8 @@ export class ModuleController {
   @Get('roadmap/:student_id')
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get student progress roadmap' })
-  async getProgress(@Param('student_id') student_id: string) {
-    return await this.moduleService.getRoadMapWithProgress(student_id);
+  async getProgress(@CurrentUser() user: any) {
+    return await this.moduleService.getRoadMapWithProgress(user.userId);
   }
 
   @Patch(':id')
