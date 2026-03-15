@@ -35,7 +35,7 @@ export class chatHistory extends Model<chatHistory> {
   role: string;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT,
     allowNull: false,
   })
   content: string;
