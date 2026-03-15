@@ -17,7 +17,7 @@ export class DeepseekService {
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
   ) {
     return await this.openai.chat.completions.create({
-      model: "gpt-5-nano-2025-08-07",
+      model: "gpt-5-nano",
       messages,
       temperature: 0.7,
     });
@@ -27,7 +27,7 @@ export class DeepseekService {
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
   ) {
     return await this.openai.chat.completions.create({
-      model: "gpt-5-nano-2025-08-07",
+      model: "gpt-5-nano",
       messages,
       temperature: 0.7,
       stream: true,
