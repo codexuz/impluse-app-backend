@@ -31,7 +31,7 @@ export class AiChatBotService {
       const conversationHistory = await this.chatHistoryModel.findAll({
         where: { userId },
         order: [["created_at", "ASC"]],
-        limit: 1,
+        limit: 5, // Limit to last 5 messages for context
       });
 
       const messages = conversationHistory.map((msg) => ({

@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { LocalStrategy } from "./strategies/local.strategy.js";
 import { JwtStrategy } from "./strategies/jwt.strategy.js";
 import { JwtModule } from "@nestjs/jwt";
+import type { StringValue } from "ms";
 import { SequelizeModule } from "@nestjs/sequelize";
 import { User } from "../users/entities/user.entity.js";
 import { Role } from "../users/entities/role.model.js";
@@ -30,7 +31,10 @@ import { SmsModule } from "../sms/sms.module.js";
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>("JWT_SECRET"),
         signOptions: {
-          expiresIn: configService.get<string>("JWT_EXPIRES_IN", "30d"),
+          expiresIn: configService.get<string>(
+            "JWT_EXPIRES_IN",
+            "30d",
+          ) as StringValue,
         },
       }),
       inject: [ConfigService],

@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
+import type { StringValue } from "ms";
 import { InjectModel } from "@nestjs/sequelize";
 import {
   LoginDto,
@@ -50,7 +51,7 @@ export class AuthService {
     private configService: ConfigService,
     private awsStorageService: AwsStorageService,
     private smsService: SmsService,
-  ) { }
+  ) {}
 
   async validateUser(username: string, pass: string): Promise<User | null> {
     const user = await this.userModel.findOne({
@@ -185,7 +186,12 @@ export class AuthService {
     };
 
     // Generate access token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "60d") });
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.configService.get<string>(
+        "JWT_EXPIRES_IN",
+        "60d",
+      ) as StringValue,
+    });
     const decodedToken = this.jwtService.decode(accessToken) as any;
     const expiresAt = new Date(decodedToken.exp * 1000);
 
@@ -495,7 +501,12 @@ export class AuthService {
     };
 
     // Generate access token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "60d") });
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.configService.get<string>(
+        "JWT_EXPIRES_IN",
+        "60d",
+      ) as StringValue,
+    });
     const decodedToken = this.jwtService.decode(accessToken) as any;
     const expiresAt = new Date(decodedToken.exp * 1000);
 
@@ -807,7 +818,12 @@ export class AuthService {
     };
 
     // Generate new access token
-    const accessToken = this.jwtService.sign(payload, { expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "90d") });
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.configService.get<string>(
+        "JWT_EXPIRES_IN",
+        "90d",
+      ) as StringValue,
+    });
     const decodedToken = this.jwtService.decode(accessToken) as any;
     const expiresAt = new Date(decodedToken.exp * 1000);
 
