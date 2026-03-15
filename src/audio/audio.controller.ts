@@ -405,6 +405,18 @@ export class AudioController {
     description: "Items per page",
     example: 20,
   })
+  @ApiQuery({
+    name: "search",
+    required: false,
+    description: "Search by student's username",
+    example: "john_doe",
+  })
+  @ApiQuery({
+    name: "filter",
+    required: false,
+    description: "Sort by trending score: top (default) or low",
+    enum: ["top", "low"],
+  })
   @ApiResponse({
     status: 200,
     description: "Return trending audios sorted by engagement",
@@ -412,12 +424,16 @@ export class AudioController {
   getTrendingFeed(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("search") search?: string,
+    @Query("filter") filter?: "top" | "low",
     @CurrentUser() user?: any,
   ) {
     const userId = user?.userId;
     return this.audioService.getTrendingFeed(
       page ? +page : 1,
       limit ? +limit : 20,
+      search?.trim(),
+      filter === "low" ? "low" : "top",
       userId,
     );
   }

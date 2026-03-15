@@ -355,36 +355,51 @@ export class AudioService {
   }
 
   // ========== TRENDING FEED ==========
-  async getTrendingFeed(page: number = 1, limit: number = 20, userId?: string) {
+  async getTrendingFeed(
+    page: number = 1,
+    limit: number = 20,
+    search?: string,
+    filter: "top" | "low" = "top",
+    userId?: string,
+  ) {
     const offset = (page - 1) * limit;
+    const usernameSearch = search?.trim();
+    const sortDirection = filter === "low" ? "ASC" : "DESC";
+
+    const studentInclude: any = {
+      model: User,
+      as: "student",
+      attributes: [
+        "user_id",
+        "first_name",
+        "last_name",
+        "username",
+        "avatar_url",
+        "level_id",
+      ],
+      include: [
+        {
+          model: Course,
+          as: "level",
+          attributes: ["id", "title", "level"],
+        },
+      ],
+    };
+
+    if (usernameSearch) {
+      studentInclude.where = {
+        username: {
+          [Op.like]: `%${usernameSearch}%`,
+        },
+      };
+    }
 
     const audios = await this.audioModel.findAll({
       where: { status: "completed" },
-      include: [
-        { model: AudioTask, as: "task" },
-        {
-          model: User,
-          as: "student",
-          attributes: [
-            "user_id",
-            "first_name",
-            "last_name",
-            "username",
-            "avatar_url",
-            "level_id",
-          ],
-          include: [
-            {
-              model: Course,
-              as: "level",
-              attributes: ["id", "title", "level"],
-            },
-          ],
-        },
-      ],
+      include: [{ model: AudioTask, as: "task" }, studentInclude],
       order: [
-        ["trendingScore", "DESC"],
-        ["createdAt", "DESC"],
+        ["trendingScore", sortDirection],
+        ["createdAt", sortDirection],
       ],
       limit,
       offset,
@@ -439,6 +454,7 @@ export class AudioService {
 
     const total = await this.audioModel.count({
       where: { status: "completed" },
+      include: usernameSearch ? [studentInclude] : undefined,
     });
 
     return {
