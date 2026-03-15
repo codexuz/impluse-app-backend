@@ -7,7 +7,7 @@ import {
   IsBoolean,
 } from "class-validator";
 
-export class CreateWritingDto {
+export class CreateIeltsWritingDto {
   @ApiProperty({
     description: "The title of the writing section",
     example: "IELTS Writing Task 1 & 2",

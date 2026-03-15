@@ -19,8 +19,8 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { IeltsCoursesService } from "./ielts-courses.service.js";
-import { CreateLessonProgressDto } from "./dto/create-lesson-progress.dto.js";
-import { UpdateLessonProgressDto } from "./dto/update-lesson-progress.dto.js";
+import { CreateIeltsLessonProgressDto } from "./dto/create-lesson-progress.dto.js";
+import { UpdateIeltsLessonProgressDto } from "./dto/update-lesson-progress.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -41,7 +41,7 @@ export class IeltsLessonProgressController {
     status: HttpStatus.CREATED,
     description: "Lesson progress created.",
   })
-  async create(@Body() dto: CreateLessonProgressDto) {
+  async create(@Body() dto: CreateIeltsLessonProgressDto) {
     return await this.ieltsCoursesService.createLessonProgress(dto);
   }
 
@@ -61,7 +61,10 @@ export class IeltsLessonProgressController {
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Update lesson progress" })
   @ApiParam({ name: "id", description: "Progress ID" })
-  async update(@Param("id") id: string, @Body() dto: UpdateLessonProgressDto) {
+  async update(
+    @Param("id") id: string,
+    @Body() dto: UpdateIeltsLessonProgressDto,
+  ) {
     return await this.ieltsCoursesService.updateLessonProgress(id, dto);
   }
 }

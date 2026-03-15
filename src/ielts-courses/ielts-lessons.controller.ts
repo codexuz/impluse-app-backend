@@ -19,8 +19,8 @@ import {
   ApiParam,
 } from "@nestjs/swagger";
 import { IeltsCoursesService } from "./ielts-courses.service.js";
-import { CreateLessonDto } from "./dto/create-lesson.dto.js";
-import { UpdateLessonDto } from "./dto/update-lesson.dto.js";
+import { CreateIeltsLessonDto } from "./dto/create-lesson.dto.js";
+import { UpdateIeltsLessonDto } from "./dto/update-lesson.dto.js";
 import { LessonQueryDto } from "./dto/query.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
@@ -39,7 +39,7 @@ export class IeltsLessonsController {
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Create a new lesson" })
   @ApiResponse({ status: HttpStatus.CREATED, description: "Lesson created." })
-  async create(@Body() dto: CreateLessonDto) {
+  async create(@Body() dto: CreateIeltsLessonDto) {
     return await this.ieltsCoursesService.createLesson(dto);
   }
 
@@ -62,7 +62,7 @@ export class IeltsLessonsController {
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Update a lesson" })
   @ApiParam({ name: "id", description: "Lesson ID" })
-  async update(@Param("id") id: string, @Body() dto: UpdateLessonDto) {
+  async update(@Param("id") id: string, @Body() dto: UpdateIeltsLessonDto) {
     return await this.ieltsCoursesService.updateLesson(id, dto);
   }
 

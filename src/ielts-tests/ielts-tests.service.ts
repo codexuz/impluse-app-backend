@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { IeltsReading } from "./entities/ielts-reading.entity.js";
@@ -21,9 +25,9 @@ import { CreateReadingPartDto } from "./dto/create-reading-part.dto.js";
 import { CreateListeningDto } from "./dto/create-listening.dto.js";
 import { UpdateListeningDto } from "./dto/update-listening.dto.js";
 import { CreateListeningPartDto } from "./dto/create-listening-part.dto.js";
-import { CreateWritingDto } from "./dto/create-writing.dto.js";
+import { CreateIeltsWritingDto } from "./dto/create-writing.dto.js";
 import { CreateWritingTaskDto } from "./dto/create-writing-task.dto.js";
-import { UpdateWritingDto } from "./dto/update-writing.dto.js";
+import { UpdateIeltsWritingDto } from "./dto/update-writing.dto.js";
 import { UpdateWritingTaskDto } from "./dto/update-writing-task.dto.js";
 import { CreateQuestionDto } from "./dto/create-question.dto.js";
 import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
@@ -33,9 +37,18 @@ import { UpdateListeningPartDto } from "./dto/update-listening-part.dto.js";
 import { UpdateQuestionDto } from "./dto/update-question.dto.js";
 import { UpdateQuestionOptionDto } from "./dto/update-question-option.dto.js";
 import { UpdateSubQuestionDto } from "./dto/update-multiple-choice-question.dto.js";
-import { LinkReadingPartDto, UnlinkReadingPartDto } from "./dto/link-reading-part.dto.js";
-import { LinkListeningPartDto, UnlinkListeningPartDto } from "./dto/link-listening-part.dto.js";
-import { LinkWritingTaskDto, UnlinkWritingTaskDto } from "./dto/link-writing-task.dto.js";
+import {
+  LinkReadingPartDto,
+  UnlinkReadingPartDto,
+} from "./dto/link-reading-part.dto.js";
+import {
+  LinkListeningPartDto,
+  UnlinkListeningPartDto,
+} from "./dto/link-listening-part.dto.js";
+import {
+  LinkWritingTaskDto,
+  UnlinkWritingTaskDto,
+} from "./dto/link-writing-task.dto.js";
 import {
   TestQueryDto,
   ReadingQueryDto,
@@ -81,7 +94,7 @@ export class IeltsTestsService {
     private readonly ieltsListeningListeningPartModel: typeof IeltsListeningListeningPart,
     @InjectModel(IeltsWritingWritingTask)
     private readonly ieltsWritingWritingTaskModel: typeof IeltsWritingWritingTask,
-  ) { }
+  ) {}
 
   // ========== Helpers ==========
   private readonly romanOrder: Record<string, number> = {
@@ -924,7 +937,7 @@ export class IeltsTestsService {
 
   // ========== Writing ==========
   async createWriting(
-    createWritingDto: CreateWritingDto,
+    createWritingDto: CreateIeltsWritingDto,
   ): Promise<IeltsWriting> {
     return await this.ieltsWritingModel.create(createWritingDto as any);
   }
@@ -988,7 +1001,7 @@ export class IeltsTestsService {
 
   async updateWriting(
     id: string,
-    updateWritingDto: UpdateWritingDto,
+    updateWritingDto: UpdateIeltsWritingDto,
   ): Promise<IeltsWriting> {
     const writing = await this.findWritingById(id);
     await writing.update(updateWritingDto);
@@ -1183,7 +1196,12 @@ export class IeltsTestsService {
 
         // Delete sub-questions that are no longer in the incoming array
         await this.ieltsSubQuestionModel.destroy({
-          where: { question_id: id, ...(incomingIds.length > 0 ? { id: { [Op.notIn]: incomingIds } } : {}) },
+          where: {
+            question_id: id,
+            ...(incomingIds.length > 0
+              ? { id: { [Op.notIn]: incomingIds } }
+              : {}),
+          },
         });
 
         for (const sq of questions) {
@@ -1203,7 +1221,9 @@ export class IeltsTestsService {
         }
       } else {
         // Empty array means remove all sub-questions
-        await this.ieltsSubQuestionModel.destroy({ where: { question_id: id } });
+        await this.ieltsSubQuestionModel.destroy({
+          where: { question_id: id },
+        });
       }
     }
 
@@ -1215,7 +1235,12 @@ export class IeltsTestsService {
 
         // Delete options that are no longer in the incoming array
         await this.ieltsQuestionOptionModel.destroy({
-          where: { question_id: id, ...(incomingIds.length > 0 ? { id: { [Op.notIn]: incomingIds } } : {}) },
+          where: {
+            question_id: id,
+            ...(incomingIds.length > 0
+              ? { id: { [Op.notIn]: incomingIds } }
+              : {}),
+          },
         });
 
         for (const opt of options) {
@@ -1406,9 +1431,7 @@ export class IeltsTestsService {
     }
   }
 
-  async getLinkedReadingParts(
-    readingId: string,
-  ) {
+  async getLinkedReadingParts(readingId: string) {
     const reading = await this.ieltsReadingModel.findByPk(readingId, {
       include: [
         {
@@ -1418,7 +1441,12 @@ export class IeltsTestsService {
         },
       ],
       order: [
-        [{ model: IeltsReadingPart, as: "linkedParts" }, IeltsReadingReadingPart, "order", "ASC"],
+        [
+          { model: IeltsReadingPart, as: "linkedParts" },
+          IeltsReadingReadingPart,
+          "order",
+          "ASC",
+        ],
       ],
     });
     if (!reading) {
@@ -1457,9 +1485,7 @@ export class IeltsTestsService {
     }
   }
 
-  async getLinkedListeningParts(
-    listeningId: string,
-  ) {
+  async getLinkedListeningParts(listeningId: string) {
     const listening = await this.ieltsListeningModel.findByPk(listeningId, {
       include: [
         {
@@ -1469,7 +1495,12 @@ export class IeltsTestsService {
         },
       ],
       order: [
-        [{ model: IeltsListeningPart, as: "linkedParts" }, IeltsListeningListeningPart, "order", "ASC"],
+        [
+          { model: IeltsListeningPart, as: "linkedParts" },
+          IeltsListeningListeningPart,
+          "order",
+          "ASC",
+        ],
       ],
     });
     if (!listening) {
@@ -1508,9 +1539,7 @@ export class IeltsTestsService {
     }
   }
 
-  async getLinkedWritingTasks(
-    writingId: string,
-  ) {
+  async getLinkedWritingTasks(writingId: string) {
     const writing = await this.ieltsWritingModel.findByPk(writingId, {
       include: [
         {
@@ -1520,7 +1549,12 @@ export class IeltsTestsService {
         },
       ],
       order: [
-        [{ model: IeltsWritingTask, as: "linkedTasks" }, IeltsWritingWritingTask, "order", "ASC"],
+        [
+          { model: IeltsWritingTask, as: "linkedTasks" },
+          IeltsWritingWritingTask,
+          "order",
+          "ASC",
+        ],
       ],
     });
     if (!writing) {

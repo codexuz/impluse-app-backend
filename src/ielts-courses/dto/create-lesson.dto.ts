@@ -54,7 +54,7 @@ export class LessonTrackDto {
   label: "English" | "O'zbekcha" | "Русский";
 }
 
-export class CreateLessonDto {
+export class CreateIeltsLessonDto {
   @ApiProperty({ description: "Section ID" })
   @IsUUID()
   @IsNotEmpty()

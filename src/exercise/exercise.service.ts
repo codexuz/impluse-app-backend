@@ -8,9 +8,9 @@ import {
   CreateCompleteExerciseDto,
   QuestionType,
 } from "./dto/create-complete-exercise.dto.js";
-import { UpdateExerciseDto } from "./dto/update-complete-exercise.dto.js";
+import { UpdateCompleteExerciseDto } from "./dto/update-complete-exercise.dto.js";
 import { CreateExerciseDto } from "./dto/create-exercise.dto.js";
-import { UpdateExerciseDto as UpdateExerciseOnlyDto } from "./dto/update-exercise.dto.js";
+import { UpdateExerciseDto } from "./dto/update-exercise.dto.js";
 import { Exercise } from "./entities/exercise.entity.js";
 import { Questions } from "./entities/questions.js";
 import { Choices } from "./entities/choices.js";
@@ -298,7 +298,7 @@ export class ExerciseService {
 
   async update(
     id: string,
-    updateExerciseDto: UpdateExerciseDto,
+    updateExerciseDto: UpdateCompleteExerciseDto,
   ): Promise<Exercise> {
     const transaction: Transaction = await this.sequelize.transaction();
 
@@ -462,7 +462,7 @@ export class ExerciseService {
    */
   async updateExerciseOnly(
     id: string,
-    updateExerciseDto: UpdateExerciseOnlyDto,
+    updateExerciseDto: UpdateExerciseDto,
   ): Promise<Exercise> {
     const exercise = await this.exerciseModel.findOne({
       where: { id, isActive: true },

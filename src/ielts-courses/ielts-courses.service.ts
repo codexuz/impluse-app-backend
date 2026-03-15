@@ -15,14 +15,14 @@ import { CreateIeltsCourseDto } from "./dto/create-ielts-course.dto.js";
 import { UpdateIeltsCourseDto } from "./dto/update-ielts-course.dto.js";
 import { CreateCourseSectionDto } from "./dto/create-course-section.dto.js";
 import { UpdateCourseSectionDto } from "./dto/update-course-section.dto.js";
-import { CreateLessonDto } from "./dto/create-lesson.dto.js";
-import { UpdateLessonDto } from "./dto/update-lesson.dto.js";
+import { CreateIeltsLessonDto } from "./dto/create-lesson.dto.js";
+import { UpdateIeltsLessonDto } from "./dto/update-lesson.dto.js";
 import { CreateQuizDto } from "./dto/create-quiz.dto.js";
 import { UpdateQuizDto } from "./dto/update-quiz.dto.js";
 import { CreateQuizQuestionDto } from "./dto/create-quiz-question.dto.js";
 import { UpdateQuizQuestionDto } from "./dto/update-quiz-question.dto.js";
-import { CreateLessonProgressDto } from "./dto/create-lesson-progress.dto.js";
-import { UpdateLessonProgressDto } from "./dto/update-lesson-progress.dto.js";
+import { CreateIeltsLessonProgressDto } from "./dto/create-lesson-progress.dto.js";
+import { UpdateIeltsLessonProgressDto } from "./dto/update-lesson-progress.dto.js";
 import { CreateQuizAttemptDto } from "./dto/create-quiz-attempt.dto.js";
 import { CreateAttemptAnswerDto } from "./dto/create-attempt-answer.dto.js";
 import {
@@ -185,7 +185,7 @@ export class IeltsCoursesService {
   }
 
   // ========== Lessons ==========
-  async createLesson(dto: CreateLessonDto) {
+  async createLesson(dto: CreateIeltsLessonDto) {
     return await this.lessonModel.create(dto as any);
   }
 
@@ -229,7 +229,7 @@ export class IeltsCoursesService {
     return lesson;
   }
 
-  async updateLesson(id: string, dto: UpdateLessonDto) {
+  async updateLesson(id: string, dto: UpdateIeltsLessonDto) {
     const lesson = await this.findLessonById(id);
     await lesson.update(dto as any);
     return lesson;
@@ -423,7 +423,7 @@ export class IeltsCoursesService {
   }
 
   // ========== Lesson Progress ==========
-  async createLessonProgress(dto: CreateLessonProgressDto) {
+  async createLessonProgress(dto: CreateIeltsLessonProgressDto) {
     return await this.lessonProgressModel.create(dto as any);
   }
 
@@ -440,7 +440,7 @@ export class IeltsCoursesService {
     return progress;
   }
 
-  async updateLessonProgress(id: string, dto: UpdateLessonProgressDto) {
+  async updateLessonProgress(id: string, dto: UpdateIeltsLessonProgressDto) {
     const progress = await this.lessonProgressModel.findByPk(id);
     if (!progress) {
       throw new NotFoundException(`Lesson progress with ID ${id} not found`);

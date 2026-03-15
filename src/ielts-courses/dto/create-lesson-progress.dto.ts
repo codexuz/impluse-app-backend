@@ -10,7 +10,7 @@ import {
 } from "class-validator";
 import { LessonProgressStatus } from "../entities/ielts-lesson-progress.entity.js";
 
-export class CreateLessonProgressDto {
+export class CreateIeltsLessonProgressDto {
   @ApiProperty({ description: "User ID" })
   @IsUUID()
   @IsNotEmpty()

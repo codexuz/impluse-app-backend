@@ -19,8 +19,8 @@ import {
   ApiParam,
 } from "@nestjs/swagger";
 import { IeltsTestsService } from "./ielts-tests.service.js";
-import { CreateWritingDto } from "./dto/create-writing.dto.js";
-import { UpdateWritingDto } from "./dto/update-writing.dto.js";
+import { CreateIeltsWritingDto } from "./dto/create-writing.dto.js";
+import { UpdateIeltsWritingDto } from "./dto/update-writing.dto.js";
 import { CreateWritingTaskDto } from "./dto/create-writing-task.dto.js";
 import { UpdateWritingTaskDto } from "./dto/update-writing-task.dto.js";
 import { WritingQueryDto, WritingTaskQueryDto } from "./dto/query.dto.js";
@@ -38,7 +38,7 @@ import { Role } from "../roles/role.enum.js";
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("ielts-writing")
 export class IeltsWritingController {
-  constructor(private readonly ieltsTestsService: IeltsTestsService) { }
+  constructor(private readonly ieltsTestsService: IeltsTestsService) {}
 
   // ========== Writing ==========
   @Post()
@@ -49,7 +49,7 @@ export class IeltsWritingController {
     status: HttpStatus.CREATED,
     description: "The writing section has been successfully created.",
   })
-  async createWriting(@Body() createWritingDto: CreateWritingDto) {
+  async createWriting(@Body() createWritingDto: CreateIeltsWritingDto) {
     return await this.ieltsTestsService.createWriting(createWritingDto);
   }
 
@@ -81,7 +81,9 @@ export class IeltsWritingController {
   @Post("link-task")
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Link an existing writing task to a writing (many-to-many)" })
+  @ApiOperation({
+    summary: "Link an existing writing task to a writing (many-to-many)",
+  })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: "The writing task has been linked successfully.",
@@ -190,7 +192,7 @@ export class IeltsWritingController {
   })
   async updateWriting(
     @Param("id") id: string,
-    @Body() updateWritingDto: UpdateWritingDto,
+    @Body() updateWritingDto: UpdateIeltsWritingDto,
   ) {
     return await this.ieltsTestsService.updateWriting(id, updateWritingDto);
   }

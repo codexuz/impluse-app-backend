@@ -19,9 +19,9 @@ import {
 } from "@nestjs/swagger";
 import { ExerciseService } from "./exercise.service.js";
 import { CreateCompleteExerciseDto } from "./dto/create-complete-exercise.dto.js";
-import { UpdateExerciseDto } from "./dto/update-complete-exercise.dto.js";
+import { UpdateCompleteExerciseDto } from "./dto/update-complete-exercise.dto.js";
 import { CreateExerciseDto } from "./dto/create-exercise.dto.js";
-import { UpdateExerciseDto as UpdateExerciseOnlyDto } from "./dto/update-exercise.dto.js";
+import { UpdateExerciseDto } from "./dto/update-exercise.dto.js";
 import { ExerciseResponseDto } from "./dto/exercise-response.dto.js";
 import { Exercise } from "./entities/exercise.entity.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
@@ -172,7 +172,7 @@ export class ExerciseController {
   @ApiResponse({ status: 404, description: "Exercise not found." })
   async update(
     @Param("id") id: string,
-    @Body() updateExerciseDto: UpdateExerciseDto,
+    @Body() updateExerciseDto: UpdateCompleteExerciseDto,
   ): Promise<Exercise> {
     return await this.exerciseService.update(id, updateExerciseDto);
   }
@@ -216,7 +216,7 @@ export class ExerciseController {
   @ApiResponse({ status: 404, description: "Exercise not found." })
   async updateExerciseOnly(
     @Param("id") id: string,
-    @Body() updateExerciseDto: UpdateExerciseOnlyDto,
+    @Body() updateExerciseDto: UpdateExerciseDto,
   ): Promise<Exercise> {
     return await this.exerciseService.updateExerciseOnly(id, updateExerciseDto);
   }
@@ -238,7 +238,7 @@ export class ExerciseController {
   @ApiResponse({ status: 404, description: "Exercise not found." })
   async updateExerciseWithQuestions(
     @Param("id") id: string,
-    @Body() updateExerciseDto: UpdateExerciseDto,
+    @Body() updateExerciseDto: UpdateCompleteExerciseDto,
   ): Promise<Exercise> {
     return await this.exerciseService.updateExerciseWithQuestions(
       id,
