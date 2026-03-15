@@ -491,7 +491,7 @@ export class ExerciseService {
    */
   async updateExerciseWithQuestions(
     id: string,
-    updateExerciseDto: UpdateExerciseDto,
+    updateExerciseDto: UpdateCompleteExerciseDto,
   ): Promise<Exercise> {
     const transaction: Transaction = await this.sequelize.transaction();
 
