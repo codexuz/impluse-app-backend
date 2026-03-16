@@ -82,4 +82,11 @@ export class ModuleController {
   async findByCourse(@Param("courseId") courseId: string) {
     return await this.moduleService.findByCourse(courseId);
   }
+
+  @Get("group/:groupId")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: "Get units and lessons by group ID (uses group level_id as course)" })
+  async findByGroupId(@Param("groupId") groupId: string) {
+    return await this.moduleService.findByGroupId(groupId);
+  }
 }

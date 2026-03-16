@@ -352,6 +352,23 @@ export class ModuleService {
     });
   }
 
+  async findByGroupId(groupId: string): Promise<Unit[]> {
+    const group = await Group.findOne({
+      where: { id: groupId, isDeleted: false },
+      attributes: ["id", "level_id"],
+    });
+
+    if (!group) {
+      throw new NotFoundException(`Group with ID ${groupId} not found`);
+    }
+
+    if (!group.level_id) {
+      throw new NotFoundException(`Group ${groupId} has no associated course`);
+    }
+
+    return this.findByCourse(group.level_id);
+  }
+
   async findByCourse(
     courseId: string,
     throwIfEmpty: boolean = false,
