@@ -51,45 +51,73 @@ export class NotificationsService {
   ): Promise<NotificationResponseDto> {
     const notification = await Notifications.create(createNotificationDto);
 
-    // Get all users
-    const users = await User.findAll();
+    // Process users in batches to avoid memory pressure and DB timeouts.
+    // Push notifications are dispatched in the background so the request
+    // returns immediately regardless of how many users exist.
+    const DB_BATCH_SIZE = 500;  // rows per bulkCreate
+    const FCM_BATCH_SIZE = 500; // FCM multicast limit per request
 
-    // Create user notification records
-    const records = users.map((user) => ({
-      user_id: user.user_id,
-      notification_id: notification.id,
-      seen: false,
-    }));
+    const processBatches = async () => {
+      let offset = 0;
 
-    await UserNotification.bulkCreate(records);
-    console.log(records);
-    try {
-      // Get all user tokens
-      const notificationTokens = await NotificationToken.findAll({
-        where: {
-          user_id: users.map((user) => user.user_id),
-        },
-      });
+      while (true) {
+        const users = await User.findAll({
+          attributes: ["user_id"],
+          limit: DB_BATCH_SIZE,
+          offset,
+        });
 
-      if (notificationTokens.length > 0) {
-        // Extract tokens and send push notifications
-        const tokens = notificationTokens.map((nt) => nt.token);
-        await this.notifyMultipleUsers(
-          tokens,
-          createNotificationDto.title || "New Notification",
-          createNotificationDto.body,
-          {
-            notification_id: notification.id,
-            ...(createNotificationDto.data || {}),
-            type: "global",
-          },
-          false
-        );
+        if (users.length === 0) break;
+
+        // Persist user-notification rows for this batch
+        const records = users.map((user) => ({
+          user_id: user.user_id,
+          notification_id: notification.id,
+          seen: false,
+        }));
+
+        await UserNotification.bulkCreate(records, { ignoreDuplicates: true });
+
+        // Collect FCM tokens for this batch of users and send in FCM-safe chunks
+        try {
+          const notificationTokens = await NotificationToken.findAll({
+            where: { user_id: users.map((u) => u.user_id) },
+          });
+
+          const tokens = notificationTokens.map((nt) => nt.token);
+
+          for (let i = 0; i < tokens.length; i += FCM_BATCH_SIZE) {
+            const chunk = tokens.slice(i, i + FCM_BATCH_SIZE);
+            await this.notifyMultipleUsers(
+              chunk,
+              createNotificationDto.title || "New Notification",
+              createNotificationDto.body,
+              {
+                notification_id: notification.id,
+                ...(createNotificationDto.data || {}),
+                type: "global",
+              },
+              false,
+            );
+          }
+        } catch (error) {
+          console.error(
+            `Error sending push notifications for batch at offset ${offset}:`,
+            error,
+          );
+          // Continue to next batch even if push notifications fail
+        }
+
+        if (users.length < DB_BATCH_SIZE) break;
+        offset += DB_BATCH_SIZE;
       }
-    } catch (error) {
-      console.error("Error sending push notifications:", error);
-      // Continue even if push notification fails
-    }
+    };
+
+    // Fire-and-forget: returns the notification immediately while processing
+    // continues in the background, preventing request timeouts on large datasets.
+    processBatches().catch((error) =>
+      console.error("Error in createNotificationForAllUsers batch processing:", error),
+    );
 
     return notification;
   }
