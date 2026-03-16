@@ -863,4 +863,20 @@ export class ExerciseService {
       );
     }
   }
+
+  async getGroupExerciseScores(groupId: string, exerciseId: string) {
+    const exercise = await this.exerciseModel.findOne({
+      where: { id: exerciseId, isActive: true },
+    });
+
+    if (!exercise) {
+      throw new NotFoundException(`Exercise with ID ${exerciseId} not found`);
+    }
+
+    return this.homeworkSubmissionsService.getGroupExerciseScores(
+      groupId,
+      exerciseId,
+      exercise.lessonId,
+    );
+  }
 }

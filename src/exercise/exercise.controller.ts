@@ -276,4 +276,26 @@ export class ExerciseController {
   ): Promise<void> {
     return await this.exerciseService.deleteQuestion(exerciseId, questionId);
   }
+
+  @Get(":exerciseId/group/:groupId/scores")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({
+    summary:
+      "Get scores for all students in a group for a specific exercise",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "Returns students with their scores. Score is 0 if not submitted.",
+  })
+  @ApiResponse({ status: 404, description: "Exercise not found." })
+  async getGroupExerciseScores(
+    @Param("groupId") groupId: string,
+    @Param("exerciseId") exerciseId: string,
+  ) {
+    return await this.exerciseService.getGroupExerciseScores(
+      groupId,
+      exerciseId,
+    );
+  }
 }

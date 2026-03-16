@@ -1204,4 +1204,53 @@ export class HomeworkSubmissionsService {
     // Reuse the existing method
     return await this.getGroupHomeworkProgress(groupId);
   }
+
+  async getGroupExerciseScores(
+    groupId: string,
+    exerciseId: string,
+    lessonId: string,
+  ) {
+    const groupStudents =
+      await this.groupStudentsService.findByGroupId(groupId);
+
+    const results = await Promise.all(
+      groupStudents.map(async (gs) => {
+        const student = (gs as any).student;
+        const studentId = gs.student_id;
+
+        const submission = await this.homeworkSubmissionModel.findOne({
+          where: { student_id: studentId, lesson_id: lessonId },
+        });
+
+        let score = 0;
+        let submitted = false;
+
+        if (submission) {
+          const section = await this.homeworkSectionModel.findOne({
+            where: {
+              submission_id: submission.id,
+              exercise_id: exerciseId,
+            },
+          });
+
+          if (section) {
+            score = section.score ?? 0;
+            submitted = true;
+          }
+        }
+
+        return {
+          student_id: studentId,
+          first_name: student?.first_name ?? null,
+          last_name: student?.last_name ?? null,
+          username: student?.username ?? null,
+          avatar_url: student?.avatar_url ?? null,
+          submitted,
+          score,
+        };
+      }),
+    );
+
+    return results;
+  }
 }
