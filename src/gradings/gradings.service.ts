@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { Grading } from "./entities/grading.entity.js";
 import { CreateGradingDto } from "./dto/create-grading.dto.js";
@@ -15,6 +15,31 @@ export class GradingsService {
   ) {}
 
   async create(createGradingDto: CreateGradingDto): Promise<Grading> {
+    const { student_id, teacher_id, group_id } = createGradingDto;
+    
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const existingGrading = await this.gradingModel.findOne({
+      where: {
+        student_id,
+        teacher_id,
+        group_id,
+        createdAt: {
+          [Op.between]: [startOfDay, endOfDay],
+        },
+      },
+    });
+
+    if (existingGrading) {
+      throw new ConflictException(
+        `User has already been graded for this group and teacher today`
+      );
+    }
+
     return this.gradingModel.create(createGradingDto as any);
   }
 

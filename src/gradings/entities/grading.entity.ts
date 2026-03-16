@@ -19,6 +19,7 @@ interface GradingCreationAttrs {
   grade: number;
   percent: number;
   lesson_name?: string;
+  note?: string;
 }
 
 @Table({
@@ -134,4 +135,14 @@ export class Grading extends Model<Grading, GradingCreationAttrs> {
     allowNull: true,
   })
   lesson_name?: string;
+
+  @ApiPropertyOptional({
+    description: "Optional note for the grading",
+    example: "Great progress on grammar",
+  })
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  note?: string;
 }

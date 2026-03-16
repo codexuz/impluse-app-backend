@@ -55,4 +55,12 @@ export class CreateGradingDto {
   @IsString()
   @IsOptional()
   lesson_name?: string;
+
+  @ApiPropertyOptional({
+    description: "Optional note for the grading",
+    example: "Great progress on grammar",
+  })
+  @IsString()
+  @IsOptional()
+  note?: string;
 }
