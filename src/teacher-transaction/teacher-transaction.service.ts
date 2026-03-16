@@ -6,7 +6,7 @@ import { QueryTeacherTransactionDto } from "./dto/query-teacher-transaction.dto.
 import { TeacherTransaction } from "./entities/teacher-transaction.entity.js";
 import { TeacherWalletService } from "../teacher-wallet/teacher-wallet.service.js";
 import { User } from "../users/entities/user.entity.js";
-import { fn, col, literal, Op } from "sequelize";
+import { fn, col, Op } from "sequelize";
 
 @Injectable()
 export class TeacherTransactionService {
@@ -219,14 +219,14 @@ export class TeacherTransactionService {
       where: whereCondition,
       attributes: [
         [
-          fn("date_part", literal("'month'"), col("created_at")),
+          fn("MONTH", col("created_at")),
           "month",
         ],
         [fn("SUM", col("amount")), "total"],
       ],
-      group: [fn("date_part", literal("'month'"), col("created_at"))],
+      group: [fn("MONTH", col("created_at"))],
       order: [
-        [fn("date_part", literal("'month'"), col("created_at")), "ASC"],
+        [fn("MONTH", col("created_at")), "ASC"],
       ],
       raw: true,
     });
