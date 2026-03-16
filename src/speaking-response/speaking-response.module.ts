@@ -6,12 +6,14 @@ import { SpeakingResponse } from "./entities/speaking-response.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
 import { OpenaiModule } from "../services/openai/openai.module.js";
 import { StudentProfileModule } from "../student_profiles/student-profile.module.js";
+import { GroupStudentsModule } from "../group-students/group-students.module.js";
 
 @Module({
   imports: [
     SequelizeModule.forFeature([SpeakingResponse, Speaking]),
     OpenaiModule,
     StudentProfileModule,
+    GroupStudentsModule,
   ],
   controllers: [SpeakingResponseController],
   providers: [SpeakingResponseService],

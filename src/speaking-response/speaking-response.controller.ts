@@ -136,4 +136,28 @@ export class SpeakingResponseController {
   async remove(@Param('id') id: string): Promise<void> {
     return this.speakingResponseService.remove(id);
   }
+
+  @Get('speaking/:speakingId/group/:groupId/scores')
+  @ApiOperation({
+    summary: 'Get speaking scores for all students in a group',
+  })
+  @ApiParam({ name: 'speakingId', description: 'The speaking exercise ID' })
+  @ApiParam({ name: 'groupId', description: 'The group ID' })
+  @ApiQuery({ name: 'responseType', description: 'pronunciation or part1', required: true })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns students with their scores based on response type',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async getGroupSpeakingScores(
+    @Param('speakingId') speakingId: string,
+    @Param('groupId') groupId: string,
+    @Query('responseType') responseType: 'pronunciation' | 'part1',
+  ) {
+    return this.speakingResponseService.getGroupSpeakingScores(
+      groupId,
+      speakingId,
+      responseType,
+    );
+  }
 }

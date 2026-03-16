@@ -6,6 +6,7 @@ import { SpeakingResponse } from "./entities/speaking-response.entity.js";
 import { Speaking } from "../speaking/entities/speaking.entity.js";
 import { OpenaiService } from "../services/openai/openai.service.js";
 import { StudentProfileService } from "../student_profiles/student-profile.service.js";
+import { GroupStudentsService } from "../group-students/group-students.service.js";
 
 // Define the interface for the exercise details we'll return
 export interface ExerciseDetail {
@@ -27,7 +28,8 @@ export class SpeakingResponseService {
     @InjectModel(Speaking)
     private speakingModel: typeof Speaking,
     private readonly openaiService: OpenaiService,
-    private readonly studentProfileService: StudentProfileService
+    private readonly studentProfileService: StudentProfileService,
+    private readonly groupStudentsService: GroupStudentsService,
   ) {}
 
   async create(
@@ -208,5 +210,62 @@ export class SpeakingResponseService {
   async remove(id: string): Promise<void> {
     const response = await this.findOne(id);
     await response.destroy();
+  }
+
+  async getGroupSpeakingScores(
+    groupId: string,
+    speakingId: string,
+    responseType: 'pronunciation' | 'part1',
+  ) {
+    const groupStudents =
+      await this.groupStudentsService.findByGroupId(groupId);
+
+    const results = await Promise.all(
+      groupStudents.map(async (gs) => {
+        const student = (gs as any).student;
+        const studentId = gs.student_id;
+
+        const response = await this.speakingResponseModel.findOne({
+          where: {
+            speaking_id: speakingId,
+            student_id: studentId,
+            response_type: responseType,
+          },
+        });
+
+        const base = {
+          student_id: studentId,
+          first_name: student?.first_name ?? null,
+          last_name: student?.last_name ?? null,
+          username: student?.username ?? null,
+          avatar_url: student?.avatar_url ?? null,
+          submitted: !!response,
+        };
+
+        if (!response) {
+          return {
+            ...base,
+            ...(responseType === 'pronunciation'
+              ? { pronunciation_score: 0 }
+              : { transcription: null, result: null }),
+          };
+        }
+
+        if (responseType === 'pronunciation') {
+          return {
+            ...base,
+            pronunciation_score: response.pronunciation_score ?? 0,
+          };
+        }
+
+        return {
+          ...base,
+          transcription: response.transcription ?? null,
+          result: response.result ?? null,
+        };
+      }),
+    );
+
+    return results;
   }
 }
