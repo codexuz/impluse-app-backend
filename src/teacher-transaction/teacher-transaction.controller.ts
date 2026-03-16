@@ -108,6 +108,37 @@ export class TeacherTransactionController {
     return this.teacherTransactionService.findAll(queryDto);
   }
 
+  @Get("stats/salary/yearly")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({
+    summary:
+      "Get yearly oylik (salary) stats month by month for a given year",
+  })
+  @ApiQuery({
+    name: "year",
+    required: false,
+    description: "Year to aggregate (defaults to current year)",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "teacher_id",
+    required: false,
+    description: "Filter by teacher ID (UUID)",
+    type: String,
+  })
+  getSalaryYearlyStats(
+    @Query("year") year?: string,
+    @Query("teacher_id") teacherId?: string,
+  ) {
+    const targetYear = year
+      ? parseInt(year, 10)
+      : new Date().getFullYear();
+    return this.teacherTransactionService.getYearlySalaryStats(
+      targetYear,
+      teacherId,
+    );
+  }
+
   @Get("teacher/:teacherId")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Get all transactions for a specific teacher" })

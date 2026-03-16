@@ -6,7 +6,7 @@ import { QueryTeacherTransactionDto } from "./dto/query-teacher-transaction.dto.
 import { TeacherTransaction } from "./entities/teacher-transaction.entity.js";
 import { TeacherWalletService } from "../teacher-wallet/teacher-wallet.service.js";
 import { User } from "../users/entities/user.entity.js";
-import { Op } from "sequelize";
+import { fn, col, literal, Op } from "sequelize";
 
 @Injectable()
 export class TeacherTransactionService {
@@ -192,6 +192,69 @@ export class TeacherTransactionService {
     await transaction.update(updateTeacherTransactionDto as any);
 
     return transaction;
+  }
+
+  async getYearlySalaryStats(
+    year: number,
+    teacherId?: string,
+  ): Promise<{
+    year: number;
+    teacher_id?: string;
+    months: { month: number; monthName: string; total: number }[];
+    yearlyTotal: number;
+  }> {
+    const whereCondition: any = {
+      type: "oylik",
+      created_at: {
+        [Op.gte]: new Date(`${year}-01-01T00:00:00`),
+        [Op.lte]: new Date(`${year}-12-31T23:59:59`),
+      },
+    };
+
+    if (teacherId) {
+      whereCondition.teacher_id = teacherId;
+    }
+
+    const rows = await this.teacherTransactionModel.findAll({
+      where: whereCondition,
+      attributes: [
+        [
+          fn("date_part", literal("'month'"), col("created_at")),
+          "month",
+        ],
+        [fn("SUM", col("amount")), "total"],
+      ],
+      group: [fn("date_part", literal("'month'"), col("created_at"))],
+      order: [
+        [fn("date_part", literal("'month'"), col("created_at")), "ASC"],
+      ],
+      raw: true,
+    });
+
+    const MONTH_NAMES = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+
+    const monthMap = new Map<number, number>();
+    rows.forEach((r: any) => {
+      monthMap.set(Number(r.month), Number(r.total));
+    });
+
+    const months = Array.from({ length: 12 }, (_, i) => ({
+      month: i + 1,
+      monthName: MONTH_NAMES[i],
+      total: monthMap.get(i + 1) ?? 0,
+    }));
+
+    const yearlyTotal = months.reduce((sum, m) => sum + m.total, 0);
+
+    return {
+      year,
+      ...(teacherId ? { teacher_id: teacherId } : {}),
+      months,
+      yearlyTotal,
+    };
   }
 
   async remove(id: string): Promise<void> {
