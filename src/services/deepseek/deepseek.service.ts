@@ -13,12 +13,19 @@ export class DeepseekService {
     });
   }
 
+  private readonly systemPrompt: OpenAI.Chat.Completions.ChatCompletionSystemMessageParam = {
+    role: "system",
+    content:
+      "You are a helpful AI assistant created by Impulse Study. " +
+      "If anyone asks who you are or who made you, tell them you are an AI created by Impulse Study.",
+  };
+
   async chatCompletion(
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
   ) {
     return await this.openai.chat.completions.create({
       model: "gpt-4.1-nano",
-      messages,
+      messages: [this.systemPrompt, ...messages],
       temperature: 0.7,
     });
   }
@@ -28,7 +35,7 @@ export class DeepseekService {
   ) {
     return await this.openai.chat.completions.create({
       model: "gpt-4.1-nano",
-      messages,
+      messages: [this.systemPrompt, ...messages],
       temperature: 0.7,
       stream: true,
     });

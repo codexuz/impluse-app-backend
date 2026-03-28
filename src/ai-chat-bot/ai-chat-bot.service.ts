@@ -30,9 +30,10 @@ export class AiChatBotService {
       // Retrieve recent conversation history for context
       const conversationHistory = await this.chatHistoryModel.findAll({
         where: { userId },
-        order: [["created_at", "ASC"]],
-        limit: 5, // Limit to last 5 messages for context
+        order: [["created_at", "DESC"]],
+        limit: 20, // Limit to last 20 messages for context
       });
+      conversationHistory.reverse(); // restore chronological order
 
       const messages = conversationHistory.map((msg) => ({
         role: msg.role as "user" | "assistant",
