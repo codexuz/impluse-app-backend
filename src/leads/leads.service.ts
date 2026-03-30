@@ -14,7 +14,7 @@ export class LeadsService {
 
   async create(createLeadDto: CreateLeadDto): Promise<Lead> {
     try {
-      return await this.leadModel.create({ ...createLeadDto });
+      return await this.leadModel.create({ ...createLeadDto, isarchived: false });
     } catch (error) {
       throw error;
     }
