@@ -1,0 +1,360 @@
+{
+  "test": {
+    "title": "Cambridge IELTS 18 - Academic Test 1",
+    "mode": "mock",
+    "status": "draft",
+    "category": "cambridge books"
+  },
+  "reading": {
+    "title": "Academic Reading",
+    "parts": [
+      {
+        "part": "PART_1",
+        "mode": "mock",
+        "title": "The History of Glass",
+        "content": "<h2>The History of Glass</h2><p>Glass has been used for centuries...</p>",
+        "timeLimitMinutes": 20,
+        "difficulty": "EASY",
+        "isActive": true,
+        "totalQuestions": 13,
+        "questions": [
+          {
+            "questionNumber": 1,
+            "type": "TRUE_FALSE_NOT_GIVEN",
+            "instruction": "Write TRUE, FALSE or NOT GIVEN.",
+            "points": 5,
+            "questions": [
+              {
+                "questionNumber": 1,
+                "questionText": "Glass making started in Egypt.",
+                "correctAnswer": "TRUE",
+                "points": 1,
+                "order": 1
+              },
+              {
+                "questionNumber": 2,
+                "questionText": "Roman glass was always colorless.",
+                "correctAnswer": "FALSE",
+                "points": 1,
+                "order": 2
+              },
+              {
+                "questionNumber": 3,
+                "questionText": "The first mirror factory opened in Italy.",
+                "correctAnswer": "NOT GIVEN",
+                "points": 1,
+                "order": 3
+              }
+            ]
+          },
+          {
+            "questionNumber": 6,
+            "type": "MATCHING_HEADINGS",
+            "instruction": "Choose the correct heading for each paragraph.",
+            "headingOptions": {
+              "i": "Early experiments",
+              "ii": "Industrial expansion",
+              "iii": "Modern recycling"
+            },
+            "points": 3,
+            "questions": [
+              {
+                "questionNumber": 6,
+                "questionText": "Paragraph A",
+                "correctAnswer": "i",
+                "points": 1,
+                "order": 1
+              },
+              {
+                "questionNumber": 7,
+                "questionText": "Paragraph B",
+                "correctAnswer": "ii",
+                "points": 1,
+                "order": 2
+              }
+            ]
+          },
+          {
+            "questionNumber": 8,
+            "type": "MULTIPLE_CHOICE",
+            "instruction": "Choose the correct letter A, B, C or D.",
+            "questionText": "What is the main focus of the passage?",
+            "points": 1,
+            "options": [
+              {
+                "optionKey": "A",
+                "optionText": "The chemistry of glass",
+                "isCorrect": false,
+                "orderIndex": 0
+              },
+              {
+                "optionKey": "B",
+                "optionText": "The history and development of glass",
+                "isCorrect": true,
+                "orderIndex": 1
+              },
+              {
+                "optionKey": "C",
+                "optionText": "How to recycle glass at home",
+                "isCorrect": false,
+                "orderIndex": 2
+              },
+              {
+                "optionKey": "D",
+                "optionText": "The cost of glass products",
+                "isCorrect": false,
+                "orderIndex": 3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "part": "PART_2",
+        "mode": "mock",
+        "title": "Urban Farming",
+        "content": "<h2>Urban Farming</h2><p>In modern cities...</p>",
+        "timeLimitMinutes": 20,
+        "difficulty": "MEDIUM",
+        "isActive": true,
+        "totalQuestions": 13,
+        "questions": [
+          {
+            "questionNumber": 14,
+            "type": "SUMMARY_COMPLETION",
+            "instruction": "Complete the summary using NO MORE THAN TWO WORDS.",
+            "questionText": "Urban farming reduces ____ and improves ____.",
+            "points": 2,
+            "questions": [
+              {
+                "questionNumber": 14,
+                "questionText": "reduces ____",
+                "correctAnswer": "food miles",
+                "points": 1,
+                "order": 1
+              },
+              {
+                "questionNumber": 15,
+                "questionText": "improves ____",
+                "correctAnswer": "community health",
+                "points": 1,
+                "order": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "part": "PART_3",
+        "mode": "mock",
+        "title": "AI in Education",
+        "content": "<h2>AI in Education</h2><p>Artificial intelligence has changed...</p>",
+        "timeLimitMinutes": 20,
+        "difficulty": "HARD",
+        "isActive": true,
+        "totalQuestions": 14,
+        "questions": [
+          {
+            "questionNumber": 27,
+            "type": "YES_NO_NOT_GIVEN",
+            "instruction": "Write YES, NO or NOT GIVEN.",
+            "points": 3,
+            "questions": [
+              {
+                "questionNumber": 27,
+                "questionText": "AI will fully replace teachers in 10 years.",
+                "correctAnswer": "NO",
+                "points": 1,
+                "order": 1
+              },
+              {
+                "questionNumber": 28,
+                "questionText": "Adaptive systems help weak students progress faster.",
+                "correctAnswer": "YES",
+                "points": 1,
+                "order": 2
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "listening": {
+    "title": "Academic Listening",
+    "description": "Full listening module with 4 parts",
+    "full_audio_url": "https://cdn.example.com/ielts/listening/full-test-1.mp3",
+    "is_active": true,
+    "parts": [
+      {
+        "part": "PART_1",
+        "mode": "mock",
+        "title": "Library Membership",
+        "audio_url": "https://cdn.example.com/ielts/listening/p1.mp3",
+        "transcript_url": "https://cdn.example.com/ielts/listening/p1.vtt",
+        "timeLimitMinutes": 7,
+        "difficulty": "EASY",
+        "isActive": true,
+        "totalQuestions": 10,
+        "questions": [
+          {
+            "questionNumber": 1,
+            "type": "NOTE_COMPLETION",
+            "instruction": "Complete the form.",
+            "points": 4,
+            "questions": [
+              {
+                "questionNumber": 1,
+                "questionText": "Name: ____",
+                "correctAnswer": "Miller",
+                "points": 1,
+                "order": 1
+              },
+              {
+                "questionNumber": 2,
+                "questionText": "Student ID: ____",
+                "correctAnswer": "B2048",
+                "points": 1,
+                "order": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "part": "PART_2",
+        "mode": "mock",
+        "title": "Museum Tour",
+        "audio_url": "https://cdn.example.com/ielts/listening/p2.mp3",
+        "transcript_url": "https://cdn.example.com/ielts/listening/p2.vtt",
+        "timeLimitMinutes": 8,
+        "difficulty": "MEDIUM",
+        "isActive": true,
+        "totalQuestions": 10,
+        "questions": [
+          {
+            "questionNumber": 11,
+            "type": "PLAN_MAP_LABELLING",
+            "instruction": "Label the map using letters A-H.",
+            "points": 2,
+            "questions": [
+              {
+                "questionNumber": 11,
+                "questionText": "Gift shop location",
+                "correctAnswer": "C",
+                "points": 1,
+                "order": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "part": "PART_3",
+        "mode": "mock",
+        "title": "Student Project Discussion",
+        "audio_url": "https://cdn.example.com/ielts/listening/p3.mp3",
+        "transcript_url": "https://cdn.example.com/ielts/listening/p3.vtt",
+        "timeLimitMinutes": 8,
+        "difficulty": "MEDIUM",
+        "isActive": true,
+        "totalQuestions": 10,
+        "questions": [
+          {
+            "questionNumber": 21,
+            "type": "MULTIPLE_ANSWER",
+            "instruction": "Choose TWO letters A-E.",
+            "questionText": "Which TWO problems did the students face?",
+            "points": 2,
+            "options": [
+              {
+                "optionKey": "A",
+                "optionText": "Budget cuts",
+                "isCorrect": true,
+                "orderIndex": 0
+              },
+              {
+                "optionKey": "B",
+                "optionText": "Lack of data",
+                "isCorrect": false,
+                "orderIndex": 1
+              },
+              {
+                "optionKey": "C",
+                "optionText": "Late team responses",
+                "isCorrect": true,
+                "orderIndex": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "part": "PART_4",
+        "mode": "mock",
+        "title": "Academic Lecture",
+        "audio_url": "https://cdn.example.com/ielts/listening/p4.mp3",
+        "transcript_url": "https://cdn.example.com/ielts/listening/p4.vtt",
+        "timeLimitMinutes": 10,
+        "difficulty": "HARD",
+        "isActive": true,
+        "totalQuestions": 10,
+        "questions": [
+          {
+            "questionNumber": 31,
+            "type": "TABLE_COMPLETION",
+            "instruction": "Complete the table with ONE WORD ONLY.",
+            "tableData": {
+              "headers": [
+                "Stage",
+                "Main Focus"
+              ],
+              "rows": [
+                [
+                  "Stage 1",
+                  "Observation"
+                ],
+                [
+                  "Stage 2",
+                  "____"
+                ]
+              ]
+            },
+            "points": 1,
+            "questions": [
+              {
+                "questionNumber": 31,
+                "questionText": "Stage 2 focus",
+                "correctAnswer": "analysis",
+                "points": 1,
+                "order": 1
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "writing": {
+    "title": "Academic Writing",
+    "description": "Task 1 and Task 2",
+    "is_active": true,
+    "tasks": [
+      {
+        "task": "TASK_1",
+        "mode": "mock",
+        "prompt": "The line graph shows the percentage of people using public transport in three cities from 2000 to 2020. Summarise the information by selecting and reporting the main features.",
+        "image_url": "https://cdn.example.com/ielts/writing/task1-graph.png",
+        "min_words": 150,
+        "suggested_time": 20
+      },
+      {
+        "task": "TASK_2",
+        "mode": "mock",
+        "prompt": "Some people think governments should spend more money on public services than on the arts. Discuss both views and give your own opinion.",
+        "min_words": 250,
+        "suggested_time": 40
+      }
+    ]
+  }
+}

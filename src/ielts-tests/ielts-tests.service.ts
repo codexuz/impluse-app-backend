@@ -2,8 +2,9 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from "@nestjs/common";
-import { InjectModel } from "@nestjs/sequelize";
+import { InjectConnection, InjectModel } from "@nestjs/sequelize";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import { IeltsReading } from "./entities/ielts-reading.entity.js";
 import { IeltsReadingPart } from "./entities/ielts-reading-part.entity.js";
@@ -29,7 +30,7 @@ import { CreateIeltsWritingDto } from "./dto/create-writing.dto.js";
 import { CreateWritingTaskDto } from "./dto/create-writing-task.dto.js";
 import { UpdateIeltsWritingDto } from "./dto/update-writing.dto.js";
 import { UpdateWritingTaskDto } from "./dto/update-writing-task.dto.js";
-import { CreateQuestionDto } from "./dto/create-question.dto.js";
+import { CreateQuestionDto, QuestionTypeEnum } from "./dto/create-question.dto.js";
 import { CreateQuestionOptionDto } from "./dto/create-question-option.dto.js";
 import { CreateSubQuestionDto } from "./dto/create-multiple-choice-question.dto.js";
 import { UpdateReadingPartDto } from "./dto/update-reading-part.dto.js";
@@ -64,6 +65,7 @@ import {
 } from "./dto/query.dto.js";
 import { User } from "../users/entities/user.entity.js";
 import { Op } from "sequelize";
+import { Sequelize } from "sequelize-typescript";
 
 @Injectable()
 export class IeltsTestsService {
@@ -94,6 +96,8 @@ export class IeltsTestsService {
     private readonly ieltsListeningListeningPartModel: typeof IeltsListeningListeningPart,
     @InjectModel(IeltsWritingWritingTask)
     private readonly ieltsWritingWritingTaskModel: typeof IeltsWritingWritingTask,
+    @InjectConnection()
+    private readonly sequelize: Sequelize,
   ) {}
 
   // ========== Helpers ==========
@@ -114,6 +118,363 @@ export class IeltsTestsService {
     xiv: 14,
     xv: 15,
   };
+
+  private readonly allowedQuestionTypes = new Set<string>(
+    Object.values(QuestionTypeEnum),
+  );
+
+  private ensureImportObject(payload: any): asserts payload is Record<string, any> {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      throw new BadRequestException(
+        "Invalid JSON payload. Expected an object with test, reading, listening, and writing sections.",
+      );
+    }
+  }
+
+  private normalizeToArray<T>(value: T | T[] | null | undefined): T[] {
+    if (!value) return [];
+    return Array.isArray(value) ? value : [value];
+  }
+
+  private pickString(...values: any[]): string | undefined {
+    for (const value of values) {
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
+    }
+    return undefined;
+  }
+
+  private validateQuestionType(type: any, contextPath: string): void {
+    if (!type) return;
+    if (!this.allowedQuestionTypes.has(type)) {
+      throw new BadRequestException(
+        `${contextPath}.type is invalid. Allowed values: ${Array.from(this.allowedQuestionTypes).join(", ")}`,
+      );
+    }
+  }
+
+  async importFullIeltsTestFromJson(payload: any, createdBy: string) {
+    this.ensureImportObject(payload);
+
+    const testInput = payload.test ?? payload.testInfo;
+    if (!testInput) {
+      throw new BadRequestException("Missing test section in JSON payload.");
+    }
+
+    const readingInput = payload.reading ?? payload.readings;
+    const listeningInput = payload.listening ?? payload.listenings;
+    const writingInput = payload.writing ?? payload.writings;
+
+    if (!readingInput || !listeningInput || !writingInput) {
+      throw new BadRequestException(
+        "Payload must include reading, listening, and writing sections.",
+      );
+    }
+
+    const testTitle = this.pickString(testInput.title);
+    const testMode = this.pickString(testInput.mode);
+
+    if (!testTitle) {
+      throw new BadRequestException("test.title is required.");
+    }
+
+    if (!testMode || !["practice", "mock"].includes(testMode)) {
+      throw new BadRequestException("test.mode must be either 'practice' or 'mock'.");
+    }
+
+    const transaction = await this.sequelize.transaction();
+
+    try {
+      const createdTest = await this.ieltsTestModel.create(
+        {
+          title: testTitle,
+          mode: testMode,
+          status: this.pickString(testInput.status) ?? "draft",
+          category: this.pickString(testInput.category),
+          created_by: createdBy,
+        } as any,
+        { transaction },
+      );
+
+      const createdReadings: any[] = [];
+      const createdListenings: any[] = [];
+      const createdWritings: any[] = [];
+
+      for (const reading of this.normalizeToArray<any>(readingInput)) {
+        const createdReading = await this.ieltsReadingModel.create(
+          {
+            title: this.pickString(reading?.title) ?? "Reading",
+            test_id: createdTest.id,
+          } as any,
+          { transaction },
+        );
+
+        const readingParts = this.normalizeToArray<any>(
+          reading?.parts ?? reading?.readingParts,
+        );
+
+        const createdParts: any[] = [];
+        for (let partIndex = 0; partIndex < readingParts.length; partIndex++) {
+          const part = readingParts[partIndex];
+
+          const createdPart = await this.ieltsReadingPartModel.create(
+            {
+              reading_id: createdReading.id,
+              part: part?.part,
+              mode: this.pickString(part?.mode) ?? testMode,
+              title: this.pickString(part?.title),
+              content: part?.content,
+              timeLimitMinutes: part?.timeLimitMinutes,
+              difficulty: part?.difficulty,
+              isActive: part?.isActive,
+              totalQuestions: part?.totalQuestions,
+            } as any,
+            { transaction },
+          );
+
+          const questions = this.normalizeToArray<any>(
+            part?.questions ?? part?.questionGroups,
+          );
+
+          for (let questionIndex = 0; questionIndex < questions.length; questionIndex++) {
+            const question = questions[questionIndex];
+            this.validateQuestionType(
+              question?.type,
+              `reading.parts[${partIndex}].questions[${questionIndex}]`,
+            );
+
+            const createdQuestion = await this.ieltsQuestionModel.create(
+              {
+                reading_part_id: createdPart.id,
+                questionNumber: question?.questionNumber,
+                type: question?.type,
+                questionText: question?.questionText,
+                instruction: question?.instruction,
+                context: question?.context,
+                headingOptions: question?.headingOptions,
+                tableData: question?.tableData,
+                points: question?.points,
+                isActive: question?.isActive,
+                explanation: question?.explanation,
+                fromPassage: question?.fromPassage,
+              } as any,
+              { transaction },
+            );
+
+            const subQuestions = this.normalizeToArray<any>(question?.questions);
+            if (subQuestions.length) {
+              await this.ieltsSubQuestionModel.bulkCreate(
+                subQuestions.map((sq) => ({
+                  question_id: createdQuestion.id,
+                  questionNumber: sq?.questionNumber,
+                  questionText: sq?.questionText,
+                  points: sq?.points,
+                  correctAnswer: sq?.correctAnswer,
+                  explanation: sq?.explanation,
+                  fromPassage: sq?.fromPassage,
+                  order: sq?.order,
+                })) as any,
+                { transaction },
+              );
+            }
+
+            const options = this.normalizeToArray<any>(question?.options);
+            if (options.length) {
+              await this.ieltsQuestionOptionModel.bulkCreate(
+                options.map((opt) => ({
+                  question_id: createdQuestion.id,
+                  optionKey: opt?.optionKey,
+                  optionText: opt?.optionText,
+                  isCorrect: opt?.isCorrect,
+                  orderIndex: opt?.orderIndex,
+                  explanation: opt?.explanation,
+                  fromPassage: opt?.fromPassage,
+                })) as any,
+                { transaction },
+              );
+            }
+          }
+
+          createdParts.push({ id: createdPart.id, part: createdPart.part });
+        }
+
+        createdReadings.push({
+          id: createdReading.id,
+          title: createdReading.title,
+          parts: createdParts,
+        });
+      }
+
+      for (const listening of this.normalizeToArray<any>(listeningInput)) {
+        const createdListening = await this.ieltsListeningModel.create(
+          {
+            title: this.pickString(listening?.title) ?? "Listening",
+            description: listening?.description,
+            test_id: createdTest.id,
+            full_audio_url: this.pickString(listening?.full_audio_url),
+            is_active: listening?.is_active,
+          } as any,
+          { transaction },
+        );
+
+        const listeningParts = this.normalizeToArray<any>(
+          listening?.parts ?? listening?.listeningParts,
+        );
+
+        const createdParts: any[] = [];
+        for (let partIndex = 0; partIndex < listeningParts.length; partIndex++) {
+          const part = listeningParts[partIndex];
+
+          const createdPart = await this.ieltsListeningPartModel.create(
+            {
+              listening_id: createdListening.id,
+              part: part?.part,
+              mode: this.pickString(part?.mode) ?? testMode,
+              title: this.pickString(part?.title),
+              audio_url: this.pickString(part?.audio_url, part?.audio?.url),
+              transcript_url: this.pickString(
+                part?.transcript_url,
+                part?.transcript?.url,
+              ),
+              timeLimitMinutes: part?.timeLimitMinutes,
+              difficulty: part?.difficulty,
+              isActive: part?.isActive,
+              totalQuestions: part?.totalQuestions,
+            } as any,
+            { transaction },
+          );
+
+          const questions = this.normalizeToArray<any>(
+            part?.questions ?? part?.questionGroups,
+          );
+
+          for (let questionIndex = 0; questionIndex < questions.length; questionIndex++) {
+            const question = questions[questionIndex];
+            this.validateQuestionType(
+              question?.type,
+              `listening.parts[${partIndex}].questions[${questionIndex}]`,
+            );
+
+            const createdQuestion = await this.ieltsQuestionModel.create(
+              {
+                listening_part_id: createdPart.id,
+                questionNumber: question?.questionNumber,
+                type: question?.type,
+                questionText: question?.questionText,
+                instruction: question?.instruction,
+                context: question?.context,
+                headingOptions: question?.headingOptions,
+                tableData: question?.tableData,
+                points: question?.points,
+                isActive: question?.isActive,
+                explanation: question?.explanation,
+                fromPassage: question?.fromPassage,
+              } as any,
+              { transaction },
+            );
+
+            const subQuestions = this.normalizeToArray<any>(question?.questions);
+            if (subQuestions.length) {
+              await this.ieltsSubQuestionModel.bulkCreate(
+                subQuestions.map((sq) => ({
+                  question_id: createdQuestion.id,
+                  questionNumber: sq?.questionNumber,
+                  questionText: sq?.questionText,
+                  points: sq?.points,
+                  correctAnswer: sq?.correctAnswer,
+                  explanation: sq?.explanation,
+                  fromPassage: sq?.fromPassage,
+                  order: sq?.order,
+                })) as any,
+                { transaction },
+              );
+            }
+
+            const options = this.normalizeToArray<any>(question?.options);
+            if (options.length) {
+              await this.ieltsQuestionOptionModel.bulkCreate(
+                options.map((opt) => ({
+                  question_id: createdQuestion.id,
+                  optionKey: opt?.optionKey,
+                  optionText: opt?.optionText,
+                  isCorrect: opt?.isCorrect,
+                  orderIndex: opt?.orderIndex,
+                  explanation: opt?.explanation,
+                  fromPassage: opt?.fromPassage,
+                })) as any,
+                { transaction },
+              );
+            }
+          }
+
+          createdParts.push({ id: createdPart.id, part: createdPart.part });
+        }
+
+        createdListenings.push({
+          id: createdListening.id,
+          title: createdListening.title,
+          parts: createdParts,
+        });
+      }
+
+      for (const writing of this.normalizeToArray<any>(writingInput)) {
+        const createdWriting = await this.ieltsWritingModel.create(
+          {
+            title: this.pickString(writing?.title) ?? "Writing",
+            description: writing?.description,
+            test_id: createdTest.id,
+            is_active: writing?.is_active,
+          } as any,
+          { transaction },
+        );
+
+        const tasks = this.normalizeToArray<any>(writing?.tasks);
+        const createdTasks: any[] = [];
+        for (const task of tasks) {
+          const createdTask = await this.ieltsWritingTaskModel.create(
+            {
+              writing_id: createdWriting.id,
+              task: task?.task,
+              mode: this.pickString(task?.mode) ?? testMode,
+              prompt: task?.prompt,
+              image_url: this.pickString(task?.image_url),
+              min_words: task?.min_words,
+              suggested_time: task?.suggested_time,
+            } as any,
+            { transaction },
+          );
+
+          createdTasks.push({ id: createdTask.id, task: createdTask.task });
+        }
+
+        createdWritings.push({
+          id: createdWriting.id,
+          title: createdWriting.title,
+          tasks: createdTasks,
+        });
+      }
+
+      await transaction.commit();
+
+      return {
+        message: "IELTS test imported successfully from JSON.",
+        test: {
+          id: createdTest.id,
+          title: createdTest.title,
+          mode: createdTest.mode,
+          status: createdTest.status,
+          category: createdTest.category,
+        },
+        reading: createdReadings,
+        listening: createdListenings,
+        writing: createdWritings,
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
 
   private sortHeadingOptions(
     headingOptions: Record<string, any> | null,

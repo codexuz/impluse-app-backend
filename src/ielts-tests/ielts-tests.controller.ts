@@ -10,6 +10,9 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
+  UploadedFile,
+  UseInterceptors,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -17,7 +20,7 @@ import {
   ApiBearerAuth,
   ApiResponse,
   ApiParam,
-  ApiQuery,
+  ApiConsumes,
 } from "@nestjs/swagger";
 import { IeltsTestsService } from "./ielts-tests.service.js";
 import { CreateTestDto } from "./dto/create-test.dto.js";
@@ -31,6 +34,8 @@ import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { Role } from "../roles/role.enum.js";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
 
 @ApiTags("IELTS Tests")
 @ApiBearerAuth()
@@ -86,6 +91,53 @@ export class IeltsTestsController {
   })
   async findAllSkills(@Query() query: CombinedSkillsQueryDto) {
     return await this.ieltsTestsService.findAllSkills(query);
+  }
+
+  @Post("import/full-json")
+  @HttpCode(HttpStatus.CREATED)
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @UseInterceptors(
+    FileInterceptor("file", {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  @ApiConsumes("multipart/form-data", "application/json")
+  @ApiOperation({
+    summary:
+      "Import full IELTS test (reading, listening, writing, parts, questions, types) from JSON payload or file",
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: "The full IELTS test has been successfully imported.",
+  })
+  async importFullJson(
+    @CurrentUser() user: any,
+    @UploadedFile() file?: Express.Multer.File,
+    @Body() body?: any,
+  ) {
+    let payload: any = body;
+
+    if (file) {
+      try {
+        payload = JSON.parse(file.buffer.toString("utf-8"));
+      } catch {
+        throw new BadRequestException("Uploaded file must be a valid JSON file.");
+      }
+    } else if (typeof body?.payload === "string") {
+      try {
+        payload = JSON.parse(body.payload);
+      } catch {
+        throw new BadRequestException("payload must be a valid JSON string.");
+      }
+    } else if (body?.payload && typeof body.payload === "object") {
+      payload = body.payload;
+    }
+
+    return await this.ieltsTestsService.importFullIeltsTestFromJson(
+      payload,
+      user.userId,
+    );
   }
 
   // ========== Questions ==========
