@@ -1,0 +1,1134 @@
+{
+  "test": {
+    "title": "Cambridge IELTS 18 Academic Test 1",
+    "mode": "mock",
+    "status": "draft",
+    "category": "cambridge books"
+  },
+
+  "reading": {
+    "title": "Academic Reading",
+    "test_id": "{{test_id}}"
+  },
+
+  "listening": {
+    "title": "Academic Listening",
+    "description": "Cambridge IELTS 18 Listening",
+    "test_id": "{{test_id}}",
+    "full_audio_url": "https://cdn.example.com/audio/full-listening.mp3",
+    "is_active": true
+  },
+
+  "writing": {
+    "title": "Academic Writing",
+    "description": "Writing module for Cambridge IELTS 18 Test 1",
+    "test_id": "{{test_id}}",
+    "is_active": true
+  },
+
+  "readingParts": [
+    {
+      "reading_id": "{{reading_id}}",
+      "part": "PART_1",
+      "mode": "mock",
+      "title": "Urban Planning in Singapore",
+      "content": "<h2>Urban Planning in Singapore</h2><p>Singapore, a small island city-state with a land area of just 728 square kilometres, has become a global model for urban planning and sustainable development. Since gaining independence in 1965, the government has pursued an ambitious programme of urban renewal that has transformed the nation from a collection of kampongs (villages) and squatter settlements into one of the most liveable cities in the world.</p><p>The Housing and Development Board (HDB), established in 1960, has been central to this transformation. Today, approximately 80% of Singapore's resident population lives in HDB flats, making it one of the most successful public housing programmes globally. The early focus was on building affordable housing rapidly to address a severe shortage, but over the decades, the emphasis has shifted to creating quality living environments with integrated amenities.</p><p>Singapore's approach to green urban planning has been particularly noteworthy. The concept of a 'Garden City' was introduced by Prime Minister Lee Kuan Yew in 1967. This vision has evolved into the current 'City in a Garden' initiative, which aims to integrate nature throughout the urban landscape. The National Parks Board manages over 350 parks and four nature reserves, connected by an extensive network of park connectors spanning more than 300 kilometres.</p><p>Transportation planning has been equally strategic. The Mass Rapid Transit (MRT) system, which began operations in 1987, now covers over 200 kilometres of rail network. The government has set a target of having 80% of households within a 10-minute walk of an MRT station by 2030. To manage road congestion, Singapore pioneered the Electronic Road Pricing (ERP) system and implemented a Certificate of Entitlement (COE) scheme that controls car ownership.</p><p>Looking ahead, Singapore has embarked on several innovative projects. The Tengah 'Forest Town' development aims to create a car-free town centre, while the Punggol Digital District is designed as a smart town integrating business, learning, and community spaces. These initiatives demonstrate Singapore's ongoing commitment to reimagining urban living for future generations.</p>",
+      "timeLimitMinutes": 20,
+      "difficulty": "EASY",
+      "isActive": true,
+      "totalQuestions": 13,
+      "questions": [
+        {
+          "questionNumber": 1,
+          "type": "TRUE_FALSE_NOT_GIVEN",
+          "instruction": "Do the following statements agree with the information given in Reading Passage 1? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
+          "points": 6,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 1,
+              "questionText": "Singapore's urban planning began in the 1960s.",
+              "correctAnswer": "TRUE",
+              "points": 1,
+              "explanation": "The passage states the HDB was established in 1960 and Singapore gained independence in 1965.",
+              "fromPassage": "Paragraph 1-2",
+              "order": 1
+            },
+            {
+              "questionNumber": 2,
+              "questionText": "The government demolished all old buildings during urban renewal.",
+              "correctAnswer": "FALSE",
+              "points": 1,
+              "explanation": "The passage mentions transformation, not complete demolition.",
+              "fromPassage": "Paragraph 1",
+              "order": 2
+            },
+            {
+              "questionNumber": 3,
+              "questionText": "Public housing in Singapore was inspired by Hong Kong's housing model.",
+              "correctAnswer": "NOT GIVEN",
+              "points": 1,
+              "explanation": "No comparison with Hong Kong is mentioned in the passage.",
+              "order": 3
+            },
+            {
+              "questionNumber": 4,
+              "questionText": "Approximately 80% of residents live in HDB flats.",
+              "correctAnswer": "TRUE",
+              "points": 1,
+              "explanation": "Paragraph 2 directly states this fact.",
+              "fromPassage": "Paragraph 2",
+              "order": 4
+            },
+            {
+              "questionNumber": 5,
+              "questionText": "The MRT system started before 1990.",
+              "correctAnswer": "TRUE",
+              "points": 1,
+              "explanation": "The passage states MRT began operations in 1987.",
+              "fromPassage": "Paragraph 4",
+              "order": 5
+            },
+            {
+              "questionNumber": 6,
+              "questionText": "The ERP system was copied from London's congestion charge.",
+              "correctAnswer": "NOT GIVEN",
+              "points": 1,
+              "explanation": "The passage says Singapore 'pioneered' the system but makes no comparison to London.",
+              "order": 6
+            }
+          ]
+        },
+        {
+          "questionNumber": 7,
+          "type": "NOTE_COMPLETION",
+          "instruction": "Complete the notes below. Write NO MORE THAN TWO WORDS from the passage for each answer.",
+          "questionText": "<h4>Singapore's Green Plan</h4><ul><li>Original concept: ____ (7)</li><li>Current initiative: ____ (8)</li><li>Parks connected via ____ (9)</li><li>Total park connector distance: over ____ kilometres (10)</li></ul>",
+          "points": 4,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 7,
+              "questionText": "Original concept: ____",
+              "correctAnswer": "Garden City",
+              "points": 1,
+              "fromPassage": "Paragraph 3",
+              "order": 1
+            },
+            {
+              "questionNumber": 8,
+              "questionText": "Current initiative: ____",
+              "correctAnswer": "City in a Garden",
+              "points": 1,
+              "fromPassage": "Paragraph 3",
+              "order": 2
+            },
+            {
+              "questionNumber": 9,
+              "questionText": "Parks connected via ____",
+              "correctAnswer": "park connectors",
+              "points": 1,
+              "fromPassage": "Paragraph 3",
+              "order": 3
+            },
+            {
+              "questionNumber": 10,
+              "questionText": "Total park connector distance: over ____ kilometres",
+              "correctAnswer": "300",
+              "points": 1,
+              "fromPassage": "Paragraph 3",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "questionNumber": 11,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B, C or D.",
+          "questionText": "What is the main purpose of the passage?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "To criticize Singapore's housing policies", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "To describe Singapore's urban development", "isCorrect": true, "orderIndex": 1, "explanation": "The passage provides an overview of various aspects of urban planning.", "fromPassage": "Entire passage" },
+            { "optionKey": "C", "optionText": "To compare Singapore with other cities", "isCorrect": false, "orderIndex": 2 },
+            { "optionKey": "D", "optionText": "To argue for more green spaces worldwide", "isCorrect": false, "orderIndex": 3 }
+          ]
+        },
+        {
+          "questionNumber": 12,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B, C or D.",
+          "questionText": "What is the Tengah development designed to achieve?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "Increase car ownership", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "Create a car-free town centre", "isCorrect": true, "orderIndex": 1, "explanation": "Paragraph 5 states Tengah aims to create a car-free town centre.", "fromPassage": "Paragraph 5" },
+            { "optionKey": "C", "optionText": "Replace all HDB flats", "isCorrect": false, "orderIndex": 2 },
+            { "optionKey": "D", "optionText": "Build new MRT lines", "isCorrect": false, "orderIndex": 3 }
+          ]
+        },
+        {
+          "questionNumber": 13,
+          "type": "SENTENCE_COMPLETION",
+          "instruction": "Complete the sentences below. Write NO MORE THAN TWO WORDS from the passage for each answer.",
+          "points": 1,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 13,
+              "questionText": "The Punggol Digital District is designed as a ____ integrating business and community.",
+              "correctAnswer": "smart town",
+              "points": 1,
+              "fromPassage": "Paragraph 5",
+              "order": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "reading_id": "{{reading_id}}",
+      "part": "PART_2",
+      "mode": "mock",
+      "title": "The Rise of Vertical Farming",
+      "content": "<h2>The Rise of Vertical Farming</h2><p><strong>A</strong> Vertical farming is the practice of producing food in vertically stacked layers, typically in controlled indoor environments. This concept, first proposed by Professor Dickson Despommier of Columbia University in 1999, has gained significant traction in recent years as concerns about food security and environmental sustainability have grown.</p><p><strong>B</strong> The traditional model of agriculture is increasingly under strain. The world's population is projected to reach 9.7 billion by 2050, requiring a 70% increase in food production. Meanwhile, arable land is diminishing due to urbanization, soil degradation, and the effects of climate change. Water scarcity presents another formidable challenge, with agriculture currently consuming approximately 70% of the world's freshwater supply.</p><p><strong>C</strong> Vertical farms address several of these challenges simultaneously. By growing crops indoors using hydroponics or aeroponics, they can achieve yields up to 350 times greater per square metre than conventional farming. Water usage is reduced by 95% through recirculation systems, and crops can be grown year-round regardless of external weather conditions. The proximity of vertical farms to urban centres also reduces transportation costs and the associated carbon emissions.</p><p><strong>D</strong> However, vertical farming is not without its drawbacks. The energy costs associated with artificial lighting and climate control systems remain substantial. A single vertical farm can consume as much electricity as a small town. Critics like Dr. Sarah Mitchell of Oxford University have argued that until renewable energy sources become more affordable, the environmental benefits of vertical farming may be offset by its carbon footprint. Professor James Lee of MIT, on the other hand, maintains that technological advances in LED lighting have already reduced energy costs by 40% over the past decade.</p><p><strong>E</strong> The economic viability of vertical farming depends heavily on the crops selected. Leafy greens, herbs, and strawberries have proven most profitable, as they command premium prices and grow quickly. Staple crops like wheat and rice, however, remain impractical for vertical cultivation due to their lower value-to-weight ratio and extensive space requirements. Dr. Elena Rodriguez of the University of Tokyo has suggested that vertical farming should complement, rather than replace, traditional agriculture.</p><p><strong>F</strong> Despite the challenges, investment in vertical farming continues to accelerate. Global market size reached $5.5 billion in 2023 and is projected to exceed $20 billion by 2030. Major corporations including Google, Amazon, and SoftBank have invested heavily in vertical farming startups. Singapore, Japan, and the United Arab Emirates have emerged as global leaders in adopting this technology, driven by limited arable land and high food import dependency.</p>",
+      "timeLimitMinutes": 20,
+      "difficulty": "MEDIUM",
+      "isActive": true,
+      "totalQuestions": 13,
+      "questions": [
+        {
+          "questionNumber": 14,
+          "type": "MATCHING_HEADINGS",
+          "instruction": "Choose the correct heading for paragraphs A–F from the list of headings below.",
+          "headingOptions": {
+            "i": "The environmental impact of energy consumption",
+            "ii": "A revolutionary concept takes shape",
+            "iii": "Government policies supporting vertical farming",
+            "iv": "Growing investment despite obstacles",
+            "v": "Advantages over conventional methods",
+            "vi": "Selecting the right crops for profitability",
+            "vii": "The pressures on traditional agriculture",
+            "viii": "Future predictions for the farming industry"
+          },
+          "points": 6,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 14,
+              "questionText": "Paragraph A",
+              "correctAnswer": "ii",
+              "points": 1,
+              "order": 1
+            },
+            {
+              "questionNumber": 15,
+              "questionText": "Paragraph B",
+              "correctAnswer": "vii",
+              "points": 1,
+              "order": 2
+            },
+            {
+              "questionNumber": 16,
+              "questionText": "Paragraph C",
+              "correctAnswer": "v",
+              "points": 1,
+              "order": 3
+            },
+            {
+              "questionNumber": 17,
+              "questionText": "Paragraph D",
+              "correctAnswer": "i",
+              "points": 1,
+              "order": 4
+            },
+            {
+              "questionNumber": 18,
+              "questionText": "Paragraph E",
+              "correctAnswer": "vi",
+              "points": 1,
+              "order": 5
+            },
+            {
+              "questionNumber": 19,
+              "questionText": "Paragraph F",
+              "correctAnswer": "iv",
+              "points": 1,
+              "order": 6
+            }
+          ]
+        },
+        {
+          "questionNumber": 20,
+          "type": "MATCHING_INFORMATION",
+          "instruction": "Which paragraph contains the following information? Write the correct letter, A–F.",
+          "points": 3,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 20,
+              "questionText": "A comparison of water usage between traditional and vertical farming",
+              "correctAnswer": "C",
+              "points": 1,
+              "fromPassage": "Paragraph C",
+              "order": 1
+            },
+            {
+              "questionNumber": 21,
+              "questionText": "Reference to specific companies funding vertical farming ventures",
+              "correctAnswer": "F",
+              "points": 1,
+              "fromPassage": "Paragraph F",
+              "order": 2
+            },
+            {
+              "questionNumber": 22,
+              "questionText": "A mention of the projected global population growth",
+              "correctAnswer": "B",
+              "points": 1,
+              "fromPassage": "Paragraph B",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "questionNumber": 23,
+          "type": "MATCHING_FEATURES",
+          "instruction": "Match each statement with the correct researcher, A, B or C.",
+          "points": 3,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "Dr. Sarah Mitchell", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "Professor James Lee", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "Dr. Elena Rodriguez", "isCorrect": false, "orderIndex": 2 }
+          ],
+          "questions": [
+            {
+              "questionNumber": 23,
+              "questionText": "Questioned the net environmental benefit of vertical farming given its energy use",
+              "correctAnswer": "A",
+              "points": 1,
+              "fromPassage": "Paragraph D",
+              "order": 1
+            },
+            {
+              "questionNumber": 24,
+              "questionText": "Highlighted improvements in lighting technology to reduce costs",
+              "correctAnswer": "B",
+              "points": 1,
+              "fromPassage": "Paragraph D",
+              "order": 2
+            },
+            {
+              "questionNumber": 25,
+              "questionText": "Proposed that vertical farming should work alongside traditional methods",
+              "correctAnswer": "C",
+              "points": 1,
+              "fromPassage": "Paragraph E",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "questionNumber": 26,
+          "type": "YES_NO_NOT_GIVEN",
+          "instruction": "Do the following statements agree with the views of the writer? Write YES if the statement agrees with the views of the writer, NO if the statement contradicts the views of the writer, NOT GIVEN if it is impossible to say what the writer thinks about this.",
+          "points": 1,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 26,
+              "questionText": "Vertical farming will eventually replace all traditional agriculture.",
+              "correctAnswer": "NO",
+              "points": 1,
+              "explanation": "The passage suggests vertical farming should complement rather than replace traditional agriculture.",
+              "fromPassage": "Paragraph E",
+              "order": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "reading_id": "{{reading_id}}",
+      "part": "PART_3",
+      "mode": "mock",
+      "title": "The Psychology of Decision Making",
+      "content": "<h2>The Psychology of Decision Making</h2><p>Every day, the average person makes approximately 35,000 decisions, ranging from trivial choices about what to eat to life-changing decisions about career and relationships. Understanding how the human brain processes these decisions has been a central focus of cognitive psychology and behavioural economics for decades.</p><p>The dual-process theory, proposed by psychologist Daniel Kahneman, distinguishes between two systems of thinking. System 1 operates automatically and quickly, with little effort or voluntary control. System 2 allocates attention to effortful mental activities, including complex computations. Most of our daily decisions are handled by System 1, which relies on heuristics — mental shortcuts that simplify complex problems.</p><p>One well-documented heuristic is the anchoring effect. When making numerical estimates, people tend to rely heavily on the first piece of information they encounter (the 'anchor'), even when it is irrelevant. In a classic study, participants were asked to estimate the percentage of African countries in the United Nations. Those who first saw a random number generated by a wheel of fortune gave estimates that were strongly influenced by that number, despite knowing it was random.</p><p>The framing effect demonstrates how the presentation of information influences decisions. Research by Tversky and Kahneman showed that people respond differently to identical choices depending on whether they are presented in terms of gains or losses. A medical treatment described as having a '90% survival rate' is perceived more favourably than one with a '10% mortality rate', even though both convey the same information.</p><p>Loss aversion, a key concept in prospect theory, suggests that the psychological impact of losing something is approximately twice as powerful as the pleasure of gaining the same thing. This explains why investors often hold onto losing stocks too long while selling winning stocks too early — a phenomenon known as the disposition effect.</p><p>Choice overload, also known as the paradox of choice, occurs when having too many options leads to decision paralysis, anxiety, and reduced satisfaction. A landmark study by psychologists Sheena Iyengar and Mark Lepper found that shoppers presented with 24 varieties of jam were less likely to make a purchase than those offered only 6 varieties.</p><p>Understanding these cognitive biases has profound implications for fields ranging from public health to financial regulation. Behavioural economists have developed the concept of 'nudging' — designing choice environments that guide people toward better decisions without restricting their freedom. Examples include placing healthier foods at eye level in cafeterias and automatically enrolling employees in retirement savings plans.</p>",
+      "timeLimitMinutes": 20,
+      "difficulty": "HARD",
+      "isActive": true,
+      "totalQuestions": 14,
+      "questions": [
+        {
+          "questionNumber": 27,
+          "type": "SUMMARY_COMPLETION",
+          "instruction": "Complete the summary below. Choose NO MORE THAN TWO WORDS from the passage for each answer.",
+          "questionText": "<p>According to the ____ (27), the brain uses two distinct systems when processing decisions. Most everyday choices are managed by ____ (28), which uses ____ (29) to simplify complex problems. One example is the ____ (30), where people's estimates are influenced by initial information they receive.</p>",
+          "points": 4,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 27,
+              "questionText": "According to the ____",
+              "correctAnswer": "dual-process theory",
+              "points": 1,
+              "fromPassage": "Paragraph 2",
+              "order": 1
+            },
+            {
+              "questionNumber": 28,
+              "questionText": "Most everyday choices are managed by ____",
+              "correctAnswer": "System 1",
+              "points": 1,
+              "fromPassage": "Paragraph 2",
+              "order": 2
+            },
+            {
+              "questionNumber": 29,
+              "questionText": "which uses ____ to simplify complex problems",
+              "correctAnswer": "heuristics",
+              "points": 1,
+              "fromPassage": "Paragraph 2",
+              "order": 3
+            },
+            {
+              "questionNumber": 30,
+              "questionText": "One example is the ____",
+              "correctAnswer": "anchoring effect",
+              "points": 1,
+              "fromPassage": "Paragraph 3",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "questionNumber": 31,
+          "type": "SUMMARY_COMPLETION_DRAG_DROP",
+          "instruction": "Complete the summary using the list of words A–H below.",
+          "questionText": "<p>The ____ (31) shows that people's responses to identical information vary depending on how it is presented. Meanwhile, ____ (32) explains why people feel the pain of losses more strongly than equivalent gains. Research has also shown that having too many options can cause ____ (33).</p>",
+          "points": 3,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "anchoring effect", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "framing effect", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "loss aversion", "isCorrect": false, "orderIndex": 2 },
+            { "optionKey": "D", "optionText": "decision paralysis", "isCorrect": false, "orderIndex": 3 },
+            { "optionKey": "E", "optionText": "choice overload", "isCorrect": false, "orderIndex": 4 },
+            { "optionKey": "F", "optionText": "prospect theory", "isCorrect": false, "orderIndex": 5 },
+            { "optionKey": "G", "optionText": "disposition effect", "isCorrect": false, "orderIndex": 6 },
+            { "optionKey": "H", "optionText": "nudging", "isCorrect": false, "orderIndex": 7 }
+          ],
+          "questions": [
+            {
+              "questionNumber": 31,
+              "questionText": "The ____ shows that people's responses vary depending on presentation",
+              "correctAnswer": "B",
+              "points": 1,
+              "fromPassage": "Paragraph 4",
+              "order": 1
+            },
+            {
+              "questionNumber": 32,
+              "questionText": "____ explains why people feel the pain of losses more strongly",
+              "correctAnswer": "C",
+              "points": 1,
+              "fromPassage": "Paragraph 5",
+              "order": 2
+            },
+            {
+              "questionNumber": 33,
+              "questionText": "having too many options can cause ____",
+              "correctAnswer": "D",
+              "points": 1,
+              "fromPassage": "Paragraph 6",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "questionNumber": 34,
+          "type": "MATCHING_SENTENCE_ENDINGS",
+          "instruction": "Complete each sentence with the correct ending, A–F, below.",
+          "points": 3,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "was influenced by a randomly generated number.", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "led to the development of the nudging concept.", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "resulted in fewer purchases being made.", "isCorrect": false, "orderIndex": 2 },
+            { "optionKey": "D", "optionText": "causes investors to make irrational decisions.", "isCorrect": false, "orderIndex": 3 },
+            { "optionKey": "E", "optionText": "operates quickly and automatically.", "isCorrect": false, "orderIndex": 4 },
+            { "optionKey": "F", "optionText": "restricts people's freedom of choice.", "isCorrect": false, "orderIndex": 5 }
+          ],
+          "questions": [
+            {
+              "questionNumber": 34,
+              "questionText": "In the anchoring experiment, participants' estimate",
+              "correctAnswer": "A",
+              "points": 1,
+              "fromPassage": "Paragraph 3",
+              "order": 1
+            },
+            {
+              "questionNumber": 35,
+              "questionText": "Presenting shoppers with 24 jam varieties",
+              "correctAnswer": "C",
+              "points": 1,
+              "fromPassage": "Paragraph 6",
+              "order": 2
+            },
+            {
+              "questionNumber": 36,
+              "questionText": "The disposition effect in stock trading",
+              "correctAnswer": "D",
+              "points": 1,
+              "fromPassage": "Paragraph 5",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "questionNumber": 37,
+          "type": "SHORT_ANSWER",
+          "instruction": "Answer the questions below. Write NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer.",
+          "points": 3,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 37,
+              "questionText": "How many decisions does the average person make daily?",
+              "correctAnswer": "35,000",
+              "points": 1,
+              "fromPassage": "Paragraph 1",
+              "order": 1
+            },
+            {
+              "questionNumber": 38,
+              "questionText": "According to prospect theory, how much stronger is the impact of a loss compared to an equivalent gain?",
+              "correctAnswer": "twice as powerful",
+              "points": 1,
+              "fromPassage": "Paragraph 5",
+              "order": 2
+            },
+            {
+              "questionNumber": 39,
+              "questionText": "Who proposed the dual-process theory?",
+              "correctAnswer": "Daniel Kahneman",
+              "points": 1,
+              "fromPassage": "Paragraph 2",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "questionNumber": 40,
+          "type": "MULTIPLE_ANSWER",
+          "instruction": "Choose THREE correct answers.",
+          "questionText": "<p>Which <strong>THREE</strong> of the following are examples of cognitive biases discussed in the passage?</p>",
+          "points": 3,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "The anchoring effect", "isCorrect": true, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "Confirmation bias", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "The framing effect", "isCorrect": true, "orderIndex": 2 },
+            { "optionKey": "D", "optionText": "The halo effect", "isCorrect": false, "orderIndex": 3 },
+            { "optionKey": "E", "optionText": "Choice overload", "isCorrect": true, "orderIndex": 4 },
+            { "optionKey": "F", "optionText": "The bandwagon effect", "isCorrect": false, "orderIndex": 5 }
+          ],
+          "questions": [
+            {
+              "questionNumber": 40,
+              "questionText": "----",
+              "correctAnswer": "A",
+              "points": 1,
+              "order": 1
+            },
+            {
+              "questionNumber": 41,
+              "questionText": "----",
+              "correctAnswer": "C",
+              "points": 1,
+              "order": 2
+            },
+            {
+              "questionNumber": 42,
+              "questionText": "----",
+              "correctAnswer": "E",
+              "points": 1,
+              "order": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+
+  "listeningParts": [
+    {
+      "listening_id": "{{listening_id}}",
+      "part": "PART_1",
+      "mode": "mock",
+      "title": "Hotel Reservation Enquiry",
+      "audio": {
+        "url": "https://cdn.example.com/audio/section1.mp3",
+        "file_name": "section1.mp3",
+        "duration": 240
+      },
+      "timeLimitMinutes": 7,
+      "difficulty": "EASY",
+      "isActive": true,
+      "totalQuestions": 10,
+      "questions": [
+        {
+          "questionNumber": 1,
+          "type": "NOTE_COMPLETION",
+          "instruction": "Complete the form below. Write ONE WORD AND/OR A NUMBER for each answer.",
+          "questionText": "<h4>Hotel Booking Form</h4><table><tr><td>Guest name:</td><td>____ (1)</td></tr><tr><td>Phone number:</td><td>____ (2)</td></tr><tr><td>Room type:</td><td>____ (3)</td></tr><tr><td>Number of nights:</td><td>____ (4)</td></tr><tr><td>Special request:</td><td>____ (5)</td></tr></table>",
+          "points": 5,
+          "isActive": true,
+          "questions": [
+            { "questionNumber": 1, "questionText": "Guest name: ____", "correctAnswer": "Peterson", "points": 1, "order": 1 },
+            { "questionNumber": 2, "questionText": "Phone number: ____", "correctAnswer": "0741825963", "points": 1, "order": 2 },
+            { "questionNumber": 3, "questionText": "Room type: ____", "correctAnswer": "double", "points": 1, "order": 3 },
+            { "questionNumber": 4, "questionText": "Number of nights: ____", "correctAnswer": "3", "points": 1, "order": 4 },
+            { "questionNumber": 5, "questionText": "Special request: ____", "correctAnswer": "parking", "points": 1, "order": 5 }
+          ]
+        },
+        {
+          "questionNumber": 6,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B or C.",
+          "questionText": "What time does the hotel restaurant close?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "9 PM", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "10 PM", "isCorrect": true, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "11 PM", "isCorrect": false, "orderIndex": 2 }
+          ]
+        },
+        {
+          "questionNumber": 7,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B or C.",
+          "questionText": "What is included in the room price?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "Breakfast only", "isCorrect": true, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "Breakfast and lunch", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "All meals", "isCorrect": false, "orderIndex": 2 }
+          ]
+        },
+        {
+          "questionNumber": 8,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B or C.",
+          "questionText": "How can the guest get to the hotel from the airport?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "By taxi", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "By shuttle bus", "isCorrect": true, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "By train", "isCorrect": false, "orderIndex": 2 }
+          ]
+        },
+        {
+          "questionNumber": 9,
+          "type": "SENTENCE_COMPLETION",
+          "instruction": "Complete the sentences below. Write NO MORE THAN TWO WORDS for each answer.",
+          "points": 2,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 9,
+              "questionText": "The hotel's swimming pool is located on the ____.",
+              "correctAnswer": "top floor",
+              "points": 1,
+              "order": 1
+            },
+            {
+              "questionNumber": 10,
+              "questionText": "Guests can borrow ____ from reception for free.",
+              "correctAnswer": "umbrellas",
+              "points": 1,
+              "order": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "listening_id": "{{listening_id}}",
+      "part": "PART_2",
+      "mode": "mock",
+      "title": "Tour Guide Introduction to City Museum",
+      "audio": {
+        "url": "https://cdn.example.com/audio/section2.mp3",
+        "file_name": "section2.mp3",
+        "duration": 300
+      },
+      "timeLimitMinutes": 8,
+      "difficulty": "EASY",
+      "isActive": true,
+      "totalQuestions": 10,
+      "questions": [
+        {
+          "questionNumber": 11,
+          "type": "PLAN_MAP_LABELLING",
+          "instruction": "Label the map below. Choose FIVE answers from the box and write the correct letter, A–H, next to Questions 11–15.",
+          "questionText": "<img src='https://cdn.example.com/images/museum-map.png' alt='Museum Floor Plan' />",
+          "points": 5,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "Gift Shop", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "Ancient History Gallery", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "Café", "isCorrect": false, "orderIndex": 2 },
+            { "optionKey": "D", "optionText": "Temporary Exhibition Hall", "isCorrect": false, "orderIndex": 3 },
+            { "optionKey": "E", "optionText": "Children's Discovery Zone", "isCorrect": false, "orderIndex": 4 },
+            { "optionKey": "F", "optionText": "Lecture Theatre", "isCorrect": false, "orderIndex": 5 },
+            { "optionKey": "G", "optionText": "Cloakroom", "isCorrect": false, "orderIndex": 6 },
+            { "optionKey": "H", "optionText": "Natural History Wing", "isCorrect": false, "orderIndex": 7 }
+          ],
+          "questions": [
+            { "questionNumber": 11, "questionText": "Room 1 (ground floor, left of entrance)", "correctAnswer": "A", "points": 1, "order": 1 },
+            { "questionNumber": 12, "questionText": "Room 2 (ground floor, right of entrance)", "correctAnswer": "G", "points": 1, "order": 2 },
+            { "questionNumber": 13, "questionText": "Room 3 (first floor, east wing)", "correctAnswer": "B", "points": 1, "order": 3 },
+            { "questionNumber": 14, "questionText": "Room 4 (first floor, west wing)", "correctAnswer": "H", "points": 1, "order": 4 },
+            { "questionNumber": 15, "questionText": "Room 5 (second floor, centre)", "correctAnswer": "D", "points": 1, "order": 5 }
+          ]
+        },
+        {
+          "questionNumber": 16,
+          "type": "MULTIPLE_ANSWER",
+          "instruction": "Choose TWO correct answers.",
+          "questionText": "<p>Which <strong>TWO</strong> activities are available for free at the museum?</p>",
+          "points": 2,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "Guided tours on weekdays", "isCorrect": true, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "Art workshops", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "Audio guides", "isCorrect": true, "orderIndex": 2 },
+            { "optionKey": "D", "optionText": "Parking", "isCorrect": false, "orderIndex": 3 },
+            { "optionKey": "E", "optionText": "Special lectures", "isCorrect": false, "orderIndex": 4 }
+          ],
+          "questions": [
+            { "questionNumber": 16, "questionText": "----", "correctAnswer": "A", "points": 1, "order": 1 },
+            { "questionNumber": 17, "questionText": "----", "correctAnswer": "C", "points": 1, "order": 2 }
+          ]
+        },
+        {
+          "questionNumber": 18,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B or C.",
+          "questionText": "When is the museum closed?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "Mondays", "isCorrect": true, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "Sundays", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "Public holidays", "isCorrect": false, "orderIndex": 2 }
+          ]
+        },
+        {
+          "questionNumber": 19,
+          "type": "NOTE_COMPLETION",
+          "instruction": "Complete the notes below. Write ONE WORD AND/OR A NUMBER for each answer.",
+          "questionText": "<h4>Museum Information</h4><ul><li>Opening hours: ____ (19) am to 6 pm</li><li>Admission for adults: £____ (20)</li></ul>",
+          "points": 2,
+          "isActive": true,
+          "questions": [
+            { "questionNumber": 19, "questionText": "Opening hours: ____ am to 6 pm", "correctAnswer": "9", "points": 1, "order": 1 },
+            { "questionNumber": 20, "questionText": "Admission for adults: £____", "correctAnswer": "12", "points": 1, "order": 2 }
+          ]
+        }
+      ]
+    },
+    {
+      "listening_id": "{{listening_id}}",
+      "part": "PART_3",
+      "mode": "mock",
+      "title": "University Tutorial Discussion on Research Methods",
+      "audio": {
+        "url": "https://cdn.example.com/audio/section3.mp3",
+        "file_name": "section3.mp3",
+        "duration": 330
+      },
+      "timeLimitMinutes": 8,
+      "difficulty": "MEDIUM",
+      "isActive": true,
+      "totalQuestions": 10,
+      "questions": [
+        {
+          "questionNumber": 21,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B or C.",
+          "questionText": "What is the main topic of the students' research project?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "The effects of social media on teenagers", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "Student attitudes towards online learning", "isCorrect": true, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "Teacher training in digital literacy", "isCorrect": false, "orderIndex": 2 }
+          ]
+        },
+        {
+          "questionNumber": 22,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B or C.",
+          "questionText": "What research method do the students plan to use first?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "Interviews", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "Questionnaires", "isCorrect": true, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "Focus groups", "isCorrect": false, "orderIndex": 2 }
+          ]
+        },
+        {
+          "questionNumber": 23,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B or C.",
+          "questionText": "What does the tutor suggest they change about their proposal?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "The sample size", "isCorrect": true, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "The research question", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "The deadline", "isCorrect": false, "orderIndex": 2 }
+          ]
+        },
+        {
+          "questionNumber": 24,
+          "type": "MULTIPLE_CHOICE",
+          "instruction": "Choose the correct letter, A, B or C.",
+          "questionText": "When is the final submission deadline?",
+          "points": 1,
+          "isActive": true,
+          "options": [
+            { "optionKey": "A", "optionText": "March 15th", "isCorrect": false, "orderIndex": 0 },
+            { "optionKey": "B", "optionText": "April 1st", "isCorrect": false, "orderIndex": 1 },
+            { "optionKey": "C", "optionText": "April 15th", "isCorrect": true, "orderIndex": 2 }
+          ]
+        },
+        {
+          "questionNumber": 25,
+          "type": "TABLE_COMPLETION",
+          "instruction": "Complete the table below. Write NO MORE THAN ONE WORD AND/OR A NUMBER for each answer.",
+          "questionText": "",
+          "tableData": {
+            "headers": ["Research Phase", "Method", "Timeline"],
+            "rows": [
+              ["Phase 1", "Questionnaires", "Week 1–2"],
+              ["Phase 2", "____", "Week 3–4"],
+              ["Phase 3", "Data analysis", "____"],
+              ["Phase 4", "____", "Week 8–10"]
+            ]
+          },
+          "points": 3,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 25,
+              "questionText": "Phase 2 – Method",
+              "correctAnswer": "interviews",
+              "points": 1,
+              "order": 1
+            },
+            {
+              "questionNumber": 26,
+              "questionText": "Phase 3 – Timeline",
+              "correctAnswer": "Week 5–7",
+              "points": 1,
+              "order": 2
+            },
+            {
+              "questionNumber": 27,
+              "questionText": "Phase 4 – Method",
+              "correctAnswer": "report writing",
+              "points": 1,
+              "order": 3
+            }
+          ]
+        },
+        {
+          "questionNumber": 28,
+          "type": "FLOW_CHART_COMPLETION",
+          "instruction": "Complete the flow chart below. Write NO MORE THAN TWO WORDS for each answer.",
+          "questionText": "<div class='flowchart'><div class='step'>Step 1: Define ____ (28)</div><div class='arrow'>↓</div><div class='step'>Step 2: Design the ____ (29)</div><div class='arrow'>↓</div><div class='step'>Step 3: Collect ____ (30) from participants</div></div>",
+          "points": 3,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 28,
+              "questionText": "Step 1: Define ____",
+              "correctAnswer": "research questions",
+              "points": 1,
+              "order": 1
+            },
+            {
+              "questionNumber": 29,
+              "questionText": "Step 2: Design the ____",
+              "correctAnswer": "survey instrument",
+              "points": 1,
+              "order": 2
+            },
+            {
+              "questionNumber": 30,
+              "questionText": "Step 3: Collect ____ from participants",
+              "correctAnswer": "responses",
+              "points": 1,
+              "order": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "listening_id": "{{listening_id}}",
+      "part": "PART_4",
+      "mode": "mock",
+      "title": "Lecture on Marine Conservation",
+      "audio": {
+        "url": "https://cdn.example.com/audio/section4.mp3",
+        "file_name": "section4.mp3",
+        "duration": 360
+      },
+      "timeLimitMinutes": 10,
+      "difficulty": "HARD",
+      "isActive": true,
+      "totalQuestions": 10,
+      "questions": [
+        {
+          "questionNumber": 31,
+          "type": "SENTENCE_COMPLETION",
+          "instruction": "Complete the sentences below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer.",
+          "points": 5,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 31,
+              "questionText": "Coral reefs support approximately ____ of all marine species.",
+              "correctAnswer": "25 percent",
+              "points": 1,
+              "order": 1
+            },
+            {
+              "questionNumber": 32,
+              "questionText": "The Great Barrier Reef has experienced ____ major bleaching events since 2016.",
+              "correctAnswer": "four",
+              "points": 1,
+              "order": 2
+            },
+            {
+              "questionNumber": 33,
+              "questionText": "Marine protected areas currently cover ____ of the world's oceans.",
+              "correctAnswer": "8 percent",
+              "points": 1,
+              "order": 3
+            },
+            {
+              "questionNumber": 34,
+              "questionText": "The speaker recommends expanding protection to ____ of oceans by 2030.",
+              "correctAnswer": "30 percent",
+              "points": 1,
+              "order": 4
+            },
+            {
+              "questionNumber": 35,
+              "questionText": "Plastic pollution affects more than ____ marine species.",
+              "correctAnswer": "800",
+              "points": 1,
+              "order": 5
+            }
+          ]
+        },
+        {
+          "questionNumber": 36,
+          "type": "DIAGRAM_LABELLING",
+          "instruction": "Label the diagram below. Write NO MORE THAN TWO WORDS from the lecture for each answer.",
+          "questionText": "<img src='https://cdn.example.com/images/coral-reef-ecosystem.png' alt='Coral Reef Ecosystem Diagram' />",
+          "points": 5,
+          "isActive": true,
+          "questions": [
+            {
+              "questionNumber": 36,
+              "questionText": "Label 1 (top layer, sunlight zone)",
+              "correctAnswer": "photic zone",
+              "points": 1,
+              "order": 1
+            },
+            {
+              "questionNumber": 37,
+              "questionText": "Label 2 (organisms attached to reef)",
+              "correctAnswer": "coral polyps",
+              "points": 1,
+              "order": 2
+            },
+            {
+              "questionNumber": 38,
+              "questionText": "Label 3 (small organisms in water)",
+              "correctAnswer": "zooplankton",
+              "points": 1,
+              "order": 3
+            },
+            {
+              "questionNumber": 39,
+              "questionText": "Label 4 (base of reef structure)",
+              "correctAnswer": "limestone",
+              "points": 1,
+              "order": 4
+            },
+            {
+              "questionNumber": 40,
+              "questionText": "Label 5 (symbiotic algae)",
+              "correctAnswer": "zooxanthellae",
+              "points": 1,
+              "order": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+
+  "writingTasks": [
+    {
+      "writing_id": "{{writing_id}}",
+      "task": "TASK_1",
+      "mode": "mock",
+      "prompt": "<p>The pie charts below show the online sales for retail sectors in New Zealand in 2003 and 2013.</p><p>Summarise the information by selecting and reporting the main features, and make comparisons where relevant.</p><p>Write at least 150 words.</p>",
+      "image_url": "https://cdn.example.com/images/pie-chart-nz-retail.png",
+      "min_words": 150,
+      "suggested_time": 20
+    },
+    {
+      "writing_id": "{{writing_id}}",
+      "task": "TASK_2",
+      "mode": "mock",
+      "prompt": "<p>Some people think that the best way to reduce crime is to give longer prison sentences. Others, however, believe there are better alternative ways of reducing crime.</p><p>Discuss both views and give your own opinion.</p><p>Write at least 250 words.</p>",
+      "min_words": 250,
+      "suggested_time": 40
+    }
+  ],
+
+  "publishTest": {
+    "status": "published"
+  },
+
+  "answerSubmission": {
+    "attempt": {
+      "scope": "TEST",
+      "test_id": "{{test_id}}"
+    },
+    "readingAnswers": {
+      "attempt_id": "{{attempt_id}}",
+      "answers": [
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q1_id}}", "question_number": "1", "answer": "TRUE" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q1_id}}", "question_number": "2", "answer": "FALSE" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q1_id}}", "question_number": "3", "answer": "NOT GIVEN" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q1_id}}", "question_number": "4", "answer": "TRUE" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q1_id}}", "question_number": "5", "answer": "TRUE" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q1_id}}", "question_number": "6", "answer": "NOT GIVEN" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q2_id}}", "question_number": "7", "answer": "Garden City" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q2_id}}", "question_number": "8", "answer": "City in a Garden" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q2_id}}", "question_number": "9", "answer": "park connectors" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q2_id}}", "question_number": "10", "answer": "300" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q3_id}}", "question_number": "11", "answer": "B" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q4_id}}", "question_number": "12", "answer": "B" },
+        { "part_id": "{{reading_part_1_id}}", "question_id": "{{q5_id}}", "question_number": "13", "answer": "smart town" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q6_id}}", "question_number": "14", "answer": "ii" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q6_id}}", "question_number": "15", "answer": "vii" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q6_id}}", "question_number": "16", "answer": "v" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q6_id}}", "question_number": "17", "answer": "i" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q6_id}}", "question_number": "18", "answer": "vi" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q6_id}}", "question_number": "19", "answer": "iv" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q7_id}}", "question_number": "20", "answer": "C" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q7_id}}", "question_number": "21", "answer": "F" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q7_id}}", "question_number": "22", "answer": "B" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q8_id}}", "question_number": "23", "answer": "A" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q8_id}}", "question_number": "24", "answer": "B" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q8_id}}", "question_number": "25", "answer": "C" },
+        { "part_id": "{{reading_part_2_id}}", "question_id": "{{q9_id}}", "question_number": "26", "answer": "NO" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q10_id}}", "question_number": "27", "answer": "dual-process theory" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q10_id}}", "question_number": "28", "answer": "System 1" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q10_id}}", "question_number": "29", "answer": "heuristics" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q10_id}}", "question_number": "30", "answer": "anchoring effect" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q11_id}}", "question_number": "31", "answer": "B" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q11_id}}", "question_number": "32", "answer": "C" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q11_id}}", "question_number": "33", "answer": "D" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q12_id}}", "question_number": "34", "answer": "A" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q12_id}}", "question_number": "35", "answer": "C" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q12_id}}", "question_number": "36", "answer": "D" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q13_id}}", "question_number": "37", "answer": "35,000" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q13_id}}", "question_number": "38", "answer": "twice as powerful" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q13_id}}", "question_number": "39", "answer": "Daniel Kahneman" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q14_id}}", "question_number": "40", "answer": "A" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q14_id}}", "question_number": "41", "answer": "C" },
+        { "part_id": "{{reading_part_3_id}}", "question_id": "{{q14_id}}", "question_number": "42", "answer": "E" }
+      ]
+    },
+    "listeningAnswers": {
+      "attempt_id": "{{attempt_id}}",
+      "answers": [
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq1_id}}", "question_number": "1", "answer": "Peterson" },
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq1_id}}", "question_number": "2", "answer": "0741825963" },
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq1_id}}", "question_number": "3", "answer": "double" },
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq1_id}}", "question_number": "4", "answer": "3" },
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq1_id}}", "question_number": "5", "answer": "parking" },
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq2_id}}", "question_number": "6", "answer": "B" },
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq3_id}}", "question_number": "7", "answer": "A" },
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq4_id}}", "question_number": "8", "answer": "B" },
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq5_id}}", "question_number": "9", "answer": "top floor" },
+        { "part_id": "{{listening_part_1_id}}", "question_id": "{{lq5_id}}", "question_number": "10", "answer": "umbrellas" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq6_id}}", "question_number": "11", "answer": "A" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq6_id}}", "question_number": "12", "answer": "G" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq6_id}}", "question_number": "13", "answer": "B" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq6_id}}", "question_number": "14", "answer": "H" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq6_id}}", "question_number": "15", "answer": "D" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq7_id}}", "question_number": "16", "answer": "A" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq7_id}}", "question_number": "17", "answer": "C" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq8_id}}", "question_number": "18", "answer": "A" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq9_id}}", "question_number": "19", "answer": "9" },
+        { "part_id": "{{listening_part_2_id}}", "question_id": "{{lq9_id}}", "question_number": "20", "answer": "12" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq10_id}}", "question_number": "21", "answer": "B" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq11_id}}", "question_number": "22", "answer": "B" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq12_id}}", "question_number": "23", "answer": "A" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq13_id}}", "question_number": "24", "answer": "C" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq14_id}}", "question_number": "25", "answer": "interviews" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq14_id}}", "question_number": "26", "answer": "Week 5–7" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq14_id}}", "question_number": "27", "answer": "report writing" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq15_id}}", "question_number": "28", "answer": "research questions" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq15_id}}", "question_number": "29", "answer": "survey instrument" },
+        { "part_id": "{{listening_part_3_id}}", "question_id": "{{lq15_id}}", "question_number": "30", "answer": "responses" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq16_id}}", "question_number": "31", "answer": "25 percent" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq16_id}}", "question_number": "32", "answer": "four" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq16_id}}", "question_number": "33", "answer": "8 percent" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq16_id}}", "question_number": "34", "answer": "30 percent" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq16_id}}", "question_number": "35", "answer": "800" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq17_id}}", "question_number": "36", "answer": "photic zone" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq17_id}}", "question_number": "37", "answer": "coral polyps" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq17_id}}", "question_number": "38", "answer": "zooplankton" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq17_id}}", "question_number": "39", "answer": "limestone" },
+        { "part_id": "{{listening_part_4_id}}", "question_id": "{{lq17_id}}", "question_number": "40", "answer": "zooxanthellae" }
+      ]
+    },
+    "writingAnswers": {
+      "attempt_id": "{{attempt_id}}",
+      "answers": [
+        {
+          "task_id": "{{writing_task_1_id}}",
+          "answer_text": "The pie charts compare the proportion of online retail sales across different sectors in New Zealand between 2003 and 2013. Overall, travel dominated online sales in both years, while the proportion of film and music sales declined significantly over the period. In 2003, travel accounted for the largest share of online retail at 36%, followed by film and music at 21%, and books at 19%. Clothing represented only 5% of online sales, making it the smallest sector. By 2013, travel had maintained its leading position, increasing slightly to 38%. However, film and music experienced a dramatic decline to just 9%, likely due to the rise of streaming services. Clothing saw the most notable growth, rising from 5% to 16%, reflecting changing consumer habits. Books decreased marginally from 19% to 15%. In summary, while travel remained the dominant category, the decade saw significant shifts in other sectors, particularly the decline of physical media sales and the growth of online clothing purchases.",
+          "word_count": 156
+        },
+        {
+          "task_id": "{{writing_task_2_id}}",
+          "answer_text": "Crime prevention is a topic that has generated considerable debate among policymakers and the general public. While some advocate for longer prison sentences as the primary deterrent, others argue that alternative approaches are more effective in reducing criminal behaviour. This essay will examine both perspectives before presenting a personal viewpoint.\n\nThose who support extended imprisonment argue that longer sentences serve as a powerful deterrent. The logic is straightforward: if potential criminals know they face many years behind bars, they will think twice before committing offences. Furthermore, keeping convicted criminals incarcerated for longer periods means they cannot commit further crimes during that time, thereby protecting the public. In countries like the United States, where sentences tend to be longer, proponents point to reduced recidivism rates among older released prisoners as evidence of this approach's effectiveness.\n\nHowever, opponents of this view present compelling counterarguments. Research consistently shows that the certainty of being caught is a far more effective deterrent than the severity of punishment. Countries such as Norway and Sweden, which focus on rehabilitation rather than punishment, have some of the lowest reoffending rates in the world. Alternative approaches include investing in education and social programmes that address the root causes of crime, such as poverty, lack of opportunity, and substance abuse. Community service orders and restorative justice programmes have also shown promising results in reducing reoffending.\n\nIn my opinion, while longer sentences may be appropriate for serious violent crimes, a balanced approach that combines proportionate punishment with rehabilitation and prevention programmes is most likely to achieve lasting reductions in crime. Addressing the underlying causes of criminal behaviour through education, mental health support, and employment opportunities offers the best long-term solution to reducing crime rates in society.",
+          "word_count": 267
+        }
+      ]
+    }
+  }
+}

@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  Res,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -36,6 +37,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { Role } from "../roles/role.enum.js";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
+import { Response } from "express";
 
 @ApiTags("IELTS Tests")
 @ApiBearerAuth()
@@ -180,6 +182,30 @@ export class IeltsTestsController {
   @ApiParam({ name: "id", description: "The sub question ID" })
   async findSubQuestionById(@Param("id") id: string) {
     return await this.ieltsTestsService.findSubQuestionById(id);
+  }
+
+  @Get(":id/download-json")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Download full IELTS test as JSON file" })
+  @ApiParam({ name: "id", description: "The test ID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns the full test as a downloadable JSON file.",
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Test not found.",
+  })
+  async downloadFullTestAsJson(
+    @Param("id") id: string,
+    @Res() res: Response,
+  ) {
+    const data = await this.ieltsTestsService.downloadFullTestAsJson(id);
+    const fileName = `ielts-test-${data.test?.title?.replace(/[^a-zA-Z0-9]/g, "-") || id}.json`;
+
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.send(JSON.stringify(data, null, 2));
   }
 
   // ========== Test by ID (must be LAST to avoid catching named routes) ==========

@@ -1923,4 +1923,285 @@ export class IeltsTestsService {
     }
     return (writing as any).linkedTasks || [];
   }
+
+  // ========== Download Full Test as JSON ==========
+  async downloadFullTestAsJson(testId: string) {
+    const test = await this.ieltsTestModel.findByPk(testId);
+    if (!test) {
+      throw new NotFoundException(`Test with ID ${testId} not found`);
+    }
+
+    const readings = await this.ieltsReadingModel.findAll({
+      where: { test_id: testId },
+      order: [["orderId", "ASC"]],
+    });
+
+    const listenings = await this.ieltsListeningModel.findAll({
+      where: { test_id: testId },
+      order: [["orderId", "ASC"]],
+    });
+
+    const writings = await this.ieltsWritingModel.findAll({
+      where: { test_id: testId },
+      order: [["orderId", "ASC"]],
+    });
+
+    const readingParts: any[] = [];
+    for (const reading of readings) {
+      const parts = await this.ieltsReadingPartModel.findAll({
+        where: { reading_id: reading.id },
+        include: [
+          {
+            model: IeltsQuestion,
+            as: "questions",
+            include: [
+              { model: IeltsSubQuestion, as: "questions" },
+              { model: IeltsQuestionOption, as: "options" },
+            ],
+          },
+        ],
+        order: [
+          ["part", "ASC"],
+          [{ model: IeltsQuestion, as: "questions" }, "questionNumber", "ASC"],
+          [
+            { model: IeltsQuestion, as: "questions" },
+            { model: IeltsSubQuestion, as: "questions" },
+            "order",
+            "ASC",
+          ],
+          [
+            { model: IeltsQuestion, as: "questions" },
+            { model: IeltsQuestionOption, as: "options" },
+            "orderIndex",
+            "ASC",
+          ],
+        ],
+      });
+
+      for (const part of parts) {
+        const partJson = part.toJSON() as any;
+        partJson.reading_id = `{{reading_id}}`;
+
+        partJson.questions = (partJson.questions || []).map((q: any) => {
+          const question: any = {
+            questionNumber: q.questionNumber,
+            type: q.type,
+            instruction: q.instruction,
+          };
+
+          if (q.questionText) question.questionText = q.questionText;
+          if (q.headingOptions) question.headingOptions = q.headingOptions;
+          if (q.tableData) question.tableData = q.tableData;
+          if (q.points != null) question.points = q.points;
+          if (q.isActive != null) question.isActive = q.isActive;
+
+          if (q.options && q.options.length > 0) {
+            question.options = q.options.map((opt: any) => ({
+              optionKey: opt.optionKey,
+              optionText: opt.optionText,
+              isCorrect: opt.isCorrect,
+              orderIndex: opt.orderIndex,
+              ...(opt.explanation ? { explanation: opt.explanation } : {}),
+              ...(opt.fromPassage ? { fromPassage: opt.fromPassage } : {}),
+            }));
+          }
+
+          if (q.questions && q.questions.length > 0) {
+            question.questions = q.questions.map((sq: any) => ({
+              questionNumber: sq.questionNumber,
+              questionText: sq.questionText,
+              correctAnswer: sq.correctAnswer,
+              points: sq.points,
+              ...(sq.explanation ? { explanation: sq.explanation } : {}),
+              ...(sq.fromPassage ? { fromPassage: sq.fromPassage } : {}),
+              order: sq.order,
+            }));
+          }
+
+          return question;
+        });
+
+        readingParts.push({
+          reading_id: `{{reading_id}}`,
+          part: partJson.part,
+          mode: partJson.mode,
+          title: partJson.title,
+          content: partJson.content,
+          timeLimitMinutes: partJson.timeLimitMinutes,
+          difficulty: partJson.difficulty,
+          isActive: partJson.isActive,
+          totalQuestions: partJson.totalQuestions,
+          questions: partJson.questions,
+        });
+      }
+    }
+
+    const listeningParts: any[] = [];
+    for (const listening of listenings) {
+      const parts = await this.ieltsListeningPartModel.findAll({
+        where: { listening_id: listening.id },
+        include: [
+          {
+            model: IeltsQuestion,
+            as: "questions",
+            include: [
+              { model: IeltsSubQuestion, as: "questions" },
+              { model: IeltsQuestionOption, as: "options" },
+            ],
+          },
+        ],
+        order: [
+          ["part", "ASC"],
+          [{ model: IeltsQuestion, as: "questions" }, "questionNumber", "ASC"],
+          [
+            { model: IeltsQuestion, as: "questions" },
+            { model: IeltsSubQuestion, as: "questions" },
+            "order",
+            "ASC",
+          ],
+          [
+            { model: IeltsQuestion, as: "questions" },
+            { model: IeltsQuestionOption, as: "options" },
+            "orderIndex",
+            "ASC",
+          ],
+        ],
+      });
+
+      for (const part of parts) {
+        const partJson = part.toJSON() as any;
+
+        partJson.questions = (partJson.questions || []).map((q: any) => {
+          const question: any = {
+            questionNumber: q.questionNumber,
+            type: q.type,
+            instruction: q.instruction,
+          };
+
+          if (q.questionText) question.questionText = q.questionText;
+          if (q.headingOptions) question.headingOptions = q.headingOptions;
+          if (q.tableData) question.tableData = q.tableData;
+          if (q.points != null) question.points = q.points;
+          if (q.isActive != null) question.isActive = q.isActive;
+
+          if (q.options && q.options.length > 0) {
+            question.options = q.options.map((opt: any) => ({
+              optionKey: opt.optionKey,
+              optionText: opt.optionText,
+              isCorrect: opt.isCorrect,
+              orderIndex: opt.orderIndex,
+              ...(opt.explanation ? { explanation: opt.explanation } : {}),
+              ...(opt.fromPassage ? { fromPassage: opt.fromPassage } : {}),
+            }));
+          }
+
+          if (q.questions && q.questions.length > 0) {
+            question.questions = q.questions.map((sq: any) => ({
+              questionNumber: sq.questionNumber,
+              questionText: sq.questionText,
+              correctAnswer: sq.correctAnswer,
+              points: sq.points,
+              ...(sq.explanation ? { explanation: sq.explanation } : {}),
+              ...(sq.fromPassage ? { fromPassage: sq.fromPassage } : {}),
+              order: sq.order,
+            }));
+          }
+
+          return question;
+        });
+
+        listeningParts.push({
+          listening_id: `{{listening_id}}`,
+          part: partJson.part,
+          mode: partJson.mode,
+          title: partJson.title,
+          audio: partJson.audio ?? {
+            url: partJson.audio_url,
+            file_name: partJson.audio_file_name,
+            duration: partJson.audio_duration,
+          },
+          timeLimitMinutes: partJson.timeLimitMinutes,
+          difficulty: partJson.difficulty,
+          isActive: partJson.isActive,
+          totalQuestions: partJson.totalQuestions,
+          questions: partJson.questions,
+        });
+      }
+    }
+
+    const writingTasks: any[] = [];
+    for (const writing of writings) {
+      const tasks = await this.ieltsWritingTaskModel.findAll({
+        where: { writing_id: writing.id },
+        order: [["task", "ASC"]],
+      });
+
+      for (const task of tasks) {
+        const taskJson = task.toJSON() as any;
+        writingTasks.push({
+          writing_id: `{{writing_id}}`,
+          task: taskJson.task,
+          mode: taskJson.mode,
+          prompt: taskJson.prompt,
+          ...(taskJson.image_url ? { image_url: taskJson.image_url } : {}),
+          min_words: taskJson.min_words,
+          suggested_time: taskJson.suggested_time,
+        });
+      }
+    }
+
+    const testJson = test.toJSON() as any;
+
+    const result: any = {
+      test: {
+        title: testJson.title,
+        mode: testJson.mode,
+        status: testJson.status,
+        category: testJson.category,
+      },
+    };
+
+    if (readings.length > 0) {
+      const readingJson = readings[0].toJSON() as any;
+      result.reading = {
+        title: readingJson.title,
+        test_id: `{{test_id}}`,
+      };
+    }
+
+    if (listenings.length > 0) {
+      const listeningJson = listenings[0].toJSON() as any;
+      result.listening = {
+        title: listeningJson.title,
+        description: listeningJson.description,
+        test_id: `{{test_id}}`,
+        full_audio_url: listeningJson.full_audio_url,
+        is_active: listeningJson.is_active,
+      };
+    }
+
+    if (writings.length > 0) {
+      const writingJson = writings[0].toJSON() as any;
+      result.writing = {
+        title: writingJson.title,
+        description: writingJson.description,
+        test_id: `{{test_id}}`,
+        is_active: writingJson.is_active,
+      };
+    }
+
+    if (readingParts.length > 0) {
+      result.readingParts = readingParts;
+    }
+
+    if (listeningParts.length > 0) {
+      result.listeningParts = listeningParts;
+    }
+
+    if (writingTasks.length > 0) {
+      result.writingTasks = writingTasks;
+    }
+
+    return result;
+  }
 }
