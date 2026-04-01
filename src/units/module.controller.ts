@@ -49,28 +49,34 @@ export class ModuleController {
     return await this.moduleService.findOne(id);
   }
 
+
   @Get("roadmap/:student_id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Get student progress roadmap" })
-  async getProgress(
-    @Param("student_id") student_id: string,
+  async getProgress(@Param("student_id") student_id: string) {
+    return await this.moduleService.getRoadMapWithProgress(student_id);
+  }
+
+  @Get("roadmap/me/course/:courseId/group/:groupId")
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: "Get my progress roadmap for a specific course and group" })
+  async getMyRoadMapByGroup(
+    @Param("courseId") courseId: string,
+    @Param("groupId") groupId: string,
     @CurrentUser() user: any,
   ) {
-    const id = user.role === "student" ? user.userId : student_id;
-    return await this.moduleService.getRoadMapWithProgress(id);
+    return await this.moduleService.getRoadMapByGroup(user.userId, courseId, groupId);
   }
 
   @Get("roadmap/:student_id/course/:courseId/group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Get student progress roadmap for a specific course and group" })
   async getRoadMapByGroup(
     @Param("student_id") student_id: string,
     @Param("courseId") courseId: string,
     @Param("groupId") groupId: string,
-    @CurrentUser() user: any,
   ) {
-    const id = user.role === "student" ? user.userId : student_id;
-    return await this.moduleService.getRoadMapByGroup(id, courseId, groupId);
+    return await this.moduleService.getRoadMapByGroup(student_id, courseId, groupId);
   }
 
   @Patch(":id")
