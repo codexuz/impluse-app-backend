@@ -1980,7 +1980,7 @@ export class IeltsTestsService {
 
       for (const part of parts) {
         const partJson = part.toJSON() as any;
-        partJson.reading_id = `{{reading_id}}`;
+        partJson.reading_id = reading.id;
 
         partJson.questions = (partJson.questions || []).map((q: any) => {
           const question: any = {
@@ -2022,7 +2022,7 @@ export class IeltsTestsService {
         });
 
         readingParts.push({
-          reading_id: `{{reading_id}}`,
+          reading_id: reading.id,
           part: partJson.part,
           mode: partJson.mode,
           title: partJson.title,
@@ -2111,7 +2111,7 @@ export class IeltsTestsService {
         });
 
         listeningParts.push({
-          listening_id: `{{listening_id}}`,
+          listening_id: listening.id,
           part: partJson.part,
           mode: partJson.mode,
           title: partJson.title,
@@ -2139,7 +2139,7 @@ export class IeltsTestsService {
       for (const task of tasks) {
         const taskJson = task.toJSON() as any;
         writingTasks.push({
-          writing_id: `{{writing_id}}`,
+          writing_id: writing.id,
           task: taskJson.task,
           mode: taskJson.mode,
           prompt: taskJson.prompt,
@@ -2164,17 +2164,19 @@ export class IeltsTestsService {
     if (readings.length > 0) {
       const readingJson = readings[0].toJSON() as any;
       result.reading = {
+        id: readingJson.id,
         title: readingJson.title,
-        test_id: `{{test_id}}`,
+        test_id: readingJson.test_id,
       };
     }
 
     if (listenings.length > 0) {
       const listeningJson = listenings[0].toJSON() as any;
       result.listening = {
+        id: listeningJson.id,
         title: listeningJson.title,
         description: listeningJson.description,
-        test_id: `{{test_id}}`,
+        test_id: listeningJson.test_id,
         full_audio_url: listeningJson.full_audio_url,
         is_active: listeningJson.is_active,
       };
@@ -2183,9 +2185,10 @@ export class IeltsTestsService {
     if (writings.length > 0) {
       const writingJson = writings[0].toJSON() as any;
       result.writing = {
+        id: writingJson.id,
         title: writingJson.title,
         description: writingJson.description,
-        test_id: `{{test_id}}`,
+        test_id: writingJson.test_id,
         is_active: writingJson.is_active,
       };
     }
