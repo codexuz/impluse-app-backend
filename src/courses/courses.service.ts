@@ -289,6 +289,18 @@ export class CoursesService {
     if (!uniqueCourseIds.length)
       throw new NotFoundException("No groups are assigned to any course");
 
+    // Map course (level_id) to group IDs
+    const courseToGroupIds = new Map<string, string[]>();
+    for (const sg of studentGroups) {
+      const levelId = sg.group?.level_id;
+      const groupId = sg.group?.id;
+      if (levelId && groupId) {
+        const list = courseToGroupIds.get(levelId) || [];
+        list.push(groupId);
+        courseToGroupIds.set(levelId, list);
+      }
+    }
+
     // Fetch all courses with units and lessons
     const courses = (await this.courseModel.findAll({
       where: { id: uniqueCourseIds },
@@ -427,6 +439,7 @@ export class CoursesService {
       return {
         course_id: course.id,
         course_name: course.title,
+        group_ids: courseToGroupIds.get(course.id) || [],
         completed: completedCount,
         total,
         percentage:
