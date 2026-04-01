@@ -56,7 +56,7 @@ export class ModuleController {
     @Param("student_id") student_id: string,
     @CurrentUser() user: any,
   ) {
-    const id = student_id || user.userId;
+    const id = user.role === "student" ? user.userId : student_id;
     return await this.moduleService.getRoadMapWithProgress(id);
   }
 
@@ -67,8 +67,10 @@ export class ModuleController {
     @Param("student_id") student_id: string,
     @Param("courseId") courseId: string,
     @Param("groupId") groupId: string,
+    @CurrentUser() user: any,
   ) {
-    return await this.moduleService.getRoadMapByGroup(student_id, courseId, groupId);
+    const id = user.role === "student" ? user.userId : student_id;
+    return await this.moduleService.getRoadMapByGroup(id, courseId, groupId);
   }
 
   @Patch(":id")

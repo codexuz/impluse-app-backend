@@ -20,6 +20,7 @@ import { UpdateCourseDto } from "./dto/update-course.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
+import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { Role } from "../roles/role.enum.js";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -58,14 +59,22 @@ export class CoursesController {
 
   @Get("progress/:studentId")
   @Roles("admin", "teacher", "student")
-  async getCourseProgress(@Param("studentId") studentId: string) {
-    return await this.coursesService.getCourseProgress(studentId);
+  async getCourseProgress(
+    @Param("studentId") studentId: string,
+    @CurrentUser() user: any,
+  ) {
+    const id = user.role === "student" ? user.userId : studentId;
+    return await this.coursesService.getCourseProgress(id);
   }
 
   @Get("progress-all/:studentId")
   @Roles("admin", "teacher", "student")
-  async getAllCourseProgress(@Param("studentId") studentId: string) {
-    return await this.coursesService.getAllCourseProgress(studentId);
+  async getAllCourseProgress(
+    @Param("studentId") studentId: string,
+    @CurrentUser() user: any,
+  ) {
+    const id = user.role === "student" ? user.userId : studentId;
+    return await this.coursesService.getAllCourseProgress(id);
   }
 
   @Get(":id")
