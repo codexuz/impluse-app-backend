@@ -57,24 +57,23 @@ export class CoursesController {
     );
   }
 
+
   @Get("progress/:studentId")
   @Roles("admin", "teacher", "student")
-  async getCourseProgress(
-    @Param("studentId") studentId: string,
-    @CurrentUser() user: any,
-  ) {
-    const id = user.role === "student" ? user.userId : studentId;
-    return await this.coursesService.getCourseProgress(id);
+  async getCourseProgress(@Param("studentId") studentId: string) {
+    return await this.coursesService.getCourseProgress(studentId);
+  }
+
+  @Get("progress-all/me")
+  @Roles("student")
+  async getMyAllCourseProgress(@CurrentUser() user: any) {
+    return await this.coursesService.getAllCourseProgress(user.userId);
   }
 
   @Get("progress-all/:studentId")
-  @Roles("admin", "teacher", "student")
-  async getAllCourseProgress(
-    @Param("studentId") studentId: string,
-    @CurrentUser() user: any,
-  ) {
-    const id = user.role === "student" ? user.userId : studentId;
-    return await this.coursesService.getAllCourseProgress(id);
+  @Roles("admin", "teacher")
+  async getAllCourseProgress(@Param("studentId") studentId: string) {
+    return await this.coursesService.getAllCourseProgress(studentId);
   }
 
   @Get(":id")
