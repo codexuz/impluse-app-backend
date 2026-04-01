@@ -257,6 +257,186 @@ export class CoursesService {
     };
   }
 
+  async getAllCourseProgress(student_id: string) {
+    // Find all active English groups for this student
+    const studentGroups = await GroupStudent.findAll({
+      where: {
+        student_id,
+        status: "active",
+      },
+      include: [
+        {
+          model: Group,
+          as: "group",
+          where: { isEnglish: true, isDeleted: false },
+          attributes: ["id", "level_id"],
+        },
+      ],
+    });
+
+    if (!studentGroups.length)
+      throw new NotFoundException("Student is not in any English group");
+
+    // Deduplicate by level_id (course)
+    const uniqueCourseIds = [
+      ...new Set(
+        studentGroups
+          .map((sg) => sg.group?.level_id)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+
+    if (!uniqueCourseIds.length)
+      throw new NotFoundException("No groups are assigned to any course");
+
+    // Fetch all courses with units and lessons
+    const courses = (await this.courseModel.findAll({
+      where: { id: uniqueCourseIds },
+      include: [
+        {
+          model: Unit,
+          as: "units",
+          include: ["lessons"],
+        },
+      ],
+    })) as (Course & { units: (Unit & { lessons: Lesson[] })[] })[];
+
+    if (!courses.length) throw new NotFoundException("No courses found");
+
+    // Collect all lesson IDs across all courses
+    const allLessonIds: string[] = [];
+    for (const course of courses) {
+      for (const unit of course.units) {
+        for (const lesson of unit.lessons) {
+          allLessonIds.push(lesson.id);
+        }
+      }
+    }
+
+    // Fetch all needed data in parallel across all courses
+    const [exercises, speakingTasks, submissions, speakingResponses] =
+      await Promise.all([
+        Exercise.findAll({
+          where: { lessonId: allLessonIds, isActive: true },
+        }),
+        Speaking.findAll({
+          where: { lessonId: allLessonIds },
+        }),
+        HomeworkSubmission.findAll({
+          where: { student_id, lesson_id: allLessonIds },
+        }),
+        SpeakingResponse.findAll({
+          where: { student_id },
+        }),
+      ]);
+
+    const submissionIds = submissions.map((s) => s.id);
+    const homeworkSections = submissionIds.length
+      ? await HomeworkSection.findAll({
+          where: { submission_id: submissionIds },
+        })
+      : [];
+
+    // Build lookup maps
+    const exercisesByLessonId = new Map<string, Exercise[]>();
+    for (const ex of exercises) {
+      const list = exercisesByLessonId.get(ex.lessonId) || [];
+      list.push(ex);
+      exercisesByLessonId.set(ex.lessonId, list);
+    }
+
+    const speakingByLessonId = new Map<string, Speaking[]>();
+    for (const sp of speakingTasks) {
+      const list = speakingByLessonId.get(sp.lessonId) || [];
+      list.push(sp);
+      speakingByLessonId.set(sp.lessonId, list);
+    }
+
+    const submissionsByLessonId = new Map<string, HomeworkSubmission[]>();
+    for (const sub of submissions) {
+      if (sub.lesson_id) {
+        const list = submissionsByLessonId.get(sub.lesson_id) || [];
+        list.push(sub);
+        submissionsByLessonId.set(sub.lesson_id, list);
+      }
+    }
+
+    const responsesBySpeakingId = new Map<string, SpeakingResponse[]>();
+    for (const resp of speakingResponses) {
+      const list = responsesBySpeakingId.get(resp.speaking_id) || [];
+      list.push(resp);
+      responsesBySpeakingId.set(resp.speaking_id, list);
+    }
+
+    const sectionsBySubmissionId = new Map<string, HomeworkSection[]>();
+    for (const sec of homeworkSections) {
+      const list = sectionsBySubmissionId.get(sec.submission_id) || [];
+      list.push(sec);
+      sectionsBySubmissionId.set(sec.submission_id, list);
+    }
+
+    // Calculate progress per course
+    const progressList = courses.map((course) => {
+      const courseLessons = course.units.flatMap((unit) => unit.lessons);
+      const courseLessonIds = courseLessons.map((l) => l.id);
+
+      let completedCount = 0;
+      for (const lessonId of courseLessonIds) {
+        const lessonExercises = exercisesByLessonId.get(lessonId) || [];
+        const lessonSpeaking = speakingByLessonId.get(lessonId) || [];
+        const totalTasks = lessonExercises.length + lessonSpeaking.length;
+
+        if (totalTasks === 0) continue;
+
+        const lessonSubs = submissionsByLessonId.get(lessonId) || [];
+        const lessonSections: HomeworkSection[] = [];
+        for (const sub of lessonSubs) {
+          const subSections = sectionsBySubmissionId.get(sub.id) || [];
+          lessonSections.push(...subSections);
+        }
+
+        const completedExerciseIds = new Set(
+          lessonSections
+            .filter((s) => s.exercise_id)
+            .map((s) => s.exercise_id),
+        );
+        const completedExercises = lessonExercises.filter((ex) =>
+          completedExerciseIds.has(ex.id),
+        ).length;
+
+        const completedSpeakingIds = new Set(
+          lessonSections
+            .filter((s) => s.speaking_id)
+            .map((s) => s.speaking_id),
+        );
+        const completedSpeakingCount = lessonSpeaking.filter((sp) => {
+          if (completedSpeakingIds.has(sp.id)) return true;
+          const responses = responsesBySpeakingId.get(sp.id) || [];
+          return responses.some(
+            (r) =>
+              r.pronunciation_score === null || r.pronunciation_score >= 0,
+          );
+        }).length;
+
+        if (completedExercises + completedSpeakingCount >= totalTasks) {
+          completedCount++;
+        }
+      }
+
+      const total = courseLessons.length;
+      return {
+        course_id: course.id,
+        course_name: course.title,
+        completed: completedCount,
+        total,
+        percentage:
+          total > 0 ? Math.round((completedCount / total) * 100) : 0,
+      };
+    });
+
+    return progressList;
+  }
+
   async findOne(id: string): Promise<Course> {
     const course = await this.courseModel.findOne({
       where: {

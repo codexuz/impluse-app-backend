@@ -62,6 +62,12 @@ export class CoursesController {
     return await this.coursesService.getCourseProgress(studentId);
   }
 
+  @Get("progress-all/:studentId")
+  @Roles("admin", "teacher", "student")
+  async getAllCourseProgress(@Param("studentId") studentId: string) {
+    return await this.coursesService.getAllCourseProgress(studentId);
+  }
+
   @Get(":id")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   async findOne(@Param("id") id: string) {

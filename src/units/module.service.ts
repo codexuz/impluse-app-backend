@@ -336,6 +336,244 @@ export class ModuleService {
     return result;
   }
 
+  async getRoadMapByGroup(
+    student_id: string,
+    courseId: string,
+    groupId: string,
+  ) {
+    // Get units for the specific course
+    const units = (await Unit.findAll({
+      where: {
+        courseId,
+        isActive: true,
+      },
+      order: [["order", "ASC"]],
+      include: [
+        {
+          model: Lesson,
+          as: "lessons",
+          where: { isActive: true },
+          required: false,
+          separate: true,
+          order: [["order", "ASC"]],
+        },
+      ],
+    })) as (Unit & { lessons: Lesson[] })[];
+
+    // Extract all lesson IDs
+    const allLessonIds = units.flatMap((unit) => unit.lessons.map((l) => l.id));
+
+    if (!allLessonIds.length) {
+      return units.map((unit) => ({
+        unit_id: unit.id,
+        unit_title: unit.title,
+        unit_order: unit.order,
+        status: "unlocked",
+        completed: 0,
+        total: 0,
+        percentage: 0,
+        lessons: [],
+      }));
+    }
+
+    // Fetch all needed data in parallel
+    const [
+      groupHomeworks,
+      exercises,
+      speakingTasks,
+      submissions,
+      speakingResponses,
+    ] = await Promise.all([
+      GroupHomework.findAll({
+        where: { group_id: groupId, lesson_id: allLessonIds },
+      }),
+      Exercise.findAll({
+        where: { lessonId: allLessonIds, isActive: true },
+      }),
+      Speaking.findAll({
+        where: { lessonId: allLessonIds },
+      }),
+      HomeworkSubmission.findAll({
+        where: { student_id, lesson_id: allLessonIds },
+      }),
+      SpeakingResponse.findAll({
+        where: { student_id },
+      }),
+    ]);
+
+    const submissionIds = submissions.map((s) => s.id);
+
+    // Get homework sections for these submissions
+    const homeworkSections = submissionIds.length
+      ? await HomeworkSection.findAll({
+          where: { submission_id: submissionIds },
+        })
+      : [];
+
+    // Build lookup maps
+    const exercisesByLessonId = new Map<string, Exercise[]>();
+    for (const ex of exercises) {
+      const list = exercisesByLessonId.get(ex.lessonId) || [];
+      list.push(ex);
+      exercisesByLessonId.set(ex.lessonId, list);
+    }
+
+    const speakingByLessonId = new Map<string, Speaking[]>();
+    for (const sp of speakingTasks) {
+      const list = speakingByLessonId.get(sp.lessonId) || [];
+      list.push(sp);
+      speakingByLessonId.set(sp.lessonId, list);
+    }
+
+    const homeworksByLessonId = new Map<string, GroupHomework[]>();
+    for (const hw of groupHomeworks) {
+      const list = homeworksByLessonId.get(hw.lesson_id) || [];
+      list.push(hw);
+      homeworksByLessonId.set(hw.lesson_id, list);
+    }
+
+    const submissionsByLessonId = new Map<string, HomeworkSubmission[]>();
+    for (const sub of submissions) {
+      if (sub.lesson_id) {
+        const list = submissionsByLessonId.get(sub.lesson_id) || [];
+        list.push(sub);
+        submissionsByLessonId.set(sub.lesson_id, list);
+      }
+    }
+
+    const responsesBySpeakingId = new Map<string, SpeakingResponse[]>();
+    for (const resp of speakingResponses) {
+      const list = responsesBySpeakingId.get(resp.speaking_id) || [];
+      list.push(resp);
+      responsesBySpeakingId.set(resp.speaking_id, list);
+    }
+
+    const sectionsBySubmissionId = new Map<string, HomeworkSection[]>();
+    for (const sec of homeworkSections) {
+      const list = sectionsBySubmissionId.get(sec.submission_id) || [];
+      list.push(sec);
+      sectionsBySubmissionId.set(sec.submission_id, list);
+    }
+
+    const result = units.map((unit) => {
+      const lessonResults = unit.lessons.map((l) => {
+        const lessonExercises = exercisesByLessonId.get(l.id) || [];
+        const lessonSpeaking = speakingByLessonId.get(l.id) || [];
+        const lessonHomeworks = homeworksByLessonId.get(l.id) || [];
+        const lessonSubmissions = submissionsByLessonId.get(l.id) || [];
+
+        const lessonSections: HomeworkSection[] = [];
+        for (const sub of lessonSubmissions) {
+          const subSections = sectionsBySubmissionId.get(sub.id) || [];
+          lessonSections.push(...subSections);
+        }
+
+        const totalExercises = lessonExercises.length;
+        const totalSpeaking = lessonSpeaking.length;
+        const totalTasks = totalExercises + totalSpeaking;
+
+        const completedExerciseIds = new Set(
+          lessonSections.filter((s) => s.exercise_id).map((s) => s.exercise_id),
+        );
+        const completedExercises = lessonExercises.filter((ex) =>
+          completedExerciseIds.has(ex.id),
+        ).length;
+
+        const completedSpeakingIdsFromSections = new Set(
+          lessonSections.filter((s) => s.speaking_id).map((s) => s.speaking_id),
+        );
+
+        const completedSpeakingCount = lessonSpeaking.filter((sp) => {
+          if (completedSpeakingIdsFromSections.has(sp.id)) return true;
+          const responses = responsesBySpeakingId.get(sp.id) || [];
+          return responses.some(
+            (r) =>
+              r.pronunciation_score === null || r.pronunciation_score >= 0,
+          );
+        }).length;
+
+        const completedTasks = completedExercises + completedSpeakingCount;
+
+        const sectionTypes = [
+          "reading",
+          "listening",
+          "grammar",
+          "writing",
+          "speaking",
+        ];
+
+        const hasAnySpeakingResponse = lessonSpeaking.some((sp) => {
+          if (completedSpeakingIdsFromSections.has(sp.id)) return true;
+          const responses = responsesBySpeakingId.get(sp.id) || [];
+          return responses.some(
+            (r) =>
+              r.pronunciation_score === null || r.pronunciation_score >= 0,
+          );
+        });
+
+        const completedSectionTypes = sectionTypes.filter((type) => {
+          if (type === "speaking" && hasAnySpeakingResponse) return true;
+          return lessonSections.some((s) => s.section === type);
+        });
+
+        const scoredSections = lessonSections.filter(
+          (s) => s.score !== null && s.score !== undefined,
+        );
+        const averageScore = scoredSections.length
+          ? Math.round(
+              (scoredSections.reduce((sum, s) => sum + s.score, 0) /
+                scoredSections.length) *
+                100,
+            ) / 100
+          : null;
+
+        return {
+          lesson_id: l.id,
+          lesson_order: l.order,
+          lesson_title: l.title,
+          lesson_type: l.type,
+          status: "unlocked",
+          total_homeworks: lessonHomeworks.length,
+          submitted_count: lessonSubmissions.length,
+          total_tasks: totalTasks,
+          completed_tasks: completedTasks,
+          total_exercises: totalExercises,
+          completed_exercises: completedExercises,
+          total_speaking: totalSpeaking,
+          completed_speaking: completedSpeakingCount,
+          completed_sections: completedSectionTypes,
+          completed_sections_count: completedSectionTypes.length,
+          total_sections: sectionTypes.length,
+          section_percentage: Math.round(
+            (completedSectionTypes.length / sectionTypes.length) * 100,
+          ),
+          task_percentage:
+            totalTasks > 0
+              ? Math.round((completedTasks / totalTasks) * 100)
+              : 0,
+          average_score: averageScore,
+          is_completed: totalTasks > 0 && completedTasks >= totalTasks,
+        };
+      });
+
+      const completedCount = lessonResults.filter((l) => l.is_completed).length;
+      const total = lessonResults.length;
+
+      return {
+        unit_id: unit.id,
+        unit_title: unit.title,
+        unit_order: unit.order,
+        status: "unlocked",
+        completed: completedCount,
+        total,
+        percentage: total > 0 ? Math.round((completedCount / total) * 100) : 0,
+        lessons: lessonResults,
+      };
+    });
+
+    return result;
+  }
+
   async update(id: string, updateUnitDto: UpdateUnitDto) {
     const unit = await Unit.findByPk(id);
     if (!unit) {

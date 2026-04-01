@@ -60,6 +60,17 @@ export class ModuleController {
     return await this.moduleService.getRoadMapWithProgress(id);
   }
 
+  @Get("roadmap/:student_id/course/:courseId/group/:groupId")
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: "Get student progress roadmap for a specific course and group" })
+  async getRoadMapByGroup(
+    @Param("student_id") student_id: string,
+    @Param("courseId") courseId: string,
+    @Param("groupId") groupId: string,
+  ) {
+    return await this.moduleService.getRoadMapByGroup(student_id, courseId, groupId);
+  }
+
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
   @Roles(Role.ADMIN, Role.TEACHER)
