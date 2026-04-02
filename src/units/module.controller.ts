@@ -51,7 +51,7 @@ export class ModuleController {
 
 
   @Get("roadmap/:student_id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get student progress roadmap" })
   async getProgress(@Param("student_id") student_id: string) {
     return await this.moduleService.getRoadMapWithProgress(student_id);
