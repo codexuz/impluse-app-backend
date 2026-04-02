@@ -65,10 +65,19 @@ export class LeadResponseDto {
   source: string;
 
   @ApiProperty({
-    description: "Course ID the lead is interested in",
+    description: "Course ID the lead is interested in (fallback)",
     example: "123e4567-e89b-12d3-a456-426614174000",
+    required: false,
   })
   course_id: string;
+
+  @ApiProperty({
+    description: "Course IDs the lead is interested in",
+    example: ["123e4567-e89b-12d3-a456-426614174000"],
+    type: [String],
+    required: false,
+  })
+  course_ids: string[];
 
   @ApiProperty({
     description: "Admin ID who created the lead",

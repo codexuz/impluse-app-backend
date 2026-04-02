@@ -5,6 +5,7 @@ import {
   IsUUID,
   IsEnum,
   IsOptional,
+  IsArray,
 } from "class-validator";
 
 export enum LeadStatus {
@@ -105,12 +106,24 @@ export class CreateLeadDto {
   source: LeadSource;
 
   @ApiProperty({
-    description: "Course ID the lead is interested in",
+    description: "Course ID the lead is interested in (fallback, use course_ids instead)",
     example: "123e4567-e89b-12d3-a456-426614174000",
+    required: false,
   })
   @IsUUID()
-  @IsNotEmpty()
+  @IsOptional()
   course_id: string;
+
+  @ApiProperty({
+    description: "Course IDs the lead is interested in",
+    example: ["123e4567-e89b-12d3-a456-426614174000"],
+    type: [String],
+    required: false,
+  })
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  course_ids: string[];
 
   @ApiProperty({
     description: "Admin ID who created the lead",

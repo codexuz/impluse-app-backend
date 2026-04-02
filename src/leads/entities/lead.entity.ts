@@ -83,9 +83,15 @@ export class Lead extends Model {
 
   @Column({
     type: DataType.UUID,
-    allowNull: false,
+    allowNull: true,
   })
   course_id: string;
+
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  course_ids: string[];
 
   @Column({
     type: DataType.UUID,
