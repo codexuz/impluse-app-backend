@@ -968,7 +968,7 @@ export class UsersService {
             as: "teacher",
             attributes: ["user_id", "first_name", "last_name"],
           },
-          { model: Group, attributes: ["id", "name"] },
+          { model: Group, as: "group", attributes: ["id", "name"] },
         ],
       });
 
@@ -994,7 +994,7 @@ export class UsersService {
           as: "teacher",
           attributes: ["user_id", "first_name", "last_name"],
         },
-        { model: Group, attributes: ["id", "name"] },
+        { model: Group, as: "group", attributes: ["id", "name"] },
       ],
     });
 
