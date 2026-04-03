@@ -147,6 +147,50 @@ export class LeadTrialLessonsController {
     return this.leadTrialLessonsService.getTrialLessonStats();
   }
 
+  @Get("leads-statistics")
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "Get leads statistics per teacher — assigned, became student, lost",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: false,
+    type: String,
+    description: "Filter from date (ISO string)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: false,
+    type: String,
+    description: "Filter to date (ISO string)",
+  })
+  @ApiQuery({
+    name: "teacher_id",
+    required: false,
+    type: String,
+    description: "Filter by specific teacher UUID",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Leads statistics per teacher retrieved successfully",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({
+    status: 403,
+    description: "Forbidden - Admin role required",
+  })
+  getLeadsStatisticsByTeacher(
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("teacher_id") teacher_id?: string,
+  ) {
+    return this.leadTrialLessonsService.getLeadsStatisticsByTeacher(
+      startDate,
+      endDate,
+      teacher_id,
+    );
+  }
+
   @Get("upcoming")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: "Get upcoming trial lessons" })

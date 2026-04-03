@@ -1013,6 +1013,153 @@ export class UsersService {
     await record.destroy();
   }
 
+  async getArchivedStudentStatistics(
+    startDate?: string,
+    endDate?: string,
+    teacher_id?: string,
+    group_id?: string,
+  ) {
+    const where: any = {};
+
+    if (startDate || endDate) {
+      where.created_at = {};
+      if (startDate) where.created_at[Op.gte] = new Date(startDate);
+      if (endDate) where.created_at[Op.lte] = new Date(endDate);
+    }
+    if (teacher_id) where.teacher_id = teacher_id;
+    if (group_id) where.group_id = group_id;
+
+    // Total archived count
+    const totalArchived = await this.archivedStudentModel.count({ where });
+
+    // Breakdown by reason
+    const byReason = await this.archivedStudentModel.findAll({
+      where,
+      attributes: [
+        "reason",
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"],
+      ],
+      group: ["reason"],
+      raw: true,
+    });
+
+    // Monthly trend (last 12 months)
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    const trendWhere: any = {
+      ...where,
+      created_at: { [Op.gte]: twelveMonthsAgo },
+    };
+    if (where.created_at) {
+      trendWhere.created_at = { ...where.created_at, [Op.gte]: twelveMonthsAgo };
+    }
+
+    const monthlyTrend = await this.archivedStudentModel.findAll({
+      where: trendWhere,
+      attributes: [
+        [Sequelize.fn("DATE_FORMAT", Sequelize.col("created_at"), "%Y-%m"), "month"],
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"],
+      ],
+      group: [Sequelize.fn("DATE_FORMAT", Sequelize.col("created_at"), "%Y-%m")],
+      order: [[Sequelize.fn("DATE_FORMAT", Sequelize.col("created_at"), "%Y-%m"), "ASC"]],
+      raw: true,
+    });
+
+    // Top teachers with most archived students
+    const byTeacher = await this.archivedStudentModel.findAll({
+      where: { ...where, teacher_id: { [Op.ne]: null } },
+      attributes: [
+        "teacher_id",
+        [Sequelize.fn("COUNT", Sequelize.col("ArchivedStudent.id")), "count"],
+      ],
+      include: [
+        {
+          model: User,
+          as: "teacher",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+      ],
+      group: ["teacher_id", "teacher.user_id"],
+      order: [[Sequelize.fn("COUNT", Sequelize.col("ArchivedStudent.id")), "DESC"]],
+      limit: 10,
+      subQuery: false,
+    });
+
+    // By group
+    const byGroup = await this.archivedStudentModel.findAll({
+      where: { ...where, group_id: { [Op.ne]: null } },
+      attributes: [
+        "group_id",
+        [Sequelize.fn("COUNT", Sequelize.col("ArchivedStudent.id")), "count"],
+      ],
+      include: [
+        {
+          model: Group,
+          attributes: ["id", "name"],
+        },
+      ],
+      group: ["group_id", "group.id"],
+      order: [[Sequelize.fn("COUNT", Sequelize.col("ArchivedStudent.id")), "DESC"]],
+      limit: 10,
+      subQuery: false,
+    });
+
+    // Current period stats
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    const thisMonthCount = await this.archivedStudentModel.count({
+      where: { ...where, created_at: { [Op.gte]: startOfMonth } },
+    });
+
+    const lastMonthCount = await this.archivedStudentModel.count({
+      where: {
+        ...where,
+        created_at: { [Op.gte]: startOfLastMonth, [Op.lte]: endOfLastMonth },
+      },
+    });
+
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const thisWeekCount = await this.archivedStudentModel.count({
+      where: { ...where, created_at: { [Op.gte]: startOfWeek } },
+    });
+
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayCount = await this.archivedStudentModel.count({
+      where: { ...where, created_at: { [Op.gte]: todayStart } },
+    });
+
+    // Month-over-month change percentage
+    const monthOverMonthChange =
+      lastMonthCount > 0
+        ? Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100)
+        : thisMonthCount > 0
+          ? 100
+          : 0;
+
+    return {
+      totalArchived,
+      periodStats: {
+        today: todayCount,
+        thisWeek: thisWeekCount,
+        thisMonth: thisMonthCount,
+        lastMonth: lastMonthCount,
+        monthOverMonthChange,
+      },
+      byReason,
+      monthlyTrend,
+      byTeacher,
+      byGroup,
+    };
+  }
+
   /**
    * Permanently delete a user and ALL associated records from the database.
    * This action is irreversible.

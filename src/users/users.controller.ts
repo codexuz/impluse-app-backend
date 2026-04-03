@@ -237,6 +237,27 @@ export class UsersController {
     );
   }
 
+  @Get("archived-students/statistics")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Get comprehensive archived student statistics" })
+  @ApiResponse({
+    status: 200,
+    description: "Archived student statistics with breakdowns by reason, teacher, group, and monthly trends",
+  })
+  getArchivedStudentStatistics(
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("teacher_id") teacher_id?: string,
+    @Query("group_id") group_id?: string,
+  ) {
+    return this.usersService.getArchivedStudentStatistics(
+      startDate,
+      endDate,
+      teacher_id,
+      group_id,
+    );
+  }
+
   @Get("archived-students/:id")
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Get one archived student by ID" })
