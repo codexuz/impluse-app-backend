@@ -1095,6 +1095,7 @@ export class UsersService {
       include: [
         {
           model: Group,
+          as: "group",
           attributes: ["id", "name"],
         },
       ],
