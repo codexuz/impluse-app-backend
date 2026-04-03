@@ -1163,7 +1163,7 @@ export class UsersService {
           as: "student",
           attributes: ["user_id", "first_name", "last_name", "phone"],
         },
-        { model: Group, attributes: ["id", "name"] },
+        { model: Group, as: "group", attributes: ["id", "name"] },
       ],
       order: [["created_at", "DESC"]],
     });
