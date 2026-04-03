@@ -1125,6 +1125,10 @@ export class UsersService {
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
+    // Clamp to start of month so thisWeek never exceeds thisMonth
+    if (startOfWeek < startOfMonth) {
+      startOfWeek.setTime(startOfMonth.getTime());
+    }
 
     const thisWeekCount = await this.archivedStudentModel.count({
       where: { ...where, created_at: { [Op.gte]: startOfWeek } },
@@ -1145,6 +1149,59 @@ export class UsersService {
           ? 100
           : 0;
 
+    // Hierarchical breakdown: teacher => group => student => reason
+    const archivedDetails = await this.archivedStudentModel.findAll({
+      where,
+      include: [
+        {
+          model: User,
+          as: "teacher",
+          attributes: ["user_id", "first_name", "last_name"],
+        },
+        {
+          model: User,
+          as: "student",
+          attributes: ["user_id", "first_name", "last_name", "phone"],
+        },
+        { model: Group, attributes: ["id", "name"] },
+      ],
+      order: [["created_at", "DESC"]],
+    });
+
+    const teacherMap = new Map<string, any>();
+    for (const record of archivedDetails) {
+      const raw = record.toJSON() as any;
+      const teacherId = raw.teacher_id || "unassigned";
+      const groupId = raw.group_id || "unassigned";
+
+      if (!teacherMap.has(teacherId)) {
+        teacherMap.set(teacherId, {
+          teacher: raw.teacher || { user_id: null, first_name: "Noma'lum", last_name: "" },
+          groups: new Map(),
+        });
+      }
+
+      const teacherEntry = teacherMap.get(teacherId);
+      if (!teacherEntry.groups.has(groupId)) {
+        teacherEntry.groups.set(groupId, {
+          group: raw.group || { id: null, name: "Noma'lum" },
+          students: [],
+        });
+      }
+
+      teacherEntry.groups.get(groupId).students.push({
+        student: raw.student,
+        reason: raw.reason,
+        notes: raw.notes,
+        created_at: raw.created_at,
+      });
+    }
+
+    const byTeacherGroupStudent = Array.from(teacherMap.values()).map((t) => ({
+      teacher: t.teacher,
+      groups: Array.from(t.groups.values()),
+    }));
+
     return {
       totalArchived,
       periodStats: {
@@ -1156,8 +1213,7 @@ export class UsersService {
       },
       byReason,
       monthlyTrend,
-      byTeacher,
-      byGroup,
+      byTeacherGroupStudent,
     };
   }
 
