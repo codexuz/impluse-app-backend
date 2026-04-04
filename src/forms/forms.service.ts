@@ -55,13 +55,13 @@ export class FormsService {
     return this.responseModel.findAll();
   }
 
-  async findResponsesByForm(formId: number): Promise<Response[]> {
+  async findResponsesByForm(formId: string): Promise<Response[]> {
     return this.responseModel.findAll({
       where: { form_id: formId }
     });
   }
 
-  async findOneResponse(id: number): Promise<Response> {
+  async findOneResponse(id: string): Promise<Response> {
     const response = await this.responseModel.findByPk(id);
     if (!response) {
       throw new NotFoundException(`Response with ID "${id}" not found`);
@@ -69,13 +69,13 @@ export class FormsService {
     return response;
   }
 
-  async updateResponse(id: number, updateResponseDto: UpdateResponseDto): Promise<Response> {
+  async updateResponse(id: string, updateResponseDto: UpdateResponseDto): Promise<Response> {
     const response = await this.findOneResponse(id);
     await response.update(updateResponseDto);
     return response;
   }
 
-  async removeResponse(id: number): Promise<void> {
+  async removeResponse(id: string): Promise<void> {
     const response = await this.findOneResponse(id);
     await response.destroy();
   }
