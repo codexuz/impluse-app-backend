@@ -1,12 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpCode, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { FormsService } from './forms.service.js';
 import { CreateFormDto } from './dto/create-form.dto.js';
 import { UpdateFormDto } from './dto/update-form.dto.js';
 import { CreateResponseDto } from './dto/create-response.dto.js';
 import { UpdateResponseDto } from './dto/update-response.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { Public } from '../auth/decorators/public.decorator.js';
 
 @ApiTags('Forms')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('forms')
 export class FormsController {
   constructor(private readonly formsService: FormsService) {}
@@ -26,6 +31,7 @@ export class FormsController {
     return this.formsService.findAll();
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get a form by ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Return the form' })
@@ -52,6 +58,7 @@ export class FormsController {
   }
 
   // Response endpoints
+  @Public()
   @Post('responses')
   @ApiOperation({ summary: 'Submit a form response' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'The response has been successfully created' })
