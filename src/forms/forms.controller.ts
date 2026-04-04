@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpCode, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpCode, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { FormsService } from './forms.service.js';
 import { CreateFormDto } from './dto/create-form.dto.js';
@@ -76,24 +76,24 @@ export class FormsController {
   @Get('responses/form/:formId')
   @ApiOperation({ summary: 'Get all responses for a specific form' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Return all responses for this form' })
-  findResponsesByForm(@Param('formId') formId: string) {
-    return this.formsService.findResponsesByForm(+formId);
+  findResponsesByForm(@Param('formId', ParseIntPipe) formId: number) {
+    return this.formsService.findResponsesByForm(formId);
   }
 
   @Get('responses/:id')
   @ApiOperation({ summary: 'Get a response by ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Return the response' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Response not found' })
-  findOneResponse(@Param('id') id: string) {
-    return this.formsService.findOneResponse(+id);
+  findOneResponse(@Param('id', ParseIntPipe) id: number) {
+    return this.formsService.findOneResponse(id);
   }
 
   @Patch('responses/:id')
   @ApiOperation({ summary: 'Update a response' })
   @ApiResponse({ status: HttpStatus.OK, description: 'The response has been successfully updated' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Response not found' })
-  updateResponse(@Param('id') id: string, @Body() updateResponseDto: UpdateResponseDto) {
-    return this.formsService.updateResponse(+id, updateResponseDto);
+  updateResponse(@Param('id', ParseIntPipe) id: number, @Body() updateResponseDto: UpdateResponseDto) {
+    return this.formsService.updateResponse(id, updateResponseDto);
   }
 
   @Delete('responses/:id')
@@ -101,7 +101,7 @@ export class FormsController {
   @ApiOperation({ summary: 'Delete a response' })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'The response has been successfully deleted' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Response not found' })
-  removeResponse(@Param('id') id: string) {
-    return this.formsService.removeResponse(+id);
+  removeResponse(@Param('id', ParseIntPipe) id: number) {
+    return this.formsService.removeResponse(id);
   }
 }
