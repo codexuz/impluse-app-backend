@@ -12,6 +12,9 @@ import { MatchingExercise } from "../exercise/entities/matching_pairs.js";
 import { Questions } from "../exercise/entities/questions.js";
 import { Exercise } from "../exercise/entities/exercise.entity.js";
 import { GapFilling } from "../exercise/entities/gap_filling.js";
+import { Translation } from "../exercise/entities/translation.js";
+import { Dictation } from "../exercise/entities/dictation.js";
+import { ListenAndChoose } from "../exercise/entities/listen_and_choose.js";
 
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
@@ -240,6 +243,9 @@ export const Models = [
   IeltsListeningListeningPart,
   IeltsWritingWritingTask,
   Grading,
+  Translation,
+  Dictation,
+  ListenAndChoose,
 ];
 
 // Define associations after all models are loaded
@@ -396,6 +402,39 @@ export function initializeAssociations() {
   });
 
   SentenceBuild.belongsTo(Questions, {
+    foreignKey: "question_id",
+    as: "question",
+  });
+
+  // Translation associations
+  Questions.hasOne(Translation, {
+    foreignKey: "question_id",
+    as: "translation",
+  });
+
+  Translation.belongsTo(Questions, {
+    foreignKey: "question_id",
+    as: "question",
+  });
+
+  // Dictation associations
+  Questions.hasOne(Dictation, {
+    foreignKey: "question_id",
+    as: "dictation",
+  });
+
+  Dictation.belongsTo(Questions, {
+    foreignKey: "question_id",
+    as: "question",
+  });
+
+  // ListenAndChoose associations
+  Questions.hasOne(ListenAndChoose, {
+    foreignKey: "question_id",
+    as: "listen_and_choose",
+  });
+
+  ListenAndChoose.belongsTo(Questions, {
     foreignKey: "question_id",
     as: "question",
   });
