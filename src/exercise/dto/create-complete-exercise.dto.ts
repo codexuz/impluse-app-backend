@@ -27,7 +27,94 @@ export enum QuestionType {
   SHORT_ANSWER = "short_answer",
   MATCHING = "matching",
   SENTENCE_BUILD = "sentence_build",
+  TRANSLATION = "translation",
+  DICTATION = "dictation",
+  LISTEN_AND_CHOOSE = "listen_and_choose",
 }
+// Dictation DTO
+export class CreateDictationDto {
+  @ApiProperty({
+    description: "Audio URL for the dictation",
+    example: "https://example.com/audio.mp3",
+    required: true,
+  })
+  @IsString({ message: "audio must be a string" })
+  @IsNotEmpty({ message: "audio should not be empty" })
+  audio: string;
+
+  @ApiProperty({
+    description: "Correct answer for the dictation",
+    example: "The weather is nice today",
+    required: true,
+  })
+  @IsString({ message: "correct_answer must be a string" })
+  @IsNotEmpty({ message: "correct_answer should not be empty" })
+  correct_answer: string;
+}
+
+// Listen and Choose Option DTO
+export class CreateListenAndChooseOptionDto {
+  @ApiProperty({
+    description: "Option text",
+    example: "apple",
+  })
+  @IsString()
+  @IsNotEmpty()
+  text: string;
+
+  @ApiProperty({
+    description: "Whether this option is correct",
+    example: true,
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  is_correct: boolean;
+}
+
+// Listen and Choose DTO
+export class CreateListenAndChooseDto {
+  @ApiProperty({
+    description: "Audio URL for listen and choose",
+    example: "https://example.com/audio.mp3",
+    required: true,
+  })
+  @IsString({ message: "audio must be a string" })
+  @IsNotEmpty({ message: "audio should not be empty" })
+  audio: string;
+
+  @ApiProperty({
+    description: "Options for listen and choose",
+    type: [CreateListenAndChooseOptionDto],
+    required: true,
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateListenAndChooseOptionDto)
+  @IsNotEmpty()
+  options: CreateListenAndChooseOptionDto[];
+}
+
+// Translation DTO
+export class CreateTranslationDto {
+  @ApiProperty({
+    description: "Text given to the student to translate",
+    example: "The cat is sitting on the table",
+    required: true,
+  })
+  @IsString({ message: "given_text must be a string" })
+  @IsNotEmpty({ message: "given_text should not be empty" })
+  given_text: string;
+
+  @ApiProperty({
+    description: "Correct translation answer",
+    example: "Mushuk stol ustida o'tiribdi",
+    required: true,
+  })
+  @IsString({ message: "correct_answer must be a string" })
+  @IsNotEmpty({ message: "correct_answer should not be empty" })
+  correct_answer: string;
+}
+
 // Sentence Build DTO
 export class CreateSentenceBuildDto {
   @ApiProperty({
@@ -310,6 +397,39 @@ export class CreateCompleteQuestionDto extends CreateQuestionDto {
   @Type(() => CreateSentenceBuildDto)
   @IsOptional()
   sentence_build?: CreateSentenceBuildDto | CreateSentenceBuildDto[];
+
+  @ApiProperty({
+    description: "Translation data for translation questions",
+    required: false,
+    type: CreateTranslationDto,
+    isArray: true,
+  })
+  @ValidateNested({ each: true })
+  @Type(() => CreateTranslationDto)
+  @IsOptional()
+  translation?: CreateTranslationDto | CreateTranslationDto[];
+
+  @ApiProperty({
+    description: "Dictation data for dictation questions",
+    required: false,
+    type: CreateDictationDto,
+    isArray: true,
+  })
+  @ValidateNested({ each: true })
+  @Type(() => CreateDictationDto)
+  @IsOptional()
+  dictation?: CreateDictationDto | CreateDictationDto[];
+
+  @ApiProperty({
+    description: "Listen and choose data for listen_and_choose questions",
+    required: false,
+    type: CreateListenAndChooseDto,
+    isArray: true,
+  })
+  @ValidateNested({ each: true })
+  @Type(() => CreateListenAndChooseDto)
+  @IsOptional()
+  listen_and_choose?: CreateListenAndChooseDto | CreateListenAndChooseDto[];
 }
 
 // Complete Exercise Creation DTO

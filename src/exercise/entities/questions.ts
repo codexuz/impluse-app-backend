@@ -33,7 +33,10 @@ export class Questions extends Model {
       "true_false",
       "short_answer",
       "matching",
-      "sentence_build", // Added sentence_build as a question type
+      "sentence_build",
+      "translation",
+      "dictation",
+      "listen_and_choose",
     ),
     allowNull: false,
   })

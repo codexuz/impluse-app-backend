@@ -18,6 +18,9 @@ import { GapFilling } from "./entities/gap_filling.js";
 import { MatchingExercise } from "./entities/matching_pairs.js";
 import { TypingExercise } from "./entities/typing_answers.js";
 import { SentenceBuild } from "./entities/sentence_build.js";
+import { Translation } from "./entities/translation.js";
+import { Dictation } from "./entities/dictation.js";
+import { ListenAndChoose } from "./entities/listen_and_choose.js";
 import { Transaction, Op } from "sequelize";
 import { Sequelize } from "sequelize-typescript";
 import { HomeworkSubmissionsService } from "../homework_submissions/homework_submissions.service.js";
@@ -39,6 +42,12 @@ export class ExerciseService {
     private typingExerciseModel: typeof TypingExercise,
     @InjectModel(SentenceBuild)
     private sentenceBuildModel: typeof SentenceBuild,
+    @InjectModel(Translation)
+    private translationModel: typeof Translation,
+    @InjectModel(Dictation)
+    private dictationModel: typeof Dictation,
+    @InjectModel(ListenAndChoose)
+    private listenAndChooseModel: typeof ListenAndChoose,
 
     private sequelize: Sequelize,
     private homeworkSubmissionsService: HomeworkSubmissionsService,
@@ -159,6 +168,36 @@ export class ExerciseService {
                 await this.createSentenceBuild(
                   question.id,
                   questionData.sentence_build,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.TRANSLATION:
+              if (questionData.translation) {
+                await this.createTranslation(
+                  question.id,
+                  questionData.translation,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.DICTATION:
+              if (questionData.dictation) {
+                await this.createDictation(
+                  question.id,
+                  questionData.dictation,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.LISTEN_AND_CHOOSE:
+              if (questionData.listen_and_choose) {
+                await this.createListenAndChoose(
+                  question.id,
+                  questionData.listen_and_choose,
                   transaction,
                 );
               }
@@ -292,6 +331,21 @@ export class ExerciseService {
           as: "sentence_build",
           required: false,
         },
+        {
+          model: this.translationModel,
+          as: "translation",
+          required: false,
+        },
+        {
+          model: this.dictationModel,
+          as: "dictation",
+          required: false,
+        },
+        {
+          model: this.listenAndChooseModel,
+          as: "listen_and_choose",
+          required: false,
+        },
       ],
     });
   }
@@ -409,6 +463,36 @@ export class ExerciseService {
                 await this.createSentenceBuild(
                   question.id,
                   questionData.sentence_build,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.TRANSLATION:
+              if (questionData.translation) {
+                await this.createTranslation(
+                  question.id,
+                  questionData.translation,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.DICTATION:
+              if (questionData.dictation) {
+                await this.createDictation(
+                  question.id,
+                  questionData.dictation,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.LISTEN_AND_CHOOSE:
+              if (questionData.listen_and_choose) {
+                await this.createListenAndChoose(
+                  question.id,
+                  questionData.listen_and_choose,
                   transaction,
                 );
               }
@@ -622,6 +706,36 @@ export class ExerciseService {
                 );
               }
               break;
+
+            case QuestionType.TRANSLATION:
+              if (questionData.translation) {
+                await this.createTranslation(
+                  question.id,
+                  questionData.translation,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.DICTATION:
+              if (questionData.dictation) {
+                await this.createDictation(
+                  question.id,
+                  questionData.dictation,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.LISTEN_AND_CHOOSE:
+              if (questionData.listen_and_choose) {
+                await this.createListenAndChoose(
+                  question.id,
+                  questionData.listen_and_choose,
+                  transaction,
+                );
+              }
+              break;
           }
         }
       }
@@ -667,6 +781,21 @@ export class ExerciseService {
             as: "sentence_build",
             required: false,
           },
+          {
+            model: this.translationModel,
+            as: "translation",
+            required: false,
+          },
+          {
+            model: this.dictationModel,
+            as: "dictation",
+            required: false,
+          },
+          {
+            model: this.listenAndChooseModel,
+            as: "listen_and_choose",
+            required: false,
+          },
         ],
       },
     ];
@@ -706,6 +835,18 @@ export class ExerciseService {
         transaction,
       });
       await this.sentenceBuildModel.destroy({
+        where: { question_id: questionId },
+        transaction,
+      });
+      await this.translationModel.destroy({
+        where: { question_id: questionId },
+        transaction,
+      });
+      await this.dictationModel.destroy({
+        where: { question_id: questionId },
+        transaction,
+      });
+      await this.listenAndChooseModel.destroy({
         where: { question_id: questionId },
         transaction,
       });
@@ -752,6 +893,18 @@ export class ExerciseService {
         transaction,
       });
       await this.sentenceBuildModel.destroy({
+        where: { question_id: question.id },
+        transaction,
+      });
+      await this.translationModel.destroy({
+        where: { question_id: question.id },
+        transaction,
+      });
+      await this.dictationModel.destroy({
+        where: { question_id: question.id },
+        transaction,
+      });
+      await this.listenAndChooseModel.destroy({
         where: { question_id: question.id },
         transaction,
       });
@@ -858,6 +1011,94 @@ export class ExerciseService {
           question_id: questionId,
           given_text: item.given_text,
           correct_answer: item.correct_answer,
+        },
+        { transaction },
+      );
+    }
+  }
+
+  private async createTranslation(
+    questionId: string,
+    translationData: any,
+    transaction: Transaction,
+  ) {
+    // Accept array or object for translationData
+    const items = Array.isArray(translationData)
+      ? translationData
+      : [translationData];
+    for (const item of items) {
+      if (
+        item == null ||
+        item.given_text == null ||
+        item.correct_answer == null
+      ) {
+        throw new BadRequestException(
+          "Translation requires given_text and correct_answer",
+        );
+      }
+      await this.translationModel.create(
+        {
+          question_id: questionId,
+          given_text: item.given_text,
+          correct_answer: item.correct_answer,
+        },
+        { transaction },
+      );
+    }
+  }
+
+  private async createDictation(
+    questionId: string,
+    dictationData: any,
+    transaction: Transaction,
+  ) {
+    const items = Array.isArray(dictationData)
+      ? dictationData
+      : [dictationData];
+    for (const item of items) {
+      if (
+        item == null ||
+        item.audio == null ||
+        item.correct_answer == null
+      ) {
+        throw new BadRequestException(
+          "Dictation requires audio and correct_answer",
+        );
+      }
+      await this.dictationModel.create(
+        {
+          question_id: questionId,
+          audio: item.audio,
+          correct_answer: item.correct_answer,
+        },
+        { transaction },
+      );
+    }
+  }
+
+  private async createListenAndChoose(
+    questionId: string,
+    listenAndChooseData: any,
+    transaction: Transaction,
+  ) {
+    const items = Array.isArray(listenAndChooseData)
+      ? listenAndChooseData
+      : [listenAndChooseData];
+    for (const item of items) {
+      if (
+        item == null ||
+        item.audio == null ||
+        item.options == null
+      ) {
+        throw new BadRequestException(
+          "ListenAndChoose requires audio and options",
+        );
+      }
+      await this.listenAndChooseModel.create(
+        {
+          question_id: questionId,
+          audio: item.audio,
+          options: item.options,
         },
         { transaction },
       );

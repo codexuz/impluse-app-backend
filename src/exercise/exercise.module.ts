@@ -9,6 +9,9 @@ import { MatchingExercise } from './entities/matching_pairs.js';
 import { TypingExercise } from './entities/typing_answers.js';
 import { Questions } from './entities/questions.js';
 import { SentenceBuild } from './entities/sentence_build.js';
+import { Translation } from './entities/translation.js';
+import { Dictation } from './entities/dictation.js';
+import { ListenAndChoose } from './entities/listen_and_choose.js';
 import { HomeworkSubmissionsModule } from "../homework_submissions/homework_submissions.module.js";
 
 @Module({
@@ -17,6 +20,9 @@ import { HomeworkSubmissionsModule } from "../homework_submissions/homework_subm
       Exercise,
       Questions,
       SentenceBuild,
+      Translation,
+      Dictation,
+      ListenAndChoose,
       Choices,
       GapFilling,
       MatchingExercise,
