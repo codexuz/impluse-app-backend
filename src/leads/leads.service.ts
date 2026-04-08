@@ -3,6 +3,7 @@ import { InjectModel } from "@nestjs/sequelize";
 import { CreateLeadDto } from "./dto/create-lead.dto.js";
 import { UpdateLeadDto } from "./dto/update-lead.dto.js";
 import { Lead } from "./entities/lead.entity.js";
+import { User } from "../users/entities/user.entity.js";
 import { Op } from "sequelize";
 
 @Injectable()
@@ -75,6 +76,13 @@ export class LeadsService {
       limit,
       offset,
       order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: User,
+          as: "admin",
+          attributes: ["user_id", "first_name", "last_name", "username", "avatar_url"],
+        },
+      ],
     });
 
     return {
@@ -140,6 +148,13 @@ export class LeadsService {
       limit,
       offset,
       order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: User,
+          as: "admin",
+          attributes: ["user_id", "first_name", "last_name", "username", "avatar_url"],
+        },
+      ],
     });
 
     return {
@@ -151,7 +166,15 @@ export class LeadsService {
   }
 
   async findOne(id: string): Promise<Lead> {
-    const lead = await this.leadModel.findByPk(id);
+    const lead = await this.leadModel.findByPk(id, {
+      include: [
+        {
+          model: User,
+          as: "admin",
+          attributes: ["user_id", "first_name", "last_name", "username", "avatar_url"],
+        },
+      ],
+    });
     if (!lead) {
       throw new NotFoundException(`Lead with ID ${id} not found`);
     }

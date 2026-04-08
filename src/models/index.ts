@@ -886,6 +886,11 @@ export function initializeAssociations() {
     as: "branch",
   });
 
+  Lead.belongsTo(User, {
+    foreignKey: "admin_id",
+    as: "admin",
+  });
+
   // Lead to User through LeadTrialLesson
   Lead.hasOne(LeadTrialLesson, {
     foreignKey: "lead_id",
