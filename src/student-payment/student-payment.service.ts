@@ -20,6 +20,7 @@ import { UpdateStudentPaymentDto } from "./dto/update-student-payment.dto.js";
 import { StudentPaymentStatusDto } from "./dto/student-payment-status.dto.js";
 import { Op, fn, col, literal } from "sequelize";
 import { SmsService } from "../sms/sms.service.js";
+import { TelegramBotService } from "../telegram-bot/telegram-bot.service.js";
 
 @Injectable()
 export class StudentPaymentService {
@@ -35,6 +36,7 @@ export class StudentPaymentService {
     @InjectModel(User)
     private userModel: typeof User,
     private readonly smsService: SmsService,
+    private readonly telegramBotService: TelegramBotService,
   ) {}
 
   async create(
@@ -116,6 +118,17 @@ export class StudentPaymentService {
           );
         });
       }
+
+      // Send Telegram notification to parent (non-blocking)
+      this.telegramBotService
+        .notifyPayment(
+          payment.student_id,
+          payment.amount,
+          payment.status,
+          payment.payment_method,
+          payment.next_payment_date ? String(payment.next_payment_date) : undefined,
+        )
+        .catch((e) => this.logger.error("Telegram payment notification failed:", e));
 
       return payment;
     } catch (error) {
@@ -550,7 +563,7 @@ export class StudentPaymentService {
 
       return upcomingPayments;
     } catch (error) {
-      this.logger.error(`Error finding upcoming payments: ${error.message}`);
+      this.logger.error(`Error finding upcoming payments: ${(error as any).message}`);
       throw error;
     }
   }
@@ -820,7 +833,7 @@ export class StudentPaymentService {
         }),
       };
     } catch (error) {
-      this.logger.error(`Error checking debitor students: ${error.message}`);
+      this.logger.error(`Error checking debitor students: ${(error as any).message}`);
       throw error;
     }
   }
@@ -920,7 +933,7 @@ export class StudentPaymentService {
             );
           } catch (error) {
             this.logger.error(
-              `Failed to create payment record for debitor student ${payment.student_id} (${studentName}): ${error.message}`,
+              `Failed to create payment record for debitor student ${payment.student_id} (${studentName}): ${(error as any).message}`,
             );
           }
         }
@@ -931,7 +944,7 @@ export class StudentPaymentService {
       );
     } catch (error) {
       this.logger.error(
-        `Error in automatic payment creation job: ${error.message}`,
+        `Error in automatic payment creation job: ${(error as any).message}`,
       );
     }
   }

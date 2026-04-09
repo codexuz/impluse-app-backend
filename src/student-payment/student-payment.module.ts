@@ -7,11 +7,13 @@ import { StudentWallet } from '../student-wallet/entities/student-wallet.entity.
 import { StudentTransaction } from '../student-transaction/entities/student-transaction.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { SmsModule } from '../sms/sms.module.js';
+import { TelegramBotModule } from '../telegram-bot/telegram-bot.module.js';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([StudentPayment, StudentWallet, StudentTransaction, User]),
-    SmsModule
+    SmsModule,
+    TelegramBotModule,
   ],
   controllers: [StudentPaymentController],
   providers: [StudentPaymentService],

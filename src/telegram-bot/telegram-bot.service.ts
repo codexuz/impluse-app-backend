@@ -24,6 +24,8 @@ import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.
 export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private bot: Telegraf;
   private readonly logger = new Logger(TelegramBotService.name);
+  /** Track last bot message per chat so we can delete it when a new command arrives */
+  private lastBotMessage = new Map<string, number>();
 
   constructor(
     @InjectModel(StudentParent)
@@ -95,6 +97,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       { command: "grades", description: "📊 Baholar" },
       { command: "exams", description: "📝 Imtihon natijalari" },
       { command: "progress", description: "📈 O'quv jarayoni" },
+      { command: "profile", description: "👤 Profil" },
+      { command: "unlink", description: "🔓 Profilni uzish" },
       { command: "help", description: "❓ Yordam" },
     ]);
 
@@ -105,6 +109,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     this.bot.command("grades", (ctx) => this.handleGrades(ctx));
     this.bot.command("exams", (ctx) => this.handleExams(ctx));
     this.bot.command("progress", (ctx) => this.handleProgress(ctx));
+    this.bot.command("profile", (ctx) => this.handleProfile(ctx));
+    this.bot.command("unlink", (ctx) => this.handleUnlink(ctx));
     this.bot.command("help", (ctx) => this.handleHelp(ctx));
 
     // Handle callback queries from inline keyboards
@@ -112,6 +118,38 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     // Handle phone number sharing for linking
     this.bot.on("message", (ctx) => this.handleContactMessage(ctx));
+  }
+
+  // ─── Helpers: delete previous bot message & send with tracking ─────
+  private async deleteOldBotMessage(chatId: string) {
+    const prevId = this.lastBotMessage.get(chatId);
+    if (prevId) {
+      try {
+        await this.bot.telegram.deleteMessage(Number(chatId), prevId);
+      } catch {
+        // Message may already be deleted or too old – ignore
+      }
+      this.lastBotMessage.delete(chatId);
+    }
+  }
+
+  /** Send a reply, delete the previous bot message, and track the new one */
+  private async sendAndTrack(
+    ctx: Context,
+    text: string,
+    extra?: any,
+  ) {
+    const chatId = String(ctx.chat!.id);
+    await this.deleteOldBotMessage(chatId);
+    // Also try to delete the user's command message to keep chat clean
+    try {
+      await ctx.deleteMessage();
+    } catch {
+      // May lack permission in groups – ignore
+    }
+    const sent = await ctx.reply(text, extra);
+    this.lastBotMessage.set(chatId, sent.message_id);
+    return sent;
   }
 
   // ─── /start ────────────────────────────────────────────────
@@ -124,12 +162,14 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (parent) {
-      return ctx.reply(
+      return this.sendAndTrack(
+        ctx,
         `✅ Siz allaqachon ro'yxatdan o'tgansiz!\n\n👤 Ism: ${parent.full_name}\n\n📋 Menyu uchun /menu bosing.`,
       );
     }
 
-    return ctx.reply(
+    return this.sendAndTrack(
+      ctx,
       `👋 Assalomu alaykum! Impulse o'quv markazi botiga xush kelibsiz.\n\n` +
         `Farzandingiz haqidagi ma'lumotlarni ko'rish uchun telefon raqamingizni yuboring.\n\n` +
         `📱 Quyidagi tugmani bosing yoki raqamingizni yozing (masalan: +998901234567):`,
@@ -182,7 +222,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     if (!parent) {
       return ctx.reply(
         `❌ Kechirasiz, bu telefon raqam tizimda topilmadi.\n\n` +
-          `Iltimos, o'quv markazi bilan bog'laning yoki telefon raqamingiz to'g'ri kiritilganligini tekshiring.`,
+          `Iltimos, o'quv markazi bilan bog'laning yoki telefon raqamingiz to'g'ri kiritilganligini tekshiring.\n\n @impulse_adm.`,
         {
           reply_markup: { remove_keyboard: true },
         },
@@ -196,7 +236,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       attributes: ["user_id", "first_name", "last_name"],
     });
 
-    return ctx.reply(
+    await this.deleteOldBotMessage(chatId);
+    const sent = await ctx.reply(
       `✅ Muvaffaqiyatli ulandi!\n\n` +
         `👤 Ota-ona: ${parent.full_name}\n` +
         `👨‍🎓 Talaba: ${student ? `${student.first_name} ${student.last_name}` : "Noma'lum"}\n\n` +
@@ -205,6 +246,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         reply_markup: { remove_keyboard: true },
       },
     );
+    this.lastBotMessage.set(chatId, sent.message_id);
+    return sent;
   }
 
   // ─── /menu ─────────────────────────────────────────────────
@@ -212,7 +255,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     const parent = await this.getLinkedParent(ctx);
     if (!parent) return;
 
-    return ctx.reply(`📋 *Asosiy menyu*\n\nQuyidagilardan birini tanlang:`, {
+    return this.sendAndTrack(ctx, `📋 *Asosiy menyu*\n\nQuyidagilardan birini tanlang:`, {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
@@ -285,7 +328,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    return ctx.reply(text, { parse_mode: "Markdown" });
+    return this.sendAndTrack(ctx, text, { parse_mode: "Markdown" });
   }
 
   // ─── /attendance ───────────────────────────────────────────
@@ -349,7 +392,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    return ctx.reply(text, { parse_mode: "Markdown" });
+    return this.sendAndTrack(ctx, text, { parse_mode: "Markdown" });
   }
 
   // ─── /grades ───────────────────────────────────────────────
@@ -399,7 +442,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    return ctx.reply(text, { parse_mode: "Markdown" });
+    return this.sendAndTrack(ctx, text, { parse_mode: "Markdown" });
   }
 
   // ─── /exams ────────────────────────────────────────────────
@@ -472,7 +515,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    return ctx.reply(text, { parse_mode: "Markdown" });
+    return this.sendAndTrack(ctx, text, { parse_mode: "Markdown" });
   }
 
   // ─── /progress ─────────────────────────────────────────────
@@ -547,12 +590,83 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    return ctx.reply(text, { parse_mode: "Markdown" });
+    return this.sendAndTrack(ctx, text, { parse_mode: "Markdown" });
+  }
+
+  // ─── /profile ──────────────────────────────────────────────
+  private async handleProfile(ctx: Context) {
+    const parent = await this.getLinkedParent(ctx);
+    if (!parent) return;
+
+    const student = await this.userModel.findByPk(parent.student_id, {
+      attributes: ["first_name", "last_name"],
+    });
+    const studentName = student
+      ? `${student.first_name} ${student.last_name}`
+      : "Noma'lum";
+
+    const wallet = await this.studentWalletModel.findOne({
+      where: { student_id: parent.student_id },
+    });
+
+    const profile = await this.studentProfileModel.findOne({
+      where: { user_id: parent.student_id },
+    });
+
+    let text = `👤 *Profil*\n\n`;
+    text += `👤 Ota-ona: *${parent.full_name}*\n`;
+    text += `📱 Telefon: ${parent.phone_number}\n`;
+    text += `👨‍🎓 Talaba: *${studentName}*\n`;
+    if (wallet) {
+      text += `💳 Balans: *${wallet.amount?.toLocaleString() ?? 0} so'm*\n`;
+    }
+    if (profile) {
+      text += `⭐ Ball: ${profile.points} | 🪙 Tangalar: ${profile.coins}\n`;
+      text += `🔥 Streak: ${profile.streaks} kun | 📊 Daraja: ${profile.level}\n`;
+    }
+
+    return this.sendAndTrack(ctx, text, {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "🔓 Profilni uzish (Unlink)",
+              callback_data: "confirm_unlink",
+            },
+          ],
+          [{ text: "◀️ Menyu", callback_data: "menu_back" }],
+        ],
+      },
+    });
+  }
+
+  // ─── /unlink ───────────────────────────────────────────────
+  private async handleUnlink(ctx: Context) {
+    const parent = await this.getLinkedParent(ctx);
+    if (!parent) return;
+
+    return this.sendAndTrack(
+      ctx,
+      `⚠️ Haqiqatan ham profilni uzmoqchimisiz?\n\nBu amalni bajargandan so'ng botdan ma'lumotlarni ko'ra olmaysiz.`,
+      {
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "✅ Ha, uzish", callback_data: "do_unlink" },
+              { text: "❌ Yo'q", callback_data: "menu_back" },
+            ],
+          ],
+        },
+      },
+    );
   }
 
   // ─── /help ─────────────────────────────────────────────────
   private async handleHelp(ctx: Context) {
-    return ctx.reply(
+    return this.sendAndTrack(
+      ctx,
       `❓ *Yordam*\n\n` +
         `Bu bot orqali farzandingizning o'quv jarayonini kuzatishingiz mumkin.\n\n` +
         `📋 *Buyruqlar:*\n` +
@@ -562,6 +676,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         `/grades — Baholar\n` +
         `/exams — Imtihon natijalari\n` +
         `/progress — O'quv jarayoni va profil\n` +
+        `/profile — Profil ma'lumotlari\n` +
+        `/unlink — Profilni uzish\n` +
         `/help — Ushbu yordam\n\n` +
         `Muammo bo'lsa, o'quv markazi bilan bog'laning.`,
       { parse_mode: "Markdown" },
@@ -588,7 +704,20 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       case "menu_progress":
         return this.handleProgress(ctx);
       case "menu_profile":
-        return this.handleProgress(ctx);
+        return this.handleProfile(ctx);
+      case "menu_back":
+        return this.handleMenu(ctx);
+      case "confirm_unlink":
+        return this.handleUnlink(ctx);
+      case "do_unlink": {
+        const parent = await this.getLinkedParent(ctx);
+        if (!parent) return;
+        await parent.update({ telegram_chat_id: null });
+        this.lastBotMessage.delete(String(ctx.chat!.id));
+        return ctx.reply(
+          `✅ Profilingiz muvaffaqiyatli uzildi.\n\nQayta ulash uchun /start buyrug'ini yuboring.`,
+        );
+      }
       default:
         return;
     }
@@ -635,5 +764,75 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         );
       }
     }
+  }
+
+  // ─── Auto-notifications ────────────────────────────────────
+
+  /** Notify parent when attendance is recorded */
+  async notifyAttendance(
+    studentId: string,
+    status: string,
+    date: string,
+    groupName?: string,
+  ): Promise<void> {
+    const emoji =
+      status === "present" ? "✅" : status === "absent" ? "❌" : "⏰";
+    const statusText =
+      status === "present"
+        ? "Keldi"
+        : status === "absent"
+          ? "Kelmadi"
+          : "Kechikdi";
+    const formattedDate = new Date(date).toLocaleDateString("uz-UZ");
+    const group = groupName ? ` | 📚 ${groupName}` : "";
+
+    const message =
+      `📅 *Davomat yangilandi*\n\n` +
+      `${emoji} Holat: *${statusText}*\n` +
+      `📆 Sana: ${formattedDate}${group}`;
+
+    await this.sendNotificationToParent(studentId, message);
+  }
+
+  /** Notify parent when a grade is given */
+  async notifyGrading(
+    studentId: string,
+    grade: number,
+    percent: number,
+    groupName?: string,
+    lessonName?: string,
+    note?: string,
+  ): Promise<void> {
+    const gradeEmoji = grade >= 8 ? "🌟" : grade >= 5 ? "📗" : "📕";
+    let message =
+      `📊 *Yangi baho qo'yildi*\n\n` +
+      `${gradeEmoji} Baho: *${grade}/10* (${percent}%)`;
+    if (groupName) message += `\n📚 Guruh: ${groupName}`;
+    if (lessonName) message += `\n📖 Dars: ${lessonName}`;
+    if (note) message += `\n💬 Izoh: ${note}`;
+
+    await this.sendNotificationToParent(studentId, message);
+  }
+
+  /** Notify parent when a payment is made */
+  async notifyPayment(
+    studentId: string,
+    amount: number,
+    status: string,
+    paymentMethod: string,
+    nextPaymentDate?: string,
+  ): Promise<void> {
+    const statusEmoji =
+      status === "completed" ? "✅" : status === "pending" ? "⏳" : "❌";
+    let message =
+      `💰 *To'lov ma'lumoti*\n\n` +
+      `${statusEmoji} Holat: *${status}*\n` +
+      `💵 Summa: *${amount?.toLocaleString()} so'm*\n` +
+      `💳 Usul: ${paymentMethod}`;
+    if (nextPaymentDate) {
+      message += `\n📅 Keyingi to'lov: ${new Date(nextPaymentDate).toLocaleDateString("uz-UZ")}`;
+    }
+
+    await this.sendNotificationToParent(studentId, message);
   }
 }

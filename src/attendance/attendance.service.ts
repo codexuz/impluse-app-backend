@@ -15,11 +15,15 @@ import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.enti
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 import { CompensateLessonsService } from "../compensate-lessons/compensate-lessons.service.js";
+import { TelegramBotService } from "../telegram-bot/telegram-bot.service.js";
 import { Op } from "sequelize";
 
 @Injectable()
 export class AttendanceService {
-  constructor(private compensateLessonsService: CompensateLessonsService) {}
+  constructor(
+    private compensateLessonsService: CompensateLessonsService,
+    private telegramBotService: TelegramBotService,
+  ) {}
 
   private async handleTeacherPayment(
     teacherId: string,
@@ -169,6 +173,15 @@ export class AttendanceService {
       createAttendanceDto.teacher_id,
     );
 
+    // Send Telegram notification to parent (non-blocking)
+    this.telegramBotService
+      .notifyAttendance(
+        createAttendanceDto.student_id,
+        createAttendanceDto.status,
+        createAttendanceDto.date,
+      )
+      .catch((e) => console.error("Telegram attendance notification failed:", e));
+
     return attendance;
   }
 
@@ -213,6 +226,11 @@ export class AttendanceService {
           attendance.id,
           dto.teacher_id,
         );
+
+        // Send Telegram notification to parent (non-blocking)
+        this.telegramBotService
+          .notifyAttendance(dto.student_id, dto.status, dto.date)
+          .catch((e) => console.error("Telegram attendance notification failed:", e));
       } catch (error) {
         errors.push({
           student_id: dto.student_id,

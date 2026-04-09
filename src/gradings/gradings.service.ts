@@ -5,13 +5,15 @@ import { CreateGradingDto } from "./dto/create-grading.dto.js";
 import { UpdateGradingDto } from "./dto/update-grading.dto.js";
 import { User } from "../users/entities/user.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
+import { TelegramBotService } from "../telegram-bot/telegram-bot.service.js";
 import { Op } from "sequelize";
 
 @Injectable()
 export class GradingsService {
   constructor(
     @InjectModel(Grading)
-    private gradingModel: typeof Grading
+    private gradingModel: typeof Grading,
+    private telegramBotService: TelegramBotService,
   ) {}
 
   async create(createGradingDto: CreateGradingDto): Promise<Grading> {
@@ -40,7 +42,20 @@ export class GradingsService {
       );
     }
 
-    return this.gradingModel.create(createGradingDto as any);
+    return this.gradingModel.create(createGradingDto as any).then((grading) => {
+      // Send Telegram notification to parent (non-blocking)
+      this.telegramBotService
+        .notifyGrading(
+          createGradingDto.student_id,
+          createGradingDto.grade,
+          createGradingDto.percent,
+          undefined,
+          createGradingDto.lesson_name,
+          createGradingDto.note,
+        )
+        .catch((e) => console.error("Telegram grading notification failed:", e));
+      return grading;
+    });
   }
 
   async findAll(

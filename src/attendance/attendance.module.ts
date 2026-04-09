@@ -8,6 +8,7 @@ import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.enti
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 import { CompensateLessonsModule } from "../compensate-lessons/compensate-lessons.module.js";
+import { TelegramBotModule } from "../telegram-bot/telegram-bot.module.js";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CompensateLessonsModule } from "../compensate-lessons/compensate-lesson
       TeacherTransaction,
     ]),
     CompensateLessonsModule,
+    TelegramBotModule,
   ],
   controllers: [AttendanceController],
   providers: [AttendanceService],
