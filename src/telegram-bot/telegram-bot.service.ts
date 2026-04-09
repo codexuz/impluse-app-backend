@@ -804,7 +804,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     const group = groupName ? ` | 📚 ${groupName}` : "";
 
     const message =
-      `📅 *Davomat yangilandi*\n\n` +
+      `📅 *Davomat bo'yicha ma'lumot*\n\n` +
+      `👨‍🎓 Farzandingizning bugungi davomat holati:\n\n` +
       `${emoji} Holat: *${statusText}*\n` +
       `📆 Sana: ${formattedDate}${group}`;
 
@@ -822,11 +823,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   ): Promise<void> {
     const gradeEmoji = grade >= 8 ? "🌟" : grade >= 5 ? "📗" : "📕";
     let message =
-      `📊 *Yangi baho qo'yildi*\n\n` +
+      `📊 *Baholash bo'yicha ma'lumot*\n\n` +
+      `👨‍🎓 Farzandingizga yangi baho qo'yildi:\n\n` +
       `${gradeEmoji} Baho: *${grade}/10* (${percent}%)`;
     if (groupName) message += `\n📚 Guruh: ${groupName}`;
     if (lessonName) message += `\n📖 Dars: ${lessonName}`;
-    if (note) message += `\n💬 Izoh: ${note}`;
+    if (note) message += `\n💬 O'qituvchi izohi: ${note}`;
 
     await this.sendNotificationToParent(studentId, message);
   }
@@ -841,13 +843,16 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   ): Promise<void> {
     const statusEmoji =
       status === "completed" ? "✅" : status === "pending" ? "⏳" : "❌";
+    const statusText =
+      status === "completed" ? "Qabul qilindi" : status === "pending" ? "Kutilmoqda" : "Bekor qilindi";
     let message =
-      `💰 *To'lov ma'lumoti*\n\n` +
-      `${statusEmoji} Holat: *${status}*\n` +
+      `💰 *To'lov bo'yicha ma'lumot*\n\n` +
+      `👨‍🎓 Farzandingiz uchun to'lov amalga oshirildi:\n\n` +
+      `${statusEmoji} Holat: *${statusText}*\n` +
       `💵 Summa: *${amount?.toLocaleString()} so'm*\n` +
-      `💳 Usul: ${paymentMethod}`;
+      `💳 To'lov usuli: ${paymentMethod}`;
     if (nextPaymentDate) {
-      message += `\n📅 Keyingi to'lov: ${new Date(nextPaymentDate).toLocaleDateString("uz-UZ")}`;
+      message += `\n📅 Keyingi to'lov sanasi: ${new Date(nextPaymentDate).toLocaleDateString("uz-UZ")}`;
     }
 
     await this.sendNotificationToParent(studentId, message);
