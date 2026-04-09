@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { StudentPaymentService } from './student-payment.service.js';
 import { StudentPaymentController } from './student-payment.controller.js';
@@ -13,7 +13,7 @@ import { TelegramBotModule } from '../telegram-bot/telegram-bot.module.js';
   imports: [
     SequelizeModule.forFeature([StudentPayment, StudentWallet, StudentTransaction, User]),
     SmsModule,
-    TelegramBotModule,
+    forwardRef(() => TelegramBotModule),
   ],
   controllers: [StudentPaymentController],
   providers: [StudentPaymentService],

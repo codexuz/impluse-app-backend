@@ -3,6 +3,8 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { Telegraf, Context } from "telegraf";
@@ -51,6 +53,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private readonly groupStudentModel: typeof GroupStudent,
     @InjectModel(StudentWallet)
     private readonly studentWalletModel: typeof StudentWallet,
+    @Inject(forwardRef(() => StudentPaymentService))
     private readonly studentPaymentService: StudentPaymentService,
     private readonly coursesService: CoursesService,
   ) {

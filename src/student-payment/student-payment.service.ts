@@ -3,6 +3,8 @@ import {
   NotFoundException,
   Logger,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { Cron, CronExpression } from "@nestjs/schedule";
@@ -36,6 +38,7 @@ export class StudentPaymentService {
     @InjectModel(User)
     private userModel: typeof User,
     private readonly smsService: SmsService,
+    @Inject(forwardRef(() => TelegramBotService))
     private readonly telegramBotService: TelegramBotService,
   ) {}
 
