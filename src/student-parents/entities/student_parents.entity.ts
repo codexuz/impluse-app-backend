@@ -38,6 +38,12 @@ export class StudentParent extends Model {
   })
   additional_number!: string;
 
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  telegram_chat_id!: string | null;
+
   @CreatedAt
   createdAt!: Date;
 

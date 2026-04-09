@@ -1,0 +1,626 @@
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/sequelize";
+import { Telegraf, Context } from "telegraf";
+import { Op } from "sequelize";
+import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
+import { StudentPayment } from "../student-payment/entities/student-payment.entity.js";
+import { Attendance } from "../attendance/entities/attendance.entity.js";
+import { Grading } from "../gradings/entities/grading.entity.js";
+import { Exam } from "../exams/entities/exam.entity.js";
+import { ExamResult } from "../exams/entities/exam_result.entity.js";
+import { LessonProgress } from "../lesson_progress/entities/lesson_progress.entity.js";
+import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
+import { User } from "../users/entities/user.entity.js";
+import { Group } from "../groups/entities/group.entity.js";
+import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
+
+@Injectable()
+export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
+  private bot: Telegraf;
+  private readonly logger = new Logger(TelegramBotService.name);
+
+  constructor(
+    @InjectModel(StudentParent)
+    private readonly studentParentModel: typeof StudentParent,
+    @InjectModel(StudentPayment)
+    private readonly studentPaymentModel: typeof StudentPayment,
+    @InjectModel(Attendance)
+    private readonly attendanceModel: typeof Attendance,
+    @InjectModel(Grading)
+    private readonly gradingModel: typeof Grading,
+    @InjectModel(Exam)
+    private readonly examModel: typeof Exam,
+    @InjectModel(ExamResult)
+    private readonly examResultModel: typeof ExamResult,
+    @InjectModel(LessonProgress)
+    private readonly lessonProgressModel: typeof LessonProgress,
+    @InjectModel(StudentProfile)
+    private readonly studentProfileModel: typeof StudentProfile,
+    @InjectModel(User)
+    private readonly userModel: typeof User,
+    @InjectModel(Group)
+    private readonly groupModel: typeof Group,
+    @InjectModel(GroupStudent)
+    private readonly groupStudentModel: typeof GroupStudent,
+    @InjectModel(StudentWallet)
+    private readonly studentWalletModel: typeof StudentWallet,
+  ) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) {
+      this.logger.warn("TELEGRAM_BOT_TOKEN is not set. Bot will not start.");
+    }
+    this.bot = new Telegraf(token || "dummy");
+  }
+
+  async onModuleInit() {
+    if (!process.env.TELEGRAM_BOT_TOKEN) return;
+
+    this.registerCommands();
+
+    // Set webhook if TELEGRAM_WEBHOOK_URL is provided, otherwise use polling
+    const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
+    if (webhookUrl) {
+      const webhookPath = `/api/telegram-bot/webhook`;
+      await this.bot.telegram.setWebhook(`${webhookUrl}${webhookPath}`);
+      this.logger.log(`Telegram webhook set to: ${webhookUrl}${webhookPath}`);
+    } else {
+      // Fallback to polling for local development
+      this.bot.launch();
+      this.logger.log("Telegram bot started in polling mode");
+    }
+  }
+
+  async onModuleDestroy() {
+    this.bot.stop("Application shutdown");
+  }
+
+  /** Expose bot instance for webhook handling */
+  getBotInstance(): Telegraf {
+    return this.bot;
+  }
+
+  private registerCommands() {
+    // Set bot command menu
+    this.bot.telegram.setMyCommands([
+      { command: "start", description: "🚀 Botni ishga tushirish" },
+      { command: "menu", description: "📋 Asosiy menyu" },
+      { command: "payments", description: "💰 To'lovlar" },
+      { command: "attendance", description: "📅 Davomat" },
+      { command: "grades", description: "📊 Baholar" },
+      { command: "exams", description: "📝 Imtihon natijalari" },
+      { command: "progress", description: "📈 O'quv jarayoni" },
+      { command: "help", description: "❓ Yordam" },
+    ]);
+
+    this.bot.command("start", (ctx) => this.handleStart(ctx));
+    this.bot.command("menu", (ctx) => this.handleMenu(ctx));
+    this.bot.command("payments", (ctx) => this.handlePayments(ctx));
+    this.bot.command("attendance", (ctx) => this.handleAttendance(ctx));
+    this.bot.command("grades", (ctx) => this.handleGrades(ctx));
+    this.bot.command("exams", (ctx) => this.handleExams(ctx));
+    this.bot.command("progress", (ctx) => this.handleProgress(ctx));
+    this.bot.command("help", (ctx) => this.handleHelp(ctx));
+
+    // Handle callback queries from inline keyboards
+    this.bot.on("callback_query", (ctx) => this.handleCallbackQuery(ctx));
+
+    // Handle phone number sharing for linking
+    this.bot.on("message", (ctx) => this.handleContactMessage(ctx));
+  }
+
+  // ─── /start ────────────────────────────────────────────────
+  private async handleStart(ctx: Context) {
+    const chatId = String(ctx.chat!.id);
+
+    // Check if already linked
+    const parent = await this.studentParentModel.findOne({
+      where: { telegram_chat_id: chatId },
+    });
+
+    if (parent) {
+      return ctx.reply(
+        `✅ Siz allaqachon ro'yxatdan o'tgansiz!\n\n👤 Ism: ${parent.full_name}\n\n📋 Menyu uchun /menu bosing.`,
+      );
+    }
+
+    return ctx.reply(
+      `👋 Assalomu alaykum! Impulse o'quv markazi botiga xush kelibsiz.\n\n` +
+        `Farzandingiz haqidagi ma'lumotlarni ko'rish uchun telefon raqamingizni yuboring.\n\n` +
+        `📱 Quyidagi tugmani bosing:`,
+      {
+        reply_markup: {
+          keyboard: [
+            [{ text: "📱 Telefon raqamni yuborish", request_contact: true }],
+          ],
+          resize_keyboard: true,
+          one_time_keyboard: true,
+        },
+      },
+    );
+  }
+
+  // ─── Handle contact/phone sharing ─────────────────────────
+  private async handleContactMessage(ctx: Context) {
+    const message = ctx.message as any;
+    if (!message?.contact) return;
+
+    let phone = message.contact.phone_number;
+    // Normalize phone: remove leading +, spaces, dashes
+    phone = phone.replace(/[\s\-\+]/g, "");
+
+    const chatId = String(ctx.chat!.id);
+
+    // Find parent by phone number
+    const parent = await this.studentParentModel.findOne({
+      where: {
+        [Op.or]: [
+          { phone_number: { [Op.like]: `%${phone.slice(-9)}` } },
+          { additional_number: { [Op.like]: `%${phone.slice(-9)}` } },
+        ],
+      },
+    });
+
+    if (!parent) {
+      return ctx.reply(
+        `❌ Kechirasiz, bu telefon raqam tizimda topilmadi.\n\n` +
+          `Iltimos, o'quv markazi bilan bog'laning yoki telefon raqamingiz to'g'ri kiritilganligini tekshiring.`,
+        {
+          reply_markup: { remove_keyboard: true },
+        },
+      );
+    }
+
+    // Link telegram chat to parent
+    await parent.update({ telegram_chat_id: chatId });
+
+    const student = await this.userModel.findByPk(parent.student_id, {
+      attributes: ["user_id", "first_name", "last_name"],
+    });
+
+    return ctx.reply(
+      `✅ Muvaffaqiyatli ulandi!\n\n` +
+        `👤 Ota-ona: ${parent.full_name}\n` +
+        `👨‍🎓 Talaba: ${student ? `${student.first_name} ${student.last_name}` : "Noma'lum"}\n\n` +
+        `📋 /menu — Asosiy menyu`,
+      {
+        reply_markup: { remove_keyboard: true },
+      },
+    );
+  }
+
+  // ─── /menu ─────────────────────────────────────────────────
+  private async handleMenu(ctx: Context) {
+    const parent = await this.getLinkedParent(ctx);
+    if (!parent) return;
+
+    return ctx.reply(`📋 *Asosiy menyu*\n\nQuyidagilardan birini tanlang:`, {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "💰 To'lovlar", callback_data: "menu_payments" },
+            { text: "📅 Davomat", callback_data: "menu_attendance" },
+          ],
+          [
+            { text: "📊 Baholar", callback_data: "menu_grades" },
+            { text: "📝 Imtihonlar", callback_data: "menu_exams" },
+          ],
+          [
+            { text: "📈 O'quv jarayoni", callback_data: "menu_progress" },
+            { text: "👤 Profil", callback_data: "menu_profile" },
+          ],
+        ],
+      },
+    });
+  }
+
+  // ─── /payments ─────────────────────────────────────────────
+  private async handlePayments(ctx: Context) {
+    const parent = await this.getLinkedParent(ctx);
+    if (!parent) return;
+
+    const payments = await this.studentPaymentModel.findAll({
+      where: { student_id: parent.student_id },
+      order: [["createdAt", "DESC"]],
+      limit: 10,
+    });
+
+    const wallet = await this.studentWalletModel.findOne({
+      where: { student_id: parent.student_id },
+    });
+
+    const student = await this.userModel.findByPk(parent.student_id, {
+      attributes: ["first_name", "last_name"],
+    });
+
+    const studentName = student
+      ? `${student.first_name} ${student.last_name}`
+      : "Noma'lum";
+
+    let text = `💰 *To'lovlar — ${studentName}*\n\n`;
+
+    if (wallet) {
+      text += `💳 Hisob balansi: *${wallet.amount?.toLocaleString() ?? 0} so'm*\n\n`;
+    }
+
+    if (payments.length === 0) {
+      text += `📭 Hozircha to'lovlar yo'q.`;
+    } else {
+      text += `📋 Oxirgi to'lovlar:\n\n`;
+      for (const p of payments) {
+        const date = p.payment_date
+          ? new Date(p.payment_date).toLocaleDateString("uz-UZ")
+          : "—";
+        const statusEmoji =
+          p.status === "completed"
+            ? "✅"
+            : p.status === "pending"
+              ? "⏳"
+              : "❌";
+        text += `${statusEmoji} ${date} — *${p.amount?.toLocaleString()} so'm*\n`;
+        text += `   📌 ${p.payment_method} | ${p.status}\n`;
+        if (p.next_payment_date) {
+          text += `   📅 Keyingi to'lov: ${new Date(p.next_payment_date).toLocaleDateString("uz-UZ")}\n`;
+        }
+        text += `\n`;
+      }
+    }
+
+    return ctx.reply(text, { parse_mode: "Markdown" });
+  }
+
+  // ─── /attendance ───────────────────────────────────────────
+  private async handleAttendance(ctx: Context) {
+    const parent = await this.getLinkedParent(ctx);
+    if (!parent) return;
+
+    const student = await this.userModel.findByPk(parent.student_id, {
+      attributes: ["first_name", "last_name"],
+    });
+    const studentName = student
+      ? `${student.first_name} ${student.last_name}`
+      : "Noma'lum";
+
+    // Get last 30 days attendance
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const records = await this.attendanceModel.findAll({
+      where: {
+        student_id: parent.student_id,
+        date: { [Op.gte]: thirtyDaysAgo },
+      },
+      order: [["date", "DESC"]],
+    });
+
+    // Fetch group names for attendance records
+    const groupIds = [...new Set(records.map((r) => r.group_id))];
+    const groups = await this.groupModel.findAll({
+      where: { id: groupIds },
+      attributes: ["id", "name"],
+    });
+    const groupMap = new Map(groups.map((g) => [g.id, g.name]));
+
+    const total = records.length;
+    const present = records.filter((r) => r.status === "present").length;
+    const absent = records.filter((r) => r.status === "absent").length;
+    const late = records.filter((r) => r.status === "late").length;
+    const attendanceRate = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+
+    let text = `📅 *Davomat — ${studentName}*\n`;
+    text += `_(Oxirgi 30 kun)_\n\n`;
+    text += `📊 Umumiy statistika:\n`;
+    text += `   ✅ Kelgan: *${present}* kun\n`;
+    text += `   ❌ Kelmagan: *${absent}* kun\n`;
+    text += `   ⏰ Kechikkan: *${late}* kun\n`;
+    text += `   📈 Davomat: *${attendanceRate}%*\n\n`;
+
+    if (records.length > 0) {
+      text += `📋 Oxirgi darslar:\n\n`;
+      for (const r of records.slice(0, 10)) {
+        const date = new Date(r.date).toLocaleDateString("uz-UZ");
+        const emoji =
+          r.status === "present"
+            ? "✅"
+            : r.status === "absent"
+              ? "❌"
+              : "⏰";
+        const groupName = groupMap.get(r.group_id) || "—";
+        text += `${emoji} ${date} | ${groupName}\n`;
+      }
+    }
+
+    return ctx.reply(text, { parse_mode: "Markdown" });
+  }
+
+  // ─── /grades ───────────────────────────────────────────────
+  private async handleGrades(ctx: Context) {
+    const parent = await this.getLinkedParent(ctx);
+    if (!parent) return;
+
+    const student = await this.userModel.findByPk(parent.student_id, {
+      attributes: ["first_name", "last_name"],
+    });
+    const studentName = student
+      ? `${student.first_name} ${student.last_name}`
+      : "Noma'lum";
+
+    const gradings = await this.gradingModel.findAll({
+      where: { student_id: parent.student_id },
+      include: [{ model: Group, as: "group", attributes: ["name"] }],
+      order: [["createdAt", "DESC"]],
+      limit: 15,
+    });
+
+    let text = `📊 *Baholar — ${studentName}*\n\n`;
+
+    if (gradings.length === 0) {
+      text += `📭 Hozircha baholar yo'q.`;
+    } else {
+      // Calculate average
+      const avgGrade =
+        gradings.reduce((sum, g) => sum + (g.grade || 0), 0) / gradings.length;
+      const avgPercent =
+        gradings.reduce((sum, g) => sum + (g.percent || 0), 0) /
+        gradings.length;
+
+      text += `📈 O'rtacha: *${avgGrade.toFixed(1)}/10* (${avgPercent.toFixed(0)}%)\n\n`;
+      text += `📋 Oxirgi baholar:\n\n`;
+
+      for (const g of gradings) {
+        const date = new Date(g.createdAt).toLocaleDateString("uz-UZ");
+        const groupName = (g as any).group?.name || "—";
+        const gradeEmoji = g.grade >= 8 ? "🌟" : g.grade >= 5 ? "📗" : "📕";
+        text += `${gradeEmoji} ${date} — *${g.grade}/10* (${g.percent}%)\n`;
+        text += `   📚 ${groupName}`;
+        if (g.lesson_name) text += ` | ${g.lesson_name}`;
+        text += `\n`;
+        if (g.note) text += `   💬 ${g.note}\n`;
+        text += `\n`;
+      }
+    }
+
+    return ctx.reply(text, { parse_mode: "Markdown" });
+  }
+
+  // ─── /exams ────────────────────────────────────────────────
+  private async handleExams(ctx: Context) {
+    const parent = await this.getLinkedParent(ctx);
+    if (!parent) return;
+
+    const student = await this.userModel.findByPk(parent.student_id, {
+      attributes: ["first_name", "last_name"],
+    });
+    const studentName = student
+      ? `${student.first_name} ${student.last_name}`
+      : "Noma'lum";
+
+    const examResults = await this.examResultModel.findAll({
+      where: { student_id: parent.student_id },
+      order: [["created_at", "DESC"]],
+      limit: 10,
+    });
+
+    // Fetch exam details separately
+    const examIds = [...new Set(examResults.map((er) => er.exam_id))];
+    const exams = await this.examModel.findAll({
+      where: { id: examIds },
+      attributes: ["id", "title", "scheduled_at", "status", "level"],
+    });
+    const examMap = new Map(exams.map((e) => [e.id, e]));
+
+    let text = `📝 *Imtihon natijalari — ${studentName}*\n\n`;
+
+    if (examResults.length === 0) {
+      text += `📭 Hozircha imtihon natijalari yo'q.`;
+    } else {
+      for (const er of examResults) {
+        const exam = examMap.get(er.exam_id);
+        const resultEmoji = er.result === "passed" ? "✅" : "❌";
+        const date = exam?.scheduled_at
+          ? new Date(exam.scheduled_at).toLocaleDateString("uz-UZ")
+          : "—";
+
+        text += `${resultEmoji} *${exam?.title || "Imtihon"}*\n`;
+        text += `   📅 ${date} | ${exam?.level || "—"}\n`;
+        text += `   📊 Ball: *${er.score}/${er.max_score}* (${er.percentage}%)\n`;
+
+        // Section scores if available
+        if (er.section_scores) {
+          const sections = er.section_scores as any;
+          const sectionParts: string[] = [];
+          if (sections.reading !== undefined)
+            sectionParts.push(`Reading: ${sections.reading}`);
+          if (sections.writing !== undefined)
+            sectionParts.push(`Writing: ${sections.writing}`);
+          if (sections.listening !== undefined)
+            sectionParts.push(`Listening: ${sections.listening}`);
+          if (sections.speaking !== undefined)
+            sectionParts.push(`Speaking: ${sections.speaking}`);
+          if (sections.grammar !== undefined)
+            sectionParts.push(`Grammar: ${sections.grammar}`);
+          if (sections.vocabulary !== undefined)
+            sectionParts.push(`Vocabulary: ${sections.vocabulary}`);
+          if (sectionParts.length > 0) {
+            text += `   📋 ${sectionParts.join(" | ")}\n`;
+          }
+        }
+
+        if (er.feedback) {
+          text += `   💬 ${er.feedback}\n`;
+        }
+        text += `\n`;
+      }
+    }
+
+    return ctx.reply(text, { parse_mode: "Markdown" });
+  }
+
+  // ─── /progress ─────────────────────────────────────────────
+  private async handleProgress(ctx: Context) {
+    const parent = await this.getLinkedParent(ctx);
+    if (!parent) return;
+
+    const student = await this.userModel.findByPk(parent.student_id, {
+      attributes: ["first_name", "last_name"],
+    });
+    const studentName = student
+      ? `${student.first_name} ${student.last_name}`
+      : "Noma'lum";
+
+    // Student profile (gamification)
+    const profile = await this.studentProfileModel.findOne({
+      where: { user_id: parent.student_id },
+    });
+
+    // Groups the student belongs to
+    const groupStudents = await this.groupStudentModel.findAll({
+      where: { student_id: parent.student_id, status: "active" },
+      include: [{ model: this.groupModel, as: "group", attributes: ["name"] }],
+    });
+
+    // Lesson progress
+    const lessonProgress = await this.lessonProgressModel.findAll({
+      where: { student_id: parent.student_id },
+      order: [["updatedAt", "DESC"]],
+      limit: 10,
+    });
+
+    let text = `📈 *O'quv jarayoni — ${studentName}*\n\n`;
+
+    // Profile stats
+    if (profile) {
+      text += `🏆 *Profil:*\n`;
+      text += `   ⭐ Ball: ${profile.points}\n`;
+      text += `   🪙 Tangalar: ${profile.coins}\n`;
+      text += `   🔥 Streak: ${profile.streaks} kun\n`;
+      text += `   📊 Daraja: ${profile.level}\n\n`;
+    }
+
+    // Active groups
+    if (groupStudents.length > 0) {
+      text += `📚 *Guruhlar:*\n`;
+      for (const gs of groupStudents) {
+        const groupName = (gs as any).group?.name || "—";
+        text += `   📖 ${groupName}\n`;
+      }
+      text += `\n`;
+    }
+
+    // Recent lesson progress
+    if (lessonProgress.length > 0) {
+      text += `📋 *Dars natijalari:*\n\n`;
+      for (const lp of lessonProgress) {
+        const completedEmoji = lp.completed ? "✅" : "🔄";
+        text += `${completedEmoji} Dars — *${lp.progress_percentage}%*\n`;
+
+        const sections: string[] = [];
+        if (lp.reading_completed) sections.push("📖 Reading");
+        if (lp.listening_completed) sections.push("🎧 Listening");
+        if (lp.grammar_completed) sections.push("📝 Grammar");
+        if (lp.writing_completed) sections.push("✍️ Writing");
+        if (lp.speaking_completed) sections.push("🗣 Speaking");
+
+        if (sections.length > 0) {
+          text += `   ${sections.join(" | ")}\n`;
+        }
+        text += `   📊 ${lp.completed_sections_count}/${lp.total_sections_count} bo'lim\n\n`;
+      }
+    }
+
+    return ctx.reply(text, { parse_mode: "Markdown" });
+  }
+
+  // ─── /help ─────────────────────────────────────────────────
+  private async handleHelp(ctx: Context) {
+    return ctx.reply(
+      `❓ *Yordam*\n\n` +
+        `Bu bot orqali farzandingizning o'quv jarayonini kuzatishingiz mumkin.\n\n` +
+        `📋 *Buyruqlar:*\n` +
+        `/menu — Asosiy menyu\n` +
+        `/payments — To'lovlar va balans\n` +
+        `/attendance — Davomat statistikasi\n` +
+        `/grades — Baholar\n` +
+        `/exams — Imtihon natijalari\n` +
+        `/progress — O'quv jarayoni va profil\n` +
+        `/help — Ushbu yordam\n\n` +
+        `Muammo bo'lsa, o'quv markazi bilan bog'laning.`,
+      { parse_mode: "Markdown" },
+    );
+  }
+
+  // ─── Callback queries from inline keyboard ─────────────────
+  private async handleCallbackQuery(ctx: Context) {
+    const callbackQuery = ctx.callbackQuery as any;
+    const data = callbackQuery?.data;
+    if (!data) return;
+
+    await ctx.answerCbQuery();
+
+    switch (data) {
+      case "menu_payments":
+        return this.handlePayments(ctx);
+      case "menu_attendance":
+        return this.handleAttendance(ctx);
+      case "menu_grades":
+        return this.handleGrades(ctx);
+      case "menu_exams":
+        return this.handleExams(ctx);
+      case "menu_progress":
+        return this.handleProgress(ctx);
+      case "menu_profile":
+        return this.handleProgress(ctx);
+      default:
+        return;
+    }
+  }
+
+  // ─── Helper: get linked parent ─────────────────────────────
+  private async getLinkedParent(ctx: Context): Promise<StudentParent | null> {
+    const chatId = String(ctx.chat!.id);
+
+    const parent = await this.studentParentModel.findOne({
+      where: { telegram_chat_id: chatId },
+    });
+
+    if (!parent) {
+      await ctx.reply(
+        `⚠️ Siz hali ro'yxatdan o'tmagansiz.\n\nBoshlash uchun /start buyrug'ini yuboring.`,
+      );
+      return null;
+    }
+
+    return parent;
+  }
+
+  // ─── Public: send notification to parent ───────────────────
+  async sendNotificationToParent(
+    studentId: string,
+    message: string,
+  ): Promise<void> {
+    const parents = await this.studentParentModel.findAll({
+      where: {
+        student_id: studentId,
+        telegram_chat_id: { [Op.ne]: null },
+      },
+    });
+
+    for (const parent of parents) {
+      try {
+        await this.bot.telegram.sendMessage(parent.telegram_chat_id!, message, {
+          parse_mode: "Markdown",
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to send Telegram message to parent ${parent.id}: ${error}`,
+        );
+      }
+    }
+  }
+}

@@ -73,6 +73,7 @@
     "sequelize": "^6.37.8",
     "sequelize-typescript": "^2.1.6",
     "socket.io": "^4.8.3",
+    "telegraf": "^4.16.3",
     "uuid": "^13.0.0",
     "youtube-caption-extractor": "^1.9.1",
     "youtube-captions-scraper": "^2.0.3",
