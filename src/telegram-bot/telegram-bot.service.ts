@@ -305,8 +305,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       ? `${student.first_name} ${student.last_name}`
       : "Noma'lum";
 
-    const statusEmoji = paymentStatus.paymentStatus === "overdue" ? "🔴" : paymentStatus.paymentStatus === "upcoming" ? "🟡" : "🟢";
-    const statusText = paymentStatus.paymentStatus === "overdue" ? "Muddati o'tgan" : paymentStatus.paymentStatus === "upcoming" ? "Kutilmoqda" : "To'langan";
+    const statusEmoji = paymentStatus.paymentStatus === "overdue" ? "🔴" : paymentStatus.daysUntilNextPayment <= 3 ? "🟡" : "🟢";
+    const statusText = paymentStatus.paymentStatus === "overdue" ? "Qarzdor" : paymentStatus.daysUntilNextPayment <= 3 ? "Kutilmoqda" : "To'langan";
 
     let text = `💰 *To'lovlar — ${studentName}*\n\n`;
     text += `💳 Jami to'langan: *${paymentStatus.totalPaid?.toLocaleString() ?? 0} so'm*\n`;
@@ -625,6 +625,10 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       where: { user_id: parent.student_id },
     });
 
+    const paymentStatus = await this.studentPaymentService.calculateStudentPaymentStatus(parent.student_id);
+    const statusEmoji = paymentStatus.paymentStatus === "overdue" ? "🔴" : paymentStatus.daysUntilNextPayment <= 3 ? "🟡" : "🟢";
+    const statusText = paymentStatus.paymentStatus === "overdue" ? "Qarzdor" : paymentStatus.daysUntilNextPayment <= 3 ? "Kutilmoqda" : "To'langan";
+
     let text = `👤 *Profil*\n\n`;
     text += `👤 Ota-ona: *${parent.full_name}*\n`;
     text += `📱 Telefon: ${parent.phone_number}\n`;
@@ -632,6 +636,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     if (wallet) {
       text += `💳 Balans: *${wallet.amount?.toLocaleString() ?? 0} so'm*\n`;
     }
+    text += `${statusEmoji} To'lov holati: *${statusText}*\n`;
     if (profile) {
       text += `⭐ Ball: ${profile.points} | 🪙 Tangalar: ${profile.coins}\n`;
       text += `🔥 Streak: ${profile.streaks} kun | 📊 Daraja: ${profile.level}\n`;
