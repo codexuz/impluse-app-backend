@@ -132,7 +132,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     return ctx.reply(
       `👋 Assalomu alaykum! Impulse o'quv markazi botiga xush kelibsiz.\n\n` +
         `Farzandingiz haqidagi ma'lumotlarni ko'rish uchun telefon raqamingizni yuboring.\n\n` +
-        `📱 Quyidagi tugmani bosing:`,
+        `📱 Quyidagi tugmani bosing yoki raqamingizni yozing (masalan: +998901234567):`,
       {
         reply_markup: {
           keyboard: [
@@ -148,9 +148,22 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   // ─── Handle contact/phone sharing ─────────────────────────
   private async handleContactMessage(ctx: Context) {
     const message = ctx.message as any;
-    if (!message?.contact) return;
 
-    let phone = message.contact.phone_number;
+    let phone: string | undefined;
+
+    if (message?.contact) {
+      phone = message.contact.phone_number;
+    } else if (message?.text) {
+      // Accept manually typed phone number
+      const cleaned = message.text.replace(/[\s\-\+\(\)]/g, '');
+      if (/^\d{9,12}$/.test(cleaned)) {
+        phone = cleaned;
+      } else {
+        return; // Not a phone number, ignore
+      }
+    } else {
+      return;
+    }
     // Normalize phone: remove leading +, spaces, dashes
     phone = phone.replace(/[\s\-\+]/g, "");
 
