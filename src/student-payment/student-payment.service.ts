@@ -39,7 +39,7 @@ export class StudentPaymentService {
     private userModel: typeof User,
     private readonly smsService: SmsService,
     @Inject(forwardRef(() => TelegramBotService))
-    private readonly telegramBotService: TelegramBotService,
+    private readonly telegramBotService: any,
   ) {}
 
   async create(

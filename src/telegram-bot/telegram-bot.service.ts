@@ -54,7 +54,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     @InjectModel(StudentWallet)
     private readonly studentWalletModel: typeof StudentWallet,
     @Inject(forwardRef(() => StudentPaymentService))
-    private readonly studentPaymentService: StudentPaymentService,
+    private readonly studentPaymentService: any,
     private readonly coursesService: CoursesService,
   ) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
