@@ -8,15 +8,18 @@ import { Attendance } from "../attendance/entities/attendance.entity.js";
 import { Grading } from "../gradings/entities/grading.entity.js";
 import { Exam } from "../exams/entities/exam.entity.js";
 import { ExamResult } from "../exams/entities/exam_result.entity.js";
-import { LessonProgress } from "../lesson_progress/entities/lesson_progress.entity.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
+import { StudentPaymentModule } from "../student-payment/student-payment.module.js";
+import { CoursesModule } from "../courses/courses.module.js";
 
 @Module({
   imports: [
+    StudentPaymentModule,
+    CoursesModule,
     SequelizeModule.forFeature([
       StudentParent,
       StudentPayment,
@@ -24,7 +27,6 @@ import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.
       Grading,
       Exam,
       ExamResult,
-      LessonProgress,
       StudentProfile,
       User,
       Group,

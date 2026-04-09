@@ -13,12 +13,13 @@ import { Attendance } from "../attendance/entities/attendance.entity.js";
 import { Grading } from "../gradings/entities/grading.entity.js";
 import { Exam } from "../exams/entities/exam.entity.js";
 import { ExamResult } from "../exams/entities/exam_result.entity.js";
-import { LessonProgress } from "../lesson_progress/entities/lesson_progress.entity.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
+import { StudentPaymentService } from "../student-payment/student-payment.service.js";
+import { CoursesService } from "../courses/courses.service.js";
 
 @Injectable()
 export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
@@ -40,8 +41,6 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private readonly examModel: typeof Exam,
     @InjectModel(ExamResult)
     private readonly examResultModel: typeof ExamResult,
-    @InjectModel(LessonProgress)
-    private readonly lessonProgressModel: typeof LessonProgress,
     @InjectModel(StudentProfile)
     private readonly studentProfileModel: typeof StudentProfile,
     @InjectModel(User)
@@ -52,6 +51,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private readonly groupStudentModel: typeof GroupStudent,
     @InjectModel(StudentWallet)
     private readonly studentWalletModel: typeof StudentWallet,
+    private readonly studentPaymentService: StudentPaymentService,
+    private readonly coursesService: CoursesService,
   ) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (!token) {
@@ -221,9 +222,13 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     if (!parent) {
       return ctx.reply(
-        `❌ Kechirasiz, bu telefon raqam tizimda topilmadi.\n\n` +
-          `Iltimos, o'quv markazi bilan bog'laning yoki telefon raqamingiz to'g'ri kiritilganligini tekshiring.\n\n @impulse_adm.`,
+        `❌ *Kechirasiz, bu telefon raqam tizimda topilmadi.*\n\n` +
+          `🔍 Iltimos, telefon raqamingiz *to'g'ri kiritilganligini* tekshiring.\n\n` +
+          `📞 *Bog'lanish uchun:*\n` +
+          `📱 Telegram: @impulseadm\n` +
+          `☎️ Telefon: *+998955259966*`,
         {
+          parse_mode: "Markdown",
           reply_markup: { remove_keyboard: true },
         },
       );
@@ -287,9 +292,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       limit: 10,
     });
 
-    const wallet = await this.studentWalletModel.findOne({
-      where: { student_id: parent.student_id },
-    });
+    const paymentStatus = await this.studentPaymentService.calculateStudentPaymentStatus(parent.student_id);
 
     const student = await this.userModel.findByPk(parent.student_id, {
       attributes: ["first_name", "last_name"],
@@ -299,11 +302,25 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       ? `${student.first_name} ${student.last_name}`
       : "Noma'lum";
 
-    let text = `💰 *To'lovlar — ${studentName}*\n\n`;
+    const statusEmoji = paymentStatus.paymentStatus === "overdue" ? "🔴" : paymentStatus.paymentStatus === "upcoming" ? "🟡" : "🟢";
+    const statusText = paymentStatus.paymentStatus === "overdue" ? "Muddati o'tgan" : paymentStatus.paymentStatus === "upcoming" ? "Kutilmoqda" : "To'langan";
 
-    if (wallet) {
-      text += `💳 Hisob balansi: *${wallet.amount?.toLocaleString() ?? 0} so'm*\n\n`;
+    let text = `💰 *To'lovlar — ${studentName}*\n\n`;
+    text += `💳 Jami to'langan: *${paymentStatus.totalPaid?.toLocaleString() ?? 0} so'm*\n`;
+    text += `${statusEmoji} Holat: *${statusText}*\n`;
+    if (paymentStatus.pendingAmount > 0) {
+      text += `⏳ Qarzdorlik: *${paymentStatus.pendingAmount?.toLocaleString()} so'm*\n`;
     }
+    if (paymentStatus.nextPaymentDate) {
+      text += `📅 Keyingi to'lov: *${new Date(paymentStatus.nextPaymentDate).toLocaleDateString("uz-UZ")}*`;
+      if (paymentStatus.daysUntilNextPayment < 0) {
+        text += ` _(${Math.abs(paymentStatus.daysUntilNextPayment)} kun kechikkan)_`;
+      } else if (paymentStatus.daysUntilNextPayment > 0) {
+        text += ` _(${paymentStatus.daysUntilNextPayment} kun qoldi)_`;
+      }
+      text += `\n`;
+    }
+    text += `\n`;
 
     if (payments.length === 0) {
       text += `📭 Hozircha to'lovlar yo'q.`;
@@ -541,12 +558,13 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       include: [{ model: this.groupModel, as: "group", attributes: ["name"] }],
     });
 
-    // Lesson progress
-    const lessonProgress = await this.lessonProgressModel.findAll({
-      where: { student_id: parent.student_id },
-      order: [["updatedAt", "DESC"]],
-      limit: 10,
-    });
+    // Course progress
+    let courseProgressList: any[] = [];
+    try {
+      courseProgressList = await this.coursesService.getAllCourseProgress(parent.student_id);
+    } catch {
+      // Student may not be in any English group
+    }
 
     let text = `📈 *O'quv jarayoni — ${studentName}*\n\n`;
 
@@ -569,25 +587,16 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       text += `\n`;
     }
 
-    // Recent lesson progress
-    if (lessonProgress.length > 0) {
-      text += `📋 *Dars natijalari:*\n\n`;
-      for (const lp of lessonProgress) {
-        const completedEmoji = lp.completed ? "✅" : "🔄";
-        text += `${completedEmoji} Dars — *${lp.progress_percentage}%*\n`;
-
-        const sections: string[] = [];
-        if (lp.reading_completed) sections.push("📖 Reading");
-        if (lp.listening_completed) sections.push("🎧 Listening");
-        if (lp.grammar_completed) sections.push("📝 Grammar");
-        if (lp.writing_completed) sections.push("✍️ Writing");
-        if (lp.speaking_completed) sections.push("🗣 Speaking");
-
-        if (sections.length > 0) {
-          text += `   ${sections.join(" | ")}\n`;
-        }
-        text += `   📊 ${lp.completed_sections_count}/${lp.total_sections_count} bo'lim\n\n`;
+    // Course progress
+    if (courseProgressList.length > 0) {
+      text += `📋 *Kurs natijalari:*\n\n`;
+      for (const cp of courseProgressList) {
+        const progressEmoji = cp.percentage >= 100 ? "✅" : cp.percentage >= 50 ? "📗" : "📕";
+        text += `${progressEmoji} *${cp.course_name}*\n`;
+        text += `   📊 ${cp.completed}/${cp.total} dars — *${cp.percentage}%*\n\n`;
       }
+    } else {
+      text += `📭 Hozircha kurs natijalari yo'q.\n`;
     }
 
     return this.sendAndTrack(ctx, text, { parse_mode: "Markdown" });

@@ -876,8 +876,11 @@ export class StudentPaymentService {
         }
       }
 
-      // Find students whose latest payment's next_payment_date has passed
+      // Classify students by payment status
       const overdueStudents = [];
+      const upcomingStudents = [];
+      const threeDaysLater = new Date(today);
+      threeDaysLater.setDate(threeDaysLater.getDate() + 3);
 
       for (const [studentId, latestPayment] of studentLatestPayments) {
         const nextPaymentDate = new Date(latestPayment.next_payment_date);
@@ -885,11 +888,13 @@ export class StudentPaymentService {
 
         if (nextPaymentDate < today) {
           overdueStudents.push(latestPayment);
+        } else if (nextPaymentDate >= today && nextPaymentDate <= threeDaysLater) {
+          upcomingStudents.push(latestPayment);
         }
       }
 
       this.logger.log(
-        `Found ${overdueStudents.length} students with passed payment dates (debitors)`,
+        `Found ${overdueStudents.length} debitor students, ${upcomingStudents.length} upcoming payment students`,
       );
 
       // Process each overdue student's latest payment
@@ -900,6 +905,29 @@ export class StudentPaymentService {
         const studentName = student
           ? `${student.first_name || ""} ${student.last_name || ""}`.trim()
           : "Unknown";
+
+        const daysOverdue = Math.floor(
+          (today.getTime() - new Date(payment.next_payment_date).getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+
+        // Send overdue notification via Telegram
+        const overdueMessage =
+          `🔴 *To'lov muddati o'tgan!*\n\n` +
+          `👨‍🎓 Talaba: *${studentName}*\n` +
+          `💵 Summa: *${Number(payment.amount).toLocaleString()} so'm*\n` +
+          `📅 To'lov muddati: ${new Date(payment.next_payment_date).toLocaleDateString("uz-UZ")}\n` +
+          `⏰ Kechikish: *${daysOverdue} kun*\n\n` +
+          `Iltimos, to'lovni amalga oshiring.\n` +
+          `📞 Bog'lanish: @impulseadm | +998 95 525 99 66`;
+
+        this.telegramBotService
+          .sendNotificationToParent(payment.student_id, overdueMessage)
+          .catch((e) =>
+            this.logger.error(
+              `Failed to send overdue Telegram notification for student ${payment.student_id}: ${e}`,
+            ),
+          );
 
         // Only create new payment records for payments that aren't completed
         if (payment.status !== PaymentStatus.COMPLETED) {
@@ -937,6 +965,38 @@ export class StudentPaymentService {
             );
           }
         }
+      }
+
+      // Send upcoming payment reminders via Telegram
+      for (const payment of upcomingStudents) {
+        const studentInfo = payment.get({ plain: true });
+        const student = studentInfo.student as any;
+        const studentName = student
+          ? `${student.first_name || ""} ${student.last_name || ""}`.trim()
+          : "Unknown";
+
+        const daysLeft = Math.floor(
+          (new Date(payment.next_payment_date).getTime() - today.getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+
+        const daysText = daysLeft === 0 ? "bugun" : `${daysLeft} kun qoldi`;
+
+        const upcomingMessage =
+          `🟡 *To'lov muddati yaqinlashmoqda!*\n\n` +
+          `👨‍🎓 Talaba: *${studentName}*\n` +
+          `💵 Summa: *${Number(payment.amount).toLocaleString()} so'm*\n` +
+          `📅 To'lov muddati: ${new Date(payment.next_payment_date).toLocaleDateString("uz-UZ")}\n` +
+          `⏳ Muddat: *${daysText}*\n\n` +
+          `Iltimos, to'lovni o'z vaqtida amalga oshiring.`;
+
+        this.telegramBotService
+          .sendNotificationToParent(payment.student_id, upcomingMessage)
+          .catch((e) =>
+            this.logger.error(
+              `Failed to send upcoming Telegram notification for student ${payment.student_id}: ${e}`,
+            ),
+          );
       }
 
       this.logger.log(
