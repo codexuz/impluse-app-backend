@@ -12,7 +12,6 @@ import { StudentProfile } from "../student_profiles/entities/student_profile.ent
 import { User } from "../users/entities/user.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
-import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
 import { StudentPaymentModule } from "../student-payment/student-payment.module.js";
 import { CoursesModule } from "../courses/courses.module.js";
 
@@ -31,7 +30,6 @@ import { CoursesModule } from "../courses/courses.module.js";
       User,
       Group,
       GroupStudent,
-      StudentWallet,
     ]),
   ],
   controllers: [TelegramBotController],

@@ -19,7 +19,6 @@ import { StudentProfile } from "../student_profiles/entities/student_profile.ent
 import { User } from "../users/entities/user.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
-import { StudentWallet } from "../student-wallet/entities/student-wallet.entity.js";
 import { StudentPaymentService } from "../student-payment/student-payment.service.js";
 import { CoursesService } from "../courses/courses.service.js";
 
@@ -51,8 +50,6 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     private readonly groupModel: typeof Group,
     @InjectModel(GroupStudent)
     private readonly groupStudentModel: typeof GroupStudent,
-    @InjectModel(StudentWallet)
-    private readonly studentWalletModel: typeof StudentWallet,
     @Inject(forwardRef(() => StudentPaymentService))
     private readonly studentPaymentService: any,
     private readonly coursesService: CoursesService,
@@ -617,8 +614,9 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       ? `${student.first_name} ${student.last_name}`
       : "Noma'lum";
 
-    const wallet = await this.studentWalletModel.findOne({
+    const lastPayment = await this.studentPaymentModel.findOne({
       where: { student_id: parent.student_id },
+      order: [["createdAt", "DESC"]],
     });
 
     const profile = await this.studentProfileModel.findOne({
@@ -633,8 +631,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     text += `👤 Ota-ona: *${parent.full_name}*\n`;
     text += `📱 Telefon: ${parent.phone_number}\n`;
     text += `👨‍🎓 Talaba: *${studentName}*\n`;
-    if (wallet) {
-      text += `💳 Balans: *${wallet.amount?.toLocaleString() ?? 0} so'm*\n`;
+    if (lastPayment) {
+      text += `💳 Oxirgi to'lov: *${lastPayment.amount?.toLocaleString() ?? 0} so'm*\n`;
     }
     text += `${statusEmoji} To'lov holati: *${statusText}*\n`;
     if (profile) {
