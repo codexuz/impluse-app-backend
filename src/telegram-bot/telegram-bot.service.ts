@@ -570,11 +570,14 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     // Profile stats
     if (profile) {
+      const rank = await this.studentProfileModel.count({
+        where: { points: { [Op.gt]: profile.points } },
+      }) + 1;
       text += `🏆 *Profil:*\n`;
       text += `   ⭐ Ball: ${profile.points}\n`;
       text += `   🪙 Tangalar: ${profile.coins}\n`;
       text += `   🔥 Streak: ${profile.streaks} kun\n`;
-      text += `   📊 Daraja: ${profile.level}\n\n`;
+      text += `   🏅 Reyting: ${rank}-o'rin\n\n`;
     }
 
     // Active groups
@@ -636,8 +639,11 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     }
     text += `${statusEmoji} To'lov holati: *${statusText}*\n`;
     if (profile) {
+      const rank = await this.studentProfileModel.count({
+        where: { points: { [Op.gt]: profile.points } },
+      }) + 1;
       text += `⭐ Ball: ${profile.points} | 🪙 Tangalar: ${profile.coins}\n`;
-      text += `🔥 Streak: ${profile.streaks} kun | 📊 Daraja: ${profile.level}\n`;
+      text += `🔥 Streak: ${profile.streaks} kun | 🏅 Reyting: ${rank}-o'rin\n`;
     }
 
     return this.sendAndTrack(ctx, text, {
