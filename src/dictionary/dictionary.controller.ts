@@ -8,9 +8,14 @@ export class DictionaryController {
 
   @Public()
   @Get("lookup/:word")
-  async lookup(@Param("word") word: string, @Request() req) {
+  async lookup(
+    @Param("word") word: string,
+    @Query("translate") translate: string,
+    @Request() req,
+  ) {
     const userId = req.user?.userId;
-    return this.dictionaryService.lookup(word, userId);
+    const shouldTranslate = translate !== "false";
+    return this.dictionaryService.lookup(word, userId, shouldTranslate);
   }
 
   @Get("history")

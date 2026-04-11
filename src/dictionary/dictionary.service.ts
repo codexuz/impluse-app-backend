@@ -70,6 +70,8 @@ const FallbackEntrySchema = z.object({
 @Injectable()
 export class DictionaryService {
   private openai: OpenAI;
+  private cache = new Map<string, { data: DictionaryResult; expiry: number }>();
+  private readonly CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
   constructor(
     private readonly httpService: HttpService,
@@ -81,14 +83,28 @@ export class DictionaryService {
     this.openai = new OpenAI({ apiKey });
   }
 
-  async lookup(word: string, userId?: string): Promise<DictionaryResult> {
+  async lookup(
+    word: string,
+    userId?: string,
+    translate: boolean = true,
+  ): Promise<DictionaryResult> {
+    const cacheKey = `${word.trim().toLowerCase()}:${translate}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      if (userId) {
+        this.saveHistory(userId, word, cached.data.fallback ?? false);
+      }
+      return cached.data;
+    }
+
     const apiData = await this.fetchFromApi(word);
 
     // If API returned nothing (404/429), use OpenAI fallback
     if (!apiData) {
       const result = await this.fallbackWithOpenAI(word);
+      this.cache.set(cacheKey, { data: result, expiry: Date.now() + this.CACHE_TTL });
       if (userId) {
-        await this.saveHistory(userId, word, true);
+        this.saveHistory(userId, word, true);
       }
       return result;
     }
@@ -100,8 +116,37 @@ export class DictionaryService {
 
     if (englishEntries.length === 0) {
       const result = await this.fallbackWithOpenAI(word);
+      this.cache.set(cacheKey, { data: result, expiry: Date.now() + this.CACHE_TTL });
       if (userId) {
-        await this.saveHistory(userId, word, true);
+        this.saveHistory(userId, word, true);
+      }
+      return result;
+    }
+
+    // Without translations — return fast
+    if (!translate) {
+      const fastEntries: TranslatedEntry[] = englishEntries.map((entry) => ({
+        ...entry,
+        senses: entry.senses.map((sense) => ({
+          ...sense,
+          translations: { uz: "", ru: "" },
+          exampleTranslations: [],
+          subsenses: sense.subsenses.map((sub) => ({
+            ...sub,
+            translations: { uz: "", ru: "" },
+            exampleTranslations: [],
+          })) as TranslatedSense[],
+        })),
+      }));
+
+      const result: DictionaryResult = {
+        word: apiData.word,
+        entries: fastEntries,
+        source: apiData.source,
+      };
+      this.cache.set(cacheKey, { data: result, expiry: Date.now() + this.CACHE_TTL });
+      if (userId) {
+        this.saveHistory(userId, word, false);
       }
       return result;
     }
@@ -178,14 +223,16 @@ export class DictionaryService {
     );
 
     if (userId) {
-      await this.saveHistory(userId, word, false);
+      this.saveHistory(userId, word, false);
     }
 
-    return {
+    const result: DictionaryResult = {
       word: apiData.word,
       entries: translatedEntries,
       source: apiData.source,
     };
+    this.cache.set(cacheKey, { data: result, expiry: Date.now() + this.CACHE_TTL });
+    return result;
   }
 
   private async saveHistory(
