@@ -158,10 +158,10 @@ export class DictionaryService {
     for (const entry of englishEntries) {
       for (const sense of entry.senses) {
         definitions.push(sense.definition);
-        examples.push(...sense.examples);
+        examples.push(...sense.examples.slice(0, 2));
         for (const subsense of sense.subsenses) {
           definitions.push(subsense.definition);
-          examples.push(...subsense.examples);
+          examples.push(...subsense.examples.slice(0, 2));
         }
       }
     }
@@ -308,18 +308,13 @@ export class DictionaryService {
     definitions: string[],
     examples: string[],
   ): Promise<z.infer<typeof TranslationSchema>> {
-    const prompt = `You are a professional translator. Translate the following dictionary data for the English word "${word}".
+    const prompt = `Translate to Uzbek (uz) and Russian (ru) for word "${word}". Keep same order.
 
-Translate each definition and example sentence into both Uzbek (uz) and Russian (ru).
-Keep translations natural, accurate, and appropriate for a dictionary app.
-
-DEFINITIONS to translate:
+DEFINITIONS:
 ${definitions.map((d, i) => `${i + 1}. ${d}`).join("\n")}
 
-EXAMPLE SENTENCES to translate:
-${examples.map((e, i) => `${i + 1}. ${e}`).join("\n")}
-
-Return translations maintaining the exact same order.`;
+EXAMPLES:
+${examples.length ? examples.map((e, i) => `${i + 1}. ${e}`).join("\n") : "(none)"}`;
 
     try {
       const response = await this.openai.chat.completions.create({
@@ -329,7 +324,8 @@ Return translations maintaining the exact same order.`;
           TranslationSchema,
           "translations",
         ),
-        temperature: 0.3,
+        temperature: 0,
+        max_tokens: 1024,
       });
 
       const content = response.choices[0].message.content;
@@ -352,18 +348,7 @@ Return translations maintaining the exact same order.`;
   }
 
   private async fallbackWithOpenAI(word: string): Promise<DictionaryResult> {
-    const prompt = `You are a professional dictionary like Cambridge Dictionary. Generate a complete dictionary entry for the English word or phrase: "${word}".
-
-Include:
-- Part of speech
-- IPA pronunciations (British "Received Pronunciation" and American "General American")
-- Word forms (plural, past tense, etc. where applicable)
-- All senses/definitions in English
-- For each definition: translate it into Uzbek (uz) and Russian (ru)
-- 1-2 example sentences per definition, each translated into Uzbek and Russian
-- Synonyms and antonyms where relevant
-
-Be accurate and comprehensive like a real dictionary.`;
+    const prompt = `Dictionary entry for "${word}". Include: part of speech, IPA (British + American), word forms, definitions with Uzbek/Russian translations, 1-2 examples each translated to uz/ru, synonyms, antonyms.`;
 
     try {
       const response = await this.openai.chat.completions.create({
@@ -373,7 +358,8 @@ Be accurate and comprehensive like a real dictionary.`;
           FallbackEntrySchema,
           "dictionary_entry",
         ),
-        temperature: 0.3,
+        temperature: 0,
+        max_tokens: 2048,
       });
 
       const content = response.choices[0].message.content;
