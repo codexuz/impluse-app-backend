@@ -12,6 +12,7 @@ import {
 import { ExamService } from "./exam.service.js";
 import { CreateExamDto } from "./dto/create-exam.dto.js";
 import { UpdateExamDto } from "./dto/update-exam.dto.js";
+import { QueryExamDto } from "./dto/query-exam.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -33,9 +34,9 @@ export class ExamController {
 
   @Get()
   @Roles("admin", "teacher")
-  @ApiOperation({ summary: "Get all exams" })
-  findAll() {
-    return this.examService.findAll();
+  @ApiOperation({ summary: "Get all exams with pagination and filters" })
+  findAll(@Query() query: QueryExamDto) {
+    return this.examService.findAll(query);
   }
 
   @Get("user/:userId")
