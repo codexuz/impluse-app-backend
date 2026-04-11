@@ -127,6 +127,7 @@ import { IeltsListeningListeningPart } from "../ielts-tests/entities/ielts-liste
 import { IeltsWritingWritingTask } from "../ielts-tests/entities/ielts-writing-writing-task.entity.js";
 
 import { Grading } from "../gradings/entities/grading.entity.js";
+import { DictionaryHistory } from "../dictionary/entities/dictionary-history.entity.js";
 
 export const Models = [
   User,
@@ -246,6 +247,7 @@ export const Models = [
   Translation,
   Dictation,
   ListenAndChoose,
+  DictionaryHistory,
 ];
 
 // Define associations after all models are loaded

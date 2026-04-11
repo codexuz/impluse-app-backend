@@ -94,6 +94,7 @@ import { IeltsVocabularyModule } from "./ielts-vocabulary/ielts-vocabulary.modul
 import { IeltsCoursesModule } from "./ielts-courses/ielts-courses.module.js";
 import { GradingsModule } from "./gradings/gradings.module.js";
 import { TelegramBotModule } from "./telegram-bot/telegram-bot.module.js";
+import { DictionaryModule } from "./dictionary/dictionary.module.js";
 
 @Module({
   imports: [
@@ -193,6 +194,7 @@ import { TelegramBotModule } from "./telegram-bot/telegram-bot.module.js";
     IeltsCoursesModule,
     GradingsModule,
     TelegramBotModule,
+    DictionaryModule,
   ],
   controllers: [AppController],
   providers: [
