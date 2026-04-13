@@ -21,6 +21,7 @@ import {
   VoiceChatResponseDto,
   TextToVoiceResponseDto,
 } from "./dto/index.js";
+import { Public } from "../../auth/decorators/public.decorator.js";
 
 @ApiTags("Voice Chat Bot")
 @Controller("voice-chat-bot")
@@ -65,7 +66,7 @@ export class VoiceChatBotController {
         audioData: result.audioStream.toString("base64"),
         encoding: "base64",
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -122,7 +123,7 @@ export class VoiceChatBotController {
       });
 
       return new StreamableFile(audioBuffer);
-    } catch (error) {
+    } catch (error: any) {
       res.status(HttpStatus.INTERNAL_SERVER_ERROR);
       return {
         success: false,
@@ -156,7 +157,7 @@ export class VoiceChatBotController {
         audioData: audioBuffer.toString("base64"),
         encoding: "base64",
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -180,7 +181,7 @@ export class VoiceChatBotController {
         success: true,
         text: transcribedText,
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -188,6 +189,7 @@ export class VoiceChatBotController {
     }
   }
 
+  @Public()
   @Post("text-to-voice-url")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -221,10 +223,10 @@ export class VoiceChatBotController {
         url: result.url,
         filename: result.filename,
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
-        error: error.message,
+        error: error.message ,
       };
     }
   }
@@ -264,7 +266,7 @@ export class VoiceChatBotController {
         url: result.url,
         filename: result.filename,
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
@@ -370,7 +372,7 @@ export class VoiceChatBotController {
         files,
         count: files.length,
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error.message,
