@@ -165,32 +165,32 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (existingParents.length > 0) {
-      if (existingParents.length === 1) {
-        const student = await this.userModel.findByPk(existingParents[0].student_id, {
-          attributes: ["first_name", "last_name"],
-        });
-        const studentName = student ? `${student.first_name} ${student.last_name}` : "Noma'lum";
-        return this.sendAndTrack(
-          ctx,
-          `✅ Siz allaqachon ro'yxatdan o'tgansiz!\n\n👤 Ism: ${existingParents[0].full_name}\n👨‍🎓 Farzand: ${studentName}\n\n📋 Menyu uchun /menu bosing.`,
-        );
-      } else {
-        const students = await this.userModel.findAll({
-          where: { user_id: existingParents.map((p) => p.student_id) },
-          attributes: ["user_id", "first_name", "last_name"],
-        });
-        const studentMap = new Map(students.map((s) => [s.user_id, s]));
-        const childList = existingParents
-          .map((p, i) => {
-            const s = studentMap.get(p.student_id);
-            return `${i + 1}. ${s ? `${s.first_name} ${s.last_name}` : "Noma'lum"}`;
-          })
-          .join("\n");
-        return this.sendAndTrack(
-          ctx,
-          `✅ Siz allaqachon ro'yxatdan o'tgansiz!\n\n👤 Ism: ${existingParents[0].full_name}\n\n👨‍👩‍👧‍👦 Farzandlar:\n${childList}\n\n📋 Menyu uchun /menu bosing.`,
-        );
-      }
+      const students = await this.userModel.findAll({
+        where: { user_id: existingParents.map((p) => p.student_id) },
+        attributes: ["user_id", "first_name", "last_name"],
+      });
+      const studentMap = new Map(students.map((s) => [s.user_id, s]));
+      const childList = existingParents
+        .map((p, i) => {
+          const s = studentMap.get(p.student_id);
+          return `${i + 1}. ${s ? `${s.first_name} ${s.last_name}` : "Noma'lum"}`;
+        })
+        .join("\n");
+      const childLabel = existingParents.length === 1
+        ? `👨‍🎓 Farzand:\n${childList}`
+        : `👨‍👩‍👧‍👦 Farzandlar:\n${childList}`;
+      return this.sendAndTrack(
+        ctx,
+        `✅ Siz allaqachon ro'yxatdan o'tgansiz!\n\n👤 Ism: ${existingParents[0].full_name}\n\n${childLabel}\n\n📋 Menyu uchun /menu bosing.`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "🔗 Yangi farzand ulash", callback_data: "link_more_children" }],
+              [{ text: "📋 Menyu", callback_data: "menu_back" }],
+            ],
+          },
+        },
+      );
     }
 
     return this.sendAndTrack(
@@ -258,6 +258,11 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
+    // Identify which records are newly linked vs already linked
+    const alreadyLinkedIds = new Set(
+      parentRecords.filter((p) => p.telegram_chat_id === chatId).map((p) => p.student_id),
+    );
+
     // Link telegram chat to ALL parent records (one per child)
     await Promise.all(parentRecords.map((p) => p.update({ telegram_chat_id: chatId })));
 
@@ -267,18 +272,38 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     });
     const studentMap = new Map(students.map((s) => [s.user_id, s]));
 
-    let successText =
-      `✅ Muvaffaqiyatli ulandi!\n\n` +
-      `👤 Ota-ona: ${parentRecords[0].full_name}\n`;
-    if (parentRecords.length === 1) {
-      const student = studentMap.get(parentRecords[0].student_id);
-      successText += `👨‍🎓 Talaba: ${student ? `${student.first_name} ${student.last_name}` : "Noma'lum"}\n`;
-    } else {
-      successText += `\n👨‍👩‍👧‍👦 Farzandlar (${parentRecords.length} nafar):\n`;
+    const newlyLinked = parentRecords.filter((p) => !alreadyLinkedIds.has(p.student_id));
+    const isRelink = alreadyLinkedIds.size > 0;
+
+    let successText = isRelink
+      ? `✅ Yangi farzandlar muvaffaqiyatli ulandi!\n\n`
+      : `✅ Muvaffaqiyatli ulandi!\n\n`;
+    successText += `👤 Ota-ona: ${parentRecords[0].full_name}\n`;
+
+    if (isRelink && newlyLinked.length === 0) {
+      successText = `ℹ️ Yangi farzand topilmadi.\n\nBarcha farzandlar allaqachon ulangan:\n`;
       parentRecords.forEach((p, i) => {
         const s = studentMap.get(p.student_id);
         successText += `${i + 1}. ${s ? `${s.first_name} ${s.last_name}` : "Noma'lum"}\n`;
       });
+    } else if (newlyLinked.length > 0) {
+      successText += `\n🆕 Yangi ulangan farzandlar:\n`;
+      newlyLinked.forEach((p, i) => {
+        const s = studentMap.get(p.student_id);
+        successText += `${i + 1}. ${s ? `${s.first_name} ${s.last_name}` : "Noma'lum"}\n`;
+      });
+      if (isRelink) {
+        const already = parentRecords.filter((p) => alreadyLinkedIds.has(p.student_id));
+        successText += `\n✅ Avval ulangan farzandlar:\n`;
+        already.forEach((p, i) => {
+          const s = studentMap.get(p.student_id);
+          successText += `${i + 1}. ${s ? `${s.first_name} ${s.last_name}` : "Noma'lum"}\n`;
+        });
+      }
+    } else {
+      // Fresh link with one child
+      const student = studentMap.get(parentRecords[0].student_id);
+      successText += `👨‍🎓 Talaba: ${student ? `${student.first_name} ${student.last_name}` : "Noma'lum"}\n`;
     }
     successText += `\n📋 /menu — Asosiy menyu`;
 
@@ -806,22 +831,49 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     }
 
     switch (data) {
-      case "menu_payments":
+      case "menu_payments": {
+        this.selectedChild.delete(String(ctx.chat!.id));
         return this.handlePayments(ctx);
-      case "menu_attendance":
+      }
+      case "menu_attendance": {
+        this.selectedChild.delete(String(ctx.chat!.id));
         return this.handleAttendance(ctx);
-      case "menu_grades":
+      }
+      case "menu_grades": {
+        this.selectedChild.delete(String(ctx.chat!.id));
         return this.handleGrades(ctx);
-      case "menu_exams":
+      }
+      case "menu_exams": {
+        this.selectedChild.delete(String(ctx.chat!.id));
         return this.handleExams(ctx);
-      case "menu_progress":
+      }
+      case "menu_progress": {
+        this.selectedChild.delete(String(ctx.chat!.id));
         return this.handleProgress(ctx);
+      }
       case "menu_profile":
         return this.handleProfile(ctx);
       case "menu_back":
         return this.handleMenu(ctx);
       case "confirm_unlink":
         return this.handleUnlink(ctx);
+      case "link_more_children": {
+        await this.sendAndTrack(
+          ctx,
+          `🔗 *Yangi farzand ulash*\n\nTelefon raqamingizni yuboring — tizimda siz bilan bog'liq barcha yangi farzandlar avtomatik ulanadi.`,
+          {
+            parse_mode: "Markdown",
+            reply_markup: {
+              keyboard: [
+                [{ text: "📱 Telefon raqamni yuborish", request_contact: true }],
+              ],
+              resize_keyboard: true,
+              one_time_keyboard: true,
+            },
+          },
+        );
+        return;
+      }
       case "switch_child": {
         const chatId = String(ctx.chat!.id);
         this.selectedChild.delete(chatId);
@@ -941,6 +993,13 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     date: string,
     groupName?: string,
   ): Promise<void> {
+    const student = await this.userModel.findByPk(studentId, {
+      attributes: ["first_name", "last_name"],
+    });
+    const studentName = student
+      ? `${student.first_name} ${student.last_name}`
+      : "Noma'lum";
+
     const emoji =
       status === "present" ? "✅" : status === "absent" ? "❌" : "⏰";
     const statusText =
@@ -954,7 +1013,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     const message =
       `📅 *Davomat bo'yicha ma'lumot*\n\n` +
-      `👨‍🎓 Farzandingizning bugungi davomat holati:\n\n` +
+      `👨‍🎓 Farzand: *${studentName}*\n` +
       `${emoji} Holat: *${statusText}*\n` +
       `📆 Sana: ${formattedDate}${group}`;
 
@@ -970,10 +1029,17 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     lessonName?: string,
     note?: string,
   ): Promise<void> {
+    const student = await this.userModel.findByPk(studentId, {
+      attributes: ["first_name", "last_name"],
+    });
+    const studentName = student
+      ? `${student.first_name} ${student.last_name}`
+      : "Noma'lum";
+
     const gradeEmoji = grade >= 8 ? "🌟" : grade >= 5 ? "📗" : "📕";
     let message =
       `📊 *Baholash bo'yicha ma'lumot*\n\n` +
-      `👨‍🎓 Farzandingizga yangi baho qo'yildi:\n\n` +
+      `👨‍🎓 Farzand: *${studentName}*\n` +
       `${gradeEmoji} Baho: *${grade}/10* (${percent}%)`;
     if (groupName) message += `\n📚 Guruh: ${groupName}`;
     if (lessonName) message += `\n📖 Dars: ${lessonName}`;
@@ -990,13 +1056,20 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     paymentMethod: string,
     nextPaymentDate?: string,
   ): Promise<void> {
+    const student = await this.userModel.findByPk(studentId, {
+      attributes: ["first_name", "last_name"],
+    });
+    const studentName = student
+      ? `${student.first_name} ${student.last_name}`
+      : "Noma'lum";
+
     const statusEmoji =
       status === "completed" ? "✅" : status === "pending" ? "⏳" : "❌";
     const statusText =
       status === "completed" ? "Qabul qilindi" : status === "pending" ? "Kutilmoqda" : "Bekor qilindi";
     let message =
       `💰 *To'lov bo'yicha ma'lumot*\n\n` +
-      `👨‍🎓 Farzandingiz uchun to'lov amalga oshirildi:\n\n` +
+      `👨‍🎓 Farzand: *${studentName}*\n` +
       `${statusEmoji} Holat: *${statusText}*\n` +
       `💵 Summa: *${amount?.toLocaleString()} so'm*\n` +
       `💳 To'lov usuli: ${paymentMethod}`;
