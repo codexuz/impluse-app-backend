@@ -5,6 +5,7 @@ import { UpdateLeadTrialLessonDto } from "./dto/update-lead-trial-lesson.dto.js"
 import { LeadTrialLesson } from "./entities/lead-trial-lesson.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { Lead } from "../leads/entities/lead.entity.js";
+import { Course } from "../courses/entities/course.entity.js";
 import { Op } from "sequelize";
 import { SmsService } from "../sms/sms.service.js";
 
@@ -17,6 +18,8 @@ export class LeadTrialLessonsService {
     private trialLessonModel: typeof LeadTrialLesson,
     @InjectModel(Lead)
     private leadModel: typeof Lead,
+    @InjectModel(Course)
+    private courseModel: typeof Course,
     private readonly smsService: SmsService,
   ) {}
 
@@ -31,10 +34,43 @@ export class LeadTrialLessonsService {
       {
         model: Lead,
         as: "leadInfo",
-        attributes: ["id", "first_name", "last_name", "phone", "status"],
+        attributes: ["id", "first_name", "last_name", "phone", "status", "course_ids"],
         required: false,
+        include: [
+          {
+            model: User,
+            as: "admin",
+            attributes: ["user_id", "first_name", "last_name", "username", "phone"],
+            required: false,
+          },
+        ],
       },
     ];
+  }
+
+  private async enrichWithCourseNames(lessons: LeadTrialLesson[]): Promise<void> {
+    const allCourseIds = [
+      ...new Set(
+        lessons.flatMap((l) => l.leadInfo?.course_ids ?? []).filter(Boolean),
+      ),
+    ];
+    if (!allCourseIds.length) return;
+
+    const courses = await this.courseModel.findAll({
+      where: { id: allCourseIds },
+      attributes: ["id", "title"],
+    });
+    const courseMap = new Map(courses.map((c) => [c.id, c.title]));
+
+    for (const lesson of lessons) {
+      if (lesson.leadInfo) {
+        const courseNames = (lesson.leadInfo.course_ids ?? []).map((id) => ({
+          id,
+          title: courseMap.get(id) ?? id,
+        }));
+        lesson.leadInfo.setDataValue("courseNames", courseNames);
+      }
+    }
   }
 
   async create(
@@ -115,6 +151,7 @@ export class LeadTrialLessonsService {
       include: includeOptions,
       distinct: true,
     });
+    await this.enrichWithCourseNames(rows);
 
     return {
       trialLessons: rows,
@@ -131,36 +168,42 @@ export class LeadTrialLessonsService {
     if (!trialLesson) {
       throw new NotFoundException(`Trial lesson with ID ${id} not found`);
     }
+    await this.enrichWithCourseNames([trialLesson]);
     return trialLesson;
   }
 
   async findByStatus(status: string): Promise<LeadTrialLesson[]> {
-    return await this.trialLessonModel.findAll({
+    const results = await this.trialLessonModel.findAll({
       where: { status },
       order: [["scheduledAt", "DESC"]],
       include: this.getIncludeOptions(),
     });
+    await this.enrichWithCourseNames(results);
+    return results;
   }
 
   async findByTeacher(teacherId: string): Promise<LeadTrialLesson[]> {
-    return await this.trialLessonModel.findAll({
+    const results = await this.trialLessonModel.findAll({
       where: { teacher_id: teacherId },
       order: [["scheduledAt", "DESC"]],
       include: this.getIncludeOptions(),
     });
+    await this.enrichWithCourseNames(results);
+    return results;
   }
 
   async findByLead(leadId: string): Promise<LeadTrialLesson[]> {
-    // Use our custom model query that uses the correct aliases
-    return await this.trialLessonModel.findAll({
+    const results = await this.trialLessonModel.findAll({
       where: { lead_id: leadId },
       order: [["scheduledAt", "DESC"]],
       include: this.getIncludeOptions(),
     });
+    await this.enrichWithCourseNames(results);
+    return results;
   }
 
   async findUpcoming(limit = 20): Promise<LeadTrialLesson[]> {
-    return await this.trialLessonModel.findAll({
+    const results = await this.trialLessonModel.findAll({
       where: {
         scheduledAt: {
           [Op.gte]: new Date(),
@@ -171,6 +214,8 @@ export class LeadTrialLessonsService {
       order: [["scheduledAt", "ASC"]],
       include: this.getIncludeOptions(),
     });
+    await this.enrichWithCourseNames(results);
+    return results;
   }
 
   async update(
