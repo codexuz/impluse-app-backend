@@ -28,6 +28,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramBotService.name);
   /** Track last bot message per chat so we can delete it when a new command arrives */
   private lastBotMessage = new Map<string, number>();
+  /** Track selected child (student_id) per chat for parents with multiple children */
+  private selectedChild = new Map<string, string>();
 
   constructor(
     @InjectModel(StudentParent)
@@ -158,15 +160,37 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     const chatId = String(ctx.chat!.id);
 
     // Check if already linked
-    const parent = await this.studentParentModel.findOne({
+    const existingParents = await this.studentParentModel.findAll({
       where: { telegram_chat_id: chatId },
     });
 
-    if (parent) {
-      return this.sendAndTrack(
-        ctx,
-        `✅ Siz allaqachon ro'yxatdan o'tgansiz!\n\n👤 Ism: ${parent.full_name}\n\n📋 Menyu uchun /menu bosing.`,
-      );
+    if (existingParents.length > 0) {
+      if (existingParents.length === 1) {
+        const student = await this.userModel.findByPk(existingParents[0].student_id, {
+          attributes: ["first_name", "last_name"],
+        });
+        const studentName = student ? `${student.first_name} ${student.last_name}` : "Noma'lum";
+        return this.sendAndTrack(
+          ctx,
+          `✅ Siz allaqachon ro'yxatdan o'tgansiz!\n\n👤 Ism: ${existingParents[0].full_name}\n👨‍🎓 Farzand: ${studentName}\n\n📋 Menyu uchun /menu bosing.`,
+        );
+      } else {
+        const students = await this.userModel.findAll({
+          where: { user_id: existingParents.map((p) => p.student_id) },
+          attributes: ["user_id", "first_name", "last_name"],
+        });
+        const studentMap = new Map(students.map((s) => [s.user_id, s]));
+        const childList = existingParents
+          .map((p, i) => {
+            const s = studentMap.get(p.student_id);
+            return `${i + 1}. ${s ? `${s.first_name} ${s.last_name}` : "Noma'lum"}`;
+          })
+          .join("\n");
+        return this.sendAndTrack(
+          ctx,
+          `✅ Siz allaqachon ro'yxatdan o'tgansiz!\n\n👤 Ism: ${existingParents[0].full_name}\n\n👨‍👩‍👧‍👦 Farzandlar:\n${childList}\n\n📋 Menyu uchun /menu bosing.`,
+        );
+      }
     }
 
     return this.sendAndTrack(
@@ -210,8 +234,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     const chatId = String(ctx.chat!.id);
 
-    // Find parent by phone number
-    const parent = await this.studentParentModel.findOne({
+    // Find ALL parent records by phone number (one parent may have multiple children)
+    const parentRecords = await this.studentParentModel.findAll({
       where: {
         [Op.or]: [
           { phone_number: { [Op.like]: `%${phone.slice(-9)}` } },
@@ -220,7 +244,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    if (!parent) {
+    if (!parentRecords.length) {
       return ctx.reply(
         `❌ *Kechirasiz, bu telefon raqam tizimda topilmadi.*\n\n` +
           `🔍 Iltimos, telefon raqamingiz *to'g'ri kiritilganligini* tekshiring.\n\n` +
@@ -234,67 +258,103 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
-    // Link telegram chat to parent
-    await parent.update({ telegram_chat_id: chatId });
+    // Link telegram chat to ALL parent records (one per child)
+    await Promise.all(parentRecords.map((p) => p.update({ telegram_chat_id: chatId })));
 
-    const student = await this.userModel.findByPk(parent.student_id, {
+    const students = await this.userModel.findAll({
+      where: { user_id: parentRecords.map((p) => p.student_id) },
       attributes: ["user_id", "first_name", "last_name"],
     });
+    const studentMap = new Map(students.map((s) => [s.user_id, s]));
+
+    let successText =
+      `✅ Muvaffaqiyatli ulandi!\n\n` +
+      `👤 Ota-ona: ${parentRecords[0].full_name}\n`;
+    if (parentRecords.length === 1) {
+      const student = studentMap.get(parentRecords[0].student_id);
+      successText += `👨‍🎓 Talaba: ${student ? `${student.first_name} ${student.last_name}` : "Noma'lum"}\n`;
+    } else {
+      successText += `\n👨‍👩‍👧‍👦 Farzandlar (${parentRecords.length} nafar):\n`;
+      parentRecords.forEach((p, i) => {
+        const s = studentMap.get(p.student_id);
+        successText += `${i + 1}. ${s ? `${s.first_name} ${s.last_name}` : "Noma'lum"}\n`;
+      });
+    }
+    successText += `\n📋 /menu — Asosiy menyu`;
 
     await this.deleteOldBotMessage(chatId);
-    const sent = await ctx.reply(
-      `✅ Muvaffaqiyatli ulandi!\n\n` +
-        `👤 Ota-ona: ${parent.full_name}\n` +
-        `👨‍🎓 Talaba: ${student ? `${student.first_name} ${student.last_name}` : "Noma'lum"}\n\n` +
-        `📋 /menu — Asosiy menyu`,
-      {
-        reply_markup: { remove_keyboard: true },
-      },
-    );
+    const sent = await ctx.reply(successText, {
+      reply_markup: { remove_keyboard: true },
+    });
     this.lastBotMessage.set(chatId, sent.message_id);
     return sent;
   }
 
   // ─── /menu ─────────────────────────────────────────────────
   private async handleMenu(ctx: Context) {
-    const parent = await this.getLinkedParent(ctx);
-    if (!parent) return;
+    const parents = await this.getLinkedParents(ctx);
+    if (!parents.length) return;
 
-    return this.sendAndTrack(ctx, `📋 *Asosiy menyu*\n\nQuyidagilardan birini tanlang:`, {
+    const chatId = String(ctx.chat!.id);
+    let headerText = `📋 *Asosiy menyu*\n\n`;
+
+    if (parents.length > 1) {
+      const selectedId = this.selectedChild.get(chatId);
+      if (selectedId) {
+        const student = await this.userModel.findByPk(selectedId, {
+          attributes: ["first_name", "last_name"],
+        });
+        if (student) {
+          headerText += `👨‍🎓 *${student.first_name} ${student.last_name}*\n\n`;
+        }
+      } else {
+        headerText += `👨‍👩‍👧‍👦 ${parents.length} nafar farzand\n\n`;
+      }
+    }
+
+    const inlineKeyboard: any[] = [
+      [
+        { text: "💰 To'lovlar", callback_data: "menu_payments" },
+        { text: "📅 Davomat", callback_data: "menu_attendance" },
+      ],
+      [
+        { text: "📊 Baholar", callback_data: "menu_grades" },
+        { text: "📝 Imtihonlar", callback_data: "menu_exams" },
+      ],
+      [
+        { text: "📈 O'quv jarayoni", callback_data: "menu_progress" },
+        { text: "👤 Profil", callback_data: "menu_profile" },
+      ],
+    ];
+
+    if (parents.length > 1) {
+      inlineKeyboard.push([
+        { text: "👨‍👩‍👧‍👦 Farzandni o'zgartirish", callback_data: "switch_child" },
+      ]);
+    }
+
+    return this.sendAndTrack(ctx, `${headerText}Quyidagilardan birini tanlang:`, {
       parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "💰 To'lovlar", callback_data: "menu_payments" },
-            { text: "📅 Davomat", callback_data: "menu_attendance" },
-          ],
-          [
-            { text: "📊 Baholar", callback_data: "menu_grades" },
-            { text: "📝 Imtihonlar", callback_data: "menu_exams" },
-          ],
-          [
-            { text: "📈 O'quv jarayoni", callback_data: "menu_progress" },
-            { text: "👤 Profil", callback_data: "menu_profile" },
-          ],
-        ],
-      },
+      reply_markup: { inline_keyboard: inlineKeyboard },
     });
   }
 
   // ─── /payments ─────────────────────────────────────────────
   private async handlePayments(ctx: Context) {
-    const parent = await this.getLinkedParent(ctx);
-    if (!parent) return;
+    const parents = await this.getLinkedParents(ctx);
+    if (!parents.length) return;
+    const studentId = await this.resolveStudentId(ctx, parents, 'payments');
+    if (!studentId) return;
 
     const payments = await this.studentPaymentModel.findAll({
-      where: { student_id: parent.student_id },
+      where: { student_id: studentId },
       order: [["createdAt", "DESC"]],
       limit: 10,
     });
 
-    const paymentStatus = await this.studentPaymentService.calculateStudentPaymentStatus(parent.student_id);
+    const paymentStatus = await this.studentPaymentService.calculateStudentPaymentStatus(studentId);
 
-    const student = await this.userModel.findByPk(parent.student_id, {
+    const student = await this.userModel.findByPk(studentId, {
       attributes: ["first_name", "last_name"],
     });
 
@@ -350,10 +410,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   // ─── /attendance ───────────────────────────────────────────
   private async handleAttendance(ctx: Context) {
-    const parent = await this.getLinkedParent(ctx);
-    if (!parent) return;
+    const parents = await this.getLinkedParents(ctx);
+    if (!parents.length) return;
+    const studentId = await this.resolveStudentId(ctx, parents, 'attendance');
+    if (!studentId) return;
 
-    const student = await this.userModel.findByPk(parent.student_id, {
+    const student = await this.userModel.findByPk(studentId, {
       attributes: ["first_name", "last_name"],
     });
     const studentName = student
@@ -366,7 +428,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     const records = await this.attendanceModel.findAll({
       where: {
-        student_id: parent.student_id,
+        student_id: studentId,
         date: { [Op.gte]: thirtyDaysAgo },
       },
       order: [["date", "DESC"]],
@@ -414,10 +476,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   // ─── /grades ───────────────────────────────────────────────
   private async handleGrades(ctx: Context) {
-    const parent = await this.getLinkedParent(ctx);
-    if (!parent) return;
+    const parents = await this.getLinkedParents(ctx);
+    if (!parents.length) return;
+    const studentId = await this.resolveStudentId(ctx, parents, 'grades');
+    if (!studentId) return;
 
-    const student = await this.userModel.findByPk(parent.student_id, {
+    const student = await this.userModel.findByPk(studentId, {
       attributes: ["first_name", "last_name"],
     });
     const studentName = student
@@ -425,7 +489,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       : "Noma'lum";
 
     const gradings = await this.gradingModel.findAll({
-      where: { student_id: parent.student_id },
+      where: { student_id: studentId },
       include: [{ model: Group, as: "group", attributes: ["name"] }],
       order: [["createdAt", "DESC"]],
       limit: 15,
@@ -464,10 +528,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   // ─── /exams ────────────────────────────────────────────────
   private async handleExams(ctx: Context) {
-    const parent = await this.getLinkedParent(ctx);
-    if (!parent) return;
+    const parents = await this.getLinkedParents(ctx);
+    if (!parents.length) return;
+    const studentId = await this.resolveStudentId(ctx, parents, 'exams');
+    if (!studentId) return;
 
-    const student = await this.userModel.findByPk(parent.student_id, {
+    const student = await this.userModel.findByPk(studentId, {
       attributes: ["first_name", "last_name"],
     });
     const studentName = student
@@ -475,7 +541,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       : "Noma'lum";
 
     const examResults = await this.examResultModel.findAll({
-      where: { student_id: parent.student_id },
+      where: { student_id: studentId },
       order: [["created_at", "DESC"]],
       limit: 10,
     });
@@ -537,10 +603,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   // ─── /progress ─────────────────────────────────────────────
   private async handleProgress(ctx: Context) {
-    const parent = await this.getLinkedParent(ctx);
-    if (!parent) return;
+    const parents = await this.getLinkedParents(ctx);
+    if (!parents.length) return;
+    const studentId = await this.resolveStudentId(ctx, parents, 'progress');
+    if (!studentId) return;
 
-    const student = await this.userModel.findByPk(parent.student_id, {
+    const student = await this.userModel.findByPk(studentId, {
       attributes: ["first_name", "last_name"],
     });
     const studentName = student
@@ -549,19 +617,19 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     // Student profile (gamification)
     const profile = await this.studentProfileModel.findOne({
-      where: { user_id: parent.student_id },
+      where: { user_id: studentId },
     });
 
     // Groups the student belongs to
     const groupStudents = await this.groupStudentModel.findAll({
-      where: { student_id: parent.student_id, status: "active" },
+      where: { student_id: studentId, status: "active" },
       include: [{ model: this.groupModel, as: "group", attributes: ["name"] }],
     });
 
     // Course progress
     let courseProgressList: any[] = [];
     try {
-      courseProgressList = await this.coursesService.getAllCourseProgress(parent.student_id);
+      courseProgressList = await this.coursesService.getAllCourseProgress(studentId);
     } catch {
       // Student may not be in any English group
     }
@@ -607,10 +675,14 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   // ─── /profile ──────────────────────────────────────────────
   private async handleProfile(ctx: Context) {
-    const parent = await this.getLinkedParent(ctx);
-    if (!parent) return;
+    const parents = await this.getLinkedParents(ctx);
+    if (!parents.length) return;
+    const studentId = await this.resolveStudentId(ctx, parents, 'profile');
+    if (!studentId) return;
 
-    const student = await this.userModel.findByPk(parent.student_id, {
+    const parentInfo = parents.find((p) => p.student_id === studentId) ?? parents[0];
+
+    const student = await this.userModel.findByPk(studentId, {
       attributes: ["first_name", "last_name"],
     });
     const studentName = student
@@ -618,21 +690,21 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       : "Noma'lum";
 
     const lastPayment = await this.studentPaymentModel.findOne({
-      where: { student_id: parent.student_id },
+      where: { student_id: studentId },
       order: [["createdAt", "DESC"]],
     });
 
     const profile = await this.studentProfileModel.findOne({
-      where: { user_id: parent.student_id },
+      where: { user_id: studentId },
     });
 
-    const paymentStatus = await this.studentPaymentService.calculateStudentPaymentStatus(parent.student_id);
+    const paymentStatus = await this.studentPaymentService.calculateStudentPaymentStatus(studentId);
     const statusEmoji = paymentStatus.paymentStatus === "overdue" ? "🔴" : paymentStatus.daysUntilNextPayment <= 3 ? "🟡" : "🟢";
     const statusText = paymentStatus.paymentStatus === "overdue" ? "Qarzdor" : paymentStatus.daysUntilNextPayment <= 3 ? "Kutilmoqda" : "To'langan";
 
     let text = `👤 *Profil*\n\n`;
-    text += `👤 Ota-ona: *${parent.full_name}*\n`;
-    text += `📱 Telefon: ${parent.phone_number}\n`;
+    text += `👤 Ota-ona: *${parentInfo.full_name}*\n`;
+    text += `📱 Telefon: ${parentInfo.phone_number}\n`;
     text += `👨‍🎓 Talaba: *${studentName}*\n`;
     if (lastPayment) {
       text += `💳 Oxirgi to'lov: *${lastPayment.amount?.toLocaleString() ?? 0} so'm*\n`;
@@ -664,13 +736,15 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
   // ─── /unlink ───────────────────────────────────────────────
   private async handleUnlink(ctx: Context) {
-    const parent = await this.getLinkedParent(ctx);
-    if (!parent) return;
+    const parents = await this.getLinkedParents(ctx);
+    if (!parents.length) return;
 
-    return this.sendAndTrack(
-      ctx,
-      `⚠️ Haqiqatan ham profilni uzmoqchimisiz?\n\nBu amalni bajargandan so'ng botdan ma'lumotlarni ko'ra olmaysiz.`,
-      {
+    const warning =
+      parents.length > 1
+        ? `⚠️ Haqiqatan ham profilni uzmoqchimisiz?\n\nBarcha ${parents.length} nafar farzandingiz uchun aloqa uziladi va botdan ma'lumotlarni ko'ra olmaysiz.`
+        : `⚠️ Haqiqatan ham profilni uzmoqchimisiz?\n\nBu amalni bajargandan so'ng botdan ma'lumotlarni ko'ra olmaysiz.`;
+
+    return this.sendAndTrack(ctx, warning, {
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
@@ -713,6 +787,24 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     await ctx.answerCbQuery();
 
+    // Handle child selection: child_{studentId}_{command}
+    if (data.startsWith('child_')) {
+      const withoutPrefix = data.slice('child_'.length);
+      const lastUnderscore = withoutPrefix.lastIndexOf('_');
+      const studentId = withoutPrefix.slice(0, lastUnderscore);
+      const command = withoutPrefix.slice(lastUnderscore + 1);
+      this.selectedChild.set(String(ctx.chat!.id), studentId);
+      switch (command) {
+        case 'payments': return this.handlePayments(ctx);
+        case 'attendance': return this.handleAttendance(ctx);
+        case 'grades': return this.handleGrades(ctx);
+        case 'exams': return this.handleExams(ctx);
+        case 'progress': return this.handleProgress(ctx);
+        case 'profile': return this.handleProfile(ctx);
+        default: return this.handleMenu(ctx);
+      }
+    }
+
     switch (data) {
       case "menu_payments":
         return this.handlePayments(ctx);
@@ -730,11 +822,21 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
         return this.handleMenu(ctx);
       case "confirm_unlink":
         return this.handleUnlink(ctx);
+      case "switch_child": {
+        const chatId = String(ctx.chat!.id);
+        this.selectedChild.delete(chatId);
+        const parents = await this.getLinkedParents(ctx);
+        if (!parents.length) return;
+        return this.showChildSelector(ctx, parents, 'menu');
+      }
       case "do_unlink": {
-        const parent = await this.getLinkedParent(ctx);
-        if (!parent) return;
-        await parent.update({ telegram_chat_id: null });
-        this.lastBotMessage.delete(String(ctx.chat!.id));
+        const chatId = String(ctx.chat!.id);
+        const parentsToUnlink = await this.studentParentModel.findAll({
+          where: { telegram_chat_id: chatId },
+        });
+        await Promise.all(parentsToUnlink.map((p) => p.update({ telegram_chat_id: null })));
+        this.selectedChild.delete(chatId);
+        this.lastBotMessage.delete(chatId);
         return ctx.reply(
           `✅ Profilingiz muvaffaqiyatli uzildi.\n\nQayta ulash uchun /start buyrug'ini yuboring.`,
         );
@@ -744,22 +846,65 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  // ─── Helper: get linked parent ─────────────────────────────
-  private async getLinkedParent(ctx: Context): Promise<StudentParent | null> {
+  // ─── Helpers: multi-child support ──────────────────────────
+  /** Returns all StudentParent records linked to this chat, or [] (with prompt) if none. */
+  private async getLinkedParents(ctx: Context): Promise<StudentParent[]> {
     const chatId = String(ctx.chat!.id);
-
-    const parent = await this.studentParentModel.findOne({
+    const parents = await this.studentParentModel.findAll({
       where: { telegram_chat_id: chatId },
     });
-
-    if (!parent) {
+    if (parents.length === 0) {
       await ctx.reply(
         `⚠️ Siz hali ro'yxatdan o'tmagansiz.\n\nBoshlash uchun /start buyrug'ini yuboring.`,
       );
-      return null;
     }
+    return parents;
+  }
 
-    return parent;
+  /** If one child, returns their student_id immediately.
+   *  If multiple children, checks selected child or shows a selector keyboard.
+   *  Returns null when a selector was shown — caller must return. */
+  private async resolveStudentId(
+    ctx: Context,
+    parents: StudentParent[],
+    command: string,
+  ): Promise<string | null> {
+    if (parents.length === 1) {
+      return parents[0].student_id;
+    }
+    const chatId = String(ctx.chat!.id);
+    const selected = this.selectedChild.get(chatId);
+    if (selected && parents.some((p) => p.student_id === selected)) {
+      return selected;
+    }
+    await this.showChildSelector(ctx, parents, command);
+    return null;
+  }
+
+  /** Sends an inline keyboard listing all children for the parent to pick from. */
+  private async showChildSelector(
+    ctx: Context,
+    parents: StudentParent[],
+    command: string,
+  ): Promise<void> {
+    const students = await this.userModel.findAll({
+      where: { user_id: parents.map((p) => p.student_id) },
+      attributes: ["user_id", "first_name", "last_name"],
+    });
+    const studentMap = new Map(students.map((s) => [s.user_id, s]));
+
+    const buttons = parents.map((p) => {
+      const student = studentMap.get(p.student_id);
+      const name = student
+        ? `${student.first_name} ${student.last_name}`
+        : "Noma'lum";
+      return [{ text: `👨‍🎓 ${name}`, callback_data: `child_${p.student_id}_${command}` }];
+    });
+
+    await this.sendAndTrack(ctx, `👨‍👩‍👧‍👦 *Qaysi farzandingizni ko'rmoqchisiz?*`, {
+      parse_mode: "Markdown",
+      reply_markup: { inline_keyboard: buttons },
+    });
   }
 
   // ─── Public: send notification to parent ───────────────────
