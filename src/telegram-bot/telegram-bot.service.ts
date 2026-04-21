@@ -107,11 +107,11 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.command("start", (ctx) => this.handleStart(ctx));
     this.bot.command("menu", (ctx) => this.handleMenu(ctx));
-    this.bot.command("payments", (ctx) => this.handlePayments(ctx));
-    this.bot.command("attendance", (ctx) => this.handleAttendance(ctx));
-    this.bot.command("grades", (ctx) => this.handleGrades(ctx));
-    this.bot.command("exams", (ctx) => this.handleExams(ctx));
-    this.bot.command("progress", (ctx) => this.handleProgress(ctx));
+    this.bot.command("payments", (ctx) => { this.selectedChild.delete(String(ctx.chat!.id)); return this.handlePayments(ctx); });
+    this.bot.command("attendance", (ctx) => { this.selectedChild.delete(String(ctx.chat!.id)); return this.handleAttendance(ctx); });
+    this.bot.command("grades", (ctx) => { this.selectedChild.delete(String(ctx.chat!.id)); return this.handleGrades(ctx); });
+    this.bot.command("exams", (ctx) => { this.selectedChild.delete(String(ctx.chat!.id)); return this.handleExams(ctx); });
+    this.bot.command("progress", (ctx) => { this.selectedChild.delete(String(ctx.chat!.id)); return this.handleProgress(ctx); });
     this.bot.command("profile", (ctx) => this.handleProfile(ctx));
     this.bot.command("unlink", (ctx) => this.handleUnlink(ctx));
     this.bot.command("help", (ctx) => this.handleHelp(ctx));
