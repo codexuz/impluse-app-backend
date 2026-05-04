@@ -414,18 +414,18 @@ export class AudioController {
   @ApiQuery({
     name: "filter",
     required: false,
-    description: "Sort by trending score: top (default) or low",
-    enum: ["top", "low"],
+    description: "Sort by: latest (default) or top (trending score)",
+    enum: ["latest", "top"],
   })
   @ApiResponse({
     status: 200,
-    description: "Return trending audios sorted by engagement",
+    description: "Return trending audios sorted by engagement or date",
   })
   getTrendingFeed(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("search") search?: string,
-    @Query("filter") filter?: "top" | "low",
+    @Query("filter") filter?: "top" | "latest",
     @CurrentUser() user?: any,
   ) {
     const userId = user?.userId;
@@ -433,7 +433,7 @@ export class AudioController {
       page ? +page : 1,
       limit ? +limit : 20,
       search?.trim(),
-      filter === "low" ? "low" : "top",
+      filter || "latest",
       userId,
     );
   }

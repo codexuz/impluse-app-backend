@@ -359,12 +359,19 @@ export class AudioService {
     page: number = 1,
     limit: number = 20,
     search?: string,
-    filter: "top" | "low" = "top",
+    filter: "top" | "latest" = "latest",
     userId?: string,
   ) {
     const offset = (page - 1) * limit;
     const usernameSearch = search?.trim();
-    const sortDirection = filter === "low" ? "ASC" : "DESC";
+
+    const order: any[] =
+      filter === "top"
+        ? [
+            ["trendingScore", "DESC"],
+            ["createdAt", "DESC"],
+          ]
+        : [["createdAt", "DESC"]];
 
     const studentInclude: any = {
       model: User,
@@ -397,10 +404,7 @@ export class AudioService {
     const audios = await this.audioModel.findAll({
       where: { status: "completed" },
       include: [{ model: AudioTask, as: "task" }, studentInclude],
-      order: [
-        ["trendingScore", sortDirection],
-        ["createdAt", sortDirection],
-      ],
+      order,
       limit,
       offset,
     });
