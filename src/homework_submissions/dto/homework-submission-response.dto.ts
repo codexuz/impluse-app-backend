@@ -137,6 +137,20 @@ export class HomeworkSubmissionResponseDto {
     sections?: HomeworkSectionResponseDto[];
 }
 
+export class RewardsDto {
+    @ApiProperty({ description: 'Coins awarded', example: 2 })
+    coins: number;
+
+    @ApiProperty({ description: 'Streak increment', example: 1 })
+    streak: number;
+
+    @ApiProperty({ description: 'Bonus points awarded', example: 5 })
+    bonusPoints: number;
+
+    @ApiProperty({ description: 'Total earned points (score + bonus)', example: 90 })
+    totalEarnedPoints: number;
+}
+
 export class HomeworkSubmissionWithSectionResponseDto {
     @ApiProperty({
         description: 'The main homework submission',
@@ -149,4 +163,12 @@ export class HomeworkSubmissionWithSectionResponseDto {
         type: HomeworkSectionResponseDto
     })
     section: HomeworkSectionResponseDto;
+
+    @ApiProperty({
+        description: 'Rewards earned on first attempt (null if not first attempt or score < 80%)',
+        type: RewardsDto,
+        nullable: true,
+        required: false,
+    })
+    rewards: RewardsDto | null;
 }

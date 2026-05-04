@@ -13,12 +13,13 @@ export class CreateHomeworkSubmissionDto {
     homework_id?: string;
 
     @ApiProperty({
-        description: 'UUID of the student',
-        example: '123e4567-e89b-12d3-a456-426614174000'
+        description: 'UUID of the student (optional, injected from JWT token when not provided)',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+        required: false
     })
     @IsUUID()
-    @IsNotEmpty()
-    student_id: string;
+    @IsOptional()
+    student_id?: string;
 
     @ApiProperty({
         description: 'UUID of the lesson',

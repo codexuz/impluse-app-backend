@@ -11,6 +11,7 @@ import { OpenaiService } from "../services/openai/openai.service.js";
 import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
 import { Lesson } from "../lesson/entities/lesson.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { StudentProfileModule } from "../student_profiles/student-profile.module.js";
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { User } from "../users/entities/user.entity.js";
     ]),
     LessonProgressModule,
     GroupStudentsModule,
+    StudentProfileModule,
   ],
   controllers: [HomeworkSubmissionsController],
   providers: [HomeworkSubmissionsService, OpenaiService],

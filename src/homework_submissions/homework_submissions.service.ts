@@ -18,6 +18,7 @@ import {
   UnitProgressDto,
   StudentProgressDto,
 } from "./dto/group-homework-progress-response.dto.js";
+import { StudentProfileService } from "../student_profiles/student-profile.service.js";
 
 @Injectable()
 export class HomeworkSubmissionsService {
@@ -36,7 +37,8 @@ export class HomeworkSubmissionsService {
     private userModel: typeof User,
     private lessonProgressService: LessonProgressService,
     private groupStudentsService: GroupStudentsService,
-    private openaiService: OpenaiService
+    private openaiService: OpenaiService,
+    private studentProfileService: StudentProfileService,
   ) { }
 
   async create(
@@ -44,6 +46,7 @@ export class HomeworkSubmissionsService {
   ): Promise<{
     submission: HomeworkSubmission;
     section: HomeworkSection;
+    rewards: null;
   }> {
     // Create the main homework submission
     const submission = await this.homeworkSubmissionModel.create({
@@ -62,7 +65,7 @@ export class HomeworkSubmissionsService {
       answers: createHomeworkSubmissionDto.answers || {},
     });
 
-    return { submission, section };
+    return { submission, section, rewards: null };
   }
 
   async findAll(): Promise<HomeworkSubmission[]> {
@@ -208,6 +211,12 @@ export class HomeworkSubmissionsService {
   ): Promise<{
     submission: HomeworkSubmission;
     section: HomeworkSection;
+    rewards: {
+      coins: number;
+      streak: number;
+      bonusPoints: number;
+      totalEarnedPoints: number;
+    } | null;
   }> {
     // Check if a submission already exists for this student and homework/lesson
     const whereClause: any = {
@@ -242,6 +251,7 @@ export class HomeworkSubmissionsService {
 
     // Check if a section already exists for this submission, section type AND exercise_id
     let section = null;
+    let isFirstAttempt = true;
 
     if (createHomeworkSubmissionDto.exercise_id) {
       // If exercise_id is provided, look for a section with this specific exercise_id
@@ -255,6 +265,8 @@ export class HomeworkSubmissionsService {
     }
 
     if (section) {
+      // Existing section — not a first attempt
+      isFirstAttempt = false;
       // Update existing section with the same exercise_id
       await section.update({
         score: createHomeworkSubmissionDto.percentage,
@@ -311,7 +323,32 @@ export class HomeworkSubmissionsService {
       }
     }
 
-    return { submission, section };
+    // Award rewards on first attempt if score >= 80%
+    let rewards: { coins: number; streak: number; bonusPoints: number; totalEarnedPoints: number; } | null = null;
+
+    const scorePercentage = section.score ?? 0;
+    if (isFirstAttempt && scorePercentage >= 80 && submission.student_id) {
+      const bonusPoints = 5;
+      const coins = 2;
+      const streak = 1;
+      const totalEarnedPoints = Math.round(scorePercentage + bonusPoints);
+
+      try {
+        await this.studentProfileService.addPoints(submission.student_id, totalEarnedPoints);
+        await this.studentProfileService.addCoins(submission.student_id, coins);
+        await this.studentProfileService.incrementStreak(submission.student_id);
+
+        rewards = { coins, streak, bonusPoints, totalEarnedPoints };
+        console.log(
+          `Rewards granted to student ${submission.student_id}: +${totalEarnedPoints} points, +${coins} coins, +${streak} streak`
+        );
+      } catch (error) {
+        console.warn("Failed to apply rewards to student profile:", error);
+        // Don't fail the submission if rewards cannot be applied
+      }
+    }
+
+    return { submission, section, rewards };
   }
 
   /**
@@ -962,7 +999,7 @@ export class HomeworkSubmissionsService {
     } catch (error) {
       console.error("Error assessing writing with OpenAI:", error);
       throw new Error(
-        `Failed to assess writing: ${error.message || "Unknown error"}`
+        `Failed to assess writing: ${error instanceof Error ? error.message : "Unknown error"}`
       );
     }
   }
@@ -998,7 +1035,7 @@ export class HomeworkSubmissionsService {
         results.push({
           sectionId,
           success: false,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }

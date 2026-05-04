@@ -30,6 +30,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { Role } from "../auth/constants/roles.js";
+import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 
 @ApiTags("Homework Submissions")
 @ApiBearerAuth()
@@ -72,8 +73,10 @@ export class HomeworkSubmissionsController {
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 403, description: "Forbidden." })
   async saveBySection(
-    @Body() createHomeworkSubmissionDto: CreateHomeworkSubmissionDto
+    @Body() createHomeworkSubmissionDto: CreateHomeworkSubmissionDto,
+    @CurrentUser() user: any
   ): Promise<HomeworkSubmissionWithSectionResponseDto> {
+    createHomeworkSubmissionDto.student_id = user.userId;
     return await this.homeworkSubmissionsService.saveBySection(
       createHomeworkSubmissionDto
     );
