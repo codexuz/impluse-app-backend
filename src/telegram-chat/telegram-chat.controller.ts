@@ -82,9 +82,9 @@ export class TelegramChatController {
   @ApiResponse({ status: 404, description: "Parent not found" })
   async sendMessage(
     @Body() dto: SendTelegramMessageDto,
-    @CurrentUser() user: { first_name: string; last_name: string },
+    @CurrentUser() user: { username: string },
   ) {
-    dto.sender_name = `${user.first_name} ${user.last_name}`;
+    dto.sender_name = user.username;
     return this.telegramChatService.sendMessageToParent(dto);
   }
 
