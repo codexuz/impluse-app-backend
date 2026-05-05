@@ -12,7 +12,7 @@ export class SendTelegramMessageDto {
   @IsNotEmpty()
   message!: string;
 
-  @ApiProperty({ description: "Name of the CRM staff sending the message", required: false })
+  @ApiProperty({ description: "Name of the CRM staff sending the message (auto-filled from auth token)", required: false })
   @IsOptional()
   @IsString()
   sender_name?: string;

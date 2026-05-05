@@ -12,6 +12,7 @@ import {
   Sse,
   MessageEvent,
 } from "@nestjs/common";
+import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 import {
@@ -76,7 +77,11 @@ export class TelegramChatController {
   @ApiResponse({ status: 201, description: "Message sent and saved" })
   @ApiResponse({ status: 400, description: "Parent has no Telegram connected" })
   @ApiResponse({ status: 404, description: "Parent not found" })
-  async sendMessage(@Body() dto: SendTelegramMessageDto) {
+  async sendMessage(
+    @Body() dto: SendTelegramMessageDto,
+    @CurrentUser() user: { first_name: string; last_name: string },
+  ) {
+    dto.sender_name = `${user.first_name} ${user.last_name}`;
     return this.telegramChatService.sendMessageToParent(dto);
   }
 
