@@ -128,6 +128,7 @@ import { IeltsWritingWritingTask } from "../ielts-tests/entities/ielts-writing-w
 
 import { Grading } from "../gradings/entities/grading.entity.js";
 import { DictionaryHistory } from "../dictionary/entities/dictionary-history.entity.js";
+import { TelegramChatMessage } from "../telegram-chat/entities/telegram-chat-message.entity.js";
 
 export const Models = [
   User,
@@ -248,6 +249,7 @@ export const Models = [
   Dictation,
   ListenAndChoose,
   DictionaryHistory,
+  TelegramChatMessage,
 ];
 
 // Define associations after all models are loaded

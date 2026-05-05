@@ -21,6 +21,7 @@ import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { StudentPaymentService } from "../student-payment/student-payment.service.js";
 import { CoursesService } from "../courses/courses.service.js";
+import { TelegramChatService } from "../telegram-chat/telegram-chat.service.js";
 
 // ─── i18n translations ────────────────────────────────────────────────────────
 export type Lang = 'uz' | 'en' | 'ru';
@@ -296,6 +297,8 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     @Inject(forwardRef(() => StudentPaymentService))
     private readonly studentPaymentService: any,
     private readonly coursesService: CoursesService,
+    @Inject(forwardRef(() => TelegramChatService))
+    private readonly telegramChatService: TelegramChatService,
   ) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (!token) {
@@ -498,7 +501,15 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       if (/^\d{9,12}$/.test(cleaned)) {
         phone = cleaned;
       } else {
-        return; // Not a phone number, ignore
+        // Not a phone number — save as an incoming chat message if parent is registered
+        const chatId = String(ctx.chat!.id);
+        const linkedParent = await this.studentParentModel.findOne({
+          where: { telegram_chat_id: chatId },
+        });
+        if (linkedParent) {
+          await this.telegramChatService.saveIncomingMessage(chatId, message.text);
+        }
+        return; // Not a phone number, ignore for registration
       }
     } else {
       return;

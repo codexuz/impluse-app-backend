@@ -95,6 +95,7 @@ import { IeltsCoursesModule } from "./ielts-courses/ielts-courses.module.js";
 import { GradingsModule } from "./gradings/gradings.module.js";
 import { TelegramBotModule } from "./telegram-bot/telegram-bot.module.js";
 import { DictionaryModule } from "./dictionary/dictionary.module.js";
+import { TelegramChatModule } from "./telegram-chat/telegram-chat.module.js";
 
 @Module({
   imports: [
@@ -195,6 +196,7 @@ import { DictionaryModule } from "./dictionary/dictionary.module.js";
     GradingsModule,
     TelegramBotModule,
     DictionaryModule,
+    TelegramChatModule,
   ],
   controllers: [AppController],
   providers: [

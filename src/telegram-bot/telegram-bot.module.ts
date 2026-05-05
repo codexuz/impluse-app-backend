@@ -14,10 +14,12 @@ import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { StudentPaymentModule } from "../student-payment/student-payment.module.js";
 import { CoursesModule } from "../courses/courses.module.js";
+import { TelegramChatModule } from "../telegram-chat/telegram-chat.module.js";
 
 @Module({
   imports: [
     forwardRef(() => StudentPaymentModule),
+    forwardRef(() => TelegramChatModule),
     CoursesModule,
     SequelizeModule.forFeature([
       StudentParent,
