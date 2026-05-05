@@ -92,6 +92,26 @@ export class StudentParentsController {
     return this.studentParentsService.findAll(queryDto);
   }
 
+  @Get("with-telegram")
+  @ApiOperation({
+    summary: "Retrieve parents who have a Telegram connected",
+    description:
+      "Returns paginated parents who have a telegram_chat_id set. Supports search by parent_name and parent_phone.",
+  })
+  @ApiQuery({ name: "page", required: false, example: 1 })
+  @ApiQuery({ name: "limit", required: false, example: 10 })
+  @ApiQuery({ name: "parent_name", required: false, description: "Search by parent full name" })
+  @ApiQuery({ name: "parent_phone", required: false, description: "Search by parent phone number" })
+  @ApiResponse({
+    status: 200,
+    description: "Paginated list of parents with Telegram",
+    type: StudentParentListResponseDto,
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  findAllWithTelegram(@Query() queryDto: QueryStudentParentDto) {
+    return this.studentParentsService.findAllWithTelegram(queryDto);
+  }
+
   @Get("student/:student_id")
   @ApiOperation({ summary: "Retrieve student parents by student ID" })
   @ApiParam({

@@ -105,6 +105,53 @@ export class StudentParentsService {
     }
   }
 
+  async findAllWithTelegram(
+    queryDto?: QueryStudentParentDto,
+  ): Promise<StudentParentListResponseDto> {
+    try {
+      const page = queryDto?.page || 1;
+      const limit = queryDto?.limit || 10;
+      const offset = (page - 1) * limit;
+
+      const where: any = {
+        telegram_chat_id: { [Op.not]: null },
+      };
+
+      if (queryDto?.parent_name) {
+        where.full_name = { [Op.like]: `%${queryDto.parent_name}%` };
+      }
+
+      if (queryDto?.parent_phone) {
+        where[Op.or] = [
+          { phone_number: { [Op.like]: `%${queryDto.parent_phone}%` } },
+          { additional_number: { [Op.like]: `%${queryDto.parent_phone}%` } },
+        ];
+      }
+
+      const { count, rows: studentParents } =
+        await this.studentParentModel.findAndCountAll({
+          where,
+          limit,
+          offset,
+          distinct: true,
+          order: [["createdAt", "DESC"]],
+        });
+
+      return {
+        data: studentParents,
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit),
+      };
+    } catch (error) {
+      console.error("Error fetching parents with Telegram:", error);
+      throw new InternalServerErrorException(
+        "Failed to fetch parents with Telegram",
+      );
+    }
+  }
+
   async findOne(id: string): Promise<StudentParent> {
     try {
       const studentParent = await this.studentParentModel.findByPk(id);
