@@ -1277,6 +1277,41 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Broadcast a message to all Telegram-linked parents. */
+  async broadcastMessage(
+    message: string,
+  ): Promise<{ successCount: number; failureCount: number }> {
+    const parents = await this.studentParentModel.findAll({
+      where: {
+        telegram_chat_id: { [Op.ne]: null },
+      },
+      attributes: ["telegram_chat_id"],
+      raw: true,
+    });
+
+    const uniqueChatIds = [
+      ...new Set(parents.map((p) => p.telegram_chat_id).filter(Boolean)),
+    ];
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (const chatId of uniqueChatIds) {
+      try {
+        await this.bot.telegram.sendMessage(chatId!, message, {
+          parse_mode: "Markdown",
+        });
+        successCount++;
+      } catch (error) {
+        this.logger.error(
+          `Failed to send broadcast to chat ${chatId}: ${error}`,
+        );
+        failureCount++;
+      }
+    }
+
+    return { successCount, failureCount };
+  }
+
   /** Send a per-language notification to each parent of a student. */
   private async sendNotificationToParentLocalized(
     studentId: string,
