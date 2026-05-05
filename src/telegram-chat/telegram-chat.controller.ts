@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Sse,
   MessageEvent,
+  UseGuards,
 } from "@nestjs/common";
 import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { Observable } from "rxjs";
@@ -25,9 +26,11 @@ import {
 import { TelegramChatService } from "./telegram-chat.service.js";
 import { SendTelegramMessageDto } from "./dto/send-telegram-message.dto.js";
 import { QueryTelegramChatDto } from "./dto/query-telegram-chat.dto.js";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 
 @ApiTags("Telegram Chat")
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller("telegram-chat")
 export class TelegramChatController {
   constructor(private readonly telegramChatService: TelegramChatService) {}
