@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsUUID } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class SendTelegramMessageDto {
@@ -13,6 +13,7 @@ export class SendTelegramMessageDto {
   message!: string;
 
   @ApiProperty({ description: "Name of the CRM staff sending the message", required: false })
+  @IsOptional()
   @IsString()
   sender_name?: string;
 }
