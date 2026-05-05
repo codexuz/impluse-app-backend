@@ -1,7 +1,6 @@
 import {
   Injectable,
   Inject,
-  forwardRef,
   Logger,
   NotFoundException,
   BadRequestException,
@@ -15,7 +14,7 @@ import { TelegramChatMessage } from "./entities/telegram-chat-message.entity.js"
 import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
 import { SendTelegramMessageDto } from "./dto/send-telegram-message.dto.js";
 import { QueryTelegramChatDto } from "./dto/query-telegram-chat.dto.js";
-import { TelegramBotService } from "../telegram-bot/telegram-bot.service.js";
+import type { TelegramBotService } from "../telegram-bot/telegram-bot.service.js";
 
 export interface IncomingMessageEvent {
   parent_id: string;
@@ -44,7 +43,7 @@ export class TelegramChatService {
     @InjectModel(StudentParent)
     private readonly studentParentModel: typeof StudentParent,
 
-    @Inject(forwardRef(() => TelegramBotService))
+    @Inject('TELEGRAM_BOT_SERVICE')
     private readonly telegramBotService: TelegramBotService,
   ) {}
 

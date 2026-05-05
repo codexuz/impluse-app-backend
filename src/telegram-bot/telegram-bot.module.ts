@@ -35,7 +35,10 @@ import { TelegramChatModule } from "../telegram-chat/telegram-chat.module.js";
     ]),
   ],
   controllers: [TelegramBotController],
-  providers: [TelegramBotService],
-  exports: [TelegramBotService],
+  providers: [
+    TelegramBotService,
+    { provide: 'TELEGRAM_BOT_SERVICE', useExisting: TelegramBotService },
+  ],
+  exports: [TelegramBotService, 'TELEGRAM_BOT_SERVICE'],
 })
 export class TelegramBotModule {}
