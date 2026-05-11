@@ -30,6 +30,7 @@ import { StudentParent } from "../student-parents/entities/student_parents.entit
 import { SmsVerification } from "../users/entities/sms-verification.model.js";
 import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 import { SmsService } from "../sms/sms.service.js";
+import { TelegramAuthService } from "./telegram-auth.service.js";
 import * as bcrypt from "bcrypt";
 
 @Injectable()
@@ -51,6 +52,7 @@ export class AuthService {
     private configService: ConfigService,
     private awsStorageService: AwsStorageService,
     private smsService: SmsService,
+    private telegramAuthService: TelegramAuthService,
   ) {}
 
   async validateUser(username: string, pass: string): Promise<User | null> {
@@ -341,7 +343,7 @@ export class AuthService {
     loginDto: LoginDto,
     userAgent?: string,
     ipAddress?: string,
-  ): Promise<{ otpRequired: boolean; otpToken: string; message: string }> {
+  ): Promise<{ otpRequired: boolean; otpToken: string; message: string; otpMethod: string }> {
     const user = await this.userModel.findOne({
       where: {
         username: loginDto.username,
@@ -401,29 +403,65 @@ export class AuthService {
     await this.smsVerificationModel.create({
       id: otpToken,
       userId: user.user_id,
-      phone: user.phone,
+      phone: user.phone || "",
       code,
       isVerified: false,
       expiresAt,
       attempts: 0,
     });
 
-    // Send SMS with OTP
-    const smsMessage = `Impulse CRMga kirish kodingiz: ${code}`;
-    try {
-      await this.smsService.sendSms({
-        mobile_phone: user.phone,
-        message: smsMessage,
-      });
-    } catch (error) {
-      console.error("Failed to send admin OTP SMS:", error);
-      throw new BadRequestException("Failed to send OTP. Please try again.");
+    // Try sending OTP: first via SMS, fallback to Telegram
+    let otpMethod = "sms";
+    let smsSent = false;
+
+    // Try SMS first
+    if (user.phone) {
+      const smsMessage = `Impulse CRMga kirish kodingiz: ${code}`;
+      try {
+        await this.smsService.sendSms({
+          mobile_phone: user.phone,
+          message: smsMessage,
+        });
+        smsSent = true;
+        otpMethod = "sms";
+        console.log(`Admin OTP sent via SMS to ${user.phone}`);
+      } catch (error) {
+        console.error("Failed to send admin OTP via SMS:", error);
+      }
+    }
+
+    // If SMS failed or no phone, try Telegram
+    if (!smsSent) {
+      if (user.telegram_chat_id) {
+        const telegramSent = await this.telegramAuthService.sendOtpCode(
+          user.telegram_chat_id,
+          code,
+        );
+        if (telegramSent) {
+          otpMethod = "telegram";
+          console.log(
+            `Admin OTP sent via Telegram to chat ${user.telegram_chat_id}`,
+          );
+        } else {
+          throw new BadRequestException(
+            "Failed to send OTP via both SMS and Telegram. Please try again.",
+          );
+        }
+      } else {
+        throw new BadRequestException(
+          "Failed to send OTP via SMS and no Telegram account linked. Please link your Telegram account first.",
+        );
+      }
     }
 
     return {
       otpRequired: true,
       otpToken,
-      message: "OTP code sent to your phone",
+      otpMethod,
+      message:
+        otpMethod === "telegram"
+          ? "OTP code sent to your Telegram"
+          : "OTP code sent to your phone",
     };
   }
 
@@ -984,5 +1022,52 @@ export class AuthService {
     await this.terminateUserSessions(user.user_id);
 
     return { message: "Password reset successfully" };
+  }
+
+  /**
+   * Link an admin user's Telegram chat ID for OTP delivery
+   */
+  async setAdminTelegramChatId(
+    userId: string,
+    telegramChatId: string,
+  ): Promise<{ message: string }> {
+    const user = await this.userModel.findOne({
+      where: { user_id: userId, is_active: true },
+      include: [{ model: Role, as: "roles" }],
+    });
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    const userRoles = user.roles.map((role) => role.name.toLowerCase());
+    if (!userRoles.includes("admin")) {
+      throw new UnauthorizedException("Only admin users can link Telegram for OTP");
+    }
+
+    await user.update({ telegram_chat_id: telegramChatId });
+
+    return {
+      message: `Telegram chat ID linked successfully. OTP codes will be sent to Telegram when SMS fails.`,
+    };
+  }
+
+  /**
+   * Remove admin's Telegram chat ID
+   */
+  async removeAdminTelegramChatId(
+    userId: string,
+  ): Promise<{ message: string }> {
+    const user = await this.userModel.findOne({
+      where: { user_id: userId, is_active: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    await user.update({ telegram_chat_id: null });
+
+    return { message: "Telegram chat ID removed successfully." };
   }
 }

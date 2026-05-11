@@ -9,6 +9,8 @@ import {
   HttpStatus,
   Ip,
   Headers,
+  Req,
+  Res,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -17,7 +19,9 @@ import {
   ApiBody,
   ApiBearerAuth,
   ApiHeader,
+  ApiExcludeEndpoint,
 } from "@nestjs/swagger";
+import { Request as ExpressRequest, Response as ExpressResponse } from "express";
 import { AuthService } from "./auth.service.js";
 import {
   LoginDto,
@@ -26,6 +30,7 @@ import {
   VerifyResetCodeDto,
   ResetPasswordDto,
   VerifyAdminOtpDto,
+  SetAdminTelegramDto,
 } from "./dto/auth.dto.js";
 import { RefreshTokenDto } from "./dto/refresh-token.dto.js";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard.js";
@@ -34,11 +39,15 @@ import { Roles } from "./decorators/roles.decorator.js";
 import { Permissions } from "./decorators/permissions.decorator.js";
 import { RolesGuard } from "./guards/roles.guard.js";
 import { PermissionsGuard } from "./guards/permissions.guard.js";
+import { TelegramAuthService } from "./telegram-auth.service.js";
 
 @ApiTags("Authentication")
 @Controller("auth")
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private telegramAuthService: TelegramAuthService,
+  ) {}
 
   @Post("student/login")
   @ApiOperation({ summary: "Student login" })
@@ -118,6 +127,7 @@ export class AuthController {
       properties: {
         otpRequired: { type: "boolean", example: true },
         otpToken: { type: "string" },
+        otpMethod: { type: "string", enum: ["sms", "telegram"] },
         message: { type: "string" },
       },
     },
@@ -453,5 +463,66 @@ export class AuthController {
   @ApiResponse({ status: 404, description: "User not found" })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Post("admin/telegram/link")
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Link Telegram chat ID for admin OTP delivery" })
+  @ApiBody({ type: SetAdminTelegramDto })
+  @ApiResponse({
+    status: 200,
+    description: "Telegram chat ID linked successfully",
+    schema: {
+      properties: {
+        message: { type: "string" },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 403, description: "Forbidden - Admin role required" })
+  async linkAdminTelegram(
+    @CurrentUser() user: any,
+    @Body() dto: SetAdminTelegramDto,
+  ) {
+    return this.authService.setAdminTelegramChatId(
+      user.userId,
+      dto.telegramChatId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Post("admin/telegram/unlink")
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Remove Telegram chat ID from admin account" })
+  @ApiResponse({
+    status: 200,
+    description: "Telegram chat ID removed successfully",
+    schema: {
+      properties: {
+        message: { type: "string" },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 403, description: "Forbidden - Admin role required" })
+  async unlinkAdminTelegram(@CurrentUser() user: any) {
+    return this.authService.removeAdminTelegramChatId(user.userId);
+  }
+
+  @Post("telegram-auth/webhook")
+  @HttpCode(HttpStatus.OK)
+  @ApiExcludeEndpoint()
+  async handleTelegramAuthWebhook(
+    @Req() req: ExpressRequest,
+    @Res() res: ExpressResponse,
+  ): Promise<void> {
+    const bot = this.telegramAuthService.getBotInstance();
+    await bot.handleUpdate(req.body);
+    res.sendStatus(200);
   }
 }

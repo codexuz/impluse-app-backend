@@ -19,6 +19,7 @@ import { StudentParent } from "../student-parents/entities/student_parents.entit
 import { SmsVerification } from "../users/entities/sms-verification.model.js";
 import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
 import { SmsModule } from "../sms/sms.module.js";
+import { TelegramAuthService } from "./telegram-auth.service.js";
 
 @Module({
   imports: [
@@ -52,7 +53,7 @@ import { SmsModule } from "../sms/sms.module.js";
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
-  exports: [AuthService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, TelegramAuthService],
+  exports: [AuthService, TelegramAuthService],
 })
 export class AuthModule {}

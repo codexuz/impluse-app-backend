@@ -242,3 +242,13 @@ export class JwtPayload {
   })
   exp?: number;
 }
+
+export class SetAdminTelegramDto {
+  @ApiProperty({
+    description: "Telegram chat ID to link for OTP delivery",
+    example: "123456789",
+  })
+  @IsString()
+  @IsNotEmpty()
+  telegramChatId: string;
+}

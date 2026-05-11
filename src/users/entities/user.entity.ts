@@ -83,6 +83,10 @@ export class User extends Model<User> {
   })
   currentSessionId: string;
 
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  telegram_chat_id?: string;
+
   roles: Role[];
 
   sessions: UserSession[];
