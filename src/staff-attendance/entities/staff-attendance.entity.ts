@@ -5,8 +5,6 @@ import {
   DataType,
   CreatedAt,
   UpdatedAt,
-  BelongsTo,
-  ForeignKey,
 } from "sequelize-typescript";
 import { User } from "../../users/entities/user.entity.js";
 import { Group } from "../../groups/entities/group.entity.js";
@@ -23,24 +21,20 @@ export class StaffAttendance extends Model {
   })
   id: string;
 
-  @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
   teacher_id: string;
 
-  @BelongsTo(() => User, "teacher_id")
   teacher: User;
 
-  @ForeignKey(() => Group)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
   group_id: string;
 
-  @BelongsTo(() => Group, "group_id")
   group: Group;
 
   @Column({
