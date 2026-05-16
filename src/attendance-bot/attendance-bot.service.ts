@@ -41,47 +41,67 @@ export class AttendanceBotService implements OnModuleInit {
   }
 
   private registerCommands() {
-    this.bot.start((ctx) => ctx.reply('Welcome to Staff Attendance Bot. Please scan a teacher QR code.'));
+    this.bot.start((ctx) => ctx.reply('Xodimlarning davomatini tekshirish botiga xush kelibsiz. Iltimos, o\'qituvchining QR kodini skanerlang.'));
     
     this.bot.on('message', async (ctx) => {
       const chatId = String(ctx.chat.id);
+      const ADMIN_TELEGRAM_ID = '7087270085';
       
-      // Security check: Only users with telegram_chat_id set in the database can use this bot
-      // We also check if the user is an admin or teacher (optional, based on requirement)
-      const user = await this.userModel.findOne({
-        where: { telegram_chat_id: chatId },
-      });
-
-      if (!user) {
+      // Security check: Only the hardcoded admin can use this bot
+      if (chatId !== ADMIN_TELEGRAM_ID) {
         this.logger.warn(`Unauthorized access attempt by Telegram ID: ${chatId}`);
-        return ctx.reply('Sorry, you are not authorized to use this bot. Please contact your administrator.');
+        return ctx.reply('Kechirasiz, siz ushbu botdan foydalanish huquqiga ega emassiz. Iltimos, administrator bilan bog\'laning.');
       }
 
       const text = (ctx.message as any).text;
       if (!text) return;
 
-      // Assume the text is a teacher's ID (UUID)
-      const teacherId = text.trim();
+      let teacherId = text.trim();
+      
+      // Attempt to parse as JSON in case the QR code contains a JSON payload
+      try {
+        const json = JSON.parse(teacherId);
+        if (json.teacher_id) {
+          teacherId = json.teacher_id;
+        }
+      } catch (e) {
+        // Not JSON, assume it's the raw ID
+      }
       
       // UUID regex check
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(teacherId)) {
-        return ctx.reply('Invalid Teacher ID. Please scan a valid QR code.');
+        return ctx.reply('O\'qituvchi IDsi noto\'g\'ri. Iltimos, haqiqiy QR kodni skanerlang.');
       }
 
       try {
+        const teacher = await this.userModel.findByPk(teacherId);
+        if (!teacher) {
+          return ctx.reply('O\'qituvchi topilmadi.');
+        }
+
         const attendance = await this.staffAttendanceService.automaticScan(teacherId);
-        const status = attendance.status.toUpperCase();
-        const type = attendance.type.toUpperCase();
+        const statusMap = {
+          'early': 'VAQLI',
+          'on_time': "O'Z VAQTIDA",
+          'late': 'KECHIKDI'
+        };
+        const typeMap = {
+          'in': 'KIRISH',
+          'out': 'CHIQISH'
+        };
+
+        const status = statusMap[attendance.status] || attendance.status.toUpperCase();
+        const type = typeMap[attendance.type] || attendance.type.toUpperCase();
         
-        let response = `✅ Attendance recorded!\n\n`;
-        response += `👤 Teacher ID: ${teacherId.slice(0, 8)}...\n`;
-        response += `📝 Type: ${type}\n`;
-        response += `📊 Status: ${status}\n`;
+        let response = `✅ Davomat qayd etildi!\n\n`;
+        response += `👤 O'qituvchi: ${teacher.first_name} ${teacher.last_name}\n`;
+        response += `📝 Turi: ${type}\n`;
+        response += `📊 Holati: ${status}\n`;
         
         if (attendance.minutes_late > 0) {
-          response += `⏰ Delay: ${attendance.minutes_late} minutes\n`;
-          response += `💰 Fine: ${attendance.fine_amount.toLocaleString()} UZS\n`;
+          response += `⏰ Kechikish: ${attendance.minutes_late} daqiqa\n`;
+          response += `💰 Jarima: ${attendance.fine_amount.toLocaleString()} so'm\n`;
         }
         
         if (attendance.description) {
@@ -91,7 +111,7 @@ export class AttendanceBotService implements OnModuleInit {
         ctx.reply(response);
       } catch (error) {
         this.logger.error(`Error recording attendance: ${error.message}`);
-        ctx.reply(`❌ Error: ${error.message}`);
+        ctx.reply(`❌ Xatolik: ${error.message}`);
       }
     });
   }

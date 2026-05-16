@@ -8,6 +8,7 @@ import { StaffAttendance } from "./entities/staff-attendance.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
+import { User } from "../users/entities/user.entity.js";
 import { ScanStaffAttendanceDto } from "./dto/scan-staff-attendance.dto.js";
 
 @Injectable()
@@ -41,7 +42,7 @@ export class StaffAttendanceService {
     });
 
     if (groups.length === 0) {
-      throw new NotFoundException("No lessons found for you today");
+      throw new NotFoundException("Bugun siz uchun darslar topilmadi");
     }
 
     // Find the group near the current time
@@ -67,7 +68,7 @@ export class StaffAttendanceService {
 
     if (!bestGroup) {
       throw new NotFoundException(
-        "No group lesson near the current time (within 3 hours)",
+        "Hozirgi vaqtga yaqin dars topilmadi (3 soat oralig'ida)",
       );
     }
 
@@ -97,10 +98,20 @@ export class StaffAttendanceService {
     });
   }
 
+  async generateStaticTeacherQrCode(teacherId: string) {
+    const teacher = await User.findByPk(teacherId);
+    if (!teacher) {
+      throw new NotFoundException("O'qituvchi topilmadi");
+    }
+    return {
+      teacher_id: teacherId,
+    };
+  }
+
   async generateQrCodePayload(groupId: string) {
     const group = await Group.findByPk(groupId);
     if (!group) {
-      throw new NotFoundException("Group not found");
+      throw new NotFoundException("Guruh topilmadi");
     }
     // Return a payload that can be encoded into a QR code.
     // For simplicity, we just return the group ID.
@@ -117,11 +128,11 @@ export class StaffAttendanceService {
     const group = await Group.findByPk(dto.group_id);
 
     if (!group) {
-      throw new NotFoundException("Group not found");
+      throw new NotFoundException("Guruh topilmadi");
     }
 
     if (!group.lesson_start) {
-      throw new ConflictException("Group does not have a start time defined");
+      throw new ConflictException("Guruhning dars boshlanish vaqti belgilanmagan");
     }
 
     // Get today's date in YYYY-MM-DD using Uzbekistan time
@@ -144,7 +155,7 @@ export class StaffAttendanceService {
 
     if (typeCount >= 2) {
       throw new ConflictException(
-        `Attendance (${requestedType}) already taken 2 times for today`,
+        `Bugun uchun davomat (${requestedType === "in" ? "kirish" : "chiqish"}) allaqachon 2 marta olingan`,
       );
     }
 
@@ -160,15 +171,15 @@ export class StaffAttendanceService {
     if (lastAttendance) {
       if (lastAttendance.type === requestedType) {
         throw new ConflictException(
-          `Last attendance was already "${requestedType}". You must clock ${
-            requestedType === "in" ? "out" : "in"
-          } first.`,
+          `Oxirgi davomat allaqachon "${requestedType === "in" ? "kirish" : "chiqish"}" bo'lgan. Avval ${
+            requestedType === "in" ? "chiqish" : "kirish"
+          } qilishingiz kerak.`,
         );
       }
     } else {
       if (requestedType === "out") {
         throw new ConflictException(
-          "You cannot clock out without clocking in first today.",
+          "Bugun avval kirish qilmasdan turib chiqish qila olmaysiz.",
         );
       }
     }
@@ -227,13 +238,13 @@ export class StaffAttendanceService {
       fine_amount: fineAmount,
       minutes_late: minutesLate,
       description: dto.description || (attendanceType === "in" 
-        ? (status === "late" ? `Late for group ${group.name} by ${minutesLate} minutes` : (status === "early" ? `Early for group ${group.name}` : `On time for group ${group.name}`))
-        : `Clocked out for group ${group.name}`),
+        ? (status === "late" ? `${group.name} guruhiga ${minutesLate} daqiqa kechikib keldi` : (status === "early" ? `${group.name} guruhiga vaqtli keldi` : `${group.name} guruhiga o'z vaqtida keldi`))
+        : `${group.name} guruhidan chiqib ketdi`),
     });
 
     // Process fine if applicable
     if (fineAmount > 0) {
-      const jarimaDescription = dto.description || `Late for group ${group.name} by ${minutesLate} minutes`;
+      const jarimaDescription = dto.description || `${group.name} guruhiga ${minutesLate} daqiqa kechikib kelgani uchun jarima`;
 
       // Create teacher transaction for the fine
       await TeacherTransaction.create({

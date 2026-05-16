@@ -27,6 +27,15 @@ export class StaffAttendanceController {
     return this.staffAttendanceService.generateQrCodePayload(groupId);
   }
 
+  @Get("static-qr/:teacherId")
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "Get static QR code payload for a teacher (Admin only)",
+  })
+  async getStaticQr(@Param("teacherId") teacherId: string) {
+    return this.staffAttendanceService.generateStaticTeacherQrCode(teacherId);
+  }
+
   @Post("automatic-scan")
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({
