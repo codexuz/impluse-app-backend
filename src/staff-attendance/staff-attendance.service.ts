@@ -105,6 +105,7 @@ export class StaffAttendanceService {
     }
     return {
       teacher_id: teacherId,
+      bot_url: `https://t.me/staff_attendanceBot?start=${teacherId}`
     };
   }
 
