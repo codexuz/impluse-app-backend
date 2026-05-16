@@ -38,11 +38,11 @@ export class StaffAttendanceService {
     }
 
     // Find the group near the current time
-    // We'll look for a group where lesson_start is within +/- 1 hour of now
+    // We'll look for a group where lesson_start is within +/- 3 hours of now
     const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
 
     let bestGroup = null;
-    let minDifference = 61; // Within 1 hour
+    let minDifference = 181; // Within 3 hours
 
     for (const group of groups) {
       if (!group.lesson_start) continue;
@@ -60,7 +60,7 @@ export class StaffAttendanceService {
 
     if (!bestGroup) {
       throw new NotFoundException(
-        "No group lesson near the current time (within 1 hour)",
+        "No group lesson near the current time (within 3 hours)",
       );
     }
 
