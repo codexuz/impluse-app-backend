@@ -46,10 +46,16 @@ export class TeacherTransaction extends Model<TeacherTransaction> {
   amount: number;
 
   @Column({
-    type: DataType.ENUM("kirim", "oylik", "avans", "bonus"),
+    type: DataType.ENUM("kirim", "oylik", "avans", "bonus", "jarima"),
     allowNull: false,
   })
-  type: "kirim" | "oylik" | "avans" | "bonus";
+  type: "kirim" | "oylik" | "avans" | "bonus" | "jarima";
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  description: string;
 
   @CreatedAt
   created_at: Date;

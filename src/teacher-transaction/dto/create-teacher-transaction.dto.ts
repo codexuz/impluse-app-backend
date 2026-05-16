@@ -1,4 +1,4 @@
-import { IsUUID, IsNotEmpty, IsInt, IsEnum } from 'class-validator';
+import { IsUUID, IsNotEmpty, IsInt, IsEnum, IsString, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum TeacherTransactionType {
@@ -34,5 +34,14 @@ export class CreateTeacherTransactionDto {
   @IsEnum(TeacherTransactionType)
   @IsNotEmpty()
   type: TeacherTransactionType;
+
+  @ApiProperty({
+    description: 'Description of the transaction',
+    example: 'Bonus for good performance',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
 }
 

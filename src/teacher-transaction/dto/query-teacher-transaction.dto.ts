@@ -23,10 +23,10 @@ export class QueryTeacherTransactionDto {
 
   @ApiPropertyOptional({
     description: "Transaction type",
-    enum: ["kirim", "oylik", "avans", "bonus"],
+    enum: ["kirim", "oylik", "avans", "bonus", "jarima"],
   })
   @IsOptional()
-  @IsEnum(["kirim", "oylik", "avans", "bonus"])
+  @IsEnum(["kirim", "oylik", "avans", "bonus", "jarima"])
   type?: string;
 
   @ApiPropertyOptional({ description: "Teacher ID (UUID)" })

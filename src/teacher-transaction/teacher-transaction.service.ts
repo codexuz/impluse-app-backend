@@ -19,9 +19,29 @@ export class TeacherTransactionService {
   async create(
     createTeacherTransactionDto: CreateTeacherTransactionDto,
   ): Promise<TeacherTransaction> {
-    return await this.teacherTransactionModel.create(
+    const transaction = await this.teacherTransactionModel.create(
       createTeacherTransactionDto as any,
     );
+
+    // Update teacher's wallet balance
+    const { teacher_id, amount, type } = createTeacherTransactionDto;
+    
+    // Find or create teacher wallet
+    const wallet = await this.teacherWalletService.findOrCreate(teacher_id);
+    
+    // Determine the amount to add/subtract
+    // kirim, oylik (salary accrual), bonus: +
+    // avans, jarima: -
+    let balanceChange = amount;
+    if (type === "jarima" || type === "avans") {
+      balanceChange = -amount;
+    }
+    
+    await this.teacherWalletService.updateAmount(wallet.id, {
+      amount: balanceChange,
+    });
+
+    return transaction;
   }
 
   async findAll(queryDto: QueryTeacherTransactionDto): Promise<{

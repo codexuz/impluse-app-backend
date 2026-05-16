@@ -102,12 +102,19 @@ export class TeacherWalletService {
 
     const newAmount = wallet.amount + updateWalletAmountDto.amount;
 
-    if (newAmount < 0) {
-      throw new BadRequestException("Insufficient wallet balance");
-    }
-
     await wallet.update({ amount: newAmount });
 
+    return wallet;
+  }
+
+  async findOrCreate(teacherId: string): Promise<TeacherWallet> {
+    const [wallet] = await this.teacherWalletModel.findOrCreate({
+      where: { teacher_id: teacherId },
+      defaults: {
+        teacher_id: teacherId,
+        amount: 0,
+      } as any,
+    });
     return wallet;
   }
 

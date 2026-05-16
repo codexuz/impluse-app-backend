@@ -129,6 +129,7 @@ import { IeltsWritingWritingTask } from "../ielts-tests/entities/ielts-writing-w
 import { Grading } from "../gradings/entities/grading.entity.js";
 import { DictionaryHistory } from "../dictionary/entities/dictionary-history.entity.js";
 import { TelegramChatMessage } from "../telegram-chat/entities/telegram-chat-message.entity.js";
+import { StaffAttendance } from "../staff-attendance/entities/staff-attendance.entity.js";
 
 export const Models = [
   User,
@@ -250,6 +251,7 @@ export const Models = [
   ListenAndChoose,
   DictionaryHistory,
   TelegramChatMessage,
+  StaffAttendance,
 ];
 
 // Define associations after all models are loaded
@@ -543,6 +545,12 @@ export function initializeAssociations() {
     foreignKey: "student_id",
     as: "attendance_logs",
   });
+
+  // Staff Attendance Associations
+  User.hasMany(StaffAttendance, { foreignKey: "teacher_id", as: "staff_attendances" });
+  Group.hasMany(StaffAttendance, { foreignKey: "group_id", as: "staff_attendances" });
+  StaffAttendance.belongsTo(User, { foreignKey: "teacher_id", as: "teacher" });
+  StaffAttendance.belongsTo(Group, { foreignKey: "group_id", as: "group" });
 
   // CompensateLesson Associations
   CompensateLesson.belongsTo(User, { foreignKey: "teacher_id", as: "teacher" });
