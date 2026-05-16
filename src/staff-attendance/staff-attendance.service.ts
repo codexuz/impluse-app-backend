@@ -12,9 +12,16 @@ import { ScanStaffAttendanceDto } from "./dto/scan-staff-attendance.dto.js";
 
 @Injectable()
 export class StaffAttendanceService {
-  async automaticScan(teacherId: string, type?: "in" | "out") {
+  private getUzTime(): Date {
     const now = new Date();
-    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    // Offset for Uzbekistan (UTC +5)
+    const uzTime = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+    return uzTime;
+  }
+
+  async automaticScan(teacherId: string, type?: "in" | "out") {
+    const now = this.getUzTime();
+    const dayOfWeek = now.getUTCDay(); // Using UTC day because we manually offset now
 
     // Determine the days enum based on today
     const possibleDays: string[] = ["every_day"];
@@ -39,7 +46,7 @@ export class StaffAttendanceService {
 
     // Find the group near the current time
     // We'll look for a group where lesson_start is within +/- 3 hours of now
-    const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+    const currentTimeInMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
 
     let bestGroup = null;
     let minDifference = 181; // Within 3 hours
@@ -67,9 +74,9 @@ export class StaffAttendanceService {
     // Determine type if not provided
     let attendanceType = type;
     if (!attendanceType) {
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
+      const year = now.getUTCFullYear();
+      const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(now.getUTCDate()).padStart(2, "0");
       const today = `${year}-${month}-${day}`;
 
       const existingIn = await StaffAttendance.findOne({
@@ -118,13 +125,11 @@ export class StaffAttendanceService {
       throw new ConflictException("Group does not have a start time defined");
     }
 
-    // Get today's date in YYYY-MM-DD
-    const now = new Date();
-    // Offset by UTC +5 (Uzbekistan Time) if the server timezone is UTC.
-    // For safety, let's use local date string.
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
+    // Get today's date in YYYY-MM-DD using Uzbekistan time
+    const now = this.getUzTime();
+    const year = now.getUTCFullYear();
+    const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(now.getUTCDate()).padStart(2, "0");
     const today = `${year}-${month}-${day}`;
 
     // Check if attendance of this type already taken today
@@ -152,8 +157,8 @@ export class StaffAttendanceService {
     if (attendanceType === "in") {
       // Parse group start time
       const [startHour, startMin] = group.lesson_start.split(":").map(Number);
-      const currentHour = now.getHours();
-      const currentMin = now.getMinutes();
+      const currentHour = now.getUTCHours();
+      const currentMin = now.getUTCMinutes();
 
       const startTimeInMinutes = startHour * 60 + startMin;
       const currentTimeInMinutes = currentHour * 60 + currentMin;
