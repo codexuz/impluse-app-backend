@@ -79,16 +79,15 @@ export class StaffAttendanceService {
       const day = String(now.getUTCDate()).padStart(2, "0");
       const today = `${year}-${month}-${day}`;
 
-      const existingIn = await StaffAttendance.findOne({
+      const lastAttendance = await StaffAttendance.findOne({
         where: {
           teacher_id: teacherId,
-          group_id: bestGroup.id,
           date: today,
-          type: "in",
         },
+        order: [["createdAt", "DESC"]],
       });
 
-      attendanceType = existingIn ? "out" : "in";
+      attendanceType = lastAttendance?.type === "in" ? "out" : "in";
     }
 
     // Now call the existing scan logic with the found group_id
@@ -132,18 +131,46 @@ export class StaffAttendanceService {
     const day = String(now.getUTCDate()).padStart(2, "0");
     const today = `${year}-${month}-${day}`;
 
-    // Check if attendance of this type already taken today
-    const existingAttendance = await StaffAttendance.findOne({
+    const requestedType = dto.type || "in";
+
+    // Check how many of this type already taken today
+    const typeCount = await StaffAttendance.count({
       where: {
         teacher_id: teacherId,
-        group_id: dto.group_id,
         date: today,
-        type: dto.type || "in",
+        type: requestedType,
       },
     });
 
-    if (existingAttendance) {
-      throw new ConflictException(`Attendance (${dto.type || "in"}) already taken for today`);
+    if (typeCount >= 2) {
+      throw new ConflictException(
+        `Attendance (${requestedType}) already taken 2 times for today`,
+      );
+    }
+
+    // Check sequence to ensure IN -> OUT -> IN -> OUT
+    const lastAttendance = await StaffAttendance.findOne({
+      where: {
+        teacher_id: teacherId,
+        date: today,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (lastAttendance) {
+      if (lastAttendance.type === requestedType) {
+        throw new ConflictException(
+          `Last attendance was already "${requestedType}". You must clock ${
+            requestedType === "in" ? "out" : "in"
+          } first.`,
+        );
+      }
+    } else {
+      if (requestedType === "out") {
+        throw new ConflictException(
+          "You cannot clock out without clocking in first today.",
+        );
+      }
     }
 
     const attendanceType = dto.type || "in";
