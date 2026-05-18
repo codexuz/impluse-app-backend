@@ -76,7 +76,7 @@ export class AttendanceService {
           console.log(
             `Compensate lesson created for absent student ${studentId}, teacher ${teacherId}, attendance ${attendanceId}`,
           );
-        } catch (error) {
+        } catch (error: any) {
           // Log error but don't throw - compensate lesson creation shouldn't block attendance
           console.error(
             `Error creating compensate lesson for attendance ${attendanceId}:`,
@@ -231,7 +231,7 @@ export class AttendanceService {
         this.telegramBotService
           .notifyAttendance(dto.student_id, dto.status, dto.date)
           .catch((e) => console.error("Telegram attendance notification failed:", e));
-      } catch (error) {
+      } catch (error: any) {
         errors.push({
           student_id: dto.student_id,
           error: error.message,
@@ -478,14 +478,14 @@ export class AttendanceService {
             console.log(
               `Compensate lesson created for absent student ${studentId}, teacher ${teacherId}, attendance ${attendance.id}`,
             );
-          } catch (compensateError) {
+          } catch (compensateError: any) {
             console.error(
               `Error creating compensate lesson for attendance ${attendance.id}:`,
               compensateError.message,
             );
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(
           `Error deducting wallet/deleting transaction for teacher ${teacherId}:`,
           error.message,
@@ -563,7 +563,7 @@ export class AttendanceService {
             );
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(
           `Error deducting wallet/deleting transaction for teacher ${attendance.teacher_id}:`,
           error.message,
