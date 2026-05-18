@@ -65,6 +65,7 @@ import { UploadModule } from "./upload/upload.module.js";
 import { SupportSchedulesModule } from "./support-schedules/support-schedules.module.js";
 import { SupportBookingsModule } from "./support-bookings/support-bookings.module.js";
 import { GroupChatModule } from "./group-chat/group-chat.module.js";
+import { AudioCallModule } from "./audio-call/audio-call.module.js";
 import { StoriesModule } from "./stories/stories.module.js";
 import { SpeechifyModule } from "./services/speechify/speechify.module.js";
 import { OpenaiModule } from "./services/openai/openai.module.js";
@@ -169,6 +170,7 @@ import { AttendanceBotModule } from './attendance-bot/attendance-bot.module.js';
     SupportSchedulesModule,
     SupportBookingsModule,
     GroupChatModule,
+    AudioCallModule,
     StoriesModule,
     SpeechifyModule,
     OpenaiModule,
