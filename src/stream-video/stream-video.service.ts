@@ -136,7 +136,7 @@ export class StreamVideoService implements OnModuleInit {
       call,
       agentUserId: AI_AGENT_USER_ID,
       openAiApiKey: openAiKey,
-      model: 'gpt-realtime-mini-2025-12-15',
+      model: 'gpt-4o-realtime-preview',
     });
 
     // Configure the agent session
