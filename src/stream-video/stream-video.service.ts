@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { CreateUserCallDto, CreateAiCallDto } from './dto/stream-video.dto.js';
 
 const AI_AGENT_USER_ID = 'ai-agent';
-const CALL_TYPE = 'audio_room';
+const CALL_TYPE = 'default';
 
 // Holds live RealtimeClient instances keyed by callId
 const activeAgents = new Map<string, any>();
@@ -129,9 +129,6 @@ export class StreamVideoService implements OnModuleInit {
         },
       },
     });
-
-    // audio_room starts in backstage — go live so the AI agent can join
-    await call.goLive();
 
     // Connect the OpenAI Realtime agent server-side via WebRTC
     // connectOpenAi internally generates the agent token and joins the call
