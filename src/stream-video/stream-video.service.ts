@@ -130,6 +130,9 @@ export class StreamVideoService implements OnModuleInit {
       },
     });
 
+    // audio_room starts in backstage — go live so the AI agent can join
+    await call.goLive();
+
     // Connect the OpenAI Realtime agent server-side via WebRTC
     // connectOpenAi internally generates the agent token and joins the call
     const realtimeClient = await this.client.video.connectOpenAi({
