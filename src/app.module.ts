@@ -99,6 +99,7 @@ import { DictionaryModule } from "./dictionary/dictionary.module.js";
 import { TelegramChatModule } from "./telegram-chat/telegram-chat.module.js";
 import { StaffAttendanceModule } from './staff-attendance/staff-attendance.module.js';
 import { AttendanceBotModule } from './attendance-bot/attendance-bot.module.js';
+import { StreamVideoModule } from './stream-video/stream-video.module.js';
 
 @Module({
   imports: [
@@ -203,6 +204,7 @@ import { AttendanceBotModule } from './attendance-bot/attendance-bot.module.js';
     TelegramChatModule,
     StaffAttendanceModule,
     AttendanceBotModule,
+    StreamVideoModule,
   ],
   controllers: [AppController],
   providers: [

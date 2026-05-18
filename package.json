@@ -43,6 +43,8 @@
     "@onesignal/node-onesignal": "^5.4.0-beta1",
     "@openai/agents": "^0.7.1",
     "@speechify/api": "^1.0.1",
+    "@stream-io/node-sdk": "^0.7.57",
+    "@stream-io/openai-realtime-api": "^0.3.3",
     "@treeee/youtube-caption-extractor": "^1.5.5",
     "axios": "^1.13.6",
     "bcrypt": "^6.0.0",

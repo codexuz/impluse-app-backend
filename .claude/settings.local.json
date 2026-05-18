@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:getstream.io)",
+      "Bash(dir /s /b)",
+      "Bash(npm install *)",
+      "Bash(npm list *)",
+      "PowerShell(npx tsc --noEmit 2>&1)"
+    ]
+  }
+}
