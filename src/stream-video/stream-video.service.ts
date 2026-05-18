@@ -130,21 +130,12 @@ export class StreamVideoService implements OnModuleInit {
       },
     });
 
-    this.logger.log(`Connecting OpenAI Realtime agent for call ${callId}`);
-    this.logger.log(`OpenAI key prefix: ${openAiKey.slice(0, 10)}...`);
-
-    let realtimeClient: any;
-    try {
-      realtimeClient = await this.client.video.connectOpenAi({
-        call,
-        agentUserId: AI_AGENT_USER_ID,
-        openAiApiKey: openAiKey,
-        model: 'gpt-realtime-1.5',
-      });
-    } catch (err) {
-      this.logger.error('connectOpenAi failed:', JSON.stringify(err, null, 2));
-      throw err;
-    }
+    const realtimeClient = await this.client.video.connectOpenAi({
+      call,
+      agentUserId: AI_AGENT_USER_ID,
+      openAiApiKey: openAiKey,
+      model: 'gpt-realtime-1.5',
+    });
 
     // Configure the agent session
     realtimeClient.updateSession({
