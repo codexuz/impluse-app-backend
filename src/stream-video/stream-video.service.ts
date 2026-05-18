@@ -76,7 +76,6 @@ export class StreamVideoService implements OnModuleInit {
         ],
         settings_override: {
           audio: { default_device: 'earpiece', noise_cancellation: { mode: 'disabled' } },
-          video: { enabled: false },
         },
       },
     });
@@ -127,7 +126,6 @@ export class StreamVideoService implements OnModuleInit {
         custom: { ai_agent: true, system_prompt: systemPrompt },
         settings_override: {
           audio: { default_device: 'earpiece', noise_cancellation: { mode: 'disabled' } },
-          video: { enabled: false },
         },
       },
     });
