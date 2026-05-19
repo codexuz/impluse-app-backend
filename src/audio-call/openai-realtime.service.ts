@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import OpenAI from "openai";
-import { OpenAIRealtimeWS } from "openai/beta/realtime/ws";
+import { OpenAIRealtimeWS } from "openai/realtime/ws";
 
 const REALTIME_MODEL = "gpt-realtime";
 
@@ -76,20 +76,29 @@ export class OpenAiRealtimeService {
       let settled = false;
 
       ws.socket.on("open", () => {
+        // GA Realtime session shape (the beta `modalities` /
+        // `input_audio_format` / top-level `voice` fields were removed).
         ws.send({
           type: "session.update",
           session: {
-            modalities: ["audio", "text"],
-            voice: opts.voice ?? "alloy",
+            type: "realtime",
+            output_modalities: ["audio"],
             instructions: opts.instructions ?? DEFAULT_INSTRUCTIONS,
-            input_audio_format: "pcm16",
-            output_audio_format: "pcm16",
-            input_audio_transcription: { model: "whisper-1" },
-            turn_detection: {
-              type: "server_vad",
-              threshold: 0.5,
-              prefix_padding_ms: 300,
-              silence_duration_ms: 600,
+            audio: {
+              input: {
+                format: { type: "audio/pcm", rate: 24000 },
+                transcription: { model: "whisper-1" },
+                turn_detection: {
+                  type: "server_vad",
+                  threshold: 0.5,
+                  prefix_padding_ms: 300,
+                  silence_duration_ms: 600,
+                },
+              },
+              output: {
+                format: { type: "audio/pcm", rate: 24000 },
+                voice: opts.voice ?? "alloy",
+              },
             },
           },
         });
@@ -109,11 +118,11 @@ export class OpenAiRealtimeService {
         }
       });
 
-      ws.on("response.audio.delta", (event: any) => {
+      ws.on("response.output_audio.delta", (event: any) => {
         if (event?.delta) cb.onAudioDelta(event.delta);
       });
 
-      ws.on("response.audio_transcript.delta", (event: any) => {
+      ws.on("response.output_audio_transcript.delta", (event: any) => {
         if (event?.delta && cb.onAiTranscriptDelta) {
           cb.onAiTranscriptDelta(event.delta);
         }

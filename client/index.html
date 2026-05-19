@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Impulse Audio Call — Test Client</title>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Socket.IO client 4.x (matches backend socket.io ^4.8) -->
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>🎧 Impulse Audio Call — Test Client</h1>
+      <span id="connBadge" class="badge off">disconnected</span>
+    </header>
+
+    <main>
+      <!-- ── Step 1: server + auth ───────────────────────────────── -->
+      <section class="card" id="authCard">
+        <h2>1 · Connect</h2>
+        <label>
+          Backend base URL
+          <input
+            id="baseUrl"
+            type="text"
+            value="https://backend.impulselc.uz"
+            placeholder="https://backend.impulselc.uz"
+          />
+        </label>
+        <div class="hint">
+          REST is <code>&lt;base&gt;/api</code>; the Socket.IO namespace is
+          <code>&lt;base&gt;/call</code>.
+        </div>
+
+        <div class="row">
+          <label>
+            Username
+            <input id="username" type="text" autocomplete="username" />
+          </label>
+          <label>
+            Password
+            <input id="password" type="password" autocomplete="current-password" />
+          </label>
+        </div>
+
+        <div class="row">
+          <button id="loginBtn">Log in &amp; connect</button>
+          <button id="tokenToggle" class="secondary" type="button">
+            Use a token instead
+          </button>
+        </div>
+
+        <label id="tokenWrap" hidden>
+          JWT access token
+          <input id="tokenInput" type="text" placeholder="eyJhbGciOi..." />
+          <button id="connectTokenBtn" class="secondary" type="button">
+            Connect with token
+          </button>
+        </label>
+
+        <p id="me" class="me"></p>
+      </section>
+
+      <!-- ── Step 2: peer-to-peer call ───────────────────────────── -->
+      <section class="card" id="p2pCard">
+        <h2>2 · Peer-to-peer call</h2>
+        <p class="hint">
+          Open this page in two browsers / accounts. Paste the
+          <em>other</em> user's ID below and call them.
+        </p>
+        <label>
+          Callee user ID
+          <input id="calleeId" type="text" placeholder="uuid of the other user" />
+        </label>
+        <div class="row">
+          <button id="callBtn" disabled>📞 Call</button>
+          <button id="acceptBtn" class="ok" hidden>✅ Accept</button>
+          <button id="rejectBtn" class="danger" hidden>❌ Reject</button>
+          <button id="muteBtn" class="secondary" hidden>🔇 Mute</button>
+          <button id="hangupBtn" class="danger" hidden>📵 Hang up</button>
+        </div>
+        <p id="p2pStatus" class="status">idle</p>
+        <audio id="remoteAudio" autoplay></audio>
+      </section>
+
+      <!-- ── Step 3: AI call ─────────────────────────────────────── -->
+      <section class="card" id="aiCard">
+        <h2>3 · AI tutor call</h2>
+        <p class="hint">
+          Streams your mic (PCM16 24&nbsp;kHz) to the backend OpenAI Realtime
+          relay and plays the reply.
+        </p>
+        <label>
+          Voice (optional)
+          <select id="aiVoice">
+            <option value="">default (alloy)</option>
+            <option value="alloy">alloy</option>
+            <option value="verse">verse</option>
+            <option value="marin">marin</option>
+            <option value="shimmer">shimmer</option>
+          </select>
+        </label>
+        <label>
+          Instructions (optional)
+          <textarea
+            id="aiInstructions"
+            rows="2"
+            placeholder="Override the AI persona…"
+          ></textarea>
+        </label>
+        <div class="row">
+          <button id="aiStartBtn" disabled>🤖 Start AI call</button>
+          <button id="aiEndBtn" class="danger" hidden>📵 End</button>
+        </div>
+        <p id="aiStatus" class="status">idle</p>
+        <div class="transcripts">
+          <div>
+            <strong>You:</strong>
+            <span id="userTranscript"></span>
+          </div>
+          <div>
+            <strong>Tutor:</strong>
+            <span id="aiTranscript"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Event log ───────────────────────────────────────────── -->
+      <section class="card">
+        <h2>Event log</h2>
+        <button id="clearLog" class="secondary" type="button">Clear</button>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
