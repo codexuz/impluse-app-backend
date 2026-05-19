@@ -53,17 +53,25 @@ export class AudioCallController {
       { urls: "stun:stun1.l.google.com:19302" },
     ];
 
-    // Optional self-hosted coturn (free to run on your own VPS).
-    // Set TURN_URL / TURN_USERNAME / TURN_PASSWORD to enable strict-NAT relay.
+    // TURN relay for strict / symmetric-NAT networks (without it those
+    // peers can't connect at all). TURN_URL may be a single URL or a
+    // comma-separated list so one credential can cover several transports
+    // (e.g. UDP 3478, TCP 3478, TLS 443 for firewall traversal).
     const turnUrl = this.configService.get<string>("TURN_URL");
     const turnUser = this.configService.get<string>("TURN_USERNAME");
     const turnPass = this.configService.get<string>("TURN_PASSWORD");
     if (turnUrl && turnUser && turnPass) {
-      iceServers.push({
-        urls: turnUrl,
-        username: turnUser,
-        credential: turnPass,
-      });
+      const urls = turnUrl
+        .split(",")
+        .map((u) => u.trim())
+        .filter(Boolean);
+      if (urls.length > 0) {
+        iceServers.push({
+          urls: urls.length === 1 ? urls[0] : urls,
+          username: turnUser,
+          credential: turnPass,
+        });
+      }
     }
 
     return { iceServers };
