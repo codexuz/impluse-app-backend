@@ -38,7 +38,7 @@ interface AuthenticatedSocket extends Socket {
 }
 
 // Cost in coins charged to the student before an AI call starts.
-const AI_CALL_COST_COINS = 1000;
+const AI_CALL_COST_COINS = 100;
 // Hard cap on AI call duration (15 minutes).
 const AI_CALL_MAX_MS = 15 * 60 * 1000;
 
