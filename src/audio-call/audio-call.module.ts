@@ -8,10 +8,12 @@ import { CallLogService } from "./call-log.service.js";
 import { OpenAiRealtimeService } from "./openai-realtime.service.js";
 import { AudioCallGateway } from "./audio-call.gateway.js";
 import { AudioCallController } from "./audio-call.controller.js";
+import { StudentProfileModule } from "../student_profiles/student-profile.module.js";
 
 @Module({
   imports: [
     ConfigModule,
+    StudentProfileModule,
     SequelizeModule.forFeature([CallLog]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

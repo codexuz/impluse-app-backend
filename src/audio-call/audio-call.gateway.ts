@@ -14,6 +14,7 @@ import { JwtService } from "@nestjs/jwt";
 import { v4 as uuidv4 } from "uuid";
 import { CallLogService } from "./call-log.service.js";
 import { OpenAiRealtimeService } from "./openai-realtime.service.js";
+import { StudentProfileService } from "../student_profiles/student-profile.service.js";
 import {
   CallAnswerDto,
   HangupDto,
@@ -34,6 +35,18 @@ interface AuthenticatedSocket extends Socket {
     username: string;
     roles: string[];
   };
+}
+
+// Cost in coins charged to the student before an AI call starts.
+const AI_CALL_COST_COINS = 1000;
+// Hard cap on AI call duration (15 minutes).
+const AI_CALL_MAX_MS = 15 * 60 * 1000;
+
+interface ActiveAiCall {
+  userId: string;
+  socketId: string;
+  // Auto-end timer that enforces the 15-minute limit.
+  limitTimer: NodeJS.Timeout;
 }
 
 interface ActiveP2PCall {
@@ -60,13 +73,14 @@ export class AudioCallGateway
   private readonly userSockets = new Map<string, string>();
   // callId -> p2p call state
   private readonly p2pCalls = new Map<string, ActiveP2PCall>();
-  // callId -> { userId } for AI calls owned by a socket
-  private readonly aiCalls = new Map<string, { userId: string; socketId: string }>();
+  // callId -> AI call state owned by a socket
+  private readonly aiCalls = new Map<string, ActiveAiCall>();
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly callLogService: CallLogService,
     private readonly realtime: OpenAiRealtimeService,
+    private readonly studentProfileService: StudentProfileService,
   ) {}
 
   afterInit() {
@@ -99,8 +113,8 @@ export class AudioCallGateway
         `User ${client.user.username} connected to /call: ${client.id}`,
       );
       client.emit("call:ready", { user_id: client.user.id });
-    } catch (error) {
-      this.logger.error(`Auth failed for ${client.id}: ${error.message}`);
+    } catch (error: any) {
+      this.logger.error(`Auth failed for ${client.id}: ${error?.message}`);
       client.emit("call:error", { message: "Invalid token" });
       client.disconnect();
     }
@@ -131,6 +145,7 @@ export class AudioCallGateway
     // Tear down any AI call this socket owned
     for (const [callId, ai] of this.aiCalls) {
       if (ai.socketId === client.id) {
+        clearTimeout(ai.limitTimer);
         this.realtime.endSession(callId);
         await this.callLogService.markEnded(callId, "completed", "disconnected");
         this.aiCalls.delete(callId);
@@ -314,13 +329,38 @@ export class AudioCallGateway
       return;
     }
 
+    // Charge the student before the call starts. If the balance is too
+    // low (or there's no profile) the call is refused with no charge.
+    try {
+      await this.studentProfileService.deductCoins(
+        client.user.id,
+        AI_CALL_COST_COINS,
+      );
+    } catch (err: any) {
+      client.emit("call:error", {
+        message:
+          err?.message ??
+          `You need ${AI_CALL_COST_COINS} coins to start an AI call.`,
+      });
+      return;
+    }
+
     const record = await this.callLogService.createCall({
       kind: "ai",
       callerId: client.user.id,
       calleeId: null,
     });
     const callId = record.id;
-    this.aiCalls.set(callId, { userId: client.user.id, socketId: client.id });
+
+    const limitTimer = setTimeout(() => {
+      void this.endAiCallByLimit(callId);
+    }, AI_CALL_MAX_MS);
+
+    this.aiCalls.set(callId, {
+      userId: client.user.id,
+      socketId: client.id,
+      limitTimer,
+    });
 
     try {
       await this.realtime.startSession(
@@ -350,8 +390,17 @@ export class AudioCallGateway
       await this.callLogService.markOngoing(callId);
       client.emit("ai-call:started", { call_id: callId });
     } catch (err: any) {
+      clearTimeout(limitTimer);
       this.realtime.endSession(callId);
       this.aiCalls.delete(callId);
+      // The student was charged but never got a working session — refund.
+      await this.studentProfileService
+        .addCoins(client.user.id, AI_CALL_COST_COINS)
+        .catch((refundErr) =>
+          this.logger.error(
+            `Failed to refund AI call charge for user ${client.user!.id}: ${refundErr?.message}`,
+          ),
+        );
       await this.callLogService.markEnded(
         callId,
         "failed",
@@ -362,6 +411,20 @@ export class AudioCallGateway
         message: err?.message ?? "Failed to start AI call",
       });
     }
+  }
+
+  /** End an AI call because it hit the 15-minute time limit. */
+  private async endAiCallByLimit(callId: string): Promise<void> {
+    const ai = this.aiCalls.get(callId);
+    if (!ai) return;
+
+    this.realtime.endSession(callId);
+    this.aiCalls.delete(callId);
+    await this.callLogService.markEnded(callId, "completed", "time_limit");
+    this.server.to(`user:${ai.userId}`).emit("call:ended", {
+      call_id: callId,
+      reason: "time_limit",
+    });
   }
 
   @SubscribeMessage("ai-call:audio")
@@ -395,6 +458,7 @@ export class AudioCallGateway
     const ai = this.aiCalls.get(data.call_id);
     if (!ai || ai.userId !== client.user.id) return;
 
+    clearTimeout(ai.limitTimer);
     this.realtime.endSession(data.call_id);
     this.aiCalls.delete(data.call_id);
     await this.callLogService.markEnded(data.call_id, "completed", "user_ended");

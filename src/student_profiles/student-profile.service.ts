@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { Op } from "sequelize";
 import { StudentProfile } from "./entities/student_profile.entity.js";
@@ -65,6 +69,21 @@ export class StudentProfileService {
   async addCoins(userId: string, coins: number): Promise<StudentProfile> {
     const profile = await this.findByUserId(userId);
     await profile.increment("coins", { by: coins });
+    return profile.reload();
+  }
+
+  /**
+   * Deduct coins from a student, refusing the operation if the balance
+   * would go negative. Returns the reloaded profile on success.
+   */
+  async deductCoins(userId: string, coins: number): Promise<StudentProfile> {
+    const profile = await this.findByUserId(userId);
+    if (profile.coins < coins) {
+      throw new BadRequestException(
+        `Insufficient coins: ${profile.coins} available, ${coins} required`
+      );
+    }
+    await profile.decrement("coins", { by: coins });
     return profile.reload();
   }
 
