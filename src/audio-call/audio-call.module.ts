@@ -4,6 +4,7 @@ import type { StringValue } from "ms";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { SequelizeModule } from "@nestjs/sequelize";
 import { CallLog } from "./entities/call-log.entity.js";
+import { User } from "../users/entities/user.entity.js";
 import { CallLogService } from "./call-log.service.js";
 import { OpenAiRealtimeService } from "./openai-realtime.service.js";
 import { AudioCallGateway } from "./audio-call.gateway.js";
@@ -14,7 +15,7 @@ import { StudentProfileModule } from "../student_profiles/student-profile.module
   imports: [
     ConfigModule,
     StudentProfileModule,
-    SequelizeModule.forFeature([CallLog]),
+    SequelizeModule.forFeature([CallLog, User]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

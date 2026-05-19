@@ -464,4 +464,16 @@ export class AudioCallGateway
     await this.callLogService.markEnded(data.call_id, "completed", "user_ended");
     client.emit("call:ended", { call_id: data.call_id, reason: "user_ended" });
   }
+
+  // ==================== Presence (used by the REST controller) ============
+
+  /** IDs of users currently connected to the /call namespace. */
+  getOnlineUserIds(): string[] {
+    return Array.from(this.userSockets.keys());
+  }
+
+  /** Whether a specific user is currently connected to /call. */
+  isUserOnline(userId: string): boolean {
+    return this.userSockets.has(userId);
+  }
 }

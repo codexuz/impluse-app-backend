@@ -14,6 +14,7 @@ import {
 } from "@nestjs/swagger";
 import { ConfigService } from "@nestjs/config";
 import { CallLogService } from "./call-log.service.js";
+import { AudioCallGateway } from "./audio-call.gateway.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -27,6 +28,7 @@ export class AudioCallController {
   constructor(
     private readonly callLogService: CallLogService,
     private readonly configService: ConfigService,
+    private readonly gateway: AudioCallGateway,
   ) {}
 
   @Get("ice-servers")
@@ -65,6 +67,35 @@ export class AudioCallController {
     }
 
     return { iceServers };
+  }
+
+  @Get("online-students")
+  @Roles(
+    Role.STUDENT,
+    Role.TEACHER,
+    Role.ADMIN,
+    Role.SUPPORT_TEACHER,
+  )
+  @ApiOperation({
+    summary:
+      "Online students (role=student) in an English group, with the level " +
+      "taken from that group. Optional search by username, first/last name, " +
+      "or phone.",
+  })
+  @ApiQuery({
+    name: "search",
+    required: false,
+    type: String,
+    description: "Match against username, first_name, last_name, or phone.",
+  })
+  @ApiResponse({ status: 200, description: "OnlineStudent[]." })
+  getOnlineStudents(@Request() req, @Query("search") search?: string) {
+    const onlineIds = this.gateway.getOnlineUserIds();
+    return this.callLogService.getOnlineStudents(
+      req.user.userId,
+      onlineIds,
+      search,
+    );
   }
 
   @Get("history")
