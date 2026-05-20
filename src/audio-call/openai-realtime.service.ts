@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import OpenAI from "openai";
 import { OpenAIRealtimeWS } from "openai/realtime/ws";
 
-const REALTIME_MODEL = "gpt-realtime";
+const REALTIME_MODEL = "gpt-realtime-mini";
 
 const DEFAULT_INSTRUCTIONS =
   "You are a friendly, patient English-speaking tutor for language learners. " +
