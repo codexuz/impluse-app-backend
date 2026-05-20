@@ -37,15 +37,15 @@ interface AuthenticatedSocket extends Socket {
   };
 }
 
-// Cost in coins charged to the student before an AI call starts.
-const AI_CALL_COST_COINS = 100;
-// Hard cap on AI call duration (15 minutes).
-const AI_CALL_MAX_MS = 15 * 60 * 1000;
+// Cost in coins charged to the student after an AI call ends.
+const AI_CALL_COST_COINS = 50;
+// Hard cap on AI call duration (20 minutes).
+const AI_CALL_MAX_MS = 20 * 60 * 1000;
 
 interface ActiveAiCall {
   userId: string;
   socketId: string;
-  // Auto-end timer that enforces the 15-minute limit.
+  // Auto-end timer that enforces the 20-minute limit.
   limitTimer: NodeJS.Timeout;
 }
 
@@ -148,6 +148,13 @@ export class AudioCallGateway
         clearTimeout(ai.limitTimer);
         this.realtime.endSession(callId);
         await this.callLogService.markEnded(callId, "completed", "disconnected");
+        await this.studentProfileService
+          .deductCoins(ai.userId, AI_CALL_COST_COINS)
+          .catch((err) =>
+            this.logger.error(
+              `Failed to deduct coins for user ${ai.userId}: ${err?.message}`,
+            ),
+          );
         this.aiCalls.delete(callId);
       }
     }
@@ -329,22 +336,6 @@ export class AudioCallGateway
       return;
     }
 
-    // Charge the student before the call starts. If the balance is too
-    // low (or there's no profile) the call is refused with no charge.
-    try {
-      await this.studentProfileService.deductCoins(
-        client.user.id,
-        AI_CALL_COST_COINS,
-      );
-    } catch (err: any) {
-      client.emit("call:error", {
-        message:
-          err?.message ??
-          `You need ${AI_CALL_COST_COINS} coins to start an AI call.`,
-      });
-      return;
-    }
-
     const record = await this.callLogService.createCall({
       kind: "ai",
       callerId: client.user.id,
@@ -393,14 +384,6 @@ export class AudioCallGateway
       clearTimeout(limitTimer);
       this.realtime.endSession(callId);
       this.aiCalls.delete(callId);
-      // The student was charged but never got a working session — refund.
-      await this.studentProfileService
-        .addCoins(client.user.id, AI_CALL_COST_COINS)
-        .catch((refundErr) =>
-          this.logger.error(
-            `Failed to refund AI call charge for user ${client.user!.id}: ${refundErr?.message}`,
-          ),
-        );
       await this.callLogService.markEnded(
         callId,
         "failed",
@@ -413,7 +396,7 @@ export class AudioCallGateway
     }
   }
 
-  /** End an AI call because it hit the 15-minute time limit. */
+  /** End an AI call because it hit the 20-minute time limit. */
   private async endAiCallByLimit(callId: string): Promise<void> {
     const ai = this.aiCalls.get(callId);
     if (!ai) return;
@@ -421,6 +404,13 @@ export class AudioCallGateway
     this.realtime.endSession(callId);
     this.aiCalls.delete(callId);
     await this.callLogService.markEnded(callId, "completed", "time_limit");
+    await this.studentProfileService
+      .deductCoins(ai.userId, AI_CALL_COST_COINS)
+      .catch((err) =>
+        this.logger.error(
+          `Failed to deduct coins for user ${ai.userId}: ${err?.message}`,
+        ),
+      );
     this.server.to(`user:${ai.userId}`).emit("call:ended", {
       call_id: callId,
       reason: "time_limit",
@@ -462,6 +452,13 @@ export class AudioCallGateway
     this.realtime.endSession(data.call_id);
     this.aiCalls.delete(data.call_id);
     await this.callLogService.markEnded(data.call_id, "completed", "user_ended");
+    await this.studentProfileService
+      .deductCoins(client.user.id, AI_CALL_COST_COINS)
+      .catch((err) =>
+        this.logger.error(
+          `Failed to deduct coins for user ${client.user!.id}: ${err?.message}`,
+        ),
+      );
     client.emit("call:ended", { call_id: data.call_id, reason: "user_ended" });
   }
 
