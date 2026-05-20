@@ -108,6 +108,11 @@ export class OpenAiRealtimeService {
         }
       });
 
+      ws.on("session.updated", () => {
+        // Trigger the AI to speak first without waiting for user input
+        ws.send({ type: "response.create" });
+      });
+
       ws.on("error", (err: any) => {
         const msg = err?.message ?? "Realtime connection error";
         this.logger.error(`Realtime error (call ${callId}): ${msg}`);
