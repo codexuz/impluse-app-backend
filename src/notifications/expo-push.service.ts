@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
+import { isExpoPushToken } from '../utils/expo.util.js';
 
 @Injectable()
 export class ExpoPushService {
@@ -42,7 +43,7 @@ export class ExpoPushService {
     body: string,
     data?: Record<string, string>,
   ): Promise<ExpoPushTicket[]> {
-    if (!Expo.isExpoPushToken(token)) {
+    if (!isExpoPushToken(token)) {
       throw new Error(`Push token ${token} is not a valid Expo push token`);
     }
 
@@ -56,7 +57,7 @@ export class ExpoPushService {
     data?: Record<string, string>,
   ): Promise<ExpoPushTicket[]> {
     const messages: ExpoPushMessage[] = tokens
-      .filter((token) => Expo.isExpoPushToken(token))
+      .filter((token) => isExpoPushToken(token))
       .map((token) => ({ to: token, title, body, data, sound: 'default' }));
 
     if (messages.length === 0) {
@@ -72,7 +73,7 @@ export class ExpoPushService {
     playStoreUrl: string = 'https://play.google.com/store/apps/details?id=edu.impulse.uz',
   ): Promise<ExpoPushTicket[]> {
     const messages: ExpoPushMessage[] = tokens
-      .filter((token) => Expo.isExpoPushToken(token))
+      .filter((token) => isExpoPushToken(token))
       .map((token) => ({
         to: token,
         title: 'App Update',
