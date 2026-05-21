@@ -297,38 +297,6 @@ export class NotificationsController {
     );
   }
 
-  @Post("push/topic")
-  @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: "Send push notification to a topic" })
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        topic: { type: "string", example: "news" },
-        title: { type: "string", example: "Notification Title" },
-        body: { type: "string", example: "Notification message body" },
-        data: {
-          type: "object",
-          additionalProperties: { type: "string" },
-          example: { key1: "value1", key2: "value2" },
-        },
-      },
-      required: ["topic", "title", "body"],
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Topic push notification sent successfully",
-  })
-  async sendTopicPush(
-    @Body("topic") topic: string,
-    @Body("title") title: string,
-    @Body("body") body: string,
-    @Body("data") data?: Record<string, string>
-  ) {
-    return this.notificationsService.notifyTopic(topic, title, body, data);
-  }
-
   @Get("tokens/user/:userId")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get notification tokens by user ID" })

@@ -13,11 +13,11 @@ import { CreateNotificationTokenDto } from "./dto/create-notification-token.dto.
 import { UpdateNotificationTokenDto } from "./dto/update-notification-token.dto.js";
 import { NotificationTokenResponseDto } from "./dto/notification-token-response.dto.js";
 import { NotificationToken } from "./entities/notification-token.entity.js";
-import { FirebaseServiceService } from "./firebase-service.service.js";
+import { ExpoPushService } from "./expo-push.service.js";
 import { Op } from "sequelize";
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly firebaseService: FirebaseServiceService) {}
+  constructor(private readonly expoPushService: ExpoPushService) {}
 
   async getAllNotifications(
     page: number = 1,
@@ -302,7 +302,7 @@ export class NotificationsService {
        });
     }
 
-    return this.firebaseService.sendNotification(
+    return this.expoPushService.sendNotification(
       deviceToken,
       title || "Hello!",
       body || "This is a test push notification 🚀",
@@ -339,30 +339,8 @@ export class NotificationsService {
       }
     }
 
-    return this.firebaseService.sendMulticastNotification(
+    return this.expoPushService.sendMulticastNotification(
       tokens,
-      title || "Hello!",
-      body || "This is a test push notification 🚀",
-      customData,
-    );
-  }
-
-  async notifyTopic(
-    topic: string,
-    title?: string,
-    body?: string,
-    data?: Record<string, string>,
-  ) {
-    const customData = data || { customData: "12345" };
-    
-    await Notifications.create({
-      title: title || "Hello!",
-      body: body || "This is a test push notification 🚀",
-      data: { ...customData, topic },
-    } as any);
-
-    return this.firebaseService.sendToTopic(
-      topic,
       title || "Hello!",
       body || "This is a test push notification 🚀",
       customData,
@@ -392,7 +370,7 @@ export class NotificationsService {
         return;
       }
 
-      return await this.firebaseService.sendAppUpdateNotification(
+      return await this.expoPushService.sendAppUpdateNotification(
         tokens,
         options?.customMessage,
         options?.playStoreUrl,

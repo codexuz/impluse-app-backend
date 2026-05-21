@@ -9,7 +9,7 @@ import { AudioLike } from "./entities/likes.js";
 import { AudioComment } from "./entities/comments.js";
 import { AudioJudge } from "./entities/judge.js";
 import { StudentProfileModule } from "../student_profiles/student-profile.module.js";
-import { FirebaseServiceService } from "../notifications/firebase-service.service.js";
+import { ExpoPushService } from "../notifications/expo-push.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { MinioModule } from "../minio/minio.module.js";
@@ -37,7 +37,7 @@ import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
       provide: "AudioService",
       useExisting: AudioService,
     },
-    FirebaseServiceService,
+    ExpoPushService,
   ],
   exports: [AudioService],
 })

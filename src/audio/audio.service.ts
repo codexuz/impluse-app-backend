@@ -21,7 +21,7 @@ import { Course } from "../courses/entities/course.entity.js";
 import { Op } from "sequelize";
 import { REWARDS, NotificationType } from "./constants/rewards.js";
 import { StudentProfileService } from "../student_profiles/student-profile.service.js";
-import { FirebaseServiceService } from "../notifications/firebase-service.service.js";
+import { ExpoPushService } from "../notifications/expo-push.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
@@ -47,7 +47,7 @@ export class AudioService {
     @InjectModel(User)
     private userModel: typeof User,
     private studentProfileService: StudentProfileService,
-    private firebaseService: FirebaseServiceService,
+    private expoPushService: ExpoPushService,
     private eventEmitter: EventEmitter2,
     private awsStorageService: AwsStorageService,
   ) {}
@@ -905,7 +905,7 @@ export class AudioService {
         const fcmTokens = tokens.map((t) => t.token);
 
         // Send push notification
-        await this.firebaseService.sendMulticastNotification(
+        await this.expoPushService.sendMulticastNotification(
           fcmTokens,
           "🎤 New Speaking Challenge!",
           message,
@@ -965,7 +965,7 @@ export class AudioService {
             break;
         }
 
-        await this.firebaseService.sendMulticastNotification(
+        await this.expoPushService.sendMulticastNotification(
           fcmTokens,
           title,
           personalizedMessage,
