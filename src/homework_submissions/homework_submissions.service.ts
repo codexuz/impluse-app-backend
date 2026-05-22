@@ -19,6 +19,8 @@ import {
   StudentProgressDto,
 } from "./dto/group-homework-progress-response.dto.js";
 import { StudentProfileService } from "../student_profiles/student-profile.service.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
+import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 
 @Injectable()
 export class HomeworkSubmissionsService {
@@ -39,6 +41,7 @@ export class HomeworkSubmissionsService {
     private groupStudentsService: GroupStudentsService,
     private openaiService: OpenaiService,
     private studentProfileService: StudentProfileService,
+    private notificationsService: NotificationsService,
   ) { }
 
   async create(
@@ -348,7 +351,49 @@ export class HomeworkSubmissionsService {
       }
     }
 
+    // Send push notification to student (non-blocking)
+    if (submission.student_id) {
+      this.sendExerciseSubmittedPush(
+        submission.student_id,
+        createHomeworkSubmissionDto.section,
+        section.score ?? 0,
+        rewards,
+      ).catch(() => { /* swallow — push failure must not affect submission response */ });
+    }
+
     return { submission, section, rewards };
+  }
+
+  private async sendExerciseSubmittedPush(
+    studentId: string,
+    sectionType: string,
+    score: number,
+    rewards: { coins: number; streak: number; bonusPoints: number; totalEarnedPoints: number } | null,
+  ): Promise<void> {
+    const tokenRecord = await NotificationToken.findOne({ where: { user_id: studentId } });
+    if (!tokenRecord) return;
+
+    const sectionLabels: Record<string, string> = {
+      reading: "Reading",
+      listening: "Listening",
+      grammar: "Grammar",
+      writing: "Writing",
+      speaking: "Speaking",
+    };
+    const label = sectionLabels[sectionType] ?? sectionType;
+    const passed = score >= 60;
+
+    let body = `${label}: ${score}% — ${passed ? "Passed ✓" : "Try again"}`;
+    if (rewards) {
+      body += `. +${rewards.totalEarnedPoints} pts, +${rewards.coins} coins`;
+    }
+
+    await this.notificationsService.notifyUser(
+      tokenRecord.token,
+      "Exercise submitted",
+      body,
+      { type: "exercise_submitted", screen: "lessons", section: sectionType, score: String(score) },
+    );
   }
 
   /**

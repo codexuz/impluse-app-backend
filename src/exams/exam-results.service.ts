@@ -71,6 +71,8 @@ export class ExamResultsService {
           "Exam Result Available",
           `Your result for "${exam.title}" is ready. ${resultStatus}${score ? " - Score: " + score : ""}`,
           {
+            screen: "exams",
+            id: exam.id,
             exam_id: exam.id,
             exam_result_id: examResult.id,
             result: examResult.result,

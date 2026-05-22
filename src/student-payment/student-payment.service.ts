@@ -23,6 +23,8 @@ import { StudentPaymentStatusDto } from "./dto/student-payment-status.dto.js";
 import { Op, fn, col, literal } from "sequelize";
 import { SmsService } from "../sms/sms.service.js";
 import { TelegramBotService } from "../telegram-bot/telegram-bot.service.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
+import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 
 @Injectable()
 export class StudentPaymentService {
@@ -40,6 +42,7 @@ export class StudentPaymentService {
     private readonly smsService: SmsService,
     @Inject(forwardRef(() => TelegramBotService))
     private readonly telegramBotService: any,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(
@@ -133,6 +136,13 @@ export class StudentPaymentService {
         )
         .catch((e) => this.logger.error("Telegram payment notification failed:", e));
 
+      // Send push notification to the student about their payment (non-blocking)
+      if (payment.status === "completed") {
+        this.sendPaymentPushNotification(payment).catch((e) =>
+          this.logger.error(`Failed to send push notification for payment ${payment.id}:`, e),
+        );
+      }
+
       return payment;
     } catch (error) {
       // Rollback the transaction on error
@@ -140,6 +150,27 @@ export class StudentPaymentService {
       this.logger.error("Error creating payment:", error);
       throw error;
     }
+  }
+
+  private async sendPaymentPushNotification(payment: StudentPayment): Promise<void> {
+    const tokenRecord = await NotificationToken.findOne({
+      where: { user_id: payment.student_id },
+    });
+    if (!tokenRecord) return;
+
+    const formatDate = (date: Date): string => {
+      const d = new Date(date);
+      return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+    };
+
+    const nextDate = formatDate(payment.next_payment_date);
+
+    await this.notificationsService.notifyUser(
+      tokenRecord.token,
+      "To'lov qabul qilindi",
+      `${Number(payment.amount).toLocaleString()} so'm to'lovingiz qabul qilindi. Keyingi to'lov: ${nextDate}`,
+      { type: "payment_received", screen: "payments", payment_id: payment.id },
+    );
   }
 
   /**
@@ -838,6 +869,97 @@ export class StudentPaymentService {
     } catch (error) {
       this.logger.error(`Error checking debitor students: ${(error as any).message}`);
       throw error;
+    }
+  }
+
+  // Runs at 09:00 on odd days (1,3,5,...) — effectively every other day
+  @Cron("0 9 1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31 * *")
+  async handleDebtorPushNotifications() {
+    this.logger.log("Running every-other-day debtor push notification job");
+
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const allPayments = await this.studentPaymentModel.findAll({
+        include: [
+          {
+            model: User,
+            as: "student",
+            attributes: { exclude: ["password_hash"] },
+            where: { is_active: true },
+          },
+        ],
+        order: [["next_payment_date", "DESC"]],
+      });
+
+      // Get each student's latest payment
+      const studentLatestPayments = new Map<string, StudentPayment>();
+      for (const payment of allPayments) {
+        if (!studentLatestPayments.has(payment.student_id)) {
+          studentLatestPayments.set(payment.student_id, payment);
+        }
+      }
+
+      // Collect student IDs that are overdue
+      const debtorStudentIds: string[] = [];
+      const debtorPaymentMap = new Map<string, { payment: StudentPayment; daysOverdue: number }>();
+
+      for (const [studentId, payment] of studentLatestPayments) {
+        const nextDate = new Date(payment.next_payment_date);
+        nextDate.setHours(0, 0, 0, 0);
+        if (nextDate < today) {
+          const daysOverdue = Math.floor(
+            (today.getTime() - nextDate.getTime()) / (1000 * 60 * 60 * 24),
+          );
+          debtorStudentIds.push(studentId);
+          debtorPaymentMap.set(studentId, { payment, daysOverdue });
+        }
+      }
+
+      if (debtorStudentIds.length === 0) {
+        this.logger.log("No debtor students found for push notifications");
+        return;
+      }
+
+      // Fetch push tokens for all debtor students in one query
+      const tokenRecords = await NotificationToken.findAll({
+        where: { user_id: debtorStudentIds },
+      });
+
+      const tokenByStudent = new Map<string, string>();
+      for (const record of tokenRecords) {
+        if (record.user_id) tokenByStudent.set(record.user_id, record.token);
+      }
+
+      let sent = 0;
+      for (const studentId of debtorStudentIds) {
+        const token = tokenByStudent.get(studentId);
+        if (!token) continue;
+
+        const { payment, daysOverdue } = debtorPaymentMap.get(studentId);
+        const studentInfo = payment.get({ plain: true }) as any;
+        const student = studentInfo.student;
+        const studentName = student
+          ? `${student.first_name || ""} ${student.last_name || ""}`.trim()
+          : "";
+
+        await this.notificationsService.notifyUser(
+          token,
+          "To'lov muddati o'tib ketdi",
+          `${studentName ? studentName + ", s" : "S"}izning ${Number(payment.amount).toLocaleString()} so'mlik to'lovingiz ${daysOverdue} kun kechikdi. Iltimos, to'lovni amalga oshiring.`,
+          { type: "debt_reminder", screen: "payments", days_overdue: String(daysOverdue) },
+        );
+        sent++;
+      }
+
+      this.logger.log(
+        `Debtor push notifications sent: ${sent} of ${debtorStudentIds.length} debtor students`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error in debtor push notification job: ${(error as any).message}`,
+      );
     }
   }
 

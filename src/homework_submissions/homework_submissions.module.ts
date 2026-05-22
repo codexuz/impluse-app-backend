@@ -12,6 +12,7 @@ import { GroupHomework } from "../group_homeworks/entities/group_homework.entity
 import { Lesson } from "../lesson/entities/lesson.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { StudentProfileModule } from "../student_profiles/student-profile.module.js";
+import { NotificationsModule } from "../notifications/notifications.module.js";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { StudentProfileModule } from "../student_profiles/student-profile.module
     LessonProgressModule,
     GroupStudentsModule,
     StudentProfileModule,
+    NotificationsModule,
   ],
   controllers: [HomeworkSubmissionsController],
   providers: [HomeworkSubmissionsService, OpenaiService],

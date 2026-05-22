@@ -8,12 +8,14 @@ import { StudentTransaction } from '../student-transaction/entities/student-tran
 import { User } from '../users/entities/user.entity.js';
 import { SmsModule } from '../sms/sms.module.js';
 import { TelegramBotModule } from '../telegram-bot/telegram-bot.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([StudentPayment, StudentWallet, StudentTransaction, User]),
     SmsModule,
     forwardRef(() => TelegramBotModule),
+    NotificationsModule,
   ],
   controllers: [StudentPaymentController],
   providers: [StudentPaymentService],
