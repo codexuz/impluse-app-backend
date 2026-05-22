@@ -87,9 +87,6 @@ export class OpenAiRealtimeService {
             audio: {
               input: {
                 format: { type: "audio/pcm", rate: 24000 },
-                // Force English transcription: this is an English-learning
-                // app, so pinning the language improves accuracy/latency over
-                // auto-detection and keeps transcripts out of other languages.
                 transcription: { model: "gpt-4o-mini-transcribe", language: "en" },
                 turn_detection: {
                   type: "server_vad",
