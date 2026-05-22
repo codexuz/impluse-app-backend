@@ -87,7 +87,10 @@ export class OpenAiRealtimeService {
             audio: {
               input: {
                 format: { type: "audio/pcm", rate: 24000 },
-                transcription: { model: "gpt-4o-mini-transcribe" },
+                // Force English transcription: this is an English-learning
+                // app, so pinning the language improves accuracy/latency over
+                // auto-detection and keeps transcripts out of other languages.
+                transcription: { model: "gpt-4o-mini-transcribe", language: "en" },
                 turn_detection: {
                   type: "server_vad",
                   threshold: 0.5,
@@ -166,6 +169,16 @@ export class OpenAiRealtimeService {
       type: "input_audio_buffer.append",
       audio: base64Audio,
     });
+  }
+
+  /**
+   * Discard any uncommitted audio in the input buffer. Used when the user
+   * mutes mid-utterance so a half-spoken sentence isn't sent to the model.
+   */
+  clearInput(callId: string): void {
+    const session = this.sessions.get(callId);
+    if (!session || session.closed) return;
+    session.ws.send({ type: "input_audio_buffer.clear" });
   }
 
   /**

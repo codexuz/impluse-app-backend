@@ -19,6 +19,12 @@ export interface AiCommitDto {
   call_id: string;
 }
 
+export interface MuteAiCallDto {
+  call_id: string;
+  // true: stop forwarding the user's mic audio to the AI; false: resume
+  muted: boolean;
+}
+
 export interface EndAiCallDto {
   call_id: string;
 }

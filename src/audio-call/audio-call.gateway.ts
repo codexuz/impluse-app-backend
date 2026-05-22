@@ -26,6 +26,7 @@ import {
   AiAudioChunkDto,
   AiCommitDto,
   EndAiCallDto,
+  MuteAiCallDto,
   StartAiCallDto,
 } from "./dto/ai-call.dto.js";
 
@@ -47,6 +48,8 @@ interface ActiveAiCall {
   socketId: string;
   // Auto-end timer that enforces the 20-minute limit.
   limitTimer: NodeJS.Timeout;
+  // When true the user's mic is muted: incoming audio chunks are dropped.
+  muted: boolean;
 }
 
 interface ActiveP2PCall {
@@ -351,6 +354,7 @@ export class AudioCallGateway
       userId: client.user.id,
       socketId: client.id,
       limitTimer,
+      muted: false,
     });
 
     try {
@@ -424,8 +428,22 @@ export class AudioCallGateway
   ) {
     if (!client.user) return;
     const ai = this.aiCalls.get(data.call_id);
-    if (!ai || ai.userId !== client.user.id) return;
+    if (!ai || ai.userId !== client.user.id || ai.muted) return;
     this.realtime.appendAudio(data.call_id, data.audio);
+  }
+
+  @SubscribeMessage("ai-call:mute")
+  handleAiMute(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: MuteAiCallDto,
+  ) {
+    if (!client.user) return;
+    const ai = this.aiCalls.get(data.call_id);
+    if (!ai || ai.userId !== client.user.id) return;
+    ai.muted = data.muted;
+    // Drop any partially-buffered mic audio so a half-spoken utterance
+    // isn't sent to the model when the user mutes mid-sentence.
+    if (data.muted) this.realtime.clearInput(data.call_id);
   }
 
   @SubscribeMessage("ai-call:commit")
