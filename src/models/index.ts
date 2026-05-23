@@ -81,6 +81,7 @@ import { AudioComment } from "../audio/entities/comments.js";
 import { AudioLike } from "../audio/entities/likes.js";
 import { AudioJudge } from "../audio/entities/judge.js";
 import { AudioTask } from "../audio/entities/audio-task.entity.js";
+import { AIFeedback } from "../audio/entities/ai-feedback.entity.js";
 // Export the models array for Sequelize registration
 import { Expense } from "../expenses/entities/expense.entity.js";
 import { ExpensesCategory } from "../expenses/entities/expenses-category.entity.js";
@@ -209,6 +210,7 @@ export const Models = [
   AudioLike,
   AudioJudge,
   AudioTask,
+  AIFeedback,
   Branch,
   CompensateLesson,
   CompensateTeacherWallet,
@@ -1300,6 +1302,9 @@ export function initializeAssociations() {
   });
 
   // Audio associations
+  Audio.hasOne(AIFeedback, { foreignKey: "audioId", as: "aiFeedback" });
+  AIFeedback.belongsTo(Audio, { foreignKey: "audioId", as: "audio" });
+
   User.hasMany(Audio, {
     foreignKey: "studentId",
     as: "audios",
