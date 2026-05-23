@@ -105,5 +105,5 @@ export class Audio extends Model<Audio> {
   status: "draft" | "published" | "archived" | "processing" | "completed";
 
   @HasOne(() => AIFeedback)
-  aiFeedback: AIFeedback;
+  aiFeedback: any;
 }

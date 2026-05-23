@@ -23,7 +23,7 @@ export class AIFeedback extends Model<AIFeedback> {
   audioId: number;
 
   @BelongsTo(() => Audio)
-  audio: Audio;
+  audio: any;
 
   @AllowNull(false)
   @Column({
