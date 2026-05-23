@@ -19,6 +19,7 @@ import { AudioTask } from "./entities/audio-task.entity.js";
 import { AudioLike } from "./entities/likes.js";
 import { AudioComment } from "./entities/comments.js";
 import { AudioJudge } from "./entities/judge.js";
+import { AIFeedback } from "./entities/ai-feedback.entity.js";
 import { Course } from "../courses/entities/course.entity.js";
 import { Op } from "sequelize";
 import { REWARDS, NotificationType } from "./constants/rewards.js";
@@ -44,6 +45,8 @@ export class AudioService {
     private audioCommentModel: typeof AudioComment,
     @InjectModel(AudioJudge)
     private audioJudgeModel: typeof AudioJudge,
+    @InjectModel(AIFeedback)
+    private aiFeedbackModel: typeof AIFeedback,
     @InjectModel(NotificationToken)
     private notificationTokenModel: typeof NotificationToken,
     @InjectModel(User)
@@ -776,6 +779,27 @@ export class AudioService {
       ],
       order: [["createdAt", "DESC"]],
     });
+  }
+
+  async getAIFeedback(audioId: number) {
+    if (
+      !audioId ||
+      isNaN(audioId) ||
+      !Number.isInteger(audioId) ||
+      audioId <= 0
+    ) {
+      throw new BadRequestException("Invalid audio ID provided");
+    }
+
+    const aiFeedback = await this.aiFeedbackModel.findOne({
+      where: { audioId },
+    });
+
+    if (!aiFeedback) {
+      throw new NotFoundException("AI Feedback not found for this audio");
+    }
+
+    return aiFeedback;
   }
 
   // ========== HELPER METHODS ==========

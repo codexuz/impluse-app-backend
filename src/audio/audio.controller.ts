@@ -696,4 +696,18 @@ export class AudioController {
     }
     return this.audioService.getAudioJudges(audioId);
   }
+
+  @Get(":id/ai-feedback")
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: "Get AI feedback for an audio" })
+  @ApiParam({ name: "id", description: "Audio ID" })
+  @ApiResponse({ status: 200, description: "Return AI feedback" })
+  @ApiResponse({ status: 404, description: "AI Feedback not found" })
+  getAIFeedback(@Param("id") id: string) {
+    const audioId = parseInt(id);
+    if (isNaN(audioId) || audioId <= 0) {
+      throw new BadRequestException("Invalid audio ID");
+    }
+    return this.audioService.getAIFeedback(audioId);
+  }
 }
