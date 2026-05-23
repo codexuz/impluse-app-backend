@@ -6,7 +6,6 @@ import {
   AllowNull,
   Default,
   ForeignKey,
-  HasOne,
 } from "sequelize-typescript";
 import { AudioTask } from "./audio-task.entity.js";
 import { User } from "../../users/entities/user.entity.js";
@@ -104,6 +103,5 @@ export class Audio extends Model<Audio> {
   })
   status: "draft" | "published" | "archived" | "processing" | "completed";
 
-  @HasOne(() => AIFeedback)
   aiFeedback: any;
 }

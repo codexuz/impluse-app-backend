@@ -6,7 +6,6 @@ import {
   AllowNull,
   Default,
   ForeignKey,
-  BelongsTo,
 } from "sequelize-typescript";
 import { Audio } from "./audio.entity.js";
 
@@ -22,7 +21,6 @@ export class AIFeedback extends Model<AIFeedback> {
   })
   audioId: number;
 
-  @BelongsTo(() => Audio)
   audio: any;
 
   @AllowNull(false)
