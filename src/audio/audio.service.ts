@@ -4,7 +4,9 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
-import { EventEmitter2 } from "@nestjs/event-emitter";
+import { EventEmitter2, OnEvent } from "@nestjs/event-emitter";
+import { InjectQueue } from "@nestjs/bull";
+import { Queue } from "bull";
 import {
   CreateAudioDto,
   CreateTaskDto,
@@ -50,6 +52,7 @@ export class AudioService {
     private expoPushService: ExpoPushService,
     private eventEmitter: EventEmitter2,
     private awsStorageService: AwsStorageService,
+    @InjectQueue('ai-feedback') private aiFeedbackQueue: Queue,
   ) {}
 
   // ========== TASK MANAGEMENT (Admin) ==========
@@ -189,6 +192,20 @@ export class AudioService {
 
       // Send notifications after audio upload is complete
       await this.notifyNewAudioUpload(studentId, audio.id);
+
+      // Dispatch AI feedback job
+      let questionText = "";
+      if (createAudioDto.taskId) {
+        const task = await this.getTaskById(createAudioDto.taskId);
+        questionText = task.title + (task.instructions ? ` - ${task.instructions}` : "");
+      }
+
+      await this.aiFeedbackQueue.add('analyze', {
+        audioId: audio.id,
+        audioUrl: audioURL,
+        questionText,
+        studentId,
+      });
 
       return {
         audioId: audio.id,
@@ -979,6 +996,26 @@ export class AudioService {
     } catch (error) {
       console.error("Error sending notification:", error);
       // Don't throw - notifications shouldn't break the main flow
+    }
+  }
+
+  @OnEvent('ai-feedback.completed')
+  async handleAiFeedbackCompleted(payload: { audioId: number; studentId: string; aiScore: number }) {
+    try {
+      // 1. Reward user if score > 80
+      if (payload.aiScore > 80) {
+        await this.rewardUser(payload.studentId, 20, 0); // Give 20 coins, 0 points
+      }
+
+      // 2. Send push notification
+      await this.sendNotification({
+        userId: payload.studentId,
+        audioId: payload.audioId,
+        type: 'AI_FEEDBACK' as any,
+        message: `Your AI Feedback is ready! You scored ${payload.aiScore}%.`,
+      });
+    } catch (error) {
+      console.error("Error in AI Feedback completed handler:", error);
     }
   }
 

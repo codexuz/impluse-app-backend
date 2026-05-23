@@ -5,6 +5,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { ConfigModule } from "@nestjs/config";
 import { SequelizeModule } from "@nestjs/sequelize";
 import { EventEmitterModule } from "@nestjs/event-emitter";
+import { BullModule } from "@nestjs/bull";
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { UsersModule } from "./users/users.module.js";
@@ -115,6 +116,16 @@ import { StreamVideoModule } from './stream-video/stream-video.module.js';
     ]),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
+    BullModule.forRoot(
+      process.env.REDIS_URL
+        ? { url: process.env.REDIS_URL }
+        : {
+            redis: {
+              host: process.env.REDIS_HOST || 'localhost',
+              port: parseInt(process.env.REDIS_PORT || '6379', 10),
+            },
+          }
+    ),
     SequelizeModule.forRoot({
       dialect: "mysql",
       uri: process.env.DATABASE_URL,
