@@ -9,6 +9,8 @@ import { CreateCompensateTeacherWalletDto } from "./dto/create-compensate-teache
 import { CompensateLesson } from "./entities/compensate-lesson.entity.js";
 import { CompensateTeacherWallet } from "./entities/compensate-teacher-wallet.entity.js";
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
+import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
+import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { Attendance } from "../attendance/entities/attendance.entity.js";
 import { InjectModel } from "@nestjs/sequelize";
@@ -21,10 +23,13 @@ export class CompensateLessonsService {
     private compensateLessonModel: typeof CompensateLesson,
     @InjectModel(CompensateTeacherWallet)
     private compensateTeacherWalletModel: typeof CompensateTeacherWallet,
+    @InjectModel(TeacherTransaction)
+    private teacherTransactionModel: typeof TeacherTransaction,
+    @InjectModel(TeacherWallet)
+    private teacherWalletModel: typeof TeacherWallet,
   ) {}
 
   async create(createCompensateLessonDto: CreateCompensateLessonDto) {
-    // Check if compensate lesson already exists for this attendance
     const existingCompensateLesson = await this.compensateLessonModel.findOne({
       where: {
         attendance_id: createCompensateLessonDto.attendance_id,
@@ -40,6 +45,42 @@ export class CompensateLessonsService {
     const compensateLesson = await this.compensateLessonModel.create(
       createCompensateLessonDto as any,
     );
+
+    try {
+      const teacherProfile = await TeacherProfile.findOne({
+        where: { user_id: createCompensateLessonDto.teacher_id },
+      });
+
+      if (teacherProfile && teacherProfile.payment_value) {
+        const amount = teacherProfile.payment_value;
+
+        await this.teacherTransactionModel.create({
+          teacher_id: createCompensateLessonDto.teacher_id,
+          student_id: createCompensateLessonDto.student_id,
+          amount,
+          type: 'hamyon',
+          description: `Compensate lesson created (attendance: ${createCompensateLessonDto.attendance_id})`,
+        } as any);
+
+        const wallet = await this.teacherWalletModel.findOne({
+          where: { teacher_id: createCompensateLessonDto.teacher_id },
+        });
+
+        if (wallet) {
+          await wallet.update({ amount: wallet.amount + amount });
+        } else {
+          await this.teacherWalletModel.create({
+            teacher_id: createCompensateLessonDto.teacher_id,
+            amount,
+          } as any);
+        }
+      }
+    } catch (error: any) {
+      console.error(
+        `Error creating hamyon transaction for compensate lesson:`,
+        error.message,
+      );
+    }
 
     return compensateLesson;
   }
@@ -190,7 +231,7 @@ export class CompensateLessonsService {
                 `Compensate wallet entry created for teacher ${compensateLesson.teacher_id}, amount ${teacherProfile.payment_value}`,
               );
             }
-          } catch (error) {
+          } catch (error:any) {
             console.error(
               `Error creating wallet entry for compensate lesson ${id}:`,
               error.message,

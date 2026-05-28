@@ -3,12 +3,15 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Logger,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { Cron } from "@nestjs/schedule";
 import { CreateTeacherWalletDto } from "./dto/create-teacher-wallet.dto.js";
 import { UpdateTeacherWalletDto } from "./dto/update-teacher-wallet.dto.js";
 import { UpdateWalletAmountDto } from "./dto/update-wallet-amount.dto.js";
 import { TeacherWallet } from "./entities/teacher-wallet.entity.js";
+import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
@@ -23,9 +26,13 @@ import {
 
 @Injectable()
 export class TeacherWalletService {
+  private readonly logger = new Logger(TeacherWalletService.name);
+
   constructor(
     @InjectModel(TeacherWallet)
     private teacherWalletModel: typeof TeacherWallet,
+    @InjectModel(TeacherTransaction)
+    private teacherTransactionModel: typeof TeacherTransaction,
     @InjectModel(User)
     private userModel: typeof User,
     @InjectModel(TeacherProfile)
@@ -122,6 +129,49 @@ export class TeacherWalletService {
     const wallet = await this.findOne(id);
 
     await wallet.destroy(); // Soft delete since paranoid is enabled
+  }
+
+  @Cron('0 15 * * *', { timeZone: 'Asia/Tashkent' })
+  async processMonthlyTeacherSalaries() {
+    const today = new Date().getDate();
+    this.logger.log(`Running monthly salary cron for payment_day=${today}`);
+
+    const profiles = await this.teacherProfileModel.findAll({
+      where: { payment_day: today, payment_type: 'percentage' },
+    });
+
+    if (profiles.length === 0) {
+      this.logger.log('No teachers scheduled for payment today');
+      return;
+    }
+
+    for (const profile of profiles) {
+      try {
+        const wallet = await this.teacherWalletModel.findOne({
+          where: { teacher_id: profile.user_id },
+        });
+
+        if (!wallet || wallet.amount <= 0) {
+          this.logger.warn(`Teacher ${profile.user_id} has no balance to pay`);
+          continue;
+        }
+
+        const amount = wallet.amount;
+
+        await this.teacherTransactionModel.create({
+          teacher_id: profile.user_id,
+          amount,
+          type: 'oylik',
+          description: `Oylik maosh to'landi (${new Date().toLocaleDateString('uz-UZ')})`,
+        } as any);
+
+        await wallet.update({ amount: 0 });
+
+        this.logger.log(`Salary paid for teacher ${profile.user_id}, amount: ${amount}`);
+      } catch (error: any) {
+        this.logger.error(`Failed to process salary for teacher ${profile.user_id}: ${error.message}`);
+      }
+    }
   }
 
   async getTeachersWithStats(

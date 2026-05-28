@@ -8,6 +8,7 @@ import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.enti
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { CompensateTeacherWallet } from "../compensate-lessons/entities/compensate-teacher-wallet.entity.js";
+import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CompensateTeacherWallet } from "../compensate-lessons/entities/compensa
       Group,
       GroupStudent,
       CompensateTeacherWallet,
+      TeacherTransaction,
     ]),
   ],
   controllers: [TeacherWalletController],

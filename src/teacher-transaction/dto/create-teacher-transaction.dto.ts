@@ -6,7 +6,8 @@ export enum TeacherTransactionType {
   OYLIK = 'oylik',
   BONUS = 'bonus',
   AVANS = 'avans',
-  JARIMA = 'jarima'
+  JARIMA = 'jarima',
+  HAMYON = 'hamyon',
 }
 
 export class CreateTeacherTransactionDto {
