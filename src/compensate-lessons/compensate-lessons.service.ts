@@ -46,42 +46,6 @@ export class CompensateLessonsService {
       createCompensateLessonDto as any,
     );
 
-    try {
-      const teacherProfile = await TeacherProfile.findOne({
-        where: { user_id: createCompensateLessonDto.teacher_id },
-      });
-
-      if (teacherProfile && teacherProfile.payment_value) {
-        const amount = teacherProfile.payment_value;
-
-        await this.teacherTransactionModel.create({
-          teacher_id: createCompensateLessonDto.teacher_id,
-          student_id: createCompensateLessonDto.student_id,
-          amount,
-          type: 'hamyon',
-          description: `Compensate lesson created (attendance: ${createCompensateLessonDto.attendance_id})`,
-        } as any);
-
-        const wallet = await this.teacherWalletModel.findOne({
-          where: { teacher_id: createCompensateLessonDto.teacher_id },
-        });
-
-        if (wallet) {
-          await wallet.update({ amount: wallet.amount + amount });
-        } else {
-          await this.teacherWalletModel.create({
-            teacher_id: createCompensateLessonDto.teacher_id,
-            amount,
-          } as any);
-        }
-      }
-    } catch (error: any) {
-      console.error(
-        `Error creating hamyon transaction for compensate lesson:`,
-        error.message,
-      );
-    }
-
     return compensateLesson;
   }
 
@@ -220,15 +184,39 @@ export class CompensateLessonsService {
             });
 
             if (teacherProfile && teacherProfile.payment_value) {
+              const amount = teacherProfile.payment_value;
+
               // Create wallet entry for the teacher
               await this.compensateTeacherWalletModel.create({
                 teacher_id: compensateLesson.teacher_id,
                 compensate_lesson_id: compensateLesson.id,
-                amount: teacherProfile.payment_value,
+                amount,
               } as any);
 
+              // Create teacher transaction and top up teacher wallet
+              await this.teacherTransactionModel.create({
+                teacher_id: compensateLesson.teacher_id,
+                student_id: compensateLesson.student_id,
+                amount,
+                type: 'hamyon',
+                description: `Compensate lesson completed (attendance: ${compensateLesson.attendance_id})`,
+              } as any);
+
+              const wallet = await this.teacherWalletModel.findOne({
+                where: { teacher_id: compensateLesson.teacher_id },
+              });
+
+              if (wallet) {
+                await wallet.update({ amount: wallet.amount + amount });
+              } else {
+                await this.teacherWalletModel.create({
+                  teacher_id: compensateLesson.teacher_id,
+                  amount,
+                } as any);
+              }
+
               console.log(
-                `Compensate wallet entry created for teacher ${compensateLesson.teacher_id}, amount ${teacherProfile.payment_value}`,
+                `Compensate wallet entry created for teacher ${compensateLesson.teacher_id}, amount ${amount}`,
               );
             }
           } catch (error:any) {
