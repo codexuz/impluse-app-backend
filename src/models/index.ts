@@ -131,6 +131,7 @@ import { Grading } from "../gradings/entities/grading.entity.js";
 import { DictionaryHistory } from "../dictionary/entities/dictionary-history.entity.js";
 import { TelegramChatMessage } from "../telegram-chat/entities/telegram-chat-message.entity.js";
 import { StaffAttendance } from "../staff-attendance/entities/staff-attendance.entity.js";
+import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
 
 export const Models = [
   User,
@@ -254,6 +255,7 @@ export const Models = [
   DictionaryHistory,
   TelegramChatMessage,
   StaffAttendance,
+  StaffProfile,
 ];
 
 // Define associations after all models are loaded
@@ -553,6 +555,10 @@ export function initializeAssociations() {
   Group.hasMany(StaffAttendance, { foreignKey: "group_id", as: "staff_attendances" });
   StaffAttendance.belongsTo(User, { foreignKey: "teacher_id", as: "teacher" });
   StaffAttendance.belongsTo(Group, { foreignKey: "group_id", as: "group" });
+
+  // Staff Profile Associations
+  User.hasOne(StaffProfile, { foreignKey: "staff_id", as: "staff_profile" });
+  StaffProfile.belongsTo(User, { foreignKey: "staff_id", as: "staff" });
 
   // CompensateLesson Associations
   CompensateLesson.belongsTo(User, { foreignKey: "teacher_id", as: "teacher" });

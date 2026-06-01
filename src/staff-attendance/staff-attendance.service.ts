@@ -9,6 +9,7 @@ import { Group } from "../groups/entities/group.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
 import { ScanStaffAttendanceDto } from "./dto/scan-staff-attendance.dto.js";
 
 @Injectable()
@@ -43,6 +44,11 @@ export class StaffAttendanceService {
       (role: any) => role.name === "admin",
     );
 
+    // Personal expected check-in/out times, if a staff profile is configured.
+    const staffProfile = await StaffProfile.findOne({
+      where: { staff_id: teacherId },
+    });
+
     const now = this.getUzTime();
 
     // Determine type if not provided (alternate IN -> OUT)
@@ -59,11 +65,14 @@ export class StaffAttendanceService {
       attendanceType = lastAttendance?.type === "in" ? "out" : "in";
     }
 
-    // Admins check in against a fixed 09:00 Tashkent (UTC+5) start time.
+    // Admins check in against their staff profile in_time, falling back to a
+    // fixed 09:00 Tashkent (UTC+5) start time.
     if (isAdmin) {
       return this.recordAttendance(teacherId, {
         group: null,
-        lessonStart: StaffAttendanceService.ADMIN_LESSON_START,
+        lessonStart:
+          staffProfile?.in_time || StaffAttendanceService.ADMIN_LESSON_START,
+        outTime: staffProfile?.out_time || null,
         type: attendanceType,
         isAdmin: true,
       });
@@ -106,11 +115,16 @@ export class StaffAttendanceService {
       }
     }
 
-    // If the teacher has a group today, take attendance against it.
-    // Otherwise let them check in early (no group, no fine).
+    // Check-outs are not tied to a specific group/lesson, so the group is
+    // empty. Check-ins use the staff profile in_time, otherwise the closest
+    // group's lesson_start. If neither exists, check-in is "early".
+    const isCheckOut = attendanceType === "out";
     return this.recordAttendance(teacherId, {
-      group: bestGroup,
-      lessonStart: bestGroup ? bestGroup.lesson_start : null,
+      group: isCheckOut ? null : bestGroup,
+      lessonStart: isCheckOut
+        ? null
+        : staffProfile?.in_time || (bestGroup ? bestGroup.lesson_start : null),
+      outTime: staffProfile?.out_time || null,
       type: attendanceType,
     });
   }
@@ -153,9 +167,15 @@ export class StaffAttendanceService {
       throw new ConflictException("Guruhning dars boshlanish vaqti belgilanmagan");
     }
 
+    // Prefer the staff profile times over the group's lesson_start, if set.
+    const staffProfile = await StaffProfile.findOne({
+      where: { staff_id: teacherId },
+    });
+
     return this.recordAttendance(teacherId, {
       group,
-      lessonStart: group.lesson_start,
+      lessonStart: staffProfile?.in_time || group.lesson_start,
+      outTime: staffProfile?.out_time || null,
       type: dto.type,
       description: dto.description,
     });
@@ -174,12 +194,13 @@ export class StaffAttendanceService {
     options: {
       group: Group | null;
       lessonStart: string | null;
+      outTime?: string | null;
       type?: "in" | "out";
       description?: string;
       isAdmin?: boolean;
     },
   ) {
-    const { group, lessonStart, description, isAdmin } = options;
+    const { group, lessonStart, outTime, description, isAdmin } = options;
 
     // Get today's date in YYYY-MM-DD using Uzbekistan time
     const now = this.getUzTime();
@@ -252,8 +273,16 @@ export class StaffAttendanceService {
     } else if (requestedType === "in") {
       // No reference time (e.g. teacher without a group) -> early, no fine
       status = "early";
+    } else if (requestedType === "out" && outTime) {
+      // Check-out against the expected out_time. Leaving before it is "early",
+      // otherwise "on_time". No fine is applied for check-outs.
+      const [outHour, outMin] = outTime.split(":").map(Number);
+      const outTimeInMinutes = outHour * 60 + outMin;
+      const currentTimeInMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+
+      status = currentTimeInMinutes < outTimeInMinutes ? "early" : "on_time";
     }
-    // "out" type stays on_time with no fine
+    // "out" type never incurs a fine
 
     const arrivalPrefix = group ? `${group.name} guruhiga` : "Ishga";
     const departurePrefix = group ? `${group.name} guruhidan` : "Ishdan";
@@ -265,7 +294,9 @@ export class StaffAttendanceService {
           : status === "early"
             ? `${arrivalPrefix} vaqtli keldi`
             : `${arrivalPrefix} o'z vaqtida keldi`
-        : `${departurePrefix} chiqib ketdi`;
+        : status === "early"
+          ? `${departurePrefix} erta chiqib ketdi`
+          : `${departurePrefix} chiqib ketdi`;
 
     // Create staff attendance record
     const attendance = await StaffAttendance.create({
