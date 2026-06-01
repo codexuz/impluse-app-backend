@@ -23,6 +23,7 @@ import {
 import { UsersService } from "./users.service.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
+import { CreateSupportTeacherDto } from "./dto/create-support-teacher.dto.js";
 import { CreateAdminDto } from "./dto/create-admin.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { UpdatePasswordDto } from "./dto/update-password.dto.js";
@@ -60,6 +61,40 @@ export class UsersController {
   @ApiResponse({ status: 409, description: "User already exists" })
   createAdmin(@Body() createAdminDto: CreateAdminDto) {
     return this.usersService.createAdmin(createAdminDto);
+  }
+
+  @Post("support-teachers")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Create a new support teacher" })
+  @ApiResponse({
+    status: 201,
+    description: "Support teacher created successfully",
+  })
+  @ApiResponse({ status: 400, description: "Bad request" })
+  @ApiResponse({ status: 409, description: "User already exists" })
+  createSupportTeacher(@Body() createSupportTeacherDto: CreateSupportTeacherDto) {
+    return this.usersService.createSupportTeacher(createSupportTeacherDto);
+  }
+
+  @Get("staff")
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "Get all staff (admins and support teachers)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "List of staff users with the admin or support_teacher role",
+  })
+  getAllStaff(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+    @Query("query") query?: string,
+  ) {
+    return this.usersService.getAllStaff(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      query,
+    );
   }
 
   @Get("teachers")

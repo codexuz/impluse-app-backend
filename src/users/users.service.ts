@@ -14,6 +14,7 @@ import { ArchivedStudent } from "./entities/archived-student.entity.js";
 import { CreateArchivedStudentDto } from "./dto/create-archived-student.dto.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
+import { CreateSupportTeacherDto } from "./dto/create-support-teacher.dto.js";
 import { CreateAdminDto } from "./dto/create-admin.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { CreateRoleDto } from "./dto/create-role.dto.js";
@@ -120,6 +121,39 @@ export class UsersService {
     });
     if (adminRole) {
       await user.$add("roles", adminRole);
+    }
+
+    // Return user with profile included
+    return this.findOne(user.user_id);
+  }
+
+  async createSupportTeacher(
+    createSupportTeacherDto: CreateSupportTeacherDto,
+  ): Promise<User> {
+    // Check if user already exists
+    await this.checkExistingUser(
+      createSupportTeacherDto.username,
+      createSupportTeacherDto.phone,
+    );
+
+    // Hash password
+    const hashedPassword = await this.hashPassword(
+      createSupportTeacherDto.password,
+    );
+
+    // Create user
+    const user = await this.userModel.create({
+      ...createSupportTeacherDto,
+      password_hash: hashedPassword,
+      is_active: true,
+    });
+
+    // Assign support_teacher role
+    const supportTeacherRole = await this.roleModel.findOne({
+      where: { name: "support_teacher" },
+    });
+    if (supportTeacherRole) {
+      await user.$add("roles", supportTeacherRole);
     }
 
     // Return user with profile included
@@ -455,6 +489,63 @@ export class UsersService {
           model: Role,
           as: "roles",
           where: { name: "admin" },
+          through: { attributes: [] },
+        },
+      ],
+      limit,
+      offset,
+      distinct: true,
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  async getAllStaff(
+    page: number = 1,
+    limit: number = 10,
+    query?: string,
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    const whereClause: any = {
+      is_active: true,
+    };
+
+    // Add search query if provided
+    if (query) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.like]: `%${query}%` } },
+        { last_name: { [Op.like]: `%${query}%` } },
+        { username: { [Op.like]: `%${query}%` } },
+        { phone: { [Op.like]: `%${query}%` } },
+      ];
+    }
+
+    // Staff = users that have the admin or support_teacher role.
+    // A user may carry 2-3 roles; this filter includes them as long as one of
+    // their roles is admin or support_teacher.
+    const { count, rows } = await this.userModel.findAndCountAll({
+      where: whereClause,
+      attributes: {
+        exclude: ["password_hash"],
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          where: { name: { [Op.in]: ["admin", "support_teacher"] } },
+          required: true,
           through: { attributes: [] },
         },
       ],
