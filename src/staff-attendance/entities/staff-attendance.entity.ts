@@ -31,9 +31,9 @@ export class StaffAttendance extends Model {
 
   @Column({
     type: DataType.UUID,
-    allowNull: false,
+    allowNull: true, // null for admins / teachers without a group on check-in
   })
-  group_id: string;
+  group_id: string | null;
 
   group: Group;
 
