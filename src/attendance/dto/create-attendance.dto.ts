@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUUID, IsDateString, IsEnum, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsDateString, IsEnum, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum AttendanceStatus {
@@ -61,4 +61,15 @@ export class CreateAttendanceDto {
   @IsDateString()
   @IsNotEmpty()
   date: string;
+
+  @ApiProperty({
+    description:
+      'Whether this attendance should generate teacher payment. When true (default), the teacher wallet, transaction and compensation lessons are processed. When false, attendance is recorded without any payment.',
+    example: true,
+    required: false,
+    default: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isTeacherPayable?: boolean;
 }

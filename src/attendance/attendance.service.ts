@@ -33,6 +33,7 @@ export class AttendanceService {
     attendanceId: string,
     markedBy: string,
     oldStatus?: string,
+    isTeacherPayable: boolean = true,
   ) {
     try {
       // Create attendance log
@@ -46,6 +47,15 @@ export class AttendanceService {
           ? AttendanceAction.STATUS_CHANGED
           : AttendanceAction.STATUS_CREATED,
       });
+
+      // If this attendance is not payable, only record the log/attendance
+      // and skip all payment processing (wallet, transaction, compensation).
+      if (!isTeacherPayable) {
+        console.log(
+          `Attendance ${attendanceId} marked as non-payable - skipping teacher payment processing`,
+        );
+        return;
+      }
 
       // Get teacher profile with payment information
       const teacherProfile = await TeacherProfile.findOne({
@@ -171,6 +181,8 @@ export class AttendanceService {
       createAttendanceDto.date,
       attendance.id,
       createAttendanceDto.teacher_id,
+      undefined,
+      createAttendanceDto.isTeacherPayable ?? true,
     );
 
     // Send Telegram notification to parent (non-blocking)
@@ -225,6 +237,8 @@ export class AttendanceService {
           dto.date,
           attendance.id,
           dto.teacher_id,
+          undefined,
+          dto.isTeacherPayable ?? true,
         );
 
         // Send Telegram notification to parent (non-blocking)
@@ -386,6 +400,7 @@ export class AttendanceService {
   async update(id: string, updateAttendanceDto: UpdateAttendanceDto) {
     const attendance = await this.findOne(id);
     const previousStatus = attendance.status;
+    const isTeacherPayable = updateAttendanceDto.isTeacherPayable ?? true;
 
     // If updating student, group, or date, check for conflicts
     if (
@@ -413,6 +428,7 @@ export class AttendanceService {
 
     // Handle status change to absent - deduct wallet and delete transaction
     if (
+      isTeacherPayable &&
       updateAttendanceDto.status === "absent" &&
       previousStatus === "present"
     ) {
@@ -510,6 +526,7 @@ export class AttendanceService {
         attendance.id,
         teacherId,
         previousStatus,
+        isTeacherPayable,
       );
     }
 
