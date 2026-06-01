@@ -86,10 +86,17 @@ export class AttendanceBotService implements OnModuleInit {
     }
 
     try {
-      const teacher = await this.userModel.findByPk(teacherId);
+      const teacher = await this.userModel.findByPk(teacherId, {
+        include: [{ association: 'roles' }],
+      });
       if (!teacher) {
-        return ctx.reply('O\'qituvchi topilmadi.');
+        return ctx.reply('Foydalanuvchi topilmadi.');
       }
+
+      const isAdmin = (teacher.roles || []).some(
+        (role: any) => role.name === 'admin',
+      );
+      const roleLabel = isAdmin ? 'Admin' : "O'qituvchi";
 
       const attendance = await this.staffAttendanceService.automaticScan(teacherId);
       const statusMap = {
@@ -106,7 +113,7 @@ export class AttendanceBotService implements OnModuleInit {
       const type = typeMap[attendance.type] || attendance.type.toUpperCase();
       
       let response = `✅ Davomat qayd etildi!\n\n`;
-      response += `👤 O'qituvchi: ${teacher.first_name} ${teacher.last_name}\n`;
+      response += `👤 ${roleLabel}: ${teacher.first_name} ${teacher.last_name}\n`;
       response += `📝 Turi: ${type}\n`;
       response += `📊 Holati: ${status}\n`;
       
@@ -121,8 +128,9 @@ export class AttendanceBotService implements OnModuleInit {
 
       ctx.reply(response);
     } catch (error) {
-      this.logger.error(`Error recording attendance: ${error.message}`);
-      ctx.reply(`❌ Xatolik: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error recording attendance: ${message}`);
+      ctx.reply(`❌ Xatolik: ${message}`);
     }
   }
 }

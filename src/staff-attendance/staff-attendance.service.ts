@@ -65,6 +65,7 @@ export class StaffAttendanceService {
         group: null,
         lessonStart: StaffAttendanceService.ADMIN_LESSON_START,
         type: attendanceType,
+        isAdmin: true,
       });
     }
 
@@ -175,9 +176,10 @@ export class StaffAttendanceService {
       lessonStart: string | null;
       type?: "in" | "out";
       description?: string;
+      isAdmin?: boolean;
     },
   ) {
-    const { group, lessonStart, description } = options;
+    const { group, lessonStart, description, isAdmin } = options;
 
     // Get today's date in YYYY-MM-DD using Uzbekistan time
     const now = this.getUzTime();
@@ -277,8 +279,10 @@ export class StaffAttendanceService {
       description: description || defaultDescription,
     } as any);
 
-    // Process fine if applicable
-    if (fineAmount > 0) {
+    // Process fine if applicable.
+    // Admins have no wallet: the fine_amount is stored on the attendance record
+    // above, but no transaction is created and nothing is deducted.
+    if (fineAmount > 0 && !isAdmin) {
       const jarimaDescription =
         description ||
         `${arrivalPrefix} ${minutesLate} daqiqa kechikib kelgani uchun jarima`;
