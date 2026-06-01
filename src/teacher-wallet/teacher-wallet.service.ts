@@ -131,7 +131,7 @@ export class TeacherWalletService {
     await wallet.destroy(); // Soft delete since paranoid is enabled
   }
 
-  @Cron('0 15 * * *', { timeZone: 'Asia/Tashkent' })
+  @Cron('0 20 * * *', { timeZone: 'Asia/Tashkent' })
   async processMonthlyTeacherSalaries() {
     const today = new Date().getDate();
     this.logger.log(`Running monthly salary cron for payment_day=${today}`);
