@@ -532,9 +532,28 @@ export class UsersService {
       ];
     }
 
-    // Staff = users that have the admin or support_teacher role.
-    // A user may carry 2-3 roles; this filter includes them as long as one of
-    // their roles is admin or support_teacher.
+    // Exclude users who additionally hold teacher, manager or owner roles.
+    // e.g. an admin+teacher or admin+owner is not considered pure staff here.
+    const excludedRoleUsers = await this.userModel.findAll({
+      attributes: ["user_id"],
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          attributes: [],
+          where: { name: { [Op.in]: ["teacher", "manager", "owner"] } },
+          through: { attributes: [] },
+        },
+      ],
+      raw: true,
+    });
+    const excludedUserIds = excludedRoleUsers.map((u: any) => u.user_id);
+    if (excludedUserIds.length) {
+      whereClause.user_id = { [Op.notIn]: excludedUserIds };
+    }
+
+    // Staff = users that have the admin or support_teacher role, after removing
+    // anyone who also carries a teacher/manager/owner role above.
     const { count, rows } = await this.userModel.findAndCountAll({
       where: whereClause,
       attributes: {
