@@ -467,4 +467,100 @@ export class ExpensesService {
       totalPages: Math.ceil(count / limit),
     };
   }
+
+  /**
+   * Get teachers' bonus and jarima (penalty) history.
+   * @param teacherId - Optional teacher ID. If not provided, returns records for all teachers.
+   * @param type - Optional category type: "bonus" or "jarima". If not provided, returns both.
+   * @param startDate - Optional start date. If not provided, no lower bound is applied.
+   * @param endDate - Optional end date. If not provided, no upper bound is applied.
+   * @param minAmount - Optional minimum amount filter.
+   * @param maxAmount - Optional maximum amount filter.
+   */
+  async getTeacherBonusAndPenalty(
+    teacherId?: string,
+    type?: "bonus" | "jarima",
+    startDate?: Date,
+    endDate?: Date,
+    minAmount?: number,
+    maxAmount?: number,
+    pagination?: PaginationDto
+  ): Promise<{
+    expenses: Expense[];
+    total: number;
+    count: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    // Resolve which category names to include
+    const categoryNames = type ? [type] : ["bonus", "jarima"];
+
+    const categories = await this.expensesCategoryModel.findAll({
+      where: {
+        name: { [Op.in]: categoryNames },
+      },
+    });
+
+    if (categories.length === 0) {
+      throw new NotFoundException(
+        `No matching categories found for: ${categoryNames.join(", ")}`
+      );
+    }
+
+    // Build where clause
+    const whereClause: any = {
+      category_id: { [Op.in]: categories.map((c) => c.id) },
+    };
+
+    if (teacherId) {
+      whereClause.teacher_id = teacherId;
+    }
+
+    // Date range filter (apply whichever bounds are provided)
+    if (startDate && endDate) {
+      whereClause.expense_date = { [Op.between]: [startDate, endDate] };
+    } else if (startDate) {
+      whereClause.expense_date = { [Op.gte]: startDate };
+    } else if (endDate) {
+      whereClause.expense_date = { [Op.lte]: endDate };
+    }
+
+    // Amount filter (apply whichever bounds are provided)
+    if (minAmount !== undefined && maxAmount !== undefined) {
+      whereClause.amount = { [Op.between]: [minAmount, maxAmount] };
+    } else if (minAmount !== undefined) {
+      whereClause.amount = { [Op.gte]: minAmount };
+    } else if (maxAmount !== undefined) {
+      whereClause.amount = { [Op.lte]: maxAmount };
+    }
+
+    const page = pagination?.page || 1;
+    const limit = pagination?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await this.expenseModel.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: this.expensesCategoryModel,
+          as: "category",
+        },
+      ],
+      order: [["expense_date", "DESC"]],
+      limit,
+      offset,
+    });
+
+    const total = rows.reduce((sum, expense) => sum + expense.amount, 0);
+
+    return {
+      expenses: rows,
+      total,
+      count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
 }

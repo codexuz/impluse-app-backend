@@ -268,4 +268,83 @@ export class ExpensesController {
       pagination,
     );
   }
+
+  @Get("teachers/bonus-penalty")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({
+    summary:
+      "Get teachers' bonus and jarima (penalty) history. Returns both types and all teachers unless filtered. Supports date and amount range filters.",
+  })
+  @ApiQuery({
+    name: "teacher_id",
+    required: false,
+    description:
+      "Teacher ID (UUID) - optional, returns all teachers if not provided",
+    type: "string",
+  })
+  @ApiQuery({
+    name: "type",
+    required: false,
+    description: "Category type filter: 'bonus' or 'jarima' (both if omitted)",
+    enum: ["bonus", "jarima"],
+  })
+  @ApiQuery({
+    name: "start_date",
+    required: false,
+    description: "Start date (YYYY-MM-DD) - optional",
+    type: "string",
+  })
+  @ApiQuery({
+    name: "end_date",
+    required: false,
+    description: "End date (YYYY-MM-DD) - optional",
+    type: "string",
+  })
+  @ApiQuery({
+    name: "min_amount",
+    required: false,
+    description: "Minimum amount - optional",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "max_amount",
+    required: false,
+    description: "Maximum amount - optional",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number (default: 1)",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Items per page (default: 10, max: 100)",
+    type: Number,
+  })
+  getTeacherBonusAndPenalty(
+    @Query("teacher_id") teacherId?: string,
+    @Query("type") type?: "bonus" | "jarima",
+    @Query("start_date") startDate?: string,
+    @Query("end_date") endDate?: string,
+    @Query("min_amount") minAmount?: string,
+    @Query("max_amount") maxAmount?: string,
+    @Query() pagination?: PaginationDto,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    const min = minAmount !== undefined ? Number(minAmount) : undefined;
+    const max = maxAmount !== undefined ? Number(maxAmount) : undefined;
+    return this.expensesService.getTeacherBonusAndPenalty(
+      teacherId,
+      type,
+      start,
+      end,
+      min,
+      max,
+      pagination,
+    );
+  }
 }
