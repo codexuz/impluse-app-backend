@@ -312,9 +312,16 @@ export class GroupsService {
     return group;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(
+    id: string,
+  ): Promise<{ id: string; deleted: boolean; message: string }> {
     const group = await this.findOne(id);
     await group.update({ isDeleted: true });
+    return {
+      id,
+      deleted: true,
+      message: "Group deleted successfully",
+    };
   }
 
   async getGroupStats(): Promise<{

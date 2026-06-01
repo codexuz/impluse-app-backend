@@ -235,7 +235,9 @@ export class GroupsController {
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 403, description: "Forbidden." })
   @ApiResponse({ status: 404, description: "Group not found." })
-  async remove(@Param("id") id: string): Promise<void> {
+  async remove(
+    @Param("id") id: string,
+  ): Promise<{ id: string; deleted: boolean; message: string }> {
     return await this.groupsService.remove(id);
   }
 }
