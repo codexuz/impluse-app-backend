@@ -339,8 +339,23 @@ export class ExpensesService {
     );
   }
 
-  async findAllCategories(): Promise<ExpensesCategory[]> {
+  async findAllCategories(
+    name?: string,
+    names?: string[]
+  ): Promise<ExpensesCategory[]> {
+    const whereCondition: any = {};
+
+    if (names && names.length > 0) {
+      // Match any of the provided names (partial; MySQL LIKE is case-insensitive)
+      whereCondition[Op.or] = names.map((n) => ({
+        name: { [Op.like]: `%${n}%` },
+      }));
+    } else if (name) {
+      whereCondition.name = { [Op.like]: `%${name}%` };
+    }
+
     return await this.expensesCategoryModel.findAll({
+      where: whereCondition,
       order: [["name", "ASC"]],
     });
   }

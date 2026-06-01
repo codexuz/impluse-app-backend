@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { ExpensesService } from './expenses.service.js';
 import { CreateExpenseCategoryDto } from './dto/create-expense-category.dto.js';
 import { UpdateExpenseCategoryDto } from './dto/update-expense-category.dto.js';
@@ -6,7 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { Role } from '../roles/role.enum.js';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('Expense Categories')
 @ApiBearerAuth()
@@ -26,8 +26,13 @@ export class ExpenseCategoriesController {
   @Get()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Get all expense categories' })
-  findAll() {
-    return this.expensesService.findAllCategories();
+  @ApiQuery({ name: 'name', required: false, description: 'Filter categories by name (partial, case-insensitive match)', type: 'string' })
+  @ApiQuery({ name: 'names', required: false, description: 'Filter by multiple names at once (comma-separated, each a partial case-insensitive match)', type: 'string' })
+  findAll(@Query('name') name?: string, @Query('names') names?: string) {
+    const nameList = names
+      ? names.split(',').map((n) => n.trim()).filter(Boolean)
+      : undefined;
+    return this.expensesService.findAllCategories(name, nameList);
   }
 
   @Get(':id')
