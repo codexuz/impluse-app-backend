@@ -327,4 +327,79 @@ export class StaffAttendanceService {
       ],
     });
   }
+
+  async getAllAttendances(options: {
+    page?: number;
+    limit?: number;
+    query?: string;
+    teacherId?: string;
+    groupId?: string;
+    status?: string;
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const page = options.page && options.page > 0 ? options.page : 1;
+    const limit = options.limit && options.limit > 0 ? options.limit : 10;
+    const offset = (page - 1) * limit;
+
+    const whereClause: any = {};
+
+    if (options.teacherId) whereClause.teacher_id = options.teacherId;
+    if (options.groupId) whereClause.group_id = options.groupId;
+    if (options.status) whereClause.status = options.status;
+    if (options.type) whereClause.type = options.type;
+
+    if (options.startDate && options.endDate) {
+      whereClause.date = { [Op.between]: [options.startDate, options.endDate] };
+    } else if (options.startDate) {
+      whereClause.date = { [Op.gte]: options.startDate };
+    } else if (options.endDate) {
+      whereClause.date = { [Op.lte]: options.endDate };
+    }
+
+    const { count, rows } = await StaffAttendance.findAndCountAll({
+      where: whereClause,
+      order: [
+        ["date", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          association: "teacher",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+          where: options.query
+            ? {
+                [Op.or]: [
+                  { first_name: { [Op.like]: `%${options.query}%` } },
+                  { last_name: { [Op.like]: `%${options.query}%` } },
+                  { username: { [Op.like]: `%${options.query}%` } },
+                ],
+              }
+            : undefined,
+        },
+        {
+          association: "group",
+          attributes: ["id", "name", "lesson_start"],
+        },
+      ],
+      limit,
+      offset,
+      distinct: true,
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
 }

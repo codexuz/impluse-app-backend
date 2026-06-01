@@ -1,5 +1,18 @@
-import { Controller, Post, Body, UseGuards, Get, Param } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Param,
+  Query,
+} from "@nestjs/common";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from "@nestjs/swagger";
 import { StaffAttendanceService } from "./staff-attendance.service.js";
 import { ScanStaffAttendanceDto } from "./dto/scan-staff-attendance.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
@@ -69,5 +82,49 @@ export class StaffAttendanceController {
   })
   async getMyAttendances(@CurrentUser() user: User) {
     return this.staffAttendanceService.getTeacherAttendances(user.id);
+  }
+
+  @Get()
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "List all staff attendances (Admin only)",
+    description:
+      "Paginated list of all staff attendance records with optional filters.",
+  })
+  @ApiQuery({ name: "page", required: false, type: Number })
+  @ApiQuery({ name: "limit", required: false, type: Number })
+  @ApiQuery({ name: "query", required: false, type: String })
+  @ApiQuery({ name: "teacherId", required: false, type: String })
+  @ApiQuery({ name: "groupId", required: false, type: String })
+  @ApiQuery({
+    name: "status",
+    required: false,
+    enum: ["early", "on_time", "late"],
+  })
+  @ApiQuery({ name: "type", required: false, enum: ["in", "out"] })
+  @ApiQuery({ name: "startDate", required: false, type: String })
+  @ApiQuery({ name: "endDate", required: false, type: String })
+  async getAllAttendances(
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("query") query?: string,
+    @Query("teacherId") teacherId?: string,
+    @Query("groupId") groupId?: string,
+    @Query("status") status?: string,
+    @Query("type") type?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.staffAttendanceService.getAllAttendances({
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      query,
+      teacherId,
+      groupId,
+      status,
+      type,
+      startDate,
+      endDate,
+    });
   }
 }
