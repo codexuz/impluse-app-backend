@@ -357,7 +357,8 @@ export class AttendanceBotService implements OnModuleInit {
       const attendance = await this.staffAttendanceService.automaticScan(staffId);
       const msg = this.formatAttendanceMessage(teacher, attendance);
       await ctx.reply(
-        `✅ GPS tasdiqlandi (${Math.round(distanceM)} m)\n\n${msg}`,
+        `✅ GPS tasdiqlandi (${Math.round(distanceM)} m)\n\n${msg}\n\n` +
+          'ℹ️ Endi jonli joylashuvni to\'xtatishingiz mumkin (Stop sharing).',
         Markup.removeKeyboard(),
       );
     } catch (error) {
