@@ -8,10 +8,17 @@ import { StaffAttendanceService } from '../staff-attendance/staff-attendance.ser
 import { StaffAttendance } from '../staff-attendance/entities/staff-attendance.entity.js';
 import { StaffProfileService } from '../staff-profile/staff-profile.service.js';
 
+// Pending GPS verification state: chatId → staffId awaiting location share
+type PendingGps = { staffId: string; requestedAt: number };
+
 @Injectable()
 export class AttendanceBotService implements OnModuleInit {
   private bot: Telegraf;
   private readonly logger = new Logger(AttendanceBotService.name);
+
+  // In-memory map — survives only within the process lifetime (fine for a single instance)
+  private readonly pendingGps = new Map<string, PendingGps>();
+  private readonly GPS_TTL_MS = 3 * 60 * 1000; // 3 minutes to share location
 
   // Authorized Telegram chat IDs — comma-separated in env ATTENDANCE_BOT_ADMIN_IDS
   private get authorizedIds(): string[] {
@@ -32,6 +39,12 @@ export class AttendanceBotService implements OnModuleInit {
 
   async onModuleInit() {
     this.registerCommands();
+
+    await this.bot.telegram.setMyCommands([
+      { command: 'davomat', description: 'Davomatni qo\'yish (GPS orqali)' },
+      { command: 'link', description: 'Telegram hisobni bog\'lash: /link <login>' },
+      { command: 'today', description: 'Bugungi davomat hisoboti' },
+    ]);
 
     const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
     if (webhookUrl) {
@@ -68,43 +81,279 @@ export class AttendanceBotService implements OnModuleInit {
   private registerCommands() {
     this.bot.start(async (ctx) => {
       const payload = (ctx as any).startPayload as string | undefined;
+      const chatId = String(ctx.chat.id);
+
       if (payload) {
-        await this.promptScanType(ctx, payload.trim());
+        const staffId = payload.trim();
+        // Check if the teacher is opening their own QR (self-attendance flow)
+        const self = await this.userModel.findOne({
+          where: { telegram_chat_id: chatId },
+          include: [{ association: 'roles' }],
+        });
+
+        if (self && self.user_id === staffId) {
+          // Self-attendance: ask for GPS
+          await this.requestGpsForSelf(ctx, self);
+          return;
+        }
+
+        // Admin / guard flow: show IN/OUT buttons (existing)
+        if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
+        await this.promptScanType(ctx, staffId);
       } else {
+        // Check if this is a known staff member (self-attendance entry point)
+        const self = await this.userModel.findOne({
+          where: { telegram_chat_id: chatId },
+          include: [{ association: 'roles' }],
+        });
+        if (self) {
+          await this.requestGpsForSelf(ctx, self);
+          return;
+        }
         await ctx.reply(
-          'Xodimlar davomati botiga xush kelibsiz.\n\nO\'qituvchining QR kodini skanerlang yoki UUID ni yuboring.',
+          'Xodimlar davomati botiga xush kelibsiz.\n\nQR kodingizni skanerlang yoki UUID ni yuboring.',
         );
       }
     });
 
-    // /today <teacherId> — today's attendance summary for a teacher
-    this.bot.command('today', async (ctx) => {
-      if (!this.isAuthorized(String(ctx.chat.id))) return this.replyUnauthorized(ctx);
+    // /link <username> — teacher links their Telegram account for self-attendance
+    this.bot.command('link', async (ctx) => {
       const parts = ctx.message.text.split(' ');
-      const id = parts[1]?.trim();
-      if (!id) return ctx.reply('Foydalanish: /today <teacher_id>');
-      await this.sendTodaySummary(ctx, id);
+      const username = parts[1]?.trim();
+      if (!username) {
+        await ctx.reply('Foydalanish: /link <login>\nMisol: /link sarvar_doniyorov');
+        return;
+      }
+      const user = await this.userModel.findOne({
+        where: { username },
+        include: [{ association: 'roles' }],
+      });
+      if (!user) {
+        await ctx.reply(`❌ "${username}" logini bilan foydalanuvchi topilmadi.`);
+        return;
+      }
+      const roleNames = ((user.roles || []) as any[]).map((r) => r.name as string);
+      const isStaff = roleNames.some((r) => ['teacher', 'admin', 'support_teacher'].includes(r));
+      if (!isStaff) {
+        await ctx.reply('❌ Faqat xodimlar (o\'qituvchi, admin, yordamchi) bog\'lanishi mumkin.');
+        return;
+      }
+      await user.update({ telegram_chat_id: String(ctx.chat.id) });
+      await ctx.reply(
+        `✅ Telegram hisobingiz muvaffaqiyatli bog\'landi!\n👤 ${user.first_name} ${user.last_name}\n\nEndi /start yoki /davomat buyrug\'i orqali davomatni o\'zingiz qo\'ya olasiz.`,
+      );
     });
 
-    // Callback: in/out button presses
-    this.bot.on('callback_query', async (ctx) => {
-      if (!this.isAuthorized(String(ctx.chat.id))) return this.replyUnauthorized(ctx);
-      const data = (ctx.callbackQuery as any).data as string;
-      // format: "scan:<teacherId>:<in|out>"
-      if (data?.startsWith('scan:')) {
-        const [, teacherId, scanType] = data.split(':');
-        await ctx.answerCbQuery();
-        await this.recordAttendance(ctx, teacherId, scanType as 'in' | 'out');
+    // /davomat — shortcut for self-attendance
+    this.bot.command('davomat', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      const self = await this.userModel.findOne({
+        where: { telegram_chat_id: chatId },
+        include: [{ association: 'roles' }],
+      });
+      if (!self) {
+        await ctx.reply('Hisobingiz bog\'lanmagan. /link <login> orqali bog\'lang.');
+        return;
       }
+      await this.requestGpsForSelf(ctx, self);
+    });
+
+    // /today [teacherId] — today's attendance summary
+    this.bot.command('today', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      const parts = ctx.message.text.split(' ');
+      const id = parts[1]?.trim();
+
+      if (id) {
+        if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
+        await this.sendTodaySummary(ctx, id);
+      } else {
+        // Teacher checking their own summary
+        const self = await this.userModel.findOne({ where: { telegram_chat_id: chatId } });
+        if (self) {
+          await this.sendTodaySummary(ctx, self.user_id);
+        } else {
+          await ctx.reply('Foydalanish: /today <teacher_id>');
+        }
+      }
+    });
+
+    // Callback: in/out button presses (admin) OR gps_cancel (teacher)
+    this.bot.on('callback_query', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      const data = (ctx.callbackQuery as any).data as string;
+      await ctx.answerCbQuery();
+
+      if (data === 'gps_cancel') {
+        this.pendingGps.delete(chatId);
+        await ctx.editMessageText('❌ Davomat bekor qilindi.');
+        return;
+      }
+
+      if (data?.startsWith('scan:')) {
+        if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
+        const [, teacherId, scanType] = data.split(':');
+        await this.recordAttendance(ctx, teacherId, scanType as 'in' | 'out');
+        return;
+      }
+    });
+
+    // Location message — GPS self-attendance
+    this.bot.on('location', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      const pending = this.pendingGps.get(chatId);
+
+      if (!pending) {
+        await ctx.reply('Joylashuv kutilmagan. Davomatni boshlash uchun /start ni bosing.');
+        return;
+      }
+
+      if (Date.now() - pending.requestedAt > this.GPS_TTL_MS) {
+        this.pendingGps.delete(chatId);
+        await ctx.reply('⏱ Vaqt tugadi. Iltimos, qaytadan urinib ko\'ring.');
+        return;
+      }
+
+      this.pendingGps.delete(chatId);
+      const { latitude, longitude } = (ctx.message as any).location;
+      await this.handleGpsAttendance(ctx, pending.staffId, latitude, longitude);
     });
 
     // Plain text / UUID message
     this.bot.on('message', async (ctx) => {
-      if (!this.isAuthorized(String(ctx.chat.id))) return this.replyUnauthorized(ctx);
+      const chatId = String(ctx.chat.id);
       const text = ((ctx.message as any).text as string | undefined)?.trim();
       if (!text) return;
+
+      // Cancel button from GPS keyboard
+      if (text === '❌ Bekor qilish') {
+        this.pendingGps.delete(chatId);
+        await ctx.reply('❌ Davomat bekor qilindi.', Markup.removeKeyboard());
+        return;
+      }
+
+      // Known teacher sending their own UUID or just any text → self-attendance
+      const self = await this.userModel.findOne({
+        where: { telegram_chat_id: chatId },
+        include: [{ association: 'roles' }],
+      });
+      if (self) {
+        await this.requestGpsForSelf(ctx, self);
+        return;
+      }
+
+      if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
       await this.promptScanType(ctx, text);
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Self-attendance (GPS) flow
+  // ---------------------------------------------------------------------------
+
+  /** Ask the teacher to share their live location */
+  private async requestGpsForSelf(ctx: Context, staff: User) {
+    const chatId = String(ctx.chat.id);
+    const roleNames = ((staff.roles || []) as any[]).map((r) => r.name as string);
+    const isStaff = roleNames.some((r) => ['teacher', 'admin', 'support_teacher'].includes(r));
+
+    if (!isStaff) {
+      await ctx.reply('Kechirasiz, siz ushbu botdan foydalanish huquqiga ega emassiz.');
+      return;
+    }
+
+    const now = this.getUzTime();
+    const today = this.getToday();
+    const last = await StaffAttendance.findOne({
+      where: { teacher_id: staff.user_id, date: today },
+      order: [['createdAt', 'DESC']],
+    });
+    const nextType = last?.type === 'in' ? 'out' : 'in';
+    const nextLabel = nextType === 'in' ? 'KIRISH ✅' : 'CHIQISH 🚪';
+
+    // Resolve shift for preview
+    const shifts = await this.staffProfileService.resolveShiftsForDay(staff.user_id, now.getUTCDay());
+    const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    let anchorMinutes = nowMinutes;
+    if (nextType === 'out' && last?.type === 'in') {
+      const checkInUz = new Date(last.createdAt.getTime() + 5 * 60 * 60 * 1000);
+      anchorMinutes = checkInUz.getUTCHours() * 60 + checkInUz.getUTCMinutes();
+    }
+    const shift = this.staffProfileService.pickClosestShift(shifts, anchorMinutes);
+    const shiftInfo = shift
+      ? `🕐 ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`
+      : '🕐 Smena belgilanmagan';
+
+    this.pendingGps.set(chatId, { staffId: staff.user_id, requestedAt: Date.now() });
+
+    await ctx.reply(
+      `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}\n📍 Davomat: ${nextLabel}\n\nJoylashuvingizni yuboring (3 daqiqa ichida):`,
+      Markup.keyboard([
+        [Markup.button.locationRequest('📍 Joylashuvni yuborish')],
+        ['❌ Bekor qilish'],
+      ]).resize().oneTime(),
+    );
+  }
+
+  /** Validate GPS and record attendance for the teacher themselves */
+  private async handleGpsAttendance(
+    ctx: Context,
+    staffId: string,
+    lat: number,
+    lon: number,
+  ) {
+    const centerLat = parseFloat(process.env.CENTER_LATITUDE ?? '0');
+    const centerLon = parseFloat(process.env.CENTER_LONGITUDE ?? '0');
+    const radiusM = parseFloat(process.env.GPS_RADIUS_METERS ?? '200');
+
+    if (!centerLat || !centerLon) {
+      this.logger.error('CENTER_LATITUDE/CENTER_LONGITUDE not configured');
+      await ctx.reply('❌ GPS tekshiruvi sozlanmagan. Admin bilan bog\'laning.');
+      return;
+    }
+
+    const distanceM = this.haversineDistance(lat, lon, centerLat, centerLon);
+
+    if (distanceM > radiusM) {
+      await ctx.reply(
+        `❌ Siz o'quv markazidan tashqaridasiz.\n📏 Masofa: ${Math.round(distanceM)} m (ruxsat: ${radiusM} m)\n\nDavomat faqat o'quv markazi hududida qo'yilishi mumkin.`,
+        Markup.removeKeyboard(),
+      );
+      return;
+    }
+
+    const teacher = await this.userModel.findByPk(staffId, {
+      include: [{ association: 'roles' }],
+    });
+    if (!teacher) {
+      await ctx.reply('❌ Foydalanuvchi topilmadi.', Markup.removeKeyboard());
+      return;
+    }
+
+    try {
+      const attendance = await this.staffAttendanceService.automaticScan(staffId);
+      const msg = this.formatAttendanceMessage(teacher, attendance);
+      await ctx.reply(
+        `✅ GPS tasdiqlandi (${Math.round(distanceM)} m)\n\n${msg}`,
+        Markup.removeKeyboard(),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`GPS attendance error for ${staffId}: ${message}`);
+      await ctx.reply(`❌ Xatolik: ${message}`, Markup.removeKeyboard());
+    }
+  }
+
+  /** Haversine formula — returns distance in metres between two GPS points */
+  private haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371000; // Earth radius in metres
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
   // ---------------------------------------------------------------------------
