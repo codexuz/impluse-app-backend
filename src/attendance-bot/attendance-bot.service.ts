@@ -201,22 +201,40 @@ export class AttendanceBotService implements OnModuleInit {
     // Location message — GPS self-attendance
     this.bot.on('location', async (ctx) => {
       const chatId = String(ctx.chat.id);
+      const message = ctx.message as any;
+
+      // Reject forwarded / copied locations — these can be shared from anywhere
+      // and would let someone spoof being on-site. Only a location shared fresh
+      // via the "📍 Joylashuvni yuborish" button is accepted.
+      if (this.isForwardedMessage(message)) {
+        await this.safeDeleteMessage(ctx);
+        await ctx.reply(
+          '❌ Forward qilingan yoki nusxalangan joylashuv qabul qilinmaydi.\n\nIltimos, "📍 Joylashuvni yuborish" tugmasi orqali real joylashuvingizni yuboring.',
+        );
+        return;
+      }
+
       const pending = this.pendingGps.get(chatId);
 
       if (!pending) {
+        await this.safeDeleteMessage(ctx);
         await ctx.reply('Joylashuv kutilmagan. Davomatni boshlash uchun /start ni bosing.');
         return;
       }
 
       if (Date.now() - pending.requestedAt > this.GPS_TTL_MS) {
         this.pendingGps.delete(chatId);
+        await this.safeDeleteMessage(ctx);
         await ctx.reply('⏱ Vaqt tugadi. Iltimos, qaytadan urinib ko\'ring.');
         return;
       }
 
       this.pendingGps.delete(chatId);
-      const { latitude, longitude } = (ctx.message as any).location;
+      const { latitude, longitude } = message.location;
       await this.handleGpsAttendance(ctx, pending.staffId, latitude, longitude);
+
+      // Delete the shared location/map message so it can't be re-used or forwarded.
+      await this.safeDeleteMessage(ctx);
     });
 
     // Plain text / UUID message
@@ -341,6 +359,34 @@ export class AttendanceBotService implements OnModuleInit {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`GPS attendance error for ${staffId}: ${message}`);
       await ctx.reply(`❌ Xatolik: ${message}`, Markup.removeKeyboard());
+    }
+  }
+
+  /**
+   * Detect a forwarded / copied message. Telegram marks forwards with one of
+   * the `forward_*` fields (Bot API ≤ 6.x) or the newer `forward_origin`
+   * object (Bot API ≥ 7.0). A location shared fresh via the request-location
+   * button has none of these.
+   */
+  private isForwardedMessage(message: any): boolean {
+    if (!message) return false;
+    return !!(
+      message.forward_origin ||
+      message.forward_date ||
+      message.forward_from ||
+      message.forward_from_chat ||
+      message.forward_from_message_id ||
+      message.forward_sender_name
+    );
+  }
+
+  /** Delete the current message, swallowing errors (e.g. already deleted / no rights). */
+  private async safeDeleteMessage(ctx: Context): Promise<void> {
+    try {
+      await ctx.deleteMessage();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.debug(`Could not delete message: ${message}`);
     }
   }
 
