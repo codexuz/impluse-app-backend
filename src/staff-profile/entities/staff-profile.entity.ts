@@ -7,6 +7,7 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 import { User } from "../../users/entities/user.entity.js";
+import { StaffShift } from "./staff-shift.entity.js";
 
 @Table({
   tableName: "staff_profiles",
@@ -23,22 +24,12 @@ export class StaffProfile extends Model {
   @Column({
     type: DataType.UUID,
     allowNull: false,
+    unique: true,
   })
   staff_id: string;
 
   staff: User;
-
-  @Column({
-    type: DataType.TIME, // Expected check-in time (HH:MM:SS)
-    allowNull: true,
-  })
-  in_time: string | null;
-
-  @Column({
-    type: DataType.TIME, // Expected check-out time (HH:MM:SS)
-    allowNull: true,
-  })
-  out_time: string | null;
+  shifts: StaffShift[];
 
   @CreatedAt
   createdAt: Date;

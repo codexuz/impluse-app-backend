@@ -3,11 +3,13 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { AttendanceBotService } from './attendance-bot.service.js';
 import { AttendanceBotController } from './attendance-bot.controller.js';
 import { StaffAttendanceModule } from '../staff-attendance/staff-attendance.module.js';
+import { StaffProfileModule } from '../staff-profile/staff-profile.module.js';
 import { User } from '../users/entities/user.entity.js';
 
 @Module({
   imports: [
     StaffAttendanceModule,
+    StaffProfileModule,
     SequelizeModule.forFeature([User]),
   ],
   controllers: [AttendanceBotController],

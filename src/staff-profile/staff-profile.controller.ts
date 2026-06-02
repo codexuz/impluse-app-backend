@@ -12,6 +12,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { StaffProfileService } from "./staff-profile.service.js";
 import { CreateStaffProfileDto } from "./dto/create-staff-profile.dto.js";
 import { UpdateStaffProfileDto } from "./dto/update-staff-profile.dto.js";
+import { CreateStaffShiftDto } from "./dto/create-staff-shift.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -24,6 +25,10 @@ import { Role } from "../roles/role.enum.js";
 export class StaffProfileController {
   constructor(private readonly staffProfileService: StaffProfileService) {}
 
+  // ---------------------------------------------------------------------------
+  // Profile endpoints
+  // ---------------------------------------------------------------------------
+
   @Post()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Create a staff profile (Admin only)" })
@@ -33,21 +38,21 @@ export class StaffProfileController {
 
   @Get()
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "List all staff profiles (Admin only)" })
+  @ApiOperation({ summary: "List all staff profiles with their shifts (Admin only)" })
   async findAll() {
     return this.staffProfileService.findAll();
   }
 
   @Get("staff/:staffId")
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Get a staff profile by staff (user) ID (Admin only)" })
+  @ApiOperation({ summary: "Get a staff profile by user ID (Admin only)" })
   async findByStaffId(@Param("staffId") staffId: string) {
     return this.staffProfileService.findByStaffId(staffId);
   }
 
   @Get(":id")
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Get a staff profile by ID (Admin only)" })
+  @ApiOperation({ summary: "Get a staff profile by profile ID (Admin only)" })
   async findOne(@Param("id") id: string) {
     return this.staffProfileService.findOne(id);
   }
@@ -55,17 +60,52 @@ export class StaffProfileController {
   @Patch(":id")
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Update a staff profile (Admin only)" })
-  async update(
-    @Param("id") id: string,
-    @Body() dto: UpdateStaffProfileDto,
-  ) {
+  async update(@Param("id") id: string, @Body() dto: UpdateStaffProfileDto) {
     return this.staffProfileService.update(id, dto);
   }
 
   @Delete(":id")
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Delete a staff profile (Admin only)" })
+  @ApiOperation({ summary: "Delete a staff profile and all its shifts (Admin only)" })
   async remove(@Param("id") id: string) {
     return this.staffProfileService.remove(id);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shift endpoints  /staff-profile/:profileId/shifts
+  // ---------------------------------------------------------------------------
+
+  @Get(":profileId/shifts")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "List all shifts for a staff profile" })
+  async getShifts(@Param("profileId") profileId: string) {
+    return this.staffProfileService.getShifts(profileId);
+  }
+
+  @Post(":profileId/shifts")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Add a shift to a staff profile" })
+  async addShift(
+    @Param("profileId") profileId: string,
+    @Body() dto: CreateStaffShiftDto,
+  ) {
+    return this.staffProfileService.addShift(profileId, dto);
+  }
+
+  @Patch("shifts/:shiftId")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Update a shift" })
+  async updateShift(
+    @Param("shiftId") shiftId: string,
+    @Body() dto: Partial<CreateStaffShiftDto>,
+  ) {
+    return this.staffProfileService.updateShift(shiftId, dto);
+  }
+
+  @Delete("shifts/:shiftId")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Delete a shift" })
+  async removeShift(@Param("shiftId") shiftId: string) {
+    return this.staffProfileService.removeShift(shiftId);
   }
 }

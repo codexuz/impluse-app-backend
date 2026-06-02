@@ -3,22 +3,26 @@ import {
   NotFoundException,
   ConflictException,
 } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
 import { Op } from "sequelize";
 import { StaffAttendance } from "./entities/staff-attendance.entity.js";
+import { AttendancePolicy } from "./entities/attendance-policy.entity.js";
+import { StaffAttendanceEvent } from "./entities/staff-attendance-event.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
+import { StaffProfileService } from "../staff-profile/staff-profile.service.js";
 import { ScanStaffAttendanceDto } from "./dto/scan-staff-attendance.dto.js";
 
 @Injectable()
 export class StaffAttendanceService {
+  constructor(private readonly staffProfileService: StaffProfileService) {}
+
   private getUzTime(): Date {
     const now = new Date();
-    // Offset for Uzbekistan (UTC +5)
-    const uzTime = new Date(now.getTime() + 5 * 60 * 60 * 1000);
-    return uzTime;
+    return new Date(now.getTime() + 5 * 60 * 60 * 1000);
   }
 
   private getToday(now: Date): string {
@@ -28,126 +32,177 @@ export class StaffAttendanceService {
     return `${year}-${month}-${day}`;
   }
 
-  // Fixed work start time for admins (09:00 Tashkent / UTC+5)
   private static readonly ADMIN_LESSON_START = "09:00";
+
+  // ---------------------------------------------------------------------------
+  // Policy engine
+  // ---------------------------------------------------------------------------
+
+  private async resolvePolicy(
+    branchId?: string | null,
+    role?: string | null,
+  ): Promise<AttendancePolicy> {
+    const today = this.getToday(this.getUzTime());
+
+    const candidates = await AttendancePolicy.findAll({
+      where: {
+        is_active: true,
+        [Op.or]: [{ effective_from: null }, { effective_from: { [Op.lte]: today } }],
+        [Op.and]: [
+          { [Op.or]: [{ effective_to: null }, { effective_to: { [Op.gte]: today } }] },
+        ],
+      },
+      order: [
+        // Most specific first: matching branch + role
+        ["branch_id", "DESC"],
+        ["role", "DESC"],
+      ],
+    });
+
+    // Pick best match: branch+role > branch-only > role-only > global
+    const score = (p: AttendancePolicy) => {
+      let s = 0;
+      if (p.branch_id && p.branch_id === branchId) s += 2;
+      if (p.role && p.role === role) s += 1;
+      if (p.branch_id && p.branch_id !== branchId) s = -99;
+      return s;
+    };
+
+    const sorted = candidates.sort((a, b) => score(b) - score(a));
+    if (sorted.length > 0) return sorted[0];
+
+    // Fallback: synthetic default matching current hardcoded values
+    return AttendancePolicy.build({
+      grace_period_minutes: 0,
+      fine_tier1_amount: 100000,
+      fine_tier1_max_minutes: 10,
+      fine_tier2_amount: 200000,
+      max_fine_per_day: 0,
+    });
+  }
+
+  private computeFine(
+    minutesLate: number,
+    policy: AttendancePolicy,
+  ): number {
+    if (minutesLate <= 0) return 0;
+    const effective = minutesLate - policy.grace_period_minutes;
+    if (effective <= 0) return 0;
+    const raw =
+      effective <= policy.fine_tier1_max_minutes
+        ? policy.fine_tier1_amount
+        : policy.fine_tier2_amount;
+    if (policy.max_fine_per_day > 0) return Math.min(raw, policy.max_fine_per_day);
+    return raw;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Audit log helpers
+  // ---------------------------------------------------------------------------
+
+  private async logEvent(opts: {
+    staffId: string;
+    attendanceId: string | null;
+    method: StaffAttendanceEvent["method"];
+    type: StaffAttendanceEvent["type"];
+    outcome: StaffAttendanceEvent["outcome"];
+    note?: string;
+    rawPayload?: object;
+  }) {
+    await StaffAttendanceEvent.create({
+      staff_id: opts.staffId,
+      attendance_id: opts.attendanceId,
+      method: opts.method,
+      type: opts.type,
+      outcome: opts.outcome,
+      note: opts.note ?? null,
+      raw_payload: opts.rawPayload ?? null,
+    } as any);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public scan methods
+  // ---------------------------------------------------------------------------
 
   async automaticScan(teacherId: string, type?: "in" | "out") {
     const user = await User.findByPk(teacherId, {
       include: [{ association: "roles" }],
     });
 
-    if (!user) {
-      throw new NotFoundException("Foydalanuvchi topilmadi");
-    }
+    if (!user) throw new NotFoundException("Foydalanuvchi topilmadi");
 
-    const isAdmin = (user.roles || []).some(
-      (role: any) => role.name === "admin",
-    );
-
-    // Personal expected check-in/out times, if a staff profile is configured.
-    const staffProfile = await StaffProfile.findOne({
-      where: { staff_id: teacherId },
-    });
-
+    const isAdmin = (user.roles || []).some((r: any) => r.name === "admin");
     const now = this.getUzTime();
+    const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay());
+    const shift = this.staffProfileService.pickClosestShift(shifts, nowMinutes);
 
-    // Determine type if not provided (alternate IN -> OUT)
     let attendanceType = type;
     if (!attendanceType) {
-      const lastAttendance = await StaffAttendance.findOne({
-        where: {
-          teacher_id: teacherId,
-          date: this.getToday(now),
-        },
+      const last = await StaffAttendance.findOne({
+        where: { teacher_id: teacherId, date: this.getToday(now) },
         order: [["createdAt", "DESC"]],
       });
-
-      attendanceType = lastAttendance?.type === "in" ? "out" : "in";
+      attendanceType = last?.type === "in" ? "out" : "in";
     }
 
-    // Admins check in against their staff profile in_time, falling back to a
-    // fixed 09:00 Tashkent (UTC+5) start time.
     if (isAdmin) {
       return this.recordAttendance(teacherId, {
         group: null,
-        lessonStart:
-          staffProfile?.in_time || StaffAttendanceService.ADMIN_LESSON_START,
-        outTime: staffProfile?.out_time || null,
+        lessonStart: shift?.in_time || StaffAttendanceService.ADMIN_LESSON_START,
+        outTime: shift?.out_time || null,
+        gracePeriod: shift?.grace_period_minutes ?? 0,
         type: attendanceType,
         isAdmin: true,
+        method: "auto_scan",
       });
     }
 
-    // Teachers: find today's groups (no time-window restriction).
-    const dayOfWeek = now.getUTCDay(); // Using UTC day because we manually offset now
+    const dayOfWeek = now.getUTCDay();
     const possibleDays: string[] = ["every_day"];
-    if ([1, 3, 5].includes(dayOfWeek)) {
-      possibleDays.push("odd");
-    } else if ([2, 4, 6].includes(dayOfWeek)) {
-      possibleDays.push("even");
-    }
+    if ([1, 3, 5].includes(dayOfWeek)) possibleDays.push("odd");
+    else if ([2, 4, 6].includes(dayOfWeek)) possibleDays.push("even");
 
     const groups = await Group.findAll({
-      where: {
-        teacher_id: teacherId,
-        days: { [Op.in]: possibleDays },
-        isDeleted: false,
-      },
+      where: { teacher_id: teacherId, days: { [Op.in]: possibleDays }, isDeleted: false },
     });
 
-    // Pick the group whose lesson_start is closest to now (no 3-hour limit).
     let bestGroup: Group | null = null;
     if (groups.length > 0) {
-      const currentTimeInMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-      let minDifference = Infinity;
-
-      for (const group of groups) {
-        if (!group.lesson_start) continue;
-
-        const [startHour, startMin] = group.lesson_start.split(":").map(Number);
-        const startTimeInMinutes = startHour * 60 + startMin;
-        const diff = Math.abs(currentTimeInMinutes - startTimeInMinutes);
-
-        if (diff < minDifference) {
-          minDifference = diff;
-          bestGroup = group;
-        }
+      let minDiff = Infinity;
+      for (const g of groups) {
+        if (!g.lesson_start) continue;
+        const [h, m] = g.lesson_start.split(":").map(Number);
+        const diff = Math.abs(nowMinutes - (h * 60 + m));
+        if (diff < minDiff) { minDiff = diff; bestGroup = g; }
       }
     }
 
-    // Check-outs are not tied to a specific group/lesson, so the group is
-    // empty. Check-ins use the staff profile in_time, otherwise the closest
-    // group's lesson_start. If neither exists, check-in is "early".
     const isCheckOut = attendanceType === "out";
     return this.recordAttendance(teacherId, {
       group: isCheckOut ? null : bestGroup,
       lessonStart: isCheckOut
         ? null
-        : staffProfile?.in_time || (bestGroup ? bestGroup.lesson_start : null),
-      outTime: staffProfile?.out_time || null,
+        : shift?.in_time || (bestGroup ? bestGroup.lesson_start : null),
+      outTime: shift?.out_time || null,
+      gracePeriod: shift?.grace_period_minutes ?? 0,
       type: attendanceType,
+      method: "auto_scan",
     });
   }
 
   async generateStaticTeacherQrCode(teacherId: string) {
     const teacher = await User.findByPk(teacherId);
-    if (!teacher) {
-      throw new NotFoundException("O'qituvchi topilmadi");
-    }
+    if (!teacher) throw new NotFoundException("O'qituvchi topilmadi");
     return {
       teacher_id: teacherId,
-      bot_url: `https://t.me/staff_attendanceBot?start=${teacherId}`
+      bot_url: `https://t.me/staff_attendanceBot?start=${teacherId}`,
     };
   }
 
   async generateQrCodePayload(groupId: string) {
     const group = await Group.findByPk(groupId);
-    if (!group) {
-      throw new NotFoundException("Guruh topilmadi");
-    }
-    // Return a payload that can be encoded into a QR code.
-    // For simplicity, we just return the group ID.
-    // In a more secure system, this could be a signed token.
+    if (!group) throw new NotFoundException("Guruh topilmadi");
     return {
       group_id: groupId,
       group_name: group.name,
@@ -158,131 +213,117 @@ export class StaffAttendanceService {
 
   async scanQrCode(teacherId: string, dto: ScanStaffAttendanceDto) {
     const group = await Group.findByPk(dto.group_id);
-
-    if (!group) {
-      throw new NotFoundException("Guruh topilmadi");
-    }
-
+    if (!group) throw new NotFoundException("Guruh topilmadi");
     if (!group.lesson_start) {
       throw new ConflictException("Guruhning dars boshlanish vaqti belgilanmagan");
     }
 
-    // Prefer the staff profile times over the group's lesson_start, if set.
-    const staffProfile = await StaffProfile.findOne({
-      where: { staff_id: teacherId },
-    });
+    const now = this.getUzTime();
+    const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay());
+    const shift = this.staffProfileService.pickClosestShift(shifts, nowMinutes);
 
     return this.recordAttendance(teacherId, {
       group,
-      lessonStart: staffProfile?.in_time || group.lesson_start,
-      outTime: staffProfile?.out_time || null,
+      lessonStart: shift?.in_time || group.lesson_start,
+      outTime: shift?.out_time || null,
+      gracePeriod: shift?.grace_period_minutes ?? 0,
       type: dto.type,
       description: dto.description,
+      method: "qr_scan",
+      rawPayload: { group_id: dto.group_id, type: dto.type },
     });
   }
 
-  /**
-   * Shared attendance recording logic for QR scans, teachers and admins.
-   *
-   * - `lessonStart` ("HH:MM") is the reference time used to compute lateness.
-   *   When it is null (e.g. a teacher without a group today) an "in" check-in
-   *   is always recorded as "early" with no fine.
-   * - `group` is null for admins and group-less teacher check-ins.
-   */
+  // ---------------------------------------------------------------------------
+  // Core recording logic
+  // ---------------------------------------------------------------------------
+
   private async recordAttendance(
     teacherId: string,
     options: {
       group: Group | null;
       lessonStart: string | null;
       outTime?: string | null;
+      gracePeriod?: number;
       type?: "in" | "out";
       description?: string;
       isAdmin?: boolean;
+      method?: StaffAttendanceEvent["method"];
+      rawPayload?: object;
     },
   ) {
     const { group, lessonStart, outTime, description, isAdmin } = options;
-
-    // Get today's date in YYYY-MM-DD using Uzbekistan time
+    const method = options.method ?? "manual";
     const now = this.getUzTime();
     const today = this.getToday(now);
+    const requestedType = options.type ?? "in";
 
-    const requestedType = options.type || "in";
-
-    // Check how many of this type already taken today
+    // Sequence validation
     const typeCount = await StaffAttendance.count({
-      where: {
-        teacher_id: teacherId,
-        date: today,
-        type: requestedType,
-      },
+      where: { teacher_id: teacherId, date: today, type: requestedType },
     });
 
     if (typeCount >= 2) {
-      throw new ConflictException(
-        `Bugun uchun davomat (${requestedType === "in" ? "kirish" : "chiqish"}) allaqachon 2 marta olingan`,
-      );
+      const note = `Bugun uchun davomat (${requestedType === "in" ? "kirish" : "chiqish"}) allaqachon 2 marta olingan`;
+      await this.logEvent({ staffId: teacherId, attendanceId: null, method, type: requestedType, outcome: "rejected", note });
+      throw new ConflictException(note);
     }
 
-    // Check sequence to ensure IN -> OUT -> IN -> OUT
     const lastAttendance = await StaffAttendance.findOne({
-      where: {
-        teacher_id: teacherId,
-        date: today,
-      },
+      where: { teacher_id: teacherId, date: today },
       order: [["createdAt", "DESC"]],
     });
 
     if (lastAttendance) {
       if (lastAttendance.type === requestedType) {
-        throw new ConflictException(
-          `Oxirgi davomat allaqachon "${requestedType === "in" ? "kirish" : "chiqish"}" bo'lgan. Avval ${
-            requestedType === "in" ? "chiqish" : "kirish"
-          } qilishingiz kerak.`,
-        );
+        const note = `Oxirgi davomat allaqachon "${requestedType === "in" ? "kirish" : "chiqish"}" bo'lgan.`;
+        await this.logEvent({ staffId: teacherId, attendanceId: null, method, type: requestedType, outcome: "rejected", note });
+        throw new ConflictException(note);
       }
-    } else {
-      if (requestedType === "out") {
-        throw new ConflictException(
-          "Bugun avval kirish qilmasdan turib chiqish qila olmaysiz.",
-        );
-      }
+    } else if (requestedType === "out") {
+      const note = "Bugun avval kirish qilmasdan turib chiqish qila olmaysiz.";
+      await this.logEvent({ staffId: teacherId, attendanceId: null, method, type: requestedType, outcome: "rejected", note });
+      throw new ConflictException(note);
     }
 
-    // Default values
+    // Resolve fine policy — shift grace period takes precedence over policy grace period
+    const user = await User.findByPk(teacherId, { include: [{ association: "roles" }] });
+    const roleName = (user?.roles || []).map((r: any) => r.name).join(",");
+    const policy = await this.resolvePolicy(null, roleName);
+    const effectiveGrace = options.gracePeriod ?? policy.grace_period_minutes;
+
     let minutesLate = 0;
     let status: "early" | "on_time" | "late" = "on_time";
     let fineAmount = 0;
 
-    // Only apply fine and delay logic for "in" type against a reference time
     if (requestedType === "in" && lessonStart) {
-      const [startHour, startMin] = lessonStart.split(":").map(Number);
-      const startTimeInMinutes = startHour * 60 + startMin;
-      const currentTimeInMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+      const [sh, sm] = lessonStart.split(":").map(Number);
+      const startMin = sh * 60 + sm;
+      const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+      const diff = nowMin - startMin;
 
-      const minutesDifference = currentTimeInMinutes - startTimeInMinutes;
-
-      if (minutesDifference < 0) {
+      if (diff < 0) {
         status = "early";
-      } else if (minutesDifference > 0) {
-        status = "late";
-        minutesLate = minutesDifference;
-        fineAmount = minutesLate < 11 ? 100000 : 200000;
-      } else {
-        status = "on_time";
+      } else if (diff > 0) {
+        minutesLate = diff;
+        const effectiveLate = minutesLate - effectiveGrace;
+        if (effectiveLate > 0) {
+          status = "late";
+          // Pass a policy clone with the effective grace so computeFine is consistent
+          fineAmount = this.computeFine(minutesLate, { ...policy.toJSON(), grace_period_minutes: effectiveGrace } as any);
+        } else {
+          status = "on_time";
+        }
       }
     } else if (requestedType === "in") {
-      // No reference time (e.g. teacher without a group) -> early, no fine
       status = "early";
     } else if (requestedType === "out" && outTime) {
-      // Check-out against the expected out_time. Leaving before it is "early",
-      // otherwise "on_time". No fine is applied for check-outs.
-      const [outHour, outMin] = outTime.split(":").map(Number);
-      const outTimeInMinutes = outHour * 60 + outMin;
-      const currentTimeInMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-
-      status = currentTimeInMinutes < outTimeInMinutes ? "early" : "on_time";
+      const [oh, om] = outTime.split(":").map(Number);
+      const outMin = oh * 60 + om;
+      const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+      status = nowMin < outMin ? "early" : "on_time";
     }
-    // "out" type never incurs a fine
 
     const arrivalPrefix = group ? `${group.name} guruhiga` : "Ishga";
     const departurePrefix = group ? `${group.name} guruhidan` : "Ishdan";
@@ -298,7 +339,6 @@ export class StaffAttendanceService {
           ? `${departurePrefix} erta chiqib ketdi`
           : `${departurePrefix} chiqib ketdi`;
 
-    // Create staff attendance record
     const attendance = await StaffAttendance.create({
       teacher_id: teacherId,
       group_id: group ? group.id : null,
@@ -310,15 +350,19 @@ export class StaffAttendanceService {
       description: description || defaultDescription,
     } as any);
 
-    // Process fine if applicable.
-    // Admins have no wallet: the fine_amount is stored on the attendance record
-    // above, but no transaction is created and nothing is deducted.
+    await this.logEvent({
+      staffId: teacherId,
+      attendanceId: attendance.id,
+      method,
+      type: requestedType,
+      outcome: "success",
+      rawPayload: options.rawPayload,
+    });
+
     if (fineAmount > 0 && !isAdmin) {
       const jarimaDescription =
-        description ||
-        `${arrivalPrefix} ${minutesLate} daqiqa kechikib kelgani uchun jarima`;
+        description || `${arrivalPrefix} ${minutesLate} daqiqa kechikib kelgani uchun jarima`;
 
-      // Create teacher transaction for the fine
       await TeacherTransaction.create({
         teacher_id: teacherId,
         amount: fineAmount,
@@ -326,36 +370,86 @@ export class StaffAttendanceService {
         description: jarimaDescription,
       } as any);
 
-      // Find or create teacher wallet and deduct the fine amount
-      let teacherWallet = await TeacherWallet.findOne({
-        where: { teacher_id: teacherId },
-      });
-
-      if (!teacherWallet) {
-        teacherWallet = await TeacherWallet.create({
-          teacher_id: teacherId,
-          amount: -fineAmount,
-        });
+      let wallet = await TeacherWallet.findOne({ where: { teacher_id: teacherId } });
+      if (!wallet) {
+        await TeacherWallet.create({ teacher_id: teacherId, amount: -fineAmount });
       } else {
-        await teacherWallet.update({
-          amount: teacherWallet.amount - fineAmount,
-        });
+        await wallet.update({ amount: wallet.amount - fineAmount });
       }
     }
 
     return attendance;
   }
 
+  // ---------------------------------------------------------------------------
+  // Cron: auto-mark absent
+  // ---------------------------------------------------------------------------
+
+  @Cron("0 30 9 * * 1-6") // 09:30 Tashkent = 04:30 UTC, Mon–Sat
+  async autoMarkAbsent() {
+    const now = this.getUzTime();
+    const today = this.getToday(now);
+    const todayJsDay = now.getUTCDay();
+    const cronCutoff = 9 * 60 + 30; // 09:30 in minutes
+
+    const profiles = await StaffProfile.findAll({
+      include: [{ association: "staff", required: true }],
+    });
+
+    for (const profile of profiles) {
+      const staffId = profile.staff_id;
+
+      const hasCheckedIn = await StaffAttendance.findOne({
+        where: { teacher_id: staffId, date: today, type: "in" },
+      });
+      if (hasCheckedIn) continue;
+
+      // Resolve today's shifts — skip staff who have no morning shift by cron time
+      const shifts = await this.staffProfileService.resolveShiftsForDay(staffId, todayJsDay);
+      // Only auto-absent for shifts whose in_time is <= cron cutoff
+      const dueShifts = shifts.filter((s) => {
+        const [h, m] = s.in_time.split(":").map(Number);
+        return (h * 60 + m) <= (cronCutoff + (s.grace_period_minutes ?? 0));
+      });
+      if (dueShifts.length === 0) continue;
+      // Use the earliest due shift as the reference
+      const shift = dueShifts.sort((a, b) => {
+        const [ah, am] = a.in_time.split(":").map(Number);
+        const [bh, bm] = b.in_time.split(":").map(Number);
+        return (ah * 60 + am) - (bh * 60 + bm);
+      })[0];
+
+      const absentRecord = await StaffAttendance.create({
+        teacher_id: staffId,
+        group_id: null,
+        date: today,
+        status: "late",
+        type: "in",
+        fine_amount: 0,
+        minutes_late: 0,
+        description: "Ishga kelmadi (avtomatik belgilandi)",
+      } as any);
+
+      await this.logEvent({
+        staffId,
+        attendanceId: absentRecord.id,
+        method: "cron_absent",
+        type: "absent",
+        outcome: "success",
+        note: "Auto-marked absent by cron job",
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Queries
+  // ---------------------------------------------------------------------------
+
   async getTeacherAttendances(teacherId: string) {
     return StaffAttendance.findAll({
       where: { teacher_id: teacherId },
       order: [["createdAt", "DESC"]],
-      include: [
-        {
-          association: "group",
-          attributes: ["id", "name", "lesson_start"],
-        },
-      ],
+      include: [{ association: "group", attributes: ["id", "name", "lesson_start"] }],
     });
   }
 
@@ -374,37 +468,27 @@ export class StaffAttendanceService {
     const limit = options.limit && options.limit > 0 ? options.limit : 10;
     const offset = (page - 1) * limit;
 
-    const whereClause: any = {};
-
-    if (options.teacherId) whereClause.teacher_id = options.teacherId;
-    if (options.groupId) whereClause.group_id = options.groupId;
-    if (options.status) whereClause.status = options.status;
-    if (options.type) whereClause.type = options.type;
+    const where: any = {};
+    if (options.teacherId) where.teacher_id = options.teacherId;
+    if (options.groupId) where.group_id = options.groupId;
+    if (options.status) where.status = options.status;
+    if (options.type) where.type = options.type;
 
     if (options.startDate && options.endDate) {
-      whereClause.date = { [Op.between]: [options.startDate, options.endDate] };
+      where.date = { [Op.between]: [options.startDate, options.endDate] };
     } else if (options.startDate) {
-      whereClause.date = { [Op.gte]: options.startDate };
+      where.date = { [Op.gte]: options.startDate };
     } else if (options.endDate) {
-      whereClause.date = { [Op.lte]: options.endDate };
+      where.date = { [Op.lte]: options.endDate };
     }
 
     const { count, rows } = await StaffAttendance.findAndCountAll({
-      where: whereClause,
-      order: [
-        ["date", "DESC"],
-        ["createdAt", "DESC"],
-      ],
+      where,
+      order: [["date", "DESC"], ["createdAt", "DESC"]],
       include: [
         {
           association: "teacher",
-          attributes: [
-            "user_id",
-            "username",
-            "first_name",
-            "last_name",
-            "avatar_url",
-          ],
+          attributes: ["user_id", "username", "first_name", "last_name", "avatar_url"],
           where: options.query
             ? {
                 [Op.or]: [
@@ -415,22 +499,113 @@ export class StaffAttendanceService {
               }
             : undefined,
         },
-        {
-          association: "group",
-          attributes: ["id", "name", "lesson_start"],
-        },
+        { association: "group", attributes: ["id", "name", "lesson_start"] },
       ],
       limit,
       offset,
       distinct: true,
     });
 
-    return {
-      data: rows,
-      total: count,
-      page,
-      limit,
-      totalPages: Math.ceil(count / limit),
+    return { data: rows, total: count, page, limit, totalPages: Math.ceil(count / limit) };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Analytics
+  // ---------------------------------------------------------------------------
+
+  async getSummary(options: {
+    startDate: string;
+    endDate: string;
+    teacherId?: string;
+  }) {
+    const where: any = {
+      date: { [Op.between]: [options.startDate, options.endDate] },
+      type: "in",
     };
+    if (options.teacherId) where.teacher_id = options.teacherId;
+
+    const rows = await StaffAttendance.findAll({
+      where,
+      attributes: [
+        "teacher_id",
+        "status",
+        [StaffAttendance.sequelize!.fn("COUNT", StaffAttendance.sequelize!.col("id")), "count"],
+        [StaffAttendance.sequelize!.fn("SUM", StaffAttendance.sequelize!.col("fine_amount")), "total_fine"],
+        [StaffAttendance.sequelize!.fn("AVG", StaffAttendance.sequelize!.col("minutes_late")), "avg_minutes_late"],
+      ],
+      group: ["teacher_id", "status"],
+      include: [
+        {
+          association: "teacher",
+          attributes: ["user_id", "first_name", "last_name", "username"],
+        },
+      ],
+    });
+
+    // Aggregate per teacher
+    const byTeacher: Record<string, any> = {};
+    for (const row of rows) {
+      const r = row.toJSON() as any;
+      const id = r.teacher_id;
+      if (!byTeacher[id]) {
+        byTeacher[id] = {
+          teacher: r.teacher,
+          early: 0,
+          on_time: 0,
+          late: 0,
+          total_fine: 0,
+          avg_minutes_late: 0,
+          total: 0,
+        };
+      }
+      const cnt = Number(r.count);
+      byTeacher[id][r.status] += cnt;
+      byTeacher[id].total += cnt;
+      byTeacher[id].total_fine += Number(r.total_fine ?? 0);
+      if (r.status === "late") {
+        byTeacher[id].avg_minutes_late = Number(r.avg_minutes_late ?? 0);
+      }
+    }
+
+    return Object.values(byTeacher).map((t) => ({
+      ...t,
+      attendance_rate: t.total > 0 ? (((t.on_time + t.early) / t.total) * 100).toFixed(1) : "0.0",
+    }));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Policy CRUD (admin)
+  // ---------------------------------------------------------------------------
+
+  async getPolicies() {
+    return AttendancePolicy.findAll({ where: { is_active: true } });
+  }
+
+  async createPolicy(data: Partial<AttendancePolicy>) {
+    return AttendancePolicy.create(data as any);
+  }
+
+  async updatePolicy(id: string, data: Partial<AttendancePolicy>) {
+    const policy = await AttendancePolicy.findByPk(id);
+    if (!policy) throw new NotFoundException("Policy topilmadi");
+    return policy.update(data);
+  }
+
+  async deletePolicy(id: string) {
+    const policy = await AttendancePolicy.findByPk(id);
+    if (!policy) throw new NotFoundException("Policy topilmadi");
+    await policy.update({ is_active: false });
+    return { message: "Policy o'chirildi" };
+  }
+
+  // Audit log
+  async getAttendanceEvents(staffId?: string, limit = 50) {
+    const where: any = {};
+    if (staffId) where.staff_id = staffId;
+    return StaffAttendanceEvent.findAll({
+      where,
+      order: [["createdAt", "DESC"]],
+      limit,
+    });
   }
 }
