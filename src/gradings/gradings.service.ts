@@ -252,22 +252,25 @@ export class GradingsService {
 
   // ─── Teacher grading reminder crons ──────────────────────────────────────
 
-  @Cron("0 10 * * 1-6")
+  // 10:00 Tashkent = 05:00 UTC
+  @Cron("0 5 * * 1-6")
   async handleTeacherGradingReminder10() {
-    await this.sendTeacherGradingReminders();
+    await this.sendTeacherGradingReminders(10);
   }
 
-  @Cron("0 15 * * 1-6")
+  // 15:00 Tashkent = 10:00 UTC
+  @Cron("0 10 * * 1-6")
   async handleTeacherGradingReminder15() {
-    await this.sendTeacherGradingReminders();
+    await this.sendTeacherGradingReminders(15);
   }
 
-  @Cron("0 18 * * 1-6")
+  // 18:00 Tashkent = 13:00 UTC
+  @Cron("0 13 * * 1-6")
   async handleTeacherGradingReminder18() {
-    await this.sendTeacherGradingReminders();
+    await this.sendTeacherGradingReminders(18);
   }
 
-  private async sendTeacherGradingReminders(): Promise<void> {
+  private async sendTeacherGradingReminders(localHour: number): Promise<void> {
     this.logger.log("Sending grading reminders to teachers");
 
     try {
@@ -317,8 +320,7 @@ export class GradingsService {
       });
       const tokenByTeacher = new Map(tokenRecords.map((t) => [t.user_id, t.token]));
 
-      const hour = today.getHours();
-      const timeLabel = hour === 10 ? "ertalab" : hour === 15 ? "tushdan keyin" : "kechqurun";
+      const timeLabel = localHour === 10 ? "ertalab" : localHour === 15 ? "tushdan keyin" : "kechqurun";
 
       let sent = 0;
       for (const teacherId of teacherIds) {

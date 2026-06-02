@@ -121,9 +121,8 @@ export class LessonSchedulesService {
     return { id, deleted: true };
   }
 
-  // Runs Mon–Sat at 09:00, 13:00, 17:00 — stops reminding once the teacher has
-  // added at least one schedule for today.
-  @Cron("0 9,13,17 * * 1-6")
+  // Runs Mon–Sat at 09:00, 13:00, 17:00 Tashkent time (UTC+5 → 04:00, 08:00, 12:00 UTC)
+  @Cron("0 4,8,12 * * 1-6")
   async handleLessonScheduleReminder() {
     this.logger.log("Checking teachers without a lesson schedule for today");
 
