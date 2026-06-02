@@ -38,10 +38,16 @@ export class StaffAttendance extends Model {
   group: Group;
 
   @Column({
-    type: DataType.ENUM("early", "on_time", "late"),
+    type: DataType.ENUM("early", "on_time", "late", "excused"),
     allowNull: false,
   })
-  status: "early" | "on_time" | "late";
+  status: "early" | "on_time" | "late" | "excused";
+
+  @Column({
+    type: DataType.UUID,
+    allowNull: true, // set when an approved permission excused this record
+  })
+  permission_id: string | null;
 
   @Column({
     type: DataType.ENUM("in", "out"),

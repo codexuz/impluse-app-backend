@@ -8,6 +8,7 @@ import { Op } from "sequelize";
 import { StaffAttendance } from "./entities/staff-attendance.entity.js";
 import { AttendancePolicy } from "./entities/attendance-policy.entity.js";
 import { StaffAttendanceEvent } from "./entities/staff-attendance-event.entity.js";
+import { StaffPermission } from "./entities/staff-permission.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
@@ -15,6 +16,8 @@ import { User } from "../users/entities/user.entity.js";
 import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
 import { StaffProfileService } from "../staff-profile/staff-profile.service.js";
 import { ScanStaffAttendanceDto } from "./dto/scan-staff-attendance.dto.js";
+import { CreateStaffPermissionDto } from "./dto/create-staff-permission.dto.js";
+import { ReviewStaffPermissionDto } from "./dto/review-staff-permission.dto.js";
 
 @Injectable()
 export class StaffAttendanceService {
@@ -94,6 +97,36 @@ export class StaffAttendanceService {
         : policy.fine_tier2_amount;
     if (policy.max_fine_per_day > 0) return Math.min(raw, policy.max_fine_per_day);
     return raw;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Permission (ruxsat) engine
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the approved permission covering `date` for this staff member, if any.
+   * When `type` is given, only that permission type is considered.
+   */
+  private async findActivePermission(
+    staffId: string,
+    date: string,
+    type?: StaffPermission["type"],
+  ): Promise<StaffPermission | null> {
+    return StaffPermission.findOne({
+      where: {
+        staff_id: staffId,
+        status: "approved",
+        start_date: { [Op.lte]: date },
+        end_date: { [Op.gte]: date },
+        ...(type ? { type } : {}),
+      },
+      order: [["createdAt", "DESC"]],
+    });
+  }
+
+  private toMinutes(hhmm: string): number {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
   }
 
   // ---------------------------------------------------------------------------
@@ -345,36 +378,67 @@ export class StaffAttendanceService {
     const policy = await this.resolvePolicy(null, roleName);
     const effectiveGrace = options.gracePeriod ?? policy.grace_period_minutes;
 
+    // Approved permission (ruxsat) covering today, if any
+    const permission = await this.findActivePermission(teacherId, today);
+    let permissionId: string | null = null;
+
     let minutesLate = 0;
-    let status: "early" | "on_time" | "late" = "on_time";
+    let status: "early" | "on_time" | "late" | "excused" = "on_time";
     let fineAmount = 0;
 
-    if (requestedType === "in" && lessonStart) {
-      const [sh, sm] = lessonStart.split(":").map(Number);
-      const startMin = sh * 60 + sm;
-      const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
-      const diff = nowMin - startMin;
+    const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
 
-      if (diff < 0) {
-        status = "early";
-      } else if (diff > 0) {
-        minutesLate = diff;
-        const effectiveLate = minutesLate - effectiveGrace;
-        if (effectiveLate > 0) {
-          status = "late";
-          // Pass a policy clone with the effective grace so computeFine is consistent
-          fineAmount = this.computeFine(minutesLate, { ...policy.toJSON(), grace_period_minutes: effectiveGrace } as any);
-        } else {
-          status = "on_time";
+    if (requestedType === "in") {
+      if (permission && permission.type === "full_day") {
+        // Excused absence — no lateness or fine even if they do check in
+        status = "excused";
+        permissionId = permission.id;
+      } else if (lessonStart) {
+        let startMin = this.toMinutes(lessonStart);
+        const isLateArrival =
+          permission?.type === "late_arrival" && !!permission.permitted_time;
+        if (isLateArrival) {
+          permissionId = permission!.id;
+          // The excused arrival time replaces the shift start for lateness
+          startMin = Math.max(startMin, this.toMinutes(permission!.permitted_time!));
         }
+        const diff = nowMin - startMin;
+
+        if (diff < 0) {
+          status = isLateArrival ? "excused" : "early";
+        } else if (diff > 0) {
+          minutesLate = diff;
+          const effectiveLate = minutesLate - effectiveGrace;
+          if (effectiveLate > 0) {
+            // Late beyond the (possibly permission-extended) start → fined
+            status = "late";
+            // Pass a policy clone with the effective grace so computeFine is consistent
+            fineAmount = this.computeFine(minutesLate, { ...policy.toJSON(), grace_period_minutes: effectiveGrace } as any);
+          } else {
+            status = isLateArrival ? "excused" : "on_time";
+          }
+        } else {
+          status = isLateArrival ? "excused" : "on_time";
+        }
+      } else {
+        status = "early";
       }
-    } else if (requestedType === "in") {
-      status = "early";
     } else if (requestedType === "out" && outTime) {
-      const [oh, om] = outTime.split(":").map(Number);
-      const outMin = oh * 60 + om;
-      const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
-      status = nowMin < outMin ? "early" : "on_time";
+      const outMin = this.toMinutes(outTime);
+      if (nowMin < outMin) {
+        // Early checkout — excused if an approved early_leave permission covers it
+        if (
+          permission?.type === "early_leave" &&
+          (!permission.permitted_time || nowMin >= this.toMinutes(permission.permitted_time))
+        ) {
+          status = "excused";
+          permissionId = permission.id;
+        } else {
+          status = "early";
+        }
+      } else {
+        status = "on_time";
+      }
     }
 
     const arrivalPrefix = group ? `${group.name} guruhiga` : "Ishga";
@@ -382,14 +446,18 @@ export class StaffAttendanceService {
 
     const defaultDescription =
       requestedType === "in"
-        ? status === "late"
-          ? `${arrivalPrefix} ${minutesLate} daqiqa kechikib keldi`
+        ? status === "excused"
+          ? `${arrivalPrefix} ruxsat bilan keldi`
+          : status === "late"
+            ? `${arrivalPrefix} ${minutesLate} daqiqa kechikib keldi`
+            : status === "early"
+              ? `${arrivalPrefix} vaqtli keldi`
+              : `${arrivalPrefix} o'z vaqtida keldi`
+        : status === "excused"
+          ? `${departurePrefix} ruxsat bilan erta chiqdi`
           : status === "early"
-            ? `${arrivalPrefix} vaqtli keldi`
-            : `${arrivalPrefix} o'z vaqtida keldi`
-        : status === "early"
-          ? `${departurePrefix} erta chiqib ketdi`
-          : `${departurePrefix} chiqib ketdi`;
+            ? `${departurePrefix} erta chiqib ketdi`
+            : `${departurePrefix} chiqib ketdi`;
 
     const attendance = await StaffAttendance.create({
       teacher_id: teacherId,
@@ -399,6 +467,7 @@ export class StaffAttendanceService {
       type: requestedType,
       fine_amount: fineAmount,
       minutes_late: minutesLate,
+      permission_id: permissionId,
       description: description || defaultDescription,
     } as any);
 
@@ -455,6 +524,37 @@ export class StaffAttendanceService {
         where: { teacher_id: staffId, date: today, type: "in" },
       });
       if (hasCheckedIn) continue;
+
+      // Approved permission (ruxsat) covering today
+      const permission = await this.findActivePermission(staffId, today);
+      if (permission) {
+        if (permission.type === "late_arrival") {
+          // Allowed to arrive late — don't auto-absent; they may still check in
+          continue;
+        }
+        if (permission.type === "full_day") {
+          const excusedRecord = await StaffAttendance.create({
+            teacher_id: staffId,
+            group_id: null,
+            date: today,
+            status: "excused",
+            type: "in",
+            fine_amount: 0,
+            minutes_late: 0,
+            permission_id: permission.id,
+            description: "Ruxsat bilan kelmadi (avtomatik belgilandi)",
+          } as any);
+          await this.logEvent({
+            staffId,
+            attendanceId: excusedRecord.id,
+            method: "cron_absent",
+            type: "absent",
+            outcome: "success",
+            note: "Excused by approved permission",
+          });
+          continue;
+        }
+      }
 
       // Resolve today's shifts — skip staff who have no morning shift by cron time
       const shifts = await this.staffProfileService.resolveShiftsForDay(staffId, todayJsDay);
@@ -666,6 +766,111 @@ export class StaffAttendanceService {
     if (!policy) throw new NotFoundException("Policy topilmadi");
     await policy.update({ is_active: false });
     return { message: "Policy o'chirildi" };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Permissions / leave (ruxsat) CRUD
+  // ---------------------------------------------------------------------------
+
+  async createPermission(dto: CreateStaffPermissionDto, requestedBy?: string) {
+    const staff = await User.findByPk(dto.staff_id);
+    if (!staff) throw new NotFoundException("Xodim topilmadi");
+
+    const endDate = dto.end_date ?? dto.start_date;
+    if (endDate < dto.start_date) {
+      throw new ConflictException("end_date start_date dan oldin bo'lishi mumkin emas");
+    }
+    if (dto.type !== "full_day" && !dto.permitted_time) {
+      throw new ConflictException(
+        "late_arrival va early_leave uchun permitted_time majburiy",
+      );
+    }
+
+    return StaffPermission.create({
+      staff_id: dto.staff_id,
+      type: dto.type,
+      start_date: dto.start_date,
+      end_date: endDate,
+      permitted_time: dto.type === "full_day" ? null : dto.permitted_time ?? null,
+      reason: dto.reason ?? null,
+      status: "pending",
+      requested_by: requestedBy ?? null,
+    } as any);
+  }
+
+  async reviewPermission(id: string, dto: ReviewStaffPermissionDto, reviewerId?: string) {
+    const permission = await StaffPermission.findByPk(id);
+    if (!permission) throw new NotFoundException("Ruxsat topilmadi");
+
+    return permission.update({
+      status: dto.status,
+      review_note: dto.review_note ?? null,
+      reviewed_by: reviewerId ?? null,
+      reviewed_at: new Date(),
+    });
+  }
+
+  async updatePermission(id: string, dto: Partial<CreateStaffPermissionDto>) {
+    const permission = await StaffPermission.findByPk(id);
+    if (!permission) throw new NotFoundException("Ruxsat topilmadi");
+    if (permission.status !== "pending") {
+      throw new ConflictException("Faqat ko'rib chiqilmagan ruxsatni tahrirlash mumkin");
+    }
+    const next: any = { ...dto };
+    if (dto.start_date && !dto.end_date) next.end_date = dto.start_date;
+    return permission.update(next);
+  }
+
+  async deletePermission(id: string) {
+    const permission = await StaffPermission.findByPk(id);
+    if (!permission) throw new NotFoundException("Ruxsat topilmadi");
+    await permission.destroy();
+    return { message: "Ruxsat o'chirildi" };
+  }
+
+  async getStaffPermissions(staffId: string) {
+    return StaffPermission.findAll({
+      where: { staff_id: staffId },
+      order: [["start_date", "DESC"], ["createdAt", "DESC"]],
+    });
+  }
+
+  async getPermissions(options: {
+    page?: number;
+    limit?: number;
+    staffId?: string;
+    status?: string;
+    type?: string;
+    date?: string;
+  }) {
+    const page = options.page && options.page > 0 ? options.page : 1;
+    const limit = options.limit && options.limit > 0 ? options.limit : 20;
+    const offset = (page - 1) * limit;
+
+    const where: any = {};
+    if (options.staffId) where.staff_id = options.staffId;
+    if (options.status) where.status = options.status;
+    if (options.type) where.type = options.type;
+    if (options.date) {
+      where.start_date = { [Op.lte]: options.date };
+      where.end_date = { [Op.gte]: options.date };
+    }
+
+    const { count, rows } = await StaffPermission.findAndCountAll({
+      where,
+      order: [["start_date", "DESC"], ["createdAt", "DESC"]],
+      include: [
+        {
+          association: "staff",
+          attributes: ["user_id", "first_name", "last_name", "username", "avatar_url"],
+        },
+      ],
+      limit,
+      offset,
+      distinct: true,
+    });
+
+    return { data: rows, total: count, page, limit, totalPages: Math.ceil(count / limit) };
   }
 
   // Audit log

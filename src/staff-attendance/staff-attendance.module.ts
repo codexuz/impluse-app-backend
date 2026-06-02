@@ -5,11 +5,12 @@ import { StaffAttendanceService } from './staff-attendance.service.js';
 import { StaffAttendance } from './entities/staff-attendance.entity.js';
 import { AttendancePolicy } from './entities/attendance-policy.entity.js';
 import { StaffAttendanceEvent } from './entities/staff-attendance-event.entity.js';
+import { StaffPermission } from './entities/staff-permission.entity.js';
 import { StaffProfileModule } from '../staff-profile/staff-profile.module.js';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([StaffAttendance, AttendancePolicy, StaffAttendanceEvent]),
+    SequelizeModule.forFeature([StaffAttendance, AttendancePolicy, StaffAttendanceEvent, StaffPermission]),
     StaffProfileModule,
   ],
   controllers: [StaffAttendanceController],

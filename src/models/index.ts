@@ -133,6 +133,7 @@ import { TelegramChatMessage } from "../telegram-chat/entities/telegram-chat-mes
 import { StaffAttendance } from "../staff-attendance/entities/staff-attendance.entity.js";
 import { AttendancePolicy } from "../staff-attendance/entities/attendance-policy.entity.js";
 import { StaffAttendanceEvent } from "../staff-attendance/entities/staff-attendance-event.entity.js";
+import { StaffPermission } from "../staff-attendance/entities/staff-permission.entity.js";
 import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
 import { StaffShift } from "../staff-profile/entities/staff-shift.entity.js";
 
@@ -260,6 +261,7 @@ export const Models = [
   StaffAttendance,
   AttendancePolicy,
   StaffAttendanceEvent,
+  StaffPermission,
   StaffProfile,
   StaffShift,
 ];
@@ -567,6 +569,13 @@ export function initializeAssociations() {
   StaffAttendanceEvent.belongsTo(User, { foreignKey: "staff_id", as: "staff" });
   StaffAttendance.hasMany(StaffAttendanceEvent, { foreignKey: "attendance_id", as: "events" });
   StaffAttendanceEvent.belongsTo(StaffAttendance, { foreignKey: "attendance_id", as: "attendance" });
+
+  // StaffPermission Associations
+  User.hasMany(StaffPermission, { foreignKey: "staff_id", as: "staff_permissions" });
+  StaffPermission.belongsTo(User, { foreignKey: "staff_id", as: "staff" });
+  StaffPermission.belongsTo(User, { foreignKey: "reviewed_by", as: "reviewer" });
+  StaffAttendance.belongsTo(StaffPermission, { foreignKey: "permission_id", as: "permission" });
+  StaffPermission.hasMany(StaffAttendance, { foreignKey: "permission_id", as: "attendances" });
 
   // Staff Profile Associations
   User.hasOne(StaffProfile, { foreignKey: "staff_id", as: "staff_profile" });

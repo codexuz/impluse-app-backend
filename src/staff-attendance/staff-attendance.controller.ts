@@ -18,6 +18,8 @@ import {
 import { StaffAttendanceService } from "./staff-attendance.service.js";
 import { ScanStaffAttendanceDto } from "./dto/scan-staff-attendance.dto.js";
 import { AttendancePolicyDto } from "./dto/attendance-policy.dto.js";
+import { CreateStaffPermissionDto } from "./dto/create-staff-permission.dto.js";
+import { ReviewStaffPermissionDto } from "./dto/review-staff-permission.dto.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
@@ -87,7 +89,7 @@ export class StaffAttendanceController {
   @ApiQuery({ name: "query", required: false, type: String })
   @ApiQuery({ name: "teacherId", required: false, type: String })
   @ApiQuery({ name: "groupId", required: false, type: String })
-  @ApiQuery({ name: "status", required: false, enum: ["early", "on_time", "late"] })
+  @ApiQuery({ name: "status", required: false, enum: ["early", "on_time", "late", "excused"] })
   @ApiQuery({ name: "type", required: false, enum: ["in", "out"] })
   @ApiQuery({ name: "startDate", required: false, type: String })
   @ApiQuery({ name: "endDate", required: false, type: String })
@@ -160,6 +162,82 @@ export class StaffAttendanceController {
       staffId,
       limit ? parseInt(limit, 10) : 50,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Permissions / leave (ruxsat)
+  // ---------------------------------------------------------------------------
+
+  @Post("permissions")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Request a staff permission / leave (ruxsat)" })
+  async createPermission(
+    @CurrentUser() user: User,
+    @Body() dto: CreateStaffPermissionDto,
+  ) {
+    return this.staffAttendanceService.createPermission(dto, user.id);
+  }
+
+  @Get("my-permissions")
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({ summary: "Get my permission / leave requests" })
+  async getMyPermissions(@CurrentUser() user: User) {
+    return this.staffAttendanceService.getStaffPermissions(user.id);
+  }
+
+  @Get("permissions")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "List staff permissions (Admin only)" })
+  @ApiQuery({ name: "page", required: false, type: Number })
+  @ApiQuery({ name: "limit", required: false, type: Number })
+  @ApiQuery({ name: "staffId", required: false, type: String })
+  @ApiQuery({ name: "status", required: false, enum: ["pending", "approved", "rejected"] })
+  @ApiQuery({ name: "type", required: false, enum: ["full_day", "late_arrival", "early_leave"] })
+  @ApiQuery({ name: "date", required: false, type: String, description: "YYYY-MM-DD — permissions active on this day" })
+  async getPermissions(
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("staffId") staffId?: string,
+    @Query("status") status?: string,
+    @Query("type") type?: string,
+    @Query("date") date?: string,
+  ) {
+    return this.staffAttendanceService.getPermissions({
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      staffId,
+      status,
+      type,
+      date,
+    });
+  }
+
+  @Patch("permissions/:id/review")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Approve or reject a permission (Admin only)" })
+  async reviewPermission(
+    @CurrentUser() user: User,
+    @Param("id") id: string,
+    @Body() dto: ReviewStaffPermissionDto,
+  ) {
+    return this.staffAttendanceService.reviewPermission(id, dto, user.id);
+  }
+
+  @Patch("permissions/:id")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Edit a pending permission" })
+  async updatePermission(
+    @Param("id") id: string,
+    @Body() dto: CreateStaffPermissionDto,
+  ) {
+    return this.staffAttendanceService.updatePermission(id, dto);
+  }
+
+  @Delete("permissions/:id")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Delete a permission (Admin only)" })
+  async deletePermission(@Param("id") id: string) {
+    return this.staffAttendanceService.deletePermission(id);
   }
 
   // ---------------------------------------------------------------------------
