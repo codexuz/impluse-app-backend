@@ -144,16 +144,22 @@ export class AttendanceBotService implements OnModuleInit {
     const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
 
     // Determine next scan type from today's last record
+    const today = this.getToday();
     const last = await StaffAttendance.findOne({
-      where: { teacher_id: teacherId, date: this.getToday() },
+      where: { teacher_id: teacherId, date: today },
       order: [['createdAt', 'DESC']],
     });
     const nextType = last?.type === 'in' ? 'out' : 'in';
     const nextLabel = nextType === 'in' ? '➡️ Keyingi: KIRISH' : '➡️ Keyingi: CHIQISH';
 
-    // Resolve shift (same logic as automaticScan)
+    // Resolve shift — for checkout preview, anchor to check-in time (mirrors automaticScan logic)
     const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay());
-    const shift = this.staffProfileService.pickClosestShift(shifts, nowMinutes);
+    let anchorMinutes = nowMinutes;
+    if (nextType === 'out' && last?.type === 'in') {
+      const checkInUz = new Date(last.createdAt.getTime() + 5 * 60 * 60 * 1000);
+      anchorMinutes = checkInUz.getUTCHours() * 60 + checkInUz.getUTCMinutes();
+    }
+    const shift = this.staffProfileService.pickClosestShift(shifts, anchorMinutes);
 
     let scheduleInfo: string;
     if (shift) {

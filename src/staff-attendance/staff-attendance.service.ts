@@ -121,6 +121,44 @@ export class StaffAttendanceService {
   }
 
   // ---------------------------------------------------------------------------
+  // Shift resolution helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * For check-in  → pick shift closest to NOW (current time).
+   * For check-out → pick shift closest to today's check-in time so we don't
+   *                 accidentally match the next shift that has started by the
+   *                 time the user walks out.
+   */
+  private async resolveShiftForScan(
+    teacherId: string,
+    today: string,
+    jsDay: number,
+    nowMinutes: number,
+    scanType: "in" | "out",
+  ) {
+    const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, jsDay);
+    if (shifts.length === 0) return null;
+
+    if (scanType === "out") {
+      // Find today's check-in record to anchor the shift lookup
+      const checkIn = await StaffAttendance.findOne({
+        where: { teacher_id: teacherId, date: today, type: "in" },
+        order: [["createdAt", "ASC"]],
+      });
+      if (checkIn) {
+        // Use the check-in timestamp (UZ time) as the anchor
+        const checkInUz = new Date(checkIn.createdAt.getTime() + 5 * 60 * 60 * 1000);
+        const checkInMinutes = checkInUz.getUTCHours() * 60 + checkInUz.getUTCMinutes();
+        return this.staffProfileService.pickClosestShift(shifts, checkInMinutes);
+      }
+    }
+
+    // For check-in (or no prior check-in found) use current time
+    return this.staffProfileService.pickClosestShift(shifts, nowMinutes);
+  }
+
+  // ---------------------------------------------------------------------------
   // Public scan methods
   // ---------------------------------------------------------------------------
 
@@ -135,19 +173,19 @@ export class StaffAttendanceService {
 
     const now = this.getUzTime();
     const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-
-    // Resolve shift for all staff types (admin, teacher, support_teacher)
-    const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay());
-    const shift = this.staffProfileService.pickClosestShift(shifts, nowMinutes);
+    const today = this.getToday(now);
 
     let attendanceType = type;
     if (!attendanceType) {
       const last = await StaffAttendance.findOne({
-        where: { teacher_id: teacherId, date: this.getToday(now) },
+        where: { teacher_id: teacherId, date: today },
         order: [["createdAt", "DESC"]],
       });
       attendanceType = last?.type === "in" ? "out" : "in";
     }
+
+    // Resolve shift — anchors to check-in time for checkout to avoid cross-shift confusion
+    const shift = await this.resolveShiftForScan(teacherId, today, now.getUTCDay(), nowMinutes, attendanceType);
 
     // If shift found — use it for everyone, no group needed
     if (shift) {
@@ -232,8 +270,9 @@ export class StaffAttendanceService {
 
     const now = this.getUzTime();
     const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-    const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay());
-    const shift = this.staffProfileService.pickClosestShift(shifts, nowMinutes);
+    const today = this.getToday(now);
+    const scanType = dto.type ?? "in";
+    const shift = await this.resolveShiftForScan(teacherId, today, now.getUTCDay(), nowMinutes, scanType);
 
     // Shift takes priority; group lesson_start is the fallback
     return this.recordAttendance(teacherId, {
