@@ -128,12 +128,15 @@ export class StaffAttendanceService {
     const user = await User.findByPk(teacherId, {
       include: [{ association: "roles" }],
     });
-
     if (!user) throw new NotFoundException("Foydalanuvchi topilmadi");
 
-    const isAdmin = (user.roles || []).some((r: any) => r.name === "admin");
+    const roleNames = (user.roles || []).map((r: any) => r.name as string);
+    const isTeacher = roleNames.includes("teacher");
+
     const now = this.getUzTime();
     const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+
+    // Resolve shift for all staff types (admin, teacher, support_teacher)
     const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay());
     const shift = this.staffProfileService.pickClosestShift(shifts, nowMinutes);
 
@@ -146,29 +149,30 @@ export class StaffAttendanceService {
       attendanceType = last?.type === "in" ? "out" : "in";
     }
 
-    if (isAdmin) {
+    // If shift found — use it for everyone, no group needed
+    if (shift) {
       return this.recordAttendance(teacherId, {
         group: null,
-        lessonStart: shift?.in_time || StaffAttendanceService.ADMIN_LESSON_START,
-        outTime: shift?.out_time || null,
-        gracePeriod: shift?.grace_period_minutes ?? 0,
+        lessonStart: shift.in_time,
+        outTime: shift.out_time ?? null,
+        gracePeriod: shift.grace_period_minutes,
         type: attendanceType,
-        isAdmin: true,
         method: "auto_scan",
       });
     }
 
-    const dayOfWeek = now.getUTCDay();
-    const possibleDays: string[] = ["every_day"];
-    if ([1, 3, 5].includes(dayOfWeek)) possibleDays.push("odd");
-    else if ([2, 4, 6].includes(dayOfWeek)) possibleDays.push("even");
+    // No shift: teachers fall back to their closest group lesson time
+    if (isTeacher) {
+      const dayOfWeek = now.getUTCDay();
+      const possibleDays: string[] = ["every_day"];
+      if ([1, 3, 5].includes(dayOfWeek)) possibleDays.push("odd");
+      else if ([2, 4, 6].includes(dayOfWeek)) possibleDays.push("even");
 
-    const groups = await Group.findAll({
-      where: { teacher_id: teacherId, days: { [Op.in]: possibleDays }, isDeleted: false },
-    });
+      const groups = await Group.findAll({
+        where: { teacher_id: teacherId, days: { [Op.in]: possibleDays }, isDeleted: false },
+      });
 
-    let bestGroup: Group | null = null;
-    if (groups.length > 0) {
+      let bestGroup: Group | null = null;
       let minDiff = Infinity;
       for (const g of groups) {
         if (!g.lesson_start) continue;
@@ -176,16 +180,24 @@ export class StaffAttendanceService {
         const diff = Math.abs(nowMinutes - (h * 60 + m));
         if (diff < minDiff) { minDiff = diff; bestGroup = g; }
       }
+
+      const isCheckOut = attendanceType === "out";
+      return this.recordAttendance(teacherId, {
+        group: isCheckOut ? null : bestGroup,
+        lessonStart: isCheckOut ? null : (bestGroup?.lesson_start ?? null),
+        outTime: null,
+        gracePeriod: 0,
+        type: attendanceType,
+        method: "auto_scan",
+      });
     }
 
-    const isCheckOut = attendanceType === "out";
+    // Non-teacher with no shift — use default admin lesson start
     return this.recordAttendance(teacherId, {
-      group: isCheckOut ? null : bestGroup,
-      lessonStart: isCheckOut
-        ? null
-        : shift?.in_time || (bestGroup ? bestGroup.lesson_start : null),
-      outTime: shift?.out_time || null,
-      gracePeriod: shift?.grace_period_minutes ?? 0,
+      group: null,
+      lessonStart: StaffAttendanceService.ADMIN_LESSON_START,
+      outTime: null,
+      gracePeriod: 0,
       type: attendanceType,
       method: "auto_scan",
     });
@@ -223,11 +235,12 @@ export class StaffAttendanceService {
     const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay());
     const shift = this.staffProfileService.pickClosestShift(shifts, nowMinutes);
 
+    // Shift takes priority; group lesson_start is the fallback
     return this.recordAttendance(teacherId, {
-      group,
-      lessonStart: shift?.in_time || group.lesson_start,
-      outTime: shift?.out_time || null,
-      gracePeriod: shift?.grace_period_minutes ?? 0,
+      group: shift ? null : group,
+      lessonStart: shift ? shift.in_time : group.lesson_start,
+      outTime: shift ? (shift.out_time ?? null) : null,
+      gracePeriod: shift ? shift.grace_period_minutes : 0,
       type: dto.type,
       description: dto.description,
       method: "qr_scan",

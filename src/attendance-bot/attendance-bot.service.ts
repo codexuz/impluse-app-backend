@@ -1,7 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { User } from '../users/entities/user.entity.js';
+import { Group } from '../groups/entities/group.entity.js';
 import { StaffAttendanceService } from '../staff-attendance/staff-attendance.service.js';
 import { StaffAttendance } from '../staff-attendance/entities/staff-attendance.entity.js';
 import { StaffProfileService } from '../staff-profile/staff-profile.service.js';
@@ -130,20 +132,67 @@ export class AttendanceBotService implements OnModuleInit {
       return ctx.reply('Noto\'g\'ri ID. Iltimos, haqiqiy QR kodni skanerlang.');
     }
 
-    const teacher = await this.userModel.findByPk(teacherId);
+    const teacher = await this.userModel.findByPk(teacherId, {
+      include: [{ association: 'roles' }],
+    });
     if (!teacher) return ctx.reply('Foydalanuvchi topilmadi.');
 
-    const name = `${teacher.first_name} ${teacher.last_name}`;
-    const now = this.getUzTime();
-    const shift = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay())
-      .then((shifts) => this.staffProfileService.pickClosestShift(shifts, now.getUTCHours() * 60 + now.getUTCMinutes()));
+    const roleNames = ((teacher.roles || []) as any[]).map((r) => r.name as string);
+    const isTeacher = roleNames.includes('teacher');
 
-    const shiftInfo = shift
-      ? `🕐 Shift: ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`
-      : '🕐 Shift belgilanmagan';
+    const now = this.getUzTime();
+    const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+
+    // Determine next scan type from today's last record
+    const last = await StaffAttendance.findOne({
+      where: { teacher_id: teacherId, date: this.getToday() },
+      order: [['createdAt', 'DESC']],
+    });
+    const nextType = last?.type === 'in' ? 'out' : 'in';
+    const nextLabel = nextType === 'in' ? '➡️ Keyingi: KIRISH' : '➡️ Keyingi: CHIQISH';
+
+    // Resolve shift (same logic as automaticScan)
+    const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay());
+    const shift = this.staffProfileService.pickClosestShift(shifts, nowMinutes);
+
+    let scheduleInfo: string;
+    if (shift) {
+      scheduleInfo = `🕐 Smena: ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`;
+      if (shift.grace_period_minutes > 0) {
+        scheduleInfo += ` (+${shift.grace_period_minutes} daq chegirma)`;
+      }
+    } else if (isTeacher) {
+      // Fallback: closest group lesson time
+      const dayOfWeek = now.getUTCDay();
+      const possibleDays: string[] = ['every_day'];
+      if ([1, 3, 5].includes(dayOfWeek)) possibleDays.push('odd');
+      else if ([2, 4, 6].includes(dayOfWeek)) possibleDays.push('even');
+
+      const groups = await Group.findAll({
+        where: { teacher_id: teacherId, days: { [Op.in]: possibleDays }, isDeleted: false },
+      });
+
+      let bestGroup: Group | null = null;
+      let minDiff = Infinity;
+      for (const g of groups) {
+        if (!g.lesson_start) continue;
+        const [h, m] = g.lesson_start.split(':').map(Number);
+        const diff = Math.abs(nowMinutes - (h * 60 + m));
+        if (diff < minDiff) { minDiff = diff; bestGroup = g; }
+      }
+
+      scheduleInfo = bestGroup
+        ? `📚 Guruh: ${bestGroup.name} (${bestGroup.lesson_start?.slice(0, 5)})`
+        : '🕐 Smena yoki guruh belgilanmagan';
+    } else {
+      scheduleInfo = `🕐 Standart vaqt: 09:00`;
+    }
+
+    const name = `${teacher.first_name} ${teacher.last_name}`;
+    const roleLine = roleNames.length ? `💼 ${roleNames.map((r) => this.roleLabel(r)).join(', ')}` : '';
 
     return ctx.reply(
-      `👤 ${name}\n${shiftInfo}\n\nDavomat turini tanlang:`,
+      `👤 ${name}\n${roleLine}\n${scheduleInfo}\n${nextLabel}\n\nDavomat turini tanlang:`,
       Markup.inlineKeyboard([
         Markup.button.callback('✅ KIRISH', `scan:${teacherId}:in`),
         Markup.button.callback('🚪 CHIQISH', `scan:${teacherId}:out`),
@@ -210,13 +259,16 @@ export class AttendanceBotService implements OnModuleInit {
   // ---------------------------------------------------------------------------
 
   private formatAttendanceMessage(teacher: User, attendance: StaffAttendance): string {
-    const isAdmin = (teacher.roles || []).some((r: any) => r.name === 'admin');
-    const roleLabel = isAdmin ? 'Admin' : "O'qituvchi";
+    const roleNames = ((teacher.roles || []) as any[]).map((r) => r.name as string);
+    const roleLine = roleNames.length
+      ? roleNames.map((r) => this.roleLabel(r)).join(', ')
+      : 'Xodim';
+
     const statusMap: Record<string, string> = { early: 'VAQLI ✅', on_time: "O'Z VAQTIDA ✅", late: 'KECHIKDI ⚠️' };
     const typeMap: Record<string, string> = { in: 'KIRISH', out: 'CHIQISH' };
 
     let msg = `✅ Davomat qayd etildi!\n\n`;
-    msg += `👤 ${roleLabel}: ${teacher.first_name} ${teacher.last_name}\n`;
+    msg += `👤 ${roleLine}: ${teacher.first_name} ${teacher.last_name}\n`;
     msg += `📝 Turi: ${typeMap[attendance.type] || attendance.type.toUpperCase()}\n`;
     msg += `📊 Holati: ${statusMap[attendance.status] || attendance.status}\n`;
 
@@ -231,6 +283,15 @@ export class AttendanceBotService implements OnModuleInit {
     }
 
     return msg;
+  }
+
+  private roleLabel(role: string): string {
+    const map: Record<string, string> = {
+      admin: 'Admin',
+      teacher: "O'qituvchi",
+      support_teacher: 'Yordamchi o\'qituvchi',
+    };
+    return map[role] ?? role;
   }
 
   // ---------------------------------------------------------------------------
