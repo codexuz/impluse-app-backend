@@ -202,14 +202,20 @@ export class AttendanceBotService implements OnModuleInit {
     this.bot.on('location', async (ctx) => {
       const chatId = String(ctx.chat.id);
       const message = ctx.message as any;
+      const location = message.location;
 
-      // Reject forwarded / copied locations — these can be shared from anywhere
-      // and would let someone spoof being on-site. Only a location shared fresh
-      // via the "📍 Joylashuvni yuborish" button is accepted.
-      if (this.isForwardedMessage(message)) {
+      // Only a LIVE location is accepted. Telegram guarantees it comes from the
+      // device's real-time GPS, and it cannot be forwarded or hand-picked —
+      // forwarding a live location turns it into a static snapshot (no
+      // live_period). Static locations (forwarded, copied, or a pin dragged on
+      // the map) have no live_period and are spoofable, so they're rejected.
+      if (!location?.live_period) {
         await this.safeDeleteMessage(ctx);
         await ctx.reply(
-          '❌ Forward qilingan yoki nusxalangan joylashuv qabul qilinmaydi.\n\nIltimos, "📍 Joylashuvni yuborish" tugmasi orqali real joylashuvingizni yuboring.',
+          '❌ Faqat JONLI joylashuv (live location) qabul qilinadi.\n\n' +
+            'Statik, forward qilingan yoki xaritadan tanlangan joylashuv qabul qilinmaydi.\n\n' +
+            'Yuborish uchun: 📎 → Joylashuv (Location) → "Jonli joylashuvni ulashish" (Share Live Location) ni tanlang.',
+          Markup.removeKeyboard(),
         );
         return;
       }
@@ -230,10 +236,10 @@ export class AttendanceBotService implements OnModuleInit {
       }
 
       this.pendingGps.delete(chatId);
-      const { latitude, longitude } = message.location;
+      const { latitude, longitude } = location;
       await this.handleGpsAttendance(ctx, pending.staffId, latitude, longitude);
 
-      // Delete the shared location/map message so it can't be re-used or forwarded.
+      // Delete the shared live-location message so it can't be re-used or forwarded.
       await this.safeDeleteMessage(ctx);
     });
 
@@ -305,11 +311,10 @@ export class AttendanceBotService implements OnModuleInit {
     this.pendingGps.set(chatId, { staffId: staff.user_id, requestedAt: Date.now() });
 
     await ctx.reply(
-      `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}\n📍 Davomat: ${nextLabel}\n\nJoylashuvingizni yuboring (3 daqiqa ichida):`,
-      Markup.keyboard([
-        [Markup.button.locationRequest('📍 Joylashuvni yuborish')],
-        ['❌ Bekor qilish'],
-      ]).resize().oneTime(),
+      `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}\n📍 Davomat: ${nextLabel}\n\n` +
+        '📍 JONLI joylashuvingizni yuboring (3 daqiqa ichida):\n' +
+        '📎 → Joylashuv (Location) → "Jonli joylashuvni ulashish" (Share Live Location)',
+      Markup.keyboard([['❌ Bekor qilish']]).resize().oneTime(),
     );
   }
 
@@ -360,24 +365,6 @@ export class AttendanceBotService implements OnModuleInit {
       this.logger.error(`GPS attendance error for ${staffId}: ${message}`);
       await ctx.reply(`❌ Xatolik: ${message}`, Markup.removeKeyboard());
     }
-  }
-
-  /**
-   * Detect a forwarded / copied message. Telegram marks forwards with one of
-   * the `forward_*` fields (Bot API ≤ 6.x) or the newer `forward_origin`
-   * object (Bot API ≥ 7.0). A location shared fresh via the request-location
-   * button has none of these.
-   */
-  private isForwardedMessage(message: any): boolean {
-    if (!message) return false;
-    return !!(
-      message.forward_origin ||
-      message.forward_date ||
-      message.forward_from ||
-      message.forward_from_chat ||
-      message.forward_from_message_id ||
-      message.forward_sender_name
-    );
   }
 
   /** Delete the current message, swallowing errors (e.g. already deleted / no rights). */
