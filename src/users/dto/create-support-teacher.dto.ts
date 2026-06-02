@@ -4,56 +4,52 @@ import {
   IsOptional,
   MinLength,
   IsBoolean,
+  IsIn,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
-export class CreateSupportTeacherDto {
-  @ApiProperty({
-    description: "Username for login",
-    example: "john_support",
-  })
+export class CreateStaffDto {
+  @ApiProperty({ example: "john_doe" })
   @IsString()
   @IsNotEmpty()
   username: string;
 
-  @ApiProperty({
-    description: "Password for the support teacher account",
-    minLength: 6,
-    example: "password123",
-  })
+  @ApiProperty({ minLength: 6, example: "password123" })
   @IsString()
   @MinLength(6)
   password: string;
 
-  @ApiProperty({
-    description: "Support teacher's first name",
-    example: "John",
-  })
+  @ApiProperty({ example: "John" })
   @IsString()
   @IsNotEmpty()
   first_name: string;
 
-  @ApiProperty({
-    description: "Support teacher's last name",
-    example: "Smith",
-  })
+  @ApiProperty({ example: "Smith" })
   @IsString()
   @IsNotEmpty()
   last_name: string;
 
-  @ApiPropertyOptional({
-    description: "Support teacher's phone number with country code",
-    example: "+1234567890",
-  })
+  @ApiPropertyOptional({ example: "+998901234567" })
   @IsString()
   @IsOptional()
   phone?: string;
 
-  @ApiPropertyOptional({
-    description: "Whether the support teacher account is active",
-    default: true,
+  @ApiProperty({
+    description: "Role to assign: admin, teacher, or support_teacher",
+    example: "support_teacher",
+    enum: ["admin", "teacher", "support_teacher"],
   })
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(["admin", "teacher", "support_teacher"])
+  role: string;
+
+  @ApiPropertyOptional({ default: true })
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
 }
+
+/** @deprecated use CreateStaffDto */
+export class CreateSupportTeacherDto extends CreateStaffDto {}
+

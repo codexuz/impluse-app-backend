@@ -23,7 +23,7 @@ import {
 import { UsersService } from "./users.service.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
-import { CreateSupportTeacherDto } from "./dto/create-support-teacher.dto.js";
+import { CreateStaffDto } from "./dto/create-support-teacher.dto.js";
 import { CreateAdminDto } from "./dto/create-admin.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { UpdatePasswordDto } from "./dto/update-password.dto.js";
@@ -65,15 +65,12 @@ export class UsersController {
 
   @Post("support-teachers")
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Create a new support teacher" })
-  @ApiResponse({
-    status: 201,
-    description: "Support teacher created successfully",
-  })
+  @ApiOperation({ summary: "Create a new staff member (role from request body)" })
+  @ApiResponse({ status: 201, description: "Staff member created successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
   @ApiResponse({ status: 409, description: "User already exists" })
-  createSupportTeacher(@Body() createSupportTeacherDto: CreateSupportTeacherDto) {
-    return this.usersService.createSupportTeacher(createSupportTeacherDto);
+  createStaff(@Body() dto: CreateStaffDto) {
+    return this.usersService.createStaff(dto);
   }
 
   @Get("staff")

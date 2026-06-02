@@ -517,7 +517,12 @@ export class StaffAttendanceService {
     startDate: string;
     endDate: string;
     teacherId?: string;
+    page?: number;
+    limit?: number;
   }) {
+    const page = Math.max(1, options.page ?? 1);
+    const limit = Math.min(100, Math.max(1, options.limit ?? 20));
+
     const where: any = {
       date: { [Op.between]: [options.startDate, options.endDate] },
       type: "in",
@@ -567,18 +572,31 @@ export class StaffAttendanceService {
       }
     }
 
-    return Object.values(byTeacher).map((t) => ({
+    const allItems = Object.values(byTeacher).map((t) => ({
       ...t,
       attendance_rate: t.total > 0 ? (((t.on_time + t.early) / t.total) * 100).toFixed(1) : "0.0",
     }));
+
+    const total = allItems.length;
+    const offset = (page - 1) * limit;
+    const data = allItems.slice(offset, offset + limit);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   // ---------------------------------------------------------------------------
   // Policy CRUD (admin)
   // ---------------------------------------------------------------------------
 
-  async getPolicies() {
-    return AttendancePolicy.findAll({ where: { is_active: true } });
+  async getPolicies(page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const { count, rows } = await AttendancePolicy.findAndCountAll({
+      where: { is_active: true },
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset,
+    });
+    return { data: rows, total: count, page, limit, totalPages: Math.ceil(count / limit) };
   }
 
   async createPolicy(data: Partial<AttendancePolicy>) {

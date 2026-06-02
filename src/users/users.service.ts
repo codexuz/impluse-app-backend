@@ -14,7 +14,7 @@ import { ArchivedStudent } from "./entities/archived-student.entity.js";
 import { CreateArchivedStudentDto } from "./dto/create-archived-student.dto.js";
 import { CreateUserDto } from "./dto/create-user.dto.js";
 import { CreateTeacherDto } from "./dto/create-teacher.dto.js";
-import { CreateSupportTeacherDto } from "./dto/create-support-teacher.dto.js";
+import { CreateStaffDto, CreateSupportTeacherDto } from "./dto/create-support-teacher.dto.js";
 import { CreateAdminDto } from "./dto/create-admin.dto.js";
 import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { CreateRoleDto } from "./dto/create-role.dto.js";
@@ -127,37 +127,29 @@ export class UsersService {
     return this.findOne(user.user_id);
   }
 
-  async createSupportTeacher(
-    createSupportTeacherDto: CreateSupportTeacherDto,
-  ): Promise<User> {
-    // Check if user already exists
-    await this.checkExistingUser(
-      createSupportTeacherDto.username,
-      createSupportTeacherDto.phone,
-    );
+  async createStaff(dto: CreateStaffDto): Promise<User> {
+    await this.checkExistingUser(dto.username, dto.phone);
 
-    // Hash password
-    const hashedPassword = await this.hashPassword(
-      createSupportTeacherDto.password,
-    );
+    const hashedPassword = await this.hashPassword(dto.password);
 
-    // Create user
+    const { role, ...userData } = dto;
     const user = await this.userModel.create({
-      ...createSupportTeacherDto,
+      ...userData,
       password_hash: hashedPassword,
-      is_active: true,
+      is_active: dto.is_active ?? true,
     });
 
-    // Assign support_teacher role
-    const supportTeacherRole = await this.roleModel.findOne({
-      where: { name: "support_teacher" },
-    });
-    if (supportTeacherRole) {
-      await user.$add("roles", supportTeacherRole);
+    const assignedRole = await this.roleModel.findOne({ where: { name: role } });
+    if (assignedRole) {
+      await user.$add("roles", assignedRole);
     }
 
-    // Return user with profile included
     return this.findOne(user.user_id);
+  }
+
+  /** @deprecated use createStaff */
+  async createSupportTeacher(dto: CreateSupportTeacherDto): Promise<User> {
+    return this.createStaff({ ...dto, role: dto.role ?? "support_teacher" });
   }
 
   async getUsersByRole(
@@ -532,8 +524,7 @@ export class UsersService {
       ];
     }
 
-    // Exclude users who additionally hold teacher, manager or owner roles.
-    // e.g. an admin+teacher or admin+owner is not considered pure staff here.
+    // Exclude users who hold owner or manager roles.
     const excludedRoleUsers = await this.userModel.findAll({
       attributes: ["user_id"],
       include: [
@@ -541,7 +532,7 @@ export class UsersService {
           model: Role,
           as: "roles",
           attributes: [],
-          where: { name: { [Op.in]: ["teacher", "manager", "owner"] } },
+          where: { name: { [Op.in]: ["manager", "owner"] } },
           through: { attributes: [] },
         },
       ],
@@ -552,8 +543,7 @@ export class UsersService {
       whereClause.user_id = { [Op.notIn]: excludedUserIds };
     }
 
-    // Staff = users that have the admin or support_teacher role, after removing
-    // anyone who also carries a teacher/manager/owner role above.
+    // Staff = admin, support_teacher, or teacher (excluding manager/owner above).
     const { count, rows } = await this.userModel.findAndCountAll({
       where: whereClause,
       attributes: {
@@ -563,7 +553,7 @@ export class UsersService {
         {
           model: Role,
           as: "roles",
-          where: { name: { [Op.in]: ["admin", "support_teacher"] } },
+          where: { name: { [Op.in]: ["admin", "support_teacher", "teacher"] } },
           required: true,
           through: { attributes: [] },
         },

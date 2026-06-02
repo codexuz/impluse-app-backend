@@ -125,12 +125,22 @@ export class StaffAttendanceController {
   @ApiQuery({ name: "startDate", required: true, type: String })
   @ApiQuery({ name: "endDate", required: true, type: String })
   @ApiQuery({ name: "teacherId", required: false, type: String })
+  @ApiQuery({ name: "page", required: false, type: Number })
+  @ApiQuery({ name: "limit", required: false, type: Number })
   async getSummary(
     @Query("startDate") startDate: string,
     @Query("endDate") endDate: string,
     @Query("teacherId") teacherId?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
   ) {
-    return this.staffAttendanceService.getSummary({ startDate, endDate, teacherId });
+    return this.staffAttendanceService.getSummary({
+      startDate,
+      endDate,
+      teacherId,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -159,8 +169,16 @@ export class StaffAttendanceController {
   @Get("policies")
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "List fine policies (Admin only)" })
-  async getPolicies() {
-    return this.staffAttendanceService.getPolicies();
+  @ApiQuery({ name: "page", required: false, type: Number })
+  @ApiQuery({ name: "limit", required: false, type: Number })
+  async getPolicies(
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.staffAttendanceService.getPolicies(
+      page ? parseInt(page, 10) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
+    );
   }
 
   @Post("policies")
