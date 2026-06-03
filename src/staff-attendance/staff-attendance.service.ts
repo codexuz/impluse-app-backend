@@ -514,11 +514,19 @@ export class StaffAttendanceService {
     const cronCutoff = 9 * 60 + 30; // 09:30 in minutes
 
     const profiles = await StaffProfile.findAll({
-      include: [{ association: "staff", required: true }],
+      include: [
+        {
+          association: "staff",
+          required: true,
+          include: [{ association: "roles" }],
+        },
+      ],
     });
 
     for (const profile of profiles) {
       const staffId = profile.staff_id;
+      const roleNames = ((profile.staff as any)?.roles || []).map((r: any) => r.name as string);
+      const isTeacher = roleNames.includes("teacher");
 
       const hasCheckedIn = await StaffAttendance.findOne({
         where: { teacher_id: staffId, date: today, type: "in" },
@@ -571,16 +579,35 @@ export class StaffAttendanceService {
         return (ah * 60 + am) - (bh * 60 + bm);
       })[0];
 
+      // Only teachers carry a wallet/transactions, so only they are fined.
+      const absenceFine = isTeacher ? 200000 : 0;
+
       const absentRecord = await StaffAttendance.create({
         teacher_id: staffId,
         group_id: null,
         date: today,
         status: "late",
         type: "in",
-        fine_amount: 0,
+        fine_amount: 200000,
         minutes_late: 0,
         description: "Ishga kelmadi (avtomatik belgilandi)",
       } as any);
+
+      if (absenceFine > 0) {
+        await TeacherTransaction.create({
+          teacher_id: staffId,
+          amount: absenceFine,
+          type: "jarima",
+          description: "Ruxsatsiz ishga kelmagani uchun jarima",
+        } as any);
+
+        const wallet = await TeacherWallet.findOne({ where: { teacher_id: staffId } });
+        if (!wallet) {
+          await TeacherWallet.create({ teacher_id: staffId, amount: -absenceFine });
+        } else {
+          await wallet.update({ amount: wallet.amount - absenceFine });
+        }
+      }
 
       await this.logEvent({
         staffId,
