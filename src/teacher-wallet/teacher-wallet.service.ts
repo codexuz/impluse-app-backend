@@ -145,6 +145,17 @@ export class TeacherWalletService {
       return;
     }
 
+    // Boundaries of the current month in UTC+5 (Asia/Tashkent, same as the
+    // cron schedule), used to detect an already-paid salary.
+    const UTC5_OFFSET_MS = 5 * 60 * 60 * 1000;
+    const nowUtc5 = new Date(Date.now() + UTC5_OFFSET_MS);
+    const year = nowUtc5.getUTCFullYear();
+    const month = nowUtc5.getUTCMonth();
+    const monthStart = new Date(Date.UTC(year, month, 1, 0, 0, 0) - UTC5_OFFSET_MS);
+    const monthEnd = new Date(
+      Date.UTC(year, month + 1, 0, 23, 59, 59) - UTC5_OFFSET_MS,
+    );
+
     for (const profile of profiles) {
       try {
         const wallet = await this.teacherWalletModel.findOne({
@@ -153,6 +164,26 @@ export class TeacherWalletService {
 
         if (!wallet || wallet.amount <= 0) {
           this.logger.warn(`Teacher ${profile.user_id} has no balance to pay`);
+          continue;
+        }
+
+        // Skip if salary was already paid this month (manually or by a
+        // previous auto-run) to prevent a double payment.
+        const existingPayment = await this.teacherTransactionModel.findOne({
+          where: {
+            teacher_id: profile.user_id,
+            type: 'oylik',
+            created_at: {
+              [Op.gte]: monthStart,
+              [Op.lte]: monthEnd,
+            },
+          },
+        });
+
+        if (existingPayment) {
+          this.logger.warn(
+            `Teacher ${profile.user_id} already has an 'oylik' payment for this month, skipping auto-payment`,
+          );
           continue;
         }
 
