@@ -207,7 +207,8 @@ export class CompensateLessonsService {
               });
 
               if (wallet) {
-                await wallet.update({ amount: wallet.amount + amount });
+                // Atomically increment wallet to avoid race conditions
+                await wallet.increment('amount', { by: amount });
               } else {
                 await this.teacherWalletModel.create({
                   teacher_id: compensateLesson.teacher_id,

@@ -120,10 +120,8 @@ export class AttendanceService {
               amount: paymentAmount,
             });
           } else {
-            // Update existing wallet by adding the payment amount
-            await teacherWallet.update({
-              amount: teacherWallet.amount + paymentAmount,
-            });
+            // Atomically increment wallet to avoid race conditions with concurrent requests
+            await teacherWallet.increment('amount', { by: paymentAmount });
           }
 
           // Create teacher transaction record for audit trail (one per student)
@@ -452,9 +450,8 @@ export class AttendanceService {
           });
 
           if (teacherWallet) {
-            await teacherWallet.update({
-              amount: teacherWallet.amount - teacherProfile.payment_value,
-            });
+            // Atomically decrement wallet to avoid race conditions
+            await teacherWallet.decrement('amount', { by: teacherProfile.payment_value });
             console.log(
               `Deducted ${teacherProfile.payment_value} from teacher ${teacherId} wallet for absent student ${studentId}`,
             );
@@ -556,9 +553,8 @@ export class AttendanceService {
           });
 
           if (teacherWallet) {
-            await teacherWallet.update({
-              amount: teacherWallet.amount - teacherProfile.payment_value,
-            });
+            // Atomically decrement wallet to avoid race conditions
+            await teacherWallet.decrement('amount', { by: teacherProfile.payment_value });
             console.log(
               `Deducted ${teacherProfile.payment_value} from teacher ${attendance.teacher_id} wallet for removed attendance`,
             );
