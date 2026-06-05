@@ -46,21 +46,23 @@ import { Lead } from "../leads/entities/lead.entity.js";
     BonusPenaltyCategoryService,
   ],
 })
-export class BonusPenaltyModule implements OnModuleInit {
-  constructor(
-    private readonly bonusPenaltyWalletService: BonusPenaltyWalletService,
-  ) {}
-
-  // Backfill wallets for all existing admin/teacher/support_teacher users on
-  // startup. Idempotent — only missing wallets are created.
-  async onModuleInit() {
-    try {
-      await this.bonusPenaltyWalletService.seedWalletsForStaffRoles();
-    } catch (error: any) {
-      // Never block app startup on the backfill.
-      console.error(
-        `Failed to seed bonus & penalty wallets: ${error.message}`,
-      );
-    }
-  }
+export class BonusPenaltyModule {
+  // Startup wallet backfill disabled. Re-enable by implementing OnModuleInit
+  // and calling seedWalletsForStaffRoles() (or trigger it manually).
+  // constructor(
+  //   private readonly bonusPenaltyWalletService: BonusPenaltyWalletService,
+  // ) {}
+  //
+  // // Backfill wallets for all existing admin/teacher/support_teacher users on
+  // // startup. Idempotent — only missing wallets are created.
+  // async onModuleInit() {
+  //   try {
+  //     await this.bonusPenaltyWalletService.seedWalletsForStaffRoles();
+  //   } catch (error: any) {
+  //     // Never block app startup on the backfill.
+  //     console.error(
+  //       `Failed to seed bonus & penalty wallets: ${error.message}`,
+  //     );
+  //   }
+  // }
 }

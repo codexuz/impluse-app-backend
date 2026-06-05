@@ -1360,130 +1360,57 @@ export class UsersService {
     const deletedAssociations: Record<string, number> = {};
 
     try {
-      const models = sequelize.models;
+      // Auto-derive every relation that references this user from the model's
+      // registered associations (see initializeAssociations in models/index).
+      // This stays in sync as relations are added — no manual list to maintain.
+      //   - HasMany / HasOne : child rows hold the FK  → hard-delete them
+      //   - BelongsToMany    : delete the junction rows
+      //   - BelongsTo        : the target is a parent (Branch, Course) → skip
+      // A few relations reference the user only softly: null the FK and keep
+      // the row rather than deleting it (and everything it owns).
+      const NULLIFY_FKS: Record<string, string[]> = {
+        Group: ["teacher_id"], // unassign the teacher, keep the group
+        Branch: ["owner_id"], // clear the owner, keep the branch
+      };
 
-      // Delete from junction / child tables that reference user_id or related FK columns
-      // Each entry: [ModelName, foreignKeyColumn]
-      const associatedTables: [string, string][] = [
-        // User identity & auth
-        ["UserRole", "userId"],
-        ["UserSession", "userId"],
-        ["SmsVerification", "userId"],
+      // Guard against processing the same target+FK twice (a hasMany and a
+      // belongsToMany can resolve to the same junction column).
+      const processed = new Set<string>();
 
-        // Student-related
-        ["StudentProfile", "user_id"],
-        ["StudentParent", "student_id"],
-        ["StudentWallet", "student_id"],
-        ["StudentTransaction", "student_id"],
-        ["StudentVocabularyProgress", "student_id"],
-        ["StudentPayment", "student_id"],
+      for (const association of Object.values(this.userModel.associations)) {
+        const assoc = association as any;
+        if (assoc.associationType === "BelongsTo") continue;
 
-        // Teacher-related
-        ["TeacherProfile", "user_id"],
-        ["TeacherWallet", "teacher_id"],
-        ["TeacherTransaction", "teacher_id"],
+        const targetModel =
+          assoc.associationType === "BelongsToMany"
+            ? assoc.throughModel ?? assoc.through?.model
+            : assoc.target;
+        const fkColumn = assoc.foreignKey as string;
+        if (!targetModel || !fkColumn) continue;
 
-        // Groups
-        ["GroupStudent", "student_id"],
-        ["GroupAssignedLesson", "granted_by"],
-        ["GroupAssignedUnit", "teacher_id"],
-        ["GroupHomework", "teacher_id"],
+        const modelName = targetModel.name as string;
+        const key = `${modelName}.${fkColumn}`;
+        if (processed.has(key)) continue;
+        processed.add(key);
 
-        // Homework & Attendance
-        ["HomeworkSubmission", "student_id"],
-        ["Attendance", "student_id"],
-        ["AttendanceLog", "student_id"],
-
-        // Lesson progress
-        ["LessonProgress", "student_id"],
-        ["UserCourse", "userId"],
-
-        // Payments & Actions
-        ["PaymentAction", "manager_id"],
-
-        // Exams
-        ["ExamResult", "student_id"],
-
-        // Compensate lessons
-        ["CompensateLesson", "teacher_id"],
-        ["CompensateLesson", "student_id"],
-        ["CompensateTeacherWallet", "teacher_id"],
-
-        // Support
-        ["SupportSchedule", "support_teacher_id"],
-        ["SupportBooking", "student_id"],
-        ["SupportBooking", "support_teacher_id"],
-
-        // Chat
-        ["GroupChatMembers", "user_id"],
-        ["Messages", "sender_id"],
-
-        // Notifications
-        ["UserNotification", "user_id"],
-        ["NotificationToken", "user_id"],
-
-        // AI Chat
-        ["chatHistory", "userId"],
-
-        // Archived students (as student and as teacher)
-        ["ArchivedStudent", "user_id"],
-        ["ArchivedStudent", "teacher_id"],
-
-        // Lead trial lessons
-        ["LeadTrialLesson", "teacher_id"],
-
-        // IELTS
-        ["IeltsMockTest", "user_id"],
-        ["IeltsAnswerAttempt", "user_id"],
-        ["IeltsWritingAnswer", "user_id"],
-        ["IeltsReadingAnswer", "user_id"],
-        ["IeltsListeningAnswer", "user_id"],
-        ["IeltsLessonProgress", "user_id"],
-        ["IeltsQuizAttempt", "user_id"],
-
-        // Expenses
-        ["Expense", "reported_by"],
-        ["Expense", "teacher_id"],
-
-        // Speaking
-        ["SpeakingResponse", "student_id"],
-
-        // CD IELTS
-        ["CdRegister", "student_id"],
-
-        // Audio
-        ["Audio", "studentId"],
-        ["AudioComment", "userId"],
-        ["AudioLike", "userId"],
-        ["AudioJudge", "judgeUserId"],
-
-        // Certificates
-        ["Certificate", "student_id"],
-      ];
-
-      for (const [modelName, fkColumn] of associatedTables) {
-        if (models[modelName]) {
-          const deleted = await models[modelName].destroy({
-            where: { [fkColumn]: id },
-            force: true, // bypass paranoid soft-delete so FK rows are truly removed
-            transaction,
-          });
-          if (deleted > 0) {
-            const key = `${modelName}.${fkColumn}`;
-            deletedAssociations[key] =
-              (deletedAssociations[key] || 0) + deleted;
+        if (NULLIFY_FKS[modelName]?.includes(fkColumn)) {
+          const [updated] = await targetModel.update(
+            { [fkColumn]: null },
+            { where: { [fkColumn]: id }, transaction },
+          );
+          if (updated > 0) {
+            deletedAssociations[`${key} (nullified)`] = updated;
           }
+          continue;
         }
-      }
 
-      // Nullify teacher_id on groups so the group is not deleted, just unassigned
-      if (models.Group) {
-        const [updatedCount] = await models.Group.update(
-          { teacher_id: null },
-          { where: { teacher_id: id }, transaction },
-        );
-        if (updatedCount > 0) {
-          deletedAssociations["Group.teacher_id (nullified)"] = updatedCount;
+        const deleted = await targetModel.destroy({
+          where: { [fkColumn]: id },
+          force: true, // bypass paranoid soft-delete so FK rows are truly removed
+          transaction,
+        });
+        if (deleted > 0) {
+          deletedAssociations[key] = (deletedAssociations[key] || 0) + deleted;
         }
       }
 
