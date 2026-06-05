@@ -9,6 +9,7 @@ import { CreateBonusPenaltyWalletDto } from "./dto/create-bonus-penalty-wallet.d
 import { UpdateBonusPenaltyWalletDto } from "./dto/update-bonus-penalty-wallet.dto.js";
 import { UpdateWalletAmountDto } from "./dto/update-wallet-amount.dto.js";
 import { BonusPenaltyWallet } from "./entities/bonus-penalty-wallet.entity.js";
+import { Op } from "sequelize";
 import { User } from "../users/entities/user.entity.js";
 import { Role } from "../users/entities/role.model.js";
 import { UserRole } from "../users/entities/user-role.model.js";
@@ -175,6 +176,59 @@ export class BonusPenaltyWalletService {
       } as any,
     });
     return wallet;
+  }
+
+  /**
+   * Settle (reset) a wallet after its balance has been paid out: capture the
+   * current balance, then zero it. The bonus/jarima/referal transactions stay
+   * in the ledger as the audit trail. Returns the amount that was paid out.
+   */
+  async settle(id: string): Promise<{
+    id: string;
+    teacher_id: string;
+    paid_amount: number;
+  }> {
+    const wallet = await this.findOne(id);
+    const paidAmount = wallet.amount;
+
+    if (paidAmount !== 0) {
+      await wallet.update({ amount: 0 });
+      this.logger.log(
+        `Settled bonus & penalty wallet ${id} (teacher ${wallet.teacher_id}), paid: ${paidAmount}`,
+      );
+    }
+
+    return { id: wallet.id, teacher_id: wallet.teacher_id, paid_amount: paidAmount };
+  }
+
+  /** Settle a wallet by teacher id. */
+  async settleByTeacher(teacherId: string) {
+    const wallet = await this.findByTeacherId(teacherId);
+    return this.settle(wallet.id);
+  }
+
+  /**
+   * Bulk-settle every wallet with a non-zero balance (e.g. at month end).
+   * Returns how many wallets were reset and the total amount paid out.
+   */
+  async settleAll(): Promise<{ count: number; total_paid: number }> {
+    const wallets = await this.bonusPenaltyWalletModel.findAll({
+      where: { amount: { [Op.ne]: 0 } },
+    });
+
+    let total = 0;
+    for (const wallet of wallets) {
+      total += wallet.amount;
+      await wallet.update({ amount: 0 });
+    }
+
+    if (wallets.length > 0) {
+      this.logger.log(
+        `Settled ${wallets.length} bonus & penalty wallet(s), total paid: ${total}`,
+      );
+    }
+
+    return { count: wallets.length, total_paid: total };
   }
 
   async remove(id: string): Promise<void> {

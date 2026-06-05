@@ -101,6 +101,44 @@ export class BonusPenaltyWalletController {
     );
   }
 
+  @Post("settle-all")
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary:
+      "Settle (reset) all wallets after payout. Zeroes every non-zero balance and returns the total paid.",
+  })
+  settleAll() {
+    return this.bonusPenaltyWalletService.settleAll();
+  }
+
+  @Patch("teacher/:teacherId/settle")
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: "Settle (reset) a teacher's wallet after payout",
+  })
+  @ApiParam({
+    name: "teacherId",
+    description: "Teacher ID (UUID)",
+    type: "string",
+  })
+  settleByTeacher(@Param("teacherId") teacherId: string) {
+    return this.bonusPenaltyWalletService.settleByTeacher(teacherId);
+  }
+
+  @Patch(":id/settle")
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary:
+      "Settle (reset) a wallet after payout. Captures the balance, then zeroes it.",
+  })
+  @ApiParam({ name: "id", description: "Wallet ID (UUID)", type: "string" })
+  settle(@Param("id") id: string) {
+    return this.bonusPenaltyWalletService.settle(id);
+  }
+
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(Role.ADMIN)
