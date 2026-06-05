@@ -8,6 +8,7 @@ import { BonusPenaltyWalletService } from "./bonus-penalty-wallet.service.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { Lead } from "../leads/entities/lead.entity.js";
 import { BonusPenaltyCategory } from "./entities/bonus-penalty-category.entity.js";
 import { Op } from "sequelize";
 
@@ -206,6 +207,12 @@ export class BonusPenaltyTransactionService {
         model: BonusPenaltyCategory,
         as: "category",
         attributes: ["id", "name", "type"],
+        required: false,
+      },
+      {
+        model: Lead,
+        as: "lead",
+        attributes: ["id", "first_name", "last_name", "phone", "status"],
         required: false,
       },
     ];

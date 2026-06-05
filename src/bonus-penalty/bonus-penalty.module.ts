@@ -14,6 +14,7 @@ import { Group } from "../groups/entities/group.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { Role } from "../users/entities/role.model.js";
 import { UserRole } from "../users/entities/user-role.model.js";
+import { Lead } from "../leads/entities/lead.entity.js";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { UserRole } from "../users/entities/user-role.model.js";
       User,
       Role,
       UserRole,
+      Lead,
     ]),
   ],
   controllers: [
