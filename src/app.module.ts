@@ -101,6 +101,7 @@ import { TelegramChatModule } from "./telegram-chat/telegram-chat.module.js";
 import { StaffAttendanceModule } from './staff-attendance/staff-attendance.module.js';
 import { AttendanceBotModule } from './attendance-bot/attendance-bot.module.js';
 import { StaffProfileModule } from './staff-profile/staff-profile.module.js';
+import { BonusPenaltyModule } from './bonus-penalty/bonus-penalty.module.js';
 
 @Module({
   imports: [
@@ -216,6 +217,7 @@ import { StaffProfileModule } from './staff-profile/staff-profile.module.js';
     StaffAttendanceModule,
     AttendanceBotModule,
     StaffProfileModule,
+    BonusPenaltyModule,
   ],
   controllers: [AppController],
   providers: [

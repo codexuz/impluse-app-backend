@@ -6,6 +6,8 @@ import {
   IsEnum,
   IsOptional,
   IsArray,
+  IsInt,
+  Min,
 } from "class-validator";
 
 export enum LeadStatus {
@@ -140,4 +142,34 @@ export class CreateLeadDto {
   @IsString()
   @IsOptional()
   notes: string;
+
+  @ApiProperty({
+    description: "Student (User) ID who referred this lead",
+    example: "123e4567-e89b-12d3-a456-426614174000",
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  referred_by_student_id?: string;
+
+  @ApiProperty({
+    description:
+      "Teacher (User) ID to be credited the referral bonus. If omitted, it is resolved from the referring student's most recent active group on enrollment.",
+    example: "123e4567-e89b-12d3-a456-426614174000",
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  referral_teacher_id?: string;
+
+  @ApiProperty({
+    description:
+      "Referral bonus amount to pay the teacher on enrollment (defaults to REFERRAL_BONUS_AMOUNT when omitted)",
+    example: 50000,
+    required: false,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  referral_bonus_amount?: number;
 }

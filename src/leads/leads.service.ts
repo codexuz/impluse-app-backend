@@ -1,16 +1,21 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { CreateLeadDto } from "./dto/create-lead.dto.js";
 import { UpdateLeadDto } from "./dto/update-lead.dto.js";
 import { Lead } from "./entities/lead.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { BonusPenaltyTransactionService } from "../bonus-penalty/bonus-penalty-transaction.service.js";
+import { LeadStatus } from "./dto/create-lead.dto.js";
 import { Op } from "sequelize";
 
 @Injectable()
 export class LeadsService {
+  private readonly logger = new Logger(LeadsService.name);
+
   constructor(
     @InjectModel(Lead)
     private leadModel: typeof Lead,
+    private bonusPenaltyTransactionService: BonusPenaltyTransactionService,
   ) {}
 
   async create(createLeadDto: CreateLeadDto): Promise<Lead> {
@@ -197,7 +202,53 @@ export class LeadsService {
 
   async update(id: string, updateLeadDto: UpdateLeadDto): Promise<Lead> {
     const lead = await this.findOne(id);
-    return await lead.update(updateLeadDto);
+    const wasEnrolled = lead.status === LeadStatus.OQISHGA_YOZILDI;
+
+    const updatedLead = await lead.update(updateLeadDto);
+
+    // Pay the teacher referral bonus when a referred lead transitions to the
+    // "enrolled" status for the first time.
+    const becameEnrolled =
+      !wasEnrolled && updatedLead.status === LeadStatus.OQISHGA_YOZILDI;
+
+    if (
+      becameEnrolled &&
+      updatedLead.referred_by_student_id &&
+      !updatedLead.referral_paid
+    ) {
+      await this.payLeadReferralBonus(updatedLead);
+    }
+
+    return updatedLead;
+  }
+
+  /**
+   * Credit the referral bonus to the referring student's teacher and mark the
+   * lead as paid. Failures are logged but never block the lead update.
+   */
+  private async payLeadReferralBonus(lead: Lead): Promise<void> {
+    try {
+      const transaction =
+        await this.bonusPenaltyTransactionService.payReferralBonus({
+          teacher_id: lead.referral_teacher_id || undefined,
+          student_id: lead.referred_by_student_id,
+          lead_id: lead.id,
+          branch_id: lead.branch_id || undefined,
+          amount: lead.referral_bonus_amount || undefined,
+          description: `Referal bonus: ${lead.first_name} ${lead.last_name} o'qishga yozildi`,
+        });
+
+      if (transaction) {
+        await lead.update({ referral_paid: true });
+        this.logger.log(
+          `Referral bonus paid for lead ${lead.id} to teacher ${transaction.teacher_id}`,
+        );
+      }
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to pay referral bonus for lead ${lead.id}: ${error.message}`,
+      );
+    }
   }
 
   async remove(id: string): Promise<void> {

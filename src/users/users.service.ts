@@ -30,6 +30,10 @@ import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 import { Course } from "../courses/entities/course.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import {
+  BonusPenaltyWalletService,
+  WALLET_ROLES,
+} from "../bonus-penalty/bonus-penalty-wallet.service.js";
 
 @Injectable()
 export class UsersService {
@@ -50,7 +54,20 @@ export class UsersService {
     private userRoleModel: typeof UserRole,
     private configService: ConfigService,
     private awsStorageService: AwsStorageService,
+    private bonusPenaltyWalletService: BonusPenaltyWalletService,
   ) {}
+
+  // Ensure a staff member (admin/teacher/support_teacher) owns a bonus &
+  // penalty wallet. Never blocks user creation if the wallet write fails.
+  private async ensureBonusPenaltyWallet(userId: string): Promise<void> {
+    try {
+      await this.bonusPenaltyWalletService.findOrCreate(userId);
+    } catch (error: any) {
+      console.error(
+        `Failed to create bonus & penalty wallet for ${userId}: ${error.message}`,
+      );
+    }
+  }
 
   private async checkExistingUser(
     username: string,
@@ -97,6 +114,8 @@ export class UsersService {
       await user.$add("roles", teacherRole);
     }
 
+    await this.ensureBonusPenaltyWallet(user.user_id);
+
     // Return user with profile included
     return this.findOne(user.user_id);
   }
@@ -123,6 +142,8 @@ export class UsersService {
       await user.$add("roles", adminRole);
     }
 
+    await this.ensureBonusPenaltyWallet(user.user_id);
+
     // Return user with profile included
     return this.findOne(user.user_id);
   }
@@ -142,6 +163,10 @@ export class UsersService {
     const assignedRole = await this.roleModel.findOne({ where: { name: role } });
     if (assignedRole) {
       await user.$add("roles", assignedRole);
+    }
+
+    if (WALLET_ROLES.includes(role)) {
+      await this.ensureBonusPenaltyWallet(user.user_id);
     }
 
     return this.findOne(user.user_id);

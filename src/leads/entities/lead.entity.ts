@@ -116,4 +116,35 @@ export class Lead extends Model {
     allowNull: true,
   })
   notes: string;
+
+  // Referral: the student (User) who referred this lead.
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  referred_by_student_id: string;
+
+  // Referral: the teacher (User) to be credited the referral bonus. When left
+  // empty it is resolved from the referring student's most recent active group.
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  referral_teacher_id: string;
+
+  // Referral: bonus amount to pay on enrollment (per-request override of the
+  // default REFERRAL_BONUS_AMOUNT).
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  referral_bonus_amount: number;
+
+  // Referral: guards against paying the referral bonus more than once.
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  referral_paid: boolean;
 }

@@ -11,6 +11,7 @@ import { SmsVerification } from "./entities/sms-verification.model.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { MinioModule } from "../minio/minio.module.js";
 import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
+import { BonusPenaltyModule } from "../bonus-penalty/bonus-penalty.module.js";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
     ]),
     MinioModule,
     AwsStorageModule,
+    BonusPenaltyModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

@@ -136,6 +136,9 @@ import { StaffAttendanceEvent } from "../staff-attendance/entities/staff-attenda
 import { StaffPermission } from "../staff-attendance/entities/staff-permission.entity.js";
 import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
 import { StaffShift } from "../staff-profile/entities/staff-shift.entity.js";
+import { BonusPenaltyWallet } from "../bonus-penalty/entities/bonus-penalty-wallet.entity.js";
+import { BonusPenaltyTransaction } from "../bonus-penalty/entities/bonus-penalty-transaction.entity.js";
+import { BonusPenaltyCategory } from "../bonus-penalty/entities/bonus-penalty-category.entity.js";
 
 export const Models = [
   User,
@@ -264,6 +267,9 @@ export const Models = [
   StaffPermission,
   StaffProfile,
   StaffShift,
+  BonusPenaltyWallet,
+  BonusPenaltyTransaction,
+  BonusPenaltyCategory,
 ];
 
 // Define associations after all models are loaded
@@ -1813,5 +1819,55 @@ export function initializeAssociations() {
     otherKey: "writing_id",
     as: "linkedWritings",
     uniqueKey: "uq_writing_writing_task",
+  });
+
+  // BonusPenaltyWallet associations
+  User.hasOne(BonusPenaltyWallet, {
+    foreignKey: "teacher_id",
+    as: "bonus_penalty_wallet",
+  });
+  BonusPenaltyWallet.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "teacher",
+  });
+
+  // BonusPenaltyTransaction associations
+  User.hasMany(BonusPenaltyTransaction, {
+    foreignKey: "teacher_id",
+    as: "bonus_penalty_transactions",
+  });
+  BonusPenaltyTransaction.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "teacher",
+  });
+  User.hasMany(BonusPenaltyTransaction, {
+    foreignKey: "student_id",
+    as: "referred_bonus_penalty_transactions",
+  });
+  BonusPenaltyTransaction.belongsTo(User, {
+    foreignKey: "student_id",
+    as: "student",
+  });
+  BonusPenaltyTransaction.belongsTo(Branch, {
+    foreignKey: "branch_id",
+    as: "branch",
+  });
+  BonusPenaltyTransaction.belongsTo(Lead, {
+    foreignKey: "lead_id",
+    as: "lead",
+  });
+  Lead.hasMany(BonusPenaltyTransaction, {
+    foreignKey: "lead_id",
+    as: "bonus_penalty_transactions",
+  });
+
+  // BonusPenaltyCategory associations
+  BonusPenaltyCategory.hasMany(BonusPenaltyTransaction, {
+    foreignKey: "category_id",
+    as: "transactions",
+  });
+  BonusPenaltyTransaction.belongsTo(BonusPenaltyCategory, {
+    foreignKey: "category_id",
+    as: "category",
   });
 }
