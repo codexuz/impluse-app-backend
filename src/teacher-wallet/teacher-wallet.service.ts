@@ -107,10 +107,15 @@ export class TeacherWalletService {
   ): Promise<TeacherWallet> {
     const wallet = await this.findOne(id);
 
-    const newAmount = wallet.amount + updateWalletAmountDto.amount;
+    // Use atomic increment/decrement to avoid race conditions
+    const amount = updateWalletAmountDto.amount;
+    if (amount >= 0) {
+      await wallet.increment('amount', { by: amount });
+    } else {
+      await wallet.decrement('amount', { by: Math.abs(amount) });
+    }
 
-    await wallet.update({ amount: newAmount });
-
+    await wallet.reload();
     return wallet;
   }
 
@@ -196,7 +201,9 @@ export class TeacherWalletService {
           description: `Oylik maosh to'landi (${new Date().toLocaleDateString('uz-UZ')})`,
         } as any);
 
-        await wallet.update({ amount: 0 });
+        // Atomically decrement by the recorded amount instead of setting to 0,
+        // so concurrent attendance increments aren't lost.
+        await wallet.decrement('amount', { by: amount });
 
         this.logger.log(`Salary paid for teacher ${profile.user_id}, amount: ${amount}`);
       } catch (error: any) {
