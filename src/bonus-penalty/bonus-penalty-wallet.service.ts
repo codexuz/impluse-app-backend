@@ -9,11 +9,22 @@ import { CreateBonusPenaltyWalletDto } from "./dto/create-bonus-penalty-wallet.d
 import { UpdateBonusPenaltyWalletDto } from "./dto/update-bonus-penalty-wallet.dto.js";
 import { UpdateWalletAmountDto } from "./dto/update-wallet-amount.dto.js";
 import { BonusPenaltyWallet } from "./entities/bonus-penalty-wallet.entity.js";
+import { User } from "../users/entities/user.entity.js";
 import { Role } from "../users/entities/role.model.js";
 import { UserRole } from "../users/entities/user-role.model.js";
 
 // Roles that should always own a bonus & penalty wallet.
 export const WALLET_ROLES = ["admin", "teacher", "support_teacher"];
+
+// Staff (User) fields returned alongside each wallet.
+const STAFF_ATTRIBUTES = [
+  "user_id",
+  "username",
+  "first_name",
+  "last_name",
+  "phone",
+  "avatar_url",
+];
 
 @Injectable()
 export class BonusPenaltyWalletService {
@@ -91,6 +102,9 @@ export class BonusPenaltyWalletService {
 
   async findAll(): Promise<BonusPenaltyWallet[]> {
     return await this.bonusPenaltyWalletModel.findAll({
+      include: [
+        { model: User, as: "teacher", attributes: STAFF_ATTRIBUTES, required: false },
+      ],
       order: [["created_at", "DESC"]],
     });
   }
@@ -98,6 +112,9 @@ export class BonusPenaltyWalletService {
   async findByTeacherId(teacherId: string): Promise<BonusPenaltyWallet> {
     const wallet = await this.bonusPenaltyWalletModel.findOne({
       where: { teacher_id: teacherId },
+      include: [
+        { model: User, as: "teacher", attributes: STAFF_ATTRIBUTES, required: false },
+      ],
     });
 
     if (!wallet) {
@@ -110,7 +127,11 @@ export class BonusPenaltyWalletService {
   }
 
   async findOne(id: string): Promise<BonusPenaltyWallet> {
-    const wallet = await this.bonusPenaltyWalletModel.findByPk(id);
+    const wallet = await this.bonusPenaltyWalletModel.findByPk(id, {
+      include: [
+        { model: User, as: "teacher", attributes: STAFF_ATTRIBUTES, required: false },
+      ],
+    });
 
     if (!wallet) {
       throw new NotFoundException(
