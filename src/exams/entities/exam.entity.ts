@@ -37,6 +37,12 @@ export class Exam extends Model<Exam> {
     type: DataType.UUID,
     allowNull: true,
   })
+  teacher_id: string;
+
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
   branch_id: string;
 
   @Column({
@@ -46,29 +52,17 @@ export class Exam extends Model<Exam> {
   scheduled_at: Date;
 
   @Column({
-    type: DataType.ENUM("scheduled", "completed", "cancelled"),
+    type: DataType.ENUM("scheduled", "ongoing", "completed", "cancelled"),
     allowNull: true,
     defaultValue: "scheduled",
   })
-  status: "scheduled" | "completed" | "cancelled";
+  status: "scheduled" | "ongoing" | "completed" | "cancelled";
 
   @Column({
     type: DataType.BOOLEAN,
     allowNull: true,
   })
   is_online: boolean;
-
-  @Column({
-    type: DataType.ENUM(
-      "beginner",
-      "elementary",
-      "pre-intermediate",
-      "intermediate"
-    ),
-    allowNull: false,
-    defaultValue: "beginner",
-  })
-  level: "beginner" | "elementary" | "pre-intermediate" | "intermediate";
 
   @CreatedAt
   created_at: Date;

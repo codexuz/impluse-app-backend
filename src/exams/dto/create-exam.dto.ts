@@ -4,15 +4,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum ExamStatus {
     SCHEDULED = 'scheduled',
+    ONGOING = 'ongoing',
     COMPLETED = 'completed',
     CANCELLED = 'cancelled'
-}
-
-export enum ExamLevel {
-    BEGINNER = 'beginner',
-    ELEMETARY = 'elementary',
-    PRE_INTERMEDIATE = 'pre-intermediate',
-    INTERMEDIATE = 'intermediate'
 }
 
 export class CreateExamDto {
@@ -29,6 +23,14 @@ export class CreateExamDto {
     })
     @IsUUID()
     group_id: string;
+
+    @ApiPropertyOptional({
+        description: 'The UUID of the teacher conducting the exam',
+        example: '123e4567-e89b-12d3-a456-426614174001'
+    })
+    @IsUUID()
+    @IsOptional()
+    teacher_id?: string;
 
     @ApiProperty({
         description: 'The scheduled date and time of the exam',
@@ -56,14 +58,4 @@ export class CreateExamDto {
     @IsBoolean()
     @IsOptional()
     is_online?: boolean = false;
-
-    @ApiPropertyOptional({
-        description: 'The difficulty level of the exam',
-        enum: ExamLevel,
-        default: ExamLevel.BEGINNER,
-        example: ExamLevel.BEGINNER
-    })
-    @IsEnum(ExamLevel)
-    @IsOptional()
-    level?: ExamLevel = ExamLevel.BEGINNER;
 }

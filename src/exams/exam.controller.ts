@@ -105,10 +105,4 @@ export class ExamController {
     return this.examService.findByStatus(status);
   }
 
-  @Get("level/:level")
-  @Roles("admin", "teacher", "student")
-  @ApiOperation({ summary: "Get exams by level" })
-  findByLevel(@Param("level") level: string) {
-    return this.examService.findByLevel(level);
-  }
 }

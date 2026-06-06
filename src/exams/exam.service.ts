@@ -7,6 +7,7 @@ import { Group } from "../groups/entities/group.entity.js";
 import { CreateExamDto } from "./dto/create-exam.dto.js";
 import { UpdateExamDto } from "./dto/update-exam.dto.js";
 import { QueryExamDto } from "./dto/query-exam.dto.js";
+import { ExamResult } from "./entities/exam_result.entity.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
@@ -16,6 +17,8 @@ export class ExamService {
   constructor(
     @InjectModel(Exam)
     private examModel: typeof Exam,
+    @InjectModel(ExamResult)
+    private examResultModel: typeof ExamResult,
     @InjectModel(GroupStudent)
     private groupStudentModel: typeof GroupStudent,
     @InjectModel(Group)
@@ -167,35 +170,18 @@ export class ExamService {
     });
   }
 
-  async findByLevel(level: string): Promise<Exam[]> {
-    return this.examModel.findAll({
-      where: { level },
-      order: [["scheduled_at", "DESC"]],
-    });
-  }
-
   async getByUserId(userId: string): Promise<Exam[]> {
-    // First, find all groups the user is a member of
-    const userGroups = await this.groupStudentModel.findAll({
-      where: {
-        student_id: userId,
-        status: "active", // Only include active memberships
-      },
-      attributes: ["group_id"],
+    const results = await this.examResultModel.findAll({
+      where: { student_id: userId },
+      attributes: ["exam_id"],
     });
 
-    if (!userGroups.length) {
-      return []; // Return empty array if user is not in any group
-    }
+    if (!results.length) return [];
 
-    // Extract group IDs
-    const groupIds = userGroups.map((ug) => ug.group_id);
+    const examIds = results.map((r) => r.exam_id);
 
-    // Find all exams for these groups
     return this.examModel.findAll({
-      where: {
-        group_id: groupIds,
-      },
+      where: { id: examIds },
       order: [["scheduled_at", "DESC"]],
     });
   }
