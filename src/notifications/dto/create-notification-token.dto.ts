@@ -17,4 +17,5 @@ export class CreateNotificationTokenDto {
   @IsUUID(4)
   @IsOptional()
   user_id?: string;
+
 }

@@ -15,6 +15,7 @@ import { NotificationTokenResponseDto } from "./dto/notification-token-response.
 import { NotificationToken } from "./entities/notification-token.entity.js";
 import { ExpoPushService } from "./expo-push.service.js";
 import { Op } from "sequelize";
+import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
 @Injectable()
 export class NotificationsService {
   constructor(private readonly expoPushService: ExpoPushService) {}
@@ -227,22 +228,30 @@ export class NotificationsService {
   }
 
   // Notification Token Methods
+  private async resolveAppType(userId?: string): Promise<string | undefined> {
+    if (!userId) return undefined;
+    const isTeacher = await TeacherProfile.findOne({
+      where: { user_id: userId },
+      attributes: ["id"],
+    });
+    return isTeacher ? "teacher" : "student";
+  }
+
   async createNotificationToken(
     createDto: CreateNotificationTokenDto,
   ): Promise<NotificationTokenResponseDto> {
     try {
-      // Check if user already has a notification token
-      const existingToken = await NotificationToken.findOne({
-        where: { user_id: createDto.user_id },
-      });
+      const app_type = await this.resolveAppType(createDto.user_id);
+      const where: Record<string, unknown> = { user_id: createDto.user_id };
+      if (app_type) where.app_type = app_type;
+
+      const existingToken = await NotificationToken.findOne({ where });
 
       if (existingToken) {
-        // Update existing token with new one
-        await existingToken.update({ token: createDto.token });
+        await existingToken.update({ token: createDto.token, app_type });
         return existingToken;
       } else {
-        // Create new token if user doesn't have one
-        return await NotificationToken.create(createDto);
+        return await NotificationToken.create({ ...createDto, app_type });
       }
     } catch (error) {
       console.error("Error creating/updating notification token:", error);
@@ -331,7 +340,7 @@ export class NotificationsService {
 
       const tokenRecords = await NotificationToken.findAll({ where: { token: tokens }});
       const userIds = [...new Set(tokenRecords.map(t => t.user_id).filter(id => id))];
-      
+
       if (userIds.length > 0) {
         const records = userIds.map(user_id => ({
           user_id,
@@ -342,12 +351,27 @@ export class NotificationsService {
       }
     }
 
-    return this.expoPushService.sendMulticastNotification(
-      tokens,
-      title || "Hello!",
-      body || "This is a test push notification 🚀",
-      customData,
-    );
+    // Split tokens by app_type so tokens from different Expo projects are never
+    // mixed in the same batch (avoids PUSH_TOO_MANY_EXPERIENCE_IDS).
+    const tokenRecords = await NotificationToken.findAll({ where: { token: tokens } });
+    const byAppType = new Map<string, string[]>();
+    for (const record of tokenRecords) {
+      const key = record.app_type || 'default';
+      if (!byAppType.has(key)) byAppType.set(key, []);
+      byAppType.get(key)!.push(record.token);
+    }
+
+    const allTickets = [];
+    for (const [, groupTokens] of byAppType) {
+      const tickets = await this.expoPushService.sendMulticastNotification(
+        groupTokens,
+        title || "Hello!",
+        body || "This is a test push notification 🚀",
+        customData,
+      );
+      allTickets.push(...tickets);
+    }
+    return allTickets;
   }
 
   /**

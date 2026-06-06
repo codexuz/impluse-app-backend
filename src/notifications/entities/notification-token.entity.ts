@@ -11,6 +11,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 interface NotificationTokenCreationAttrs {
   token: string;
   user_id?: string;
+  app_type?: string;
 }
 
 @Table({
@@ -50,6 +51,16 @@ export class NotificationToken extends Model<
     type: DataType.TEXT,
   })
   token!: string;
+
+  @ApiPropertyOptional({
+    description: "App type that registered this token (e.g. 'student', 'teacher')",
+    example: "student",
+  })
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  app_type?: string;
 
   @ApiProperty({
     description: "Date when the notification token was created",
