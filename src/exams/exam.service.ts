@@ -120,6 +120,8 @@ export class ExamService {
       offset,
     });
 
+    await this.resolveTeacherIds(rows);
+
     return {
       data: rows,
       total: count,
@@ -130,7 +132,34 @@ export class ExamService {
   }
 
   async findOne(id: string): Promise<Exam> {
-    return this.examModel.findByPk(id);
+    const exam = await this.examModel.findByPk(id);
+    if (exam && !exam.teacher_id) {
+      const group = await this.groupModel.findOne({
+        where: { id: exam.group_id },
+        attributes: ['teacher_id'],
+      });
+      if (group?.teacher_id) {
+        exam.setDataValue('teacher_id', group.teacher_id);
+      }
+    }
+    return exam;
+  }
+
+  private async resolveTeacherIds(exams: Exam[]): Promise<void> {
+    const missing = exams.filter((e) => !e.teacher_id);
+    if (missing.length === 0) return;
+
+    const groupIds = [...new Set(missing.map((e) => e.group_id))];
+    const groups = await this.groupModel.findAll({
+      where: { id: { [Op.in]: groupIds } },
+      attributes: ['id', 'teacher_id'],
+    });
+    const groupTeacherMap = new Map(groups.map((g) => [g.id, g.teacher_id]));
+
+    for (const exam of missing) {
+      const tid = groupTeacherMap.get(exam.group_id);
+      if (tid) exam.setDataValue('teacher_id', tid);
+    }
   }
 
   async update(id: string, updateExamDto: UpdateExamDto): Promise<[number]> {

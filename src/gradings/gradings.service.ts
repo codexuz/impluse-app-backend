@@ -5,9 +5,8 @@ import { Grading } from "./entities/grading.entity.js";
 import { CreateGradingDto } from "./dto/create-grading.dto.js";
 import { UpdateGradingDto } from "./dto/update-grading.dto.js";
 import { User } from "../users/entities/user.entity.js";
-import { UserRole } from "../users/entities/user-role.model.js";
-import { Role } from "../users/entities/role.model.js";
 import { Group } from "../groups/entities/group.entity.js";
+import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { TelegramBotService } from "../telegram-bot/telegram-bot.service.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
@@ -22,10 +21,10 @@ export class GradingsService {
     private gradingModel: typeof Grading,
     @InjectModel(User)
     private userModel: typeof User,
-    @InjectModel(UserRole)
-    private userRoleModel: typeof UserRole,
-    @InjectModel(Role)
-    private roleModel: typeof Role,
+    @InjectModel(Group)
+    private groupModel: typeof Group,
+    @InjectModel(GroupStudent)
+    private groupStudentModel: typeof GroupStudent,
     private telegramBotService: TelegramBotService,
     private notificationsService: NotificationsService,
   ) {}
@@ -270,67 +269,111 @@ export class GradingsService {
     await this.sendTeacherGradingReminders(18);
   }
 
+  // Returns the `days` enum values that match today's weekday.
+  // odd  = Mon/Wed/Fri (JS getDay: 1, 3, 5)
+  // even = Tue/Thu/Sat (JS getDay: 2, 4, 6)
+  // Returns null on Sunday when no groups meet.
+  private getTodayApplicableDays(): string[] | null {
+    const dow = new Date().getDay(); // 0=Sun … 6=Sat
+    if (dow === 0) return null;
+    return dow % 2 === 1 ? ["odd", "every_day"] : ["even", "every_day"];
+  }
+
   private async sendTeacherGradingReminders(localHour: number): Promise<void> {
-    this.logger.log("Sending grading reminders to teachers");
+    this.logger.log(`Sending grading reminders to teachers at local ${localHour}:00`);
 
     try {
+      const applicableDays = this.getTodayApplicableDays();
+      if (!applicableDays) {
+        this.logger.log("Sunday — no grading reminders sent");
+        return;
+      }
+
       const today = new Date();
       const startOfDay = new Date(today);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59, 999);
 
-      // Find all users with teacher or support_teacher role
-      const teacherRoles = await this.roleModel.findAll({
-        where: { name: { [Op.in]: ["teacher", "support_teacher"] } },
-        attributes: ["id"],
-      });
-      const teacherRoleIds = teacherRoles.map((r) => r.id);
-
-      if (teacherRoleIds.length === 0) return;
-
-      const teacherUserRoles = await this.userRoleModel.findAll({
-        where: { roleId: { [Op.in]: teacherRoleIds } },
-        attributes: ["userId"],
-      });
-      const teacherIds = [...new Set(teacherUserRoles.map((ur) => ur.userId))];
-
-      if (teacherIds.length === 0) return;
-
-      // Count how many gradings each teacher has submitted today
-      const todayGradings = await this.gradingModel.findAll({
+      // Find all non-deleted groups with lessons today that have a teacher assigned
+      const todayGroups = await this.groupModel.findAll({
         where: {
-          teacher_id: { [Op.in]: teacherIds },
-          createdAt: { [Op.between]: [startOfDay, endOfDay] },
+          days: { [Op.in]: applicableDays },
+          isDeleted: false,
+          teacher_id: { [Op.ne]: null },
         },
-        attributes: ["teacher_id"],
+        attributes: ["id", "name", "teacher_id"],
       });
 
-      const gradedCountByTeacher = new Map<string, number>();
-      for (const g of todayGradings) {
-        gradedCountByTeacher.set(
-          g.teacher_id,
-          (gradedCountByTeacher.get(g.teacher_id) ?? 0) + 1,
-        );
+      if (todayGroups.length === 0) return;
+
+      const groupIds = todayGroups.map((g) => g.id);
+
+      // Map teacher → their groups today
+      const groupsByTeacher = new Map<string, { id: string; name: string }[]>();
+      for (const group of todayGroups) {
+        const list = groupsByTeacher.get(group.teacher_id) ?? [];
+        list.push({ id: group.id, name: group.name });
+        groupsByTeacher.set(group.teacher_id, list);
       }
 
-      // Fetch tokens for all teachers in one query
+      // Active students per group
+      const activeEnrollments = await this.groupStudentModel.findAll({
+        where: { group_id: { [Op.in]: groupIds }, status: "active" },
+        attributes: ["group_id", "student_id"],
+      });
+      const studentsByGroup = new Map<string, Set<string>>();
+      for (const e of activeEnrollments) {
+        const s = studentsByGroup.get(e.group_id) ?? new Set<string>();
+        s.add(e.student_id);
+        studentsByGroup.set(e.group_id, s);
+      }
+
+      // Graded students per group today
+      const todayGradings = await this.gradingModel.findAll({
+        where: {
+          group_id: { [Op.in]: groupIds },
+          createdAt: { [Op.between]: [startOfDay, endOfDay] },
+        },
+        attributes: ["group_id", "student_id"],
+      });
+      const gradedByGroup = new Map<string, Set<string>>();
+      for (const g of todayGradings) {
+        const s = gradedByGroup.get(g.group_id) ?? new Set<string>();
+        s.add(g.student_id);
+        gradedByGroup.set(g.group_id, s);
+      }
+
+      // Notification tokens
+      const teacherIds = [...groupsByTeacher.keys()];
       const tokenRecords = await NotificationToken.findAll({
         where: { user_id: { [Op.in]: teacherIds } },
       });
       const tokenByTeacher = new Map(tokenRecords.map((t) => [t.user_id, t.token]));
 
-      const timeLabel = localHour === 10 ? "ertalab" : localHour === 15 ? "tushdan keyin" : "kechqurun";
+      const timeLabel =
+        localHour === 10 ? "ertalab" : localHour === 15 ? "tushdan keyin" : "kechqurun";
 
       let sent = 0;
-      for (const teacherId of teacherIds) {
+      for (const [teacherId, groups] of groupsByTeacher) {
         const token = tokenByTeacher.get(teacherId);
         if (!token) continue;
 
-        const gradedToday = gradedCountByTeacher.get(teacherId) ?? 0;
-        const body = gradedToday > 0
-          ? `Bugun ${gradedToday} ta o'quvchiga baho qo'ydingiz. Qolgan o'quvchilarni baholashni unutmang.`
-          : `Bugun hali baho qo'ymadingiz. O'quvchilarni baholang.`;
+        // Keep only groups where at least one active student is ungraded today
+        const ungradedGroups = groups.filter((group) => {
+          const total = studentsByGroup.get(group.id)?.size ?? 0;
+          if (total === 0) return false;
+          const graded = gradedByGroup.get(group.id)?.size ?? 0;
+          return graded < total;
+        });
+
+        if (ungradedGroups.length === 0) continue;
+
+        const groupNames = ungradedGroups.map((g) => `"${g.name}"`).join(", ");
+        const body =
+          ungradedGroups.length === 1
+            ? `${ungradedGroups[0].name} guruhidagi barcha o'quvchilar hali baholanmagan.`
+            : `Quyidagi guruhlarda baholanmagan o'quvchilar bor: ${groupNames}.`;
 
         await this.notificationsService.notifyUser(
           token,
@@ -343,7 +386,9 @@ export class GradingsService {
 
       this.logger.log(`Grading reminders sent to ${sent} teachers`);
     } catch (error) {
-      this.logger.error(`Error sending teacher grading reminders: ${(error as any).message}`);
+      this.logger.error(
+        `Error sending teacher grading reminders: ${(error as any).message}`,
+      );
     }
   }
 }
