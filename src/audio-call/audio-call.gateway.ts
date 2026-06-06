@@ -14,7 +14,6 @@ import { JwtService } from "@nestjs/jwt";
 import { v4 as uuidv4 } from "uuid";
 import { CallLogService } from "./call-log.service.js";
 import { OpenAiRealtimeService } from "./openai-realtime.service.js";
-import { StudentProfileService } from "../student_profiles/student-profile.service.js";
 import {
   CallAnswerDto,
   HangupDto,
@@ -38,8 +37,6 @@ interface AuthenticatedSocket extends Socket {
   };
 }
 
-// Cost in coins charged to the student after an AI call ends.
-const AI_CALL_COST_COINS = 50;
 // Hard cap on AI call duration (20 minutes).
 const AI_CALL_MAX_MS = 20 * 60 * 1000;
 
@@ -83,7 +80,6 @@ export class AudioCallGateway
     private readonly jwtService: JwtService,
     private readonly callLogService: CallLogService,
     private readonly realtime: OpenAiRealtimeService,
-    private readonly studentProfileService: StudentProfileService,
   ) {}
 
   afterInit() {
@@ -151,13 +147,6 @@ export class AudioCallGateway
         clearTimeout(ai.limitTimer);
         this.realtime.endSession(callId);
         await this.callLogService.markEnded(callId, "completed", "disconnected");
-        await this.studentProfileService
-          .deductCoins(ai.userId, AI_CALL_COST_COINS)
-          .catch((err) =>
-            this.logger.error(
-              `Failed to deduct coins for user ${ai.userId}: ${err?.message}`,
-            ),
-          );
         this.aiCalls.delete(callId);
       }
     }
@@ -408,13 +397,6 @@ export class AudioCallGateway
     this.realtime.endSession(callId);
     this.aiCalls.delete(callId);
     await this.callLogService.markEnded(callId, "completed", "time_limit");
-    await this.studentProfileService
-      .deductCoins(ai.userId, AI_CALL_COST_COINS)
-      .catch((err) =>
-        this.logger.error(
-          `Failed to deduct coins for user ${ai.userId}: ${err?.message}`,
-        ),
-      );
     this.server.to(`user:${ai.userId}`).emit("call:ended", {
       call_id: callId,
       reason: "time_limit",
@@ -470,13 +452,6 @@ export class AudioCallGateway
     this.realtime.endSession(data.call_id);
     this.aiCalls.delete(data.call_id);
     await this.callLogService.markEnded(data.call_id, "completed", "user_ended");
-    await this.studentProfileService
-      .deductCoins(client.user.id, AI_CALL_COST_COINS)
-      .catch((err) =>
-        this.logger.error(
-          `Failed to deduct coins for user ${client.user!.id}: ${err?.message}`,
-        ),
-      );
     client.emit("call:ended", { call_id: data.call_id, reason: "user_ended" });
   }
 
