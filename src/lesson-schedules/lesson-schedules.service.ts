@@ -4,7 +4,7 @@ import { Cron } from "@nestjs/schedule";
 import { CreateLessonScheduleDto } from "./dto/create-lesson-schedule.dto.js";
 import { UpdateLessonScheduleDto } from "./dto/update-lesson-schedule.dto.js";
 import { LessonSchedule } from "./entities/lesson-schedule.entity.js";
-import { Group } from "../groups/entities/group.entity.js";
+import { Group, DaysEnum } from "../groups/entities/group.entity.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { Op } from "sequelize";
@@ -124,57 +124,83 @@ export class LessonSchedulesService {
   // Runs Mon–Sat at 09:00, 13:00, 17:00 Tashkent time (UTC+5 → 04:00, 08:00, 12:00 UTC)
   @Cron("0 4,8,12 * * 1-6")
   async handleLessonScheduleReminder() {
-    this.logger.log("Checking teachers without a lesson schedule for today");
-
     try {
-      const today = new Date().toISOString().split("T")[0];
+      // Resolve "today" in Tashkent time (UTC+5)
+      const now = new Date();
+      const tashkentTime = new Date(
+        now.getTime() + (5 * 60 + now.getTimezoneOffset()) * 60_000,
+      );
+      const today = tashkentTime.toISOString().split("T")[0];
+      const dayOfMonth = tashkentTime.getDate();
+      const todayDayTypes =
+        dayOfMonth % 2 !== 0
+          ? [DaysEnum.ODD, DaysEnum.EVERY_DAY]
+          : [DaysEnum.EVEN, DaysEnum.EVERY_DAY];
 
-      // All groups that have an assigned teacher
-      const groups = await this.groupModel.findAll({
-        where: { teacher_id: { [Op.not]: null } },
+      // Only groups that should have a lesson today (by odd/even pattern)
+      const todayGroups = await this.groupModel.findAll({
+        where: {
+          teacher_id: { [Op.not]: null },
+          days: { [Op.in]: todayDayTypes },
+          isDeleted: false,
+          isIELTS: false,
+        },
         attributes: ["id", "teacher_id", "name"],
       });
 
-      if (groups.length === 0) return;
+      if (todayGroups.length === 0) return;
 
-      // Group IDs that already have a schedule for today
+      // Which of those groups already have a schedule entered for today
       const scheduledGroupIds = new Set(
-        (await this.lessonScheduleModel.findAll({
-          where: { date: today },
-          attributes: ["group_id"],
-        })).map((s) => s.group_id),
+        (
+          await this.lessonScheduleModel.findAll({
+            where: {
+              date: today,
+              group_id: { [Op.in]: todayGroups.map((g) => g.id) },
+            },
+            attributes: ["group_id"],
+          })
+        ).map((s) => s.group_id),
       );
 
-      // Collect teacher IDs whose groups have NO schedule today
-      const unscheduledTeacherIds = new Set<string>();
-      for (const group of groups) {
+      // Map teacher_id → list of group names missing a schedule
+      const teacherMissingGroups = new Map<string, string[]>();
+      for (const group of todayGroups) {
         if (!scheduledGroupIds.has(group.id)) {
-          unscheduledTeacherIds.add(group.teacher_id);
+          if (!teacherMissingGroups.has(group.teacher_id)) {
+            teacherMissingGroups.set(group.teacher_id, []);
+          }
+          teacherMissingGroups.get(group.teacher_id)!.push(group.name);
         }
       }
 
-      if (unscheduledTeacherIds.size === 0) {
-        this.logger.log("All teachers have added lesson schedules for today");
+      if (teacherMissingGroups.size === 0) {
+        this.logger.log(`[${today}] All today's groups have schedules`);
         return;
       }
 
       const tokenRecords = await NotificationToken.findAll({
-        where: { user_id: { [Op.in]: [...unscheduledTeacherIds] } },
+        where: { user_id: { [Op.in]: [...teacherMissingGroups.keys()] } },
       });
 
       let sent = 0;
       for (const tokenRecord of tokenRecords) {
+        const missing = teacherMissingGroups.get(tokenRecord.user_id);
+        if (!missing) continue;
+
+        const groupList = missing.join(", ");
         await this.notificationsService.notifyUser(
           tokenRecord.token,
-          "Dars jadvali eslatmasi",
-          "Bugun uchun dars jadvalini hali qo'shmagansiz. Iltimos, jadval qo'shing.",
+          "Dars jadvali kiritilmagan",
+          `Bugun uchun quyidagi guruh(lar)da jadval kiritilmagan: ${groupList}`,
           { type: "lesson_schedule_reminder", screen: "leaderboard" },
         );
         sent++;
       }
 
+      const totalMissing = [...teacherMissingGroups.values()].flat().length;
       this.logger.log(
-        `Lesson schedule reminders sent to ${sent} of ${unscheduledTeacherIds.size} teachers`,
+        `[${today}] Schedule reminders sent: ${sent} teachers, ${totalMissing} groups without schedule`,
       );
     } catch (error) {
       this.logger.error(
