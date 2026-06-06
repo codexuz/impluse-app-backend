@@ -300,6 +300,7 @@ export class GradingsService {
         where: {
           days: { [Op.in]: applicableDays },
           isDeleted: false,
+          isIELTS: false,
           teacher_id: { [Op.ne]: null },
         },
         attributes: ["id", "name", "teacher_id"],
