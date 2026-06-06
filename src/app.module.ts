@@ -102,6 +102,7 @@ import { StaffAttendanceModule } from './staff-attendance/staff-attendance.modul
 import { AttendanceBotModule } from './attendance-bot/attendance-bot.module.js';
 import { StaffProfileModule } from './staff-profile/staff-profile.module.js';
 import { BonusPenaltyModule } from './bonus-penalty/bonus-penalty.module.js';
+import { PenaltyCheckerModule } from "./penalty-checker/penalty-checker.module.js";
 
 @Module({
   imports: [
@@ -218,6 +219,7 @@ import { BonusPenaltyModule } from './bonus-penalty/bonus-penalty.module.js';
     AttendanceBotModule,
     StaffProfileModule,
     BonusPenaltyModule,
+    PenaltyCheckerModule,
   ],
   controllers: [AppController],
   providers: [
