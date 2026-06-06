@@ -857,7 +857,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     const examIds = [...new Set(examResults.map((er) => er.exam_id))];
     const exams = await this.examModel.findAll({
       where: { id: examIds },
-      attributes: ["id", "title", "scheduled_at", "status", "level"],
+      attributes: ["id", "title", "scheduled_at", "status"],
     });
     const examMap = new Map(exams.map((e) => [e.id, e]));
 
