@@ -874,7 +874,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           : "—";
 
         text += `${resultEmoji} *${exam?.title || this.t(ctx, 'exams_title').replace('📝 *', '').replace('*', '')}*\n`;
-        text += `   📅 ${date} | ${exam?.level || "—"}\n`;
+        text += `   📅 ${date}\n`;
         text += `   ${this.t(ctx, 'score_label')} *${er.score}/${er.max_score}* (${er.percentage}%)\n`;
 
         // Section scores if available
