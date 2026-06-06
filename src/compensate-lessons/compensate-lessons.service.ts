@@ -89,9 +89,11 @@ export class CompensateLessonsService {
       };
     }
 
-    // Only return lessons where valid_until has not expired
-    const today = new Date().toISOString().split("T")[0];
-    where.valid_until = { [Op.gte]: today };
+    // For pending lessons only — exclude expired ones
+    if (filters?.compensated !== true) {
+      const today = new Date().toISOString().split("T")[0];
+      where.valid_until = { [Op.gte]: today };
+    }
 
     // Build student where clause for searching across multiple fields
     const studentWhere: any = {};

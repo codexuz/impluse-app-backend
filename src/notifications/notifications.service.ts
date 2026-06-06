@@ -186,27 +186,30 @@ export class NotificationsService {
     notifications: NotificationResponseDto[];
     unseenCount: number;
   }> {
-    // Get only unseen notifications for this user
     const notifications = await Notifications.findAll({
       include: [
         {
           model: UserNotification,
           as: "user_notifications",
-          where: { user_id, seen: false },
+          where: { user_id },
+          required: true,
         },
       ],
       order: [["createdAt", "DESC"]],
     });
 
-    // Count total unseen notifications
     const unseenCount = await UserNotification.count({
       where: { user_id, seen: false },
     });
 
-    return {
-      notifications,
-      unseenCount,
-    };
+    return { notifications, unseenCount };
+  }
+
+  async markAllSeen(user_id: string): Promise<void> {
+    await UserNotification.update(
+      { seen: true },
+      { where: { user_id, seen: false } },
+    );
   }
 
   async deleteNotification(notification_id: string): Promise<void> {

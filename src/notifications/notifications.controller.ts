@@ -89,6 +89,18 @@ export class NotificationsController {
     );
   }
 
+  @Patch("seen-all/user/:userId")
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @ApiOperation({ summary: "Mark all notifications as seen for a user" })
+  async markAllSeen(
+    @Param("userId") _userId: string,
+    @CurrentUser() user: any,
+  ) {
+    await this.notificationsService.markAllSeen(user.userId);
+    return { success: true };
+  }
+
   @Patch("seen/:notificationId/user/:userId")
   @HttpCode(HttpStatus.OK)
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
@@ -114,7 +126,7 @@ export class NotificationsController {
         user_id,
       });
       return { success: true, message: "Notification marked as seen" };
-    } catch (error) {
+    } catch (error:any) {
       throw new BadRequestException(error.message);
     }
   }
@@ -141,7 +153,7 @@ export class NotificationsController {
       return await this.notificationsService.sendAppUpdateNotification(
         sendAppUpdateDto
       );
-    } catch (error) {
+    } catch (error:any) {
       throw new BadRequestException(error.message);
     }
   }
