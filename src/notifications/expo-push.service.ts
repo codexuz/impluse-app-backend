@@ -12,26 +12,61 @@ export class ExpoPushService {
     });
   }
 
+  private async sendChunk(chunk: ExpoPushMessage[]): Promise<ExpoPushTicket[]> {
+    try {
+      const ticketChunk = await this.expo.sendPushNotificationsAsync(chunk);
+      ticketChunk.forEach((ticket) => {
+        if (ticket.status === 'error') {
+          console.error(
+            `Expo push error: ${ticket.message}`,
+            ticket.details?.error ? `(${ticket.details.error})` : '',
+          );
+        }
+      });
+      return ticketChunk;
+    } catch (error: any) {
+      if (error?.code === 'PUSH_TOO_MANY_EXPERIENCE_IDS' && error?.details) {
+        // The batch contains tokens from multiple Expo projects; split by project and retry.
+        const projectTokens = error.details as Record<string, string[]>;
+        const tokenToProject = new Map<string, string>();
+        for (const [project, tokens] of Object.entries(projectTokens)) {
+          for (const token of tokens) tokenToProject.set(token, project);
+        }
+
+        const byProject = new Map<string, ExpoPushMessage[]>();
+        for (const msg of chunk) {
+          const token = msg.to as string;
+          const project = tokenToProject.get(token);
+          if (project) {
+            if (!byProject.has(project)) byProject.set(project, []);
+            byProject.get(project)!.push(msg);
+          }
+        }
+
+        const retryTickets: ExpoPushTicket[] = [];
+        for (const [project, msgs] of byProject) {
+          try {
+            const t = await this.expo.sendPushNotificationsAsync(msgs);
+            retryTickets.push(...t);
+          } catch (retryError) {
+            console.error(`Error retrying push for project ${project}:`, retryError);
+          }
+        }
+        return retryTickets;
+      }
+
+      console.error('Error sending Expo push chunk:', error);
+      return [];
+    }
+  }
+
   private async send(messages: ExpoPushMessage[]): Promise<ExpoPushTicket[]> {
     const chunks = this.expo.chunkPushNotifications(messages);
     const tickets: ExpoPushTicket[] = [];
 
     for (const chunk of chunks) {
-      try {
-        const ticketChunk = await this.expo.sendPushNotificationsAsync(chunk);
-        tickets.push(...ticketChunk);
-
-        ticketChunk.forEach((ticket) => {
-          if (ticket.status === 'error') {
-            console.error(
-              `Expo push error: ${ticket.message}`,
-              ticket.details?.error ? `(${ticket.details.error})` : '',
-            );
-          }
-        });
-      } catch (error) {
-        console.error('Error sending Expo push chunk:', error);
-      }
+      const chunkTickets = await this.sendChunk(chunk);
+      tickets.push(...chunkTickets);
     }
 
     return tickets;
