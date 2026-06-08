@@ -10,8 +10,9 @@ import { AttendancePolicy } from "./entities/attendance-policy.entity.js";
 import { StaffAttendanceEvent } from "./entities/staff-attendance-event.entity.js";
 import { StaffPermission } from "./entities/staff-permission.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
-import { TeacherTransaction } from "../teacher-transaction/entities/teacher-transaction.entity.js";
-import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
+import { BonusPenaltyTransaction } from "../bonus-penalty/entities/bonus-penalty-transaction.entity.js";
+import { BonusPenaltyWallet } from "../bonus-penalty/entities/bonus-penalty-wallet.entity.js";
+import { BonusPenaltyCategory } from "../bonus-penalty/entities/bonus-penalty-category.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
 import { StaffProfileService } from "../staff-profile/staff-profile.service.js";
@@ -484,19 +485,24 @@ export class StaffAttendanceService {
       const jarimaDescription =
         description || `${arrivalPrefix} ${minutesLate} daqiqa kechikib kelgani uchun jarima`;
 
-      await TeacherTransaction.create({
+      const jarimaCategory = await BonusPenaltyCategory.findOne({
+        where: { type: "jarima" },
+        order: [["created_at", "ASC"]],
+      });
+
+      await BonusPenaltyTransaction.create({
         teacher_id: teacherId,
         amount: fineAmount,
         type: "jarima",
+        category_id: jarimaCategory?.id ?? null,
         description: jarimaDescription,
       } as any);
 
-      let wallet = await TeacherWallet.findOne({ where: { teacher_id: teacherId } });
-      if (!wallet) {
-        await TeacherWallet.create({ teacher_id: teacherId, amount: -fineAmount });
-      } else {
-        await wallet.update({ amount: wallet.amount - fineAmount });
-      }
+      const [wallet] = await BonusPenaltyWallet.findOrCreate({
+        where: { teacher_id: teacherId },
+        defaults: { teacher_id: teacherId, amount: 0 } as any,
+      });
+      await wallet.update({ amount: wallet.amount - fineAmount });
     }
 
     return attendance;
@@ -594,19 +600,24 @@ export class StaffAttendanceService {
       } as any);
 
       if (absenceFine > 0) {
-        await TeacherTransaction.create({
+        const jarimaCategory = await BonusPenaltyCategory.findOne({
+          where: { type: "jarima" },
+          order: [["created_at", "ASC"]],
+        });
+
+        await BonusPenaltyTransaction.create({
           teacher_id: staffId,
           amount: absenceFine,
           type: "jarima",
+          category_id: jarimaCategory?.id ?? null,
           description: "Ruxsatsiz ishga kelmagani uchun jarima",
         } as any);
 
-        const wallet = await TeacherWallet.findOne({ where: { teacher_id: staffId } });
-        if (!wallet) {
-          await TeacherWallet.create({ teacher_id: staffId, amount: -absenceFine });
-        } else {
-          await wallet.update({ amount: wallet.amount - absenceFine });
-        }
+        const [wallet] = await BonusPenaltyWallet.findOrCreate({
+          where: { teacher_id: staffId },
+          defaults: { teacher_id: staffId, amount: 0 } as any,
+        });
+        await wallet.update({ amount: wallet.amount - absenceFine });
       }
 
       await this.logEvent({
