@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { InjectModel } from "@nestjs/sequelize";
 import { Op } from "sequelize";
+import dayjs from "dayjs";
 import { LessonSchedule } from "../lesson-schedules/entities/lesson-schedule.entity.js";
 import { Attendance } from "../attendance/entities/attendance.entity.js";
 import { Group, DaysEnum } from "../groups/entities/group.entity.js";
@@ -10,23 +11,19 @@ import { BonusPenaltyTransaction } from "../bonus-penalty/entities/bonus-penalty
 import { BonusPenaltyTransactionService } from "../bonus-penalty/bonus-penalty-transaction.service.js";
 import { BonusPenaltyType } from "../bonus-penalty/dto/create-bonus-penalty-transaction.dto.js";
 
+
+
 const PENALTY_PER_STUDENT = 5000;
 const PENALTY_PER_GROUP_NO_SCHEDULE = 30000;
 
-/**
- * Bugungi kunga mos DaysEnum qiymatlarini aniqlaydi.
- * toq  = 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31
- * juft = 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30
+/** Bugungi kunga mos DaysEnum qiymatlarini aniqlaydi (toq yoki juft kun). 
+ * toq  = dushanba(1), chorshanba(3), juma(5)
+ * juft = seshanba(2), payshanba(4), shanba(6)
  */
 function getDayTypes(date: Date): DaysEnum[] {
-  const dayOfMonth = date.getDate();
-  const isOdd = dayOfMonth % 2 !== 0;
+  const weekday = dayjs(date).day(); // 0=Sunday, 1=Monday, ..., 6=Saturday
   const types: DaysEnum[] = [DaysEnum.EVERY_DAY];
-  if (isOdd) {
-    types.push(DaysEnum.ODD);
-  } else {
-    types.push(DaysEnum.EVEN);
-  }
+  types.push(weekday % 2 !== 0 ? DaysEnum.ODD : DaysEnum.EVEN);
   return types;
 }
 
@@ -36,7 +33,7 @@ function penaltyDescription(
   date: string,
   unmarkedCount: number,
 ): string {
-  return `[auto] Davomat belgilanmagan: ${groupName} guruhida ${date} sanasida ${unmarkedCount} ta o'quvchining davomati belgilanmagan. Har bir belgilanmagan o'quvchi uchun ${PENALTY_PER_STUDENT} so'm jarima.`;
+  return `[auto] Baholanmagan: ${groupName} guruhida ${date} sanasida ${unmarkedCount} ta o'quvchi baholanmagan. Har bir baholanmagan o'quvchi uchun ${PENALTY_PER_STUDENT} so'm jarima.`;
 }
 
 function lessonSchedulePenaltyDescription(
