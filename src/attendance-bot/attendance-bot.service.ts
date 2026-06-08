@@ -295,15 +295,27 @@ export class AttendanceBotService implements OnModuleInit {
     const nextType = last?.type === 'in' ? 'out' : 'in';
     const nextLabel = nextType === 'in' ? 'KIRISH ✅' : 'CHIQISH 🚪';
 
-    // Resolve shift for preview
+    // Check-out does not require GPS verification — record it immediately.
+    if (nextType === 'out') {
+      try {
+        const attendance = await this.staffAttendanceService.automaticScan(staff.user_id, 'out');
+        await ctx.reply(
+          this.formatAttendanceMessage(staff, attendance),
+          Markup.removeKeyboard(),
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Check-out error for ${staff.user_id}: ${message}`);
+        await ctx.reply(`❌ Xatolik: ${message}`, Markup.removeKeyboard());
+      }
+      return;
+    }
+
+    // Resolve shift for preview — only the check-in path reaches here, so the
+    // anchor is always the current time.
     const shifts = await this.staffProfileService.resolveShiftsForDay(staff.user_id, now.getUTCDay());
     const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-    let anchorMinutes = nowMinutes;
-    if (nextType === 'out' && last?.type === 'in') {
-      const checkInUz = new Date(last.createdAt.getTime() + 5 * 60 * 60 * 1000);
-      anchorMinutes = checkInUz.getUTCHours() * 60 + checkInUz.getUTCMinutes();
-    }
-    const shift = this.staffProfileService.pickClosestShift(shifts, anchorMinutes);
+    const shift = this.staffProfileService.pickClosestShift(shifts, nowMinutes);
     const shiftInfo = shift
       ? `🕐 ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`
       : '🕐 Smena belgilanmagan';

@@ -38,6 +38,13 @@ export class StaffAttendance extends Model {
   group: Group;
 
   @Column({
+    type: DataType.UUID,
+    allowNull: true, // FK to staff_shifts.id — which shift this record belongs to
+    comment: "Shift this attendance record belongs to; null when no shift resolved",
+  })
+  shift_id: string | null;
+
+  @Column({
     type: DataType.ENUM("early", "on_time", "late", "excused"),
     allowNull: false,
   })

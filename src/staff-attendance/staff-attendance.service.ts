@@ -14,6 +14,7 @@ import { TeacherTransaction } from "../teacher-transaction/entities/teacher-tran
 import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
+import { StaffShift } from "../staff-profile/entities/staff-shift.entity.js";
 import { StaffProfileService } from "../staff-profile/staff-profile.service.js";
 import { ScanStaffAttendanceDto } from "./dto/scan-staff-attendance.dto.js";
 import { CreateStaffPermissionDto } from "./dto/create-staff-permission.dto.js";
@@ -227,6 +228,7 @@ export class StaffAttendanceService {
         lessonStart: shift.in_time,
         outTime: shift.out_time ?? null,
         gracePeriod: shift.grace_period_minutes,
+        shiftId: shift.id,
         type: attendanceType,
         method: "auto_scan",
       });
@@ -313,6 +315,7 @@ export class StaffAttendanceService {
       lessonStart: shift ? shift.in_time : group.lesson_start,
       outTime: shift ? (shift.out_time ?? null) : null,
       gracePeriod: shift ? shift.grace_period_minutes : 0,
+      shiftId: shift ? shift.id : null,
       type: dto.type,
       description: dto.description,
       method: "qr_scan",
@@ -331,6 +334,7 @@ export class StaffAttendanceService {
       lessonStart: string | null;
       outTime?: string | null;
       gracePeriod?: number;
+      shiftId?: string | null;
       type?: "in" | "out";
       description?: string;
       isAdmin?: boolean;
@@ -462,6 +466,7 @@ export class StaffAttendanceService {
     const attendance = await StaffAttendance.create({
       teacher_id: teacherId,
       group_id: group ? group.id : null,
+      shift_id: options.shiftId ?? null,
       date: today,
       status,
       type: requestedType,
@@ -503,121 +508,168 @@ export class StaffAttendanceService {
   }
 
   // ---------------------------------------------------------------------------
-  // Cron: auto-mark absent
+  // Cron: dynamic per-shift absence marking
   // ---------------------------------------------------------------------------
 
-  @Cron("0 30 9 * * 1-6") // 09:30 Tashkent = 04:30 UTC, Mon–Sat
-  async autoMarkAbsent() {
+  /**
+   * Minutes after a shift's (grace-adjusted) start time before a no-show is
+   * auto-marked absent. The shift's own `grace_period_minutes` is added on top.
+   */
+  private static readonly ABSENT_GRACE_MINUTES = 30;
+
+  /**
+   * Runs every 5 minutes and evaluates **each staff member's shifts that apply
+   * today**, resolved from staff_profile → staff_shift (`day_of_week`, `in_time`,
+   * `out_time`). Unlike the old fixed 09:30 job, every shift is judged on its own
+   * `in_time`, so afternoon / evening shifts are handled too.
+   *
+   * A shift is auto-marked absent once `in_time + grace + ABSENT_GRACE` has passed
+   * and no matching check-in exists. Approved staff_permissions are honoured via
+   * `start_date`/`end_date`/`permitted_time`:
+   *   - full_day     → excused record, no fine
+   *   - late_arrival → deadline pushed to `permitted_time` (still absent if a no-show)
+   *   - early_leave  → ignored here (affects checkout, not arrival)
+   *
+   * Idempotent: every record carries the `shift_id` it belongs to, so a shift
+   * already covered by a check-in or a prior absent row is skipped — re-runs
+   * never double-mark or double-fine, and a missing checkout on one shift can
+   * never spill over into a false absence on another.
+   */
+  @Cron("0 */5 * * * *")
+  async processShiftAbsences() {
     const now = this.getUzTime();
     const today = this.getToday(now);
-    const todayJsDay = now.getUTCDay();
-    const cronCutoff = 9 * 60 + 30; // 09:30 in minutes
+    const jsDay = now.getUTCDay();
+    const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
 
     const profiles = await StaffProfile.findAll({
       include: [
-        {
-          association: "staff",
-          required: true,
-          include: [{ association: "roles" }],
-        },
+        { association: "staff", required: true, include: [{ association: "roles" }] },
       ],
     });
 
     for (const profile of profiles) {
       const staffId = profile.staff_id;
+
+      // Shifts that apply to this staff member today (day_of_week resolution).
+      const shifts = await this.staffProfileService.resolveShiftsForDay(staffId, jsDay);
+      if (shifts.length === 0) continue;
+
+      // Shifts already handled today: any "in" record (real check-in or a prior
+      // auto-absent row) stamps the shift_id it belongs to.
+      const inRecords = await StaffAttendance.findAll({
+        where: { teacher_id: staffId, date: today, type: "in" },
+        attributes: ["shift_id"],
+      });
+      const coveredShiftIds = new Set<string>();
+      for (const rec of inRecords) {
+        if (rec.shift_id) coveredShiftIds.add(rec.shift_id);
+      }
+
+      // Approved permission (ruxsat) covering today, if any.
+      const permission = await this.findActivePermission(staffId, today);
       const roleNames = ((profile.staff as any)?.roles || []).map((r: any) => r.name as string);
       const isTeacher = roleNames.includes("teacher");
 
-      const hasCheckedIn = await StaffAttendance.findOne({
-        where: { teacher_id: staffId, date: today, type: "in" },
-      });
-      if (hasCheckedIn) continue;
+      for (const shift of shifts) {
+        if (coveredShiftIds.has(shift.id)) continue;
 
-      // Approved permission (ruxsat) covering today
-      const permission = await this.findActivePermission(staffId, today);
-      if (permission) {
-        if (permission.type === "late_arrival") {
-          // Allowed to arrive late — don't auto-absent; they may still check in
-          continue;
+        // Grace-adjusted deadline, extended by a late_arrival permission.
+        let startMin = this.toMinutes(shift.in_time) + (shift.grace_period_minutes ?? 0);
+        if (permission?.type === "late_arrival" && permission.permitted_time) {
+          startMin = Math.max(startMin, this.toMinutes(permission.permitted_time));
         }
-        if (permission.type === "full_day") {
-          const excusedRecord = await StaffAttendance.create({
-            teacher_id: staffId,
-            group_id: null,
-            date: today,
-            status: "excused",
-            type: "in",
-            fine_amount: 0,
-            minutes_late: 0,
-            permission_id: permission.id,
-            description: "Ruxsat bilan kelmadi (avtomatik belgilandi)",
-          } as any);
-          await this.logEvent({
-            staffId,
-            attendanceId: excusedRecord.id,
-            method: "cron_absent",
-            type: "absent",
-            outcome: "success",
-            note: "Excused by approved permission",
-          });
-          continue;
+        const deadline = startMin + StaffAttendanceService.ABSENT_GRACE_MINUTES;
+        if (nowMin < deadline) continue; // shift window hasn't elapsed yet today
+
+        if (permission?.type === "full_day") {
+          await this.markShiftAbsent(staffId, today, shift, { excusedBy: permission.id });
+        } else {
+          await this.markShiftAbsent(staffId, today, shift, { isTeacher });
         }
+        // Prevent double-processing if the same staff has overlapping shifts.
+        coveredShiftIds.add(shift.id);
       }
+    }
+  }
 
-      // Resolve today's shifts — skip staff who have no morning shift by cron time
-      const shifts = await this.staffProfileService.resolveShiftsForDay(staffId, todayJsDay);
-      // Only auto-absent for shifts whose in_time is <= cron cutoff
-      const dueShifts = shifts.filter((s) => {
-        const [h, m] = s.in_time.split(":").map(Number);
-        return (h * 60 + m) <= (cronCutoff + (s.grace_period_minutes ?? 0));
-      });
-      if (dueShifts.length === 0) continue;
-      // Use the earliest due shift as the reference
-      const shift = dueShifts.sort((a, b) => {
-        const [ah, am] = a.in_time.split(":").map(Number);
-        const [bh, bm] = b.in_time.split(":").map(Number);
-        return (ah * 60 + am) - (bh * 60 + bm);
-      })[0];
-
-      // Only teachers carry a wallet/transactions, so only they are fined.
-      const absenceFine = isTeacher ? 200000 : 0;
-
-      const absentRecord = await StaffAttendance.create({
+  /**
+   * Creates the absence record for a single missed shift. When `excusedBy` is set
+   * the record is "excused" with no fine; otherwise it is a fined no-show (fine
+   * pulled from the active policy, teachers only since they carry a wallet).
+   */
+  private async markShiftAbsent(
+    staffId: string,
+    today: string,
+    shift: StaffShift,
+    opts: { excusedBy?: string; isTeacher?: boolean },
+  ) {
+    if (opts.excusedBy) {
+      const excused = await StaffAttendance.create({
         teacher_id: staffId,
         group_id: null,
+        shift_id: shift.id,
         date: today,
-        status: "late",
+        status: "excused",
         type: "in",
-        fine_amount: 200000,
+        fine_amount: 0,
         minutes_late: 0,
-        description: "Ishga kelmadi (avtomatik belgilandi)",
+        permission_id: opts.excusedBy,
+        description: `Ruxsat bilan kelmadi (${shift.in_time} smenasi, avtomatik)`,
       } as any);
-
-      if (absenceFine > 0) {
-        await TeacherTransaction.create({
-          teacher_id: staffId,
-          amount: absenceFine,
-          type: "jarima",
-          description: "Ruxsatsiz ishga kelmagani uchun jarima",
-        } as any);
-
-        const wallet = await TeacherWallet.findOne({ where: { teacher_id: staffId } });
-        if (!wallet) {
-          await TeacherWallet.create({ teacher_id: staffId, amount: -absenceFine });
-        } else {
-          await wallet.update({ amount: wallet.amount - absenceFine });
-        }
-      }
-
       await this.logEvent({
         staffId,
-        attendanceId: absentRecord.id,
+        attendanceId: excused.id,
         method: "cron_absent",
         type: "absent",
         outcome: "success",
-        note: "Auto-marked absent by cron job",
+        note: "Excused by approved permission",
       });
+      return;
     }
+
+    // Absence fine resolved from the active policy (tier-2 = severe), teachers only.
+    const user = await User.findByPk(staffId, { include: [{ association: "roles" }] });
+    const roleName = (user?.roles || []).map((r: any) => r.name).join(",");
+    const policy = await this.resolvePolicy(null, roleName);
+    const absenceFine = opts.isTeacher ? policy.fine_tier2_amount : 0;
+
+    const absent = await StaffAttendance.create({
+      teacher_id: staffId,
+      group_id: null,
+      shift_id: shift.id,
+      date: today,
+      status: "late",
+      type: "in",
+      fine_amount: absenceFine,
+      minutes_late: 0,
+      description: `Ishga kelmadi (${shift.in_time} smenasi, avtomatik belgilandi)`,
+    } as any);
+
+    if (absenceFine > 0) {
+      await TeacherTransaction.create({
+        teacher_id: staffId,
+        amount: absenceFine,
+        type: "jarima",
+        description: "Ruxsatsiz ishga kelmagani uchun jarima",
+      } as any);
+
+      const wallet = await TeacherWallet.findOne({ where: { teacher_id: staffId } });
+      if (!wallet) {
+        await TeacherWallet.create({ teacher_id: staffId, amount: -absenceFine });
+      } else {
+        await wallet.update({ amount: wallet.amount - absenceFine });
+      }
+    }
+
+    await this.logEvent({
+      staffId,
+      attendanceId: absent.id,
+      method: "cron_absent",
+      type: "absent",
+      outcome: "success",
+      note: "Auto-marked absent by cron job",
+    });
   }
 
   // ---------------------------------------------------------------------------
