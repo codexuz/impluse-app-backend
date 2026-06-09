@@ -563,12 +563,41 @@ export class StaffAttendanceService {
   // Cron: auto-mark absent
   // ---------------------------------------------------------------------------
 
-  @Cron("0 30 9 * * 1-6") // 09:30 Tashkent = 04:30 UTC, Mon–Sat
-  async autoMarkAbsent() {
+  // Morning shifts: 11:00 Tashkent. Evening shifts: 18:30 Tashkent.
+  // Noon (12:00) splits which shifts each run is responsible for.
+  private static readonly ABSENCE_FINE = 200000;
+  private static readonly NOON_MINUTES = 12 * 60;
+
+  @Cron("0 0 11 * * 1-6", { timeZone: "Asia/Tashkent" })
+  async autoMarkAbsentMorning() {
+    // Shifts starting before noon, evaluated at 11:00.
+    await this.markAbsentForWindow(0, StaffAttendanceService.NOON_MINUTES, 11 * 60);
+  }
+
+  @Cron("0 30 18 * * 1-6", { timeZone: "Asia/Tashkent" })
+  async autoMarkAbsentEvening() {
+    // Shifts starting at noon or later, evaluated at 18:30.
+    await this.markAbsentForWindow(StaffAttendanceService.NOON_MINUTES, 24 * 60, 18 * 60 + 30);
+  }
+
+  /**
+   * Auto-marks absences for shifts whose start time falls in
+   * [windowStartMin, windowEndMin) and whose start + grace has passed cutoffMin.
+   *
+   * Works per-shift, not per-day: a staff member who attended the morning shift
+   * but skipped the evening one is still flagged at the evening run. A shift is
+   * considered already handled (attended or previously auto-marked) when its
+   * position in the day's shift order is below the number of existing check-in
+   * records.
+   */
+  private async markAbsentForWindow(
+    windowStartMin: number,
+    windowEndMin: number,
+    cutoffMin: number,
+  ) {
     const now = this.getUzTime();
     const today = this.getToday(now);
     const todayJsDay = now.getUTCDay();
-    const cronCutoff = 9 * 60 + 30; // 09:30 in minutes
 
     const profiles = await StaffProfile.findAll({
       include: [
@@ -585,19 +614,19 @@ export class StaffAttendanceService {
       const roleNames = ((profile.staff as any)?.roles || []).map((r: any) => r.name as string);
       const isTeacher = roleNames.includes("teacher");
 
-      const hasCheckedIn = await StaffAttendance.findOne({
-        where: { teacher_id: staffId, date: today, type: "in" },
-      });
-      if (hasCheckedIn) continue;
+      const shiftsSorted = await this.getShiftsSorted(staffId, todayJsDay);
+      if (shiftsSorted.length === 0) continue;
 
-      // Approved permission (ruxsat) covering today
       const permission = await this.findActivePermission(staffId, today);
-      if (permission) {
-        if (permission.type === "late_arrival") {
-          // Allowed to arrive late — don't auto-absent; they may still check in
-          continue;
-        }
-        if (permission.type === "full_day") {
+      // Allowed to arrive late — they may still check in, never auto-absent.
+      if (permission?.type === "late_arrival") continue;
+
+      // Full-day leave: record one excused absence (if nothing logged yet) and move on.
+      if (permission?.type === "full_day") {
+        const already = await StaffAttendance.count({
+          where: { teacher_id: staffId, date: today },
+        });
+        if (already === 0) {
           const excusedRecord = await StaffAttendance.create({
             teacher_id: staffId,
             group_id: null,
@@ -617,69 +646,80 @@ export class StaffAttendanceService {
             outcome: "success",
             note: "Excused by approved permission",
           });
-          continue;
         }
+        continue;
       }
 
-      // Resolve today's shifts — skip staff who have no morning shift by cron time
-      const shifts = await this.staffProfileService.resolveShiftsForDay(staffId, todayJsDay);
-      // Only auto-absent for shifts whose in_time is <= cron cutoff
-      const dueShifts = shifts.filter((s) => {
-        const [h, m] = s.in_time.split(":").map(Number);
-        return (h * 60 + m) <= (cronCutoff + (s.grace_period_minutes ?? 0));
+      // How many check-ins exist tells us which shift (by order) is next/unhandled.
+      const inCount = await StaffAttendance.count({
+        where: { teacher_id: staffId, date: today, type: "in" },
       });
-      if (dueShifts.length === 0) continue;
-      // Use the earliest due shift as the reference
-      const shift = dueShifts.sort((a, b) => {
-        const [ah, am] = a.in_time.split(":").map(Number);
-        const [bh, bm] = b.in_time.split(":").map(Number);
-        return (ah * 60 + am) - (bh * 60 + bm);
-      })[0];
 
-      // Only teachers carry a wallet/transactions, so only they are fined.
-      const absenceFine = isTeacher ? 200000 : 0;
+      for (let idx = 0; idx < shiftsSorted.length; idx++) {
+        const shift = shiftsSorted[idx];
+        const startMin = this.toMinutes(shift.in_time);
+        const grace = shift.grace_period_minutes ?? 0;
 
-      const absentRecord = await StaffAttendance.create({
+        if (startMin < windowStartMin || startMin >= windowEndMin) continue; // not this run's window
+        if (startMin + grace > cutoffMin) continue; // not due yet
+        if (idx < inCount) continue; // already attended or previously marked
+
+        await this.recordShiftAbsence(staffId, today, shift, isTeacher);
+      }
+    }
+  }
+
+  /** Create one absent record (and fine for teachers) for a missed shift. */
+  private async recordShiftAbsence(
+    staffId: string,
+    today: string,
+    shift: StaffShift,
+    isTeacher: boolean,
+  ) {
+    const shiftLabel = shift.name ? `${shift.name} ` : "";
+    // Only teachers carry a wallet/transactions, so only they are fined.
+    const absenceFine = isTeacher ? StaffAttendanceService.ABSENCE_FINE : 0;
+
+    const absentRecord = await StaffAttendance.create({
+      teacher_id: staffId,
+      group_id: null,
+      date: today,
+      status: "late",
+      type: "in",
+      fine_amount: absenceFine,
+      minutes_late: 0,
+      description: `${shiftLabel}smenaga ishga kelmadi (avtomatik belgilandi)`.trim(),
+    } as any);
+
+    if (absenceFine > 0) {
+      const jarimaCategory = await BonusPenaltyCategory.findOne({
+        where: { type: "jarima" },
+        order: [["created_at", "ASC"]],
+      });
+
+      await BonusPenaltyTransaction.create({
         teacher_id: staffId,
-        group_id: null,
-        date: today,
-        status: "late",
-        type: "in",
-        fine_amount: 200000,
-        minutes_late: 0,
-        description: "Ishga kelmadi (avtomatik belgilandi)",
+        amount: absenceFine,
+        type: "jarima",
+        category_id: jarimaCategory?.id ?? null,
+        description: "Ruxsatsiz ishga kelmagani uchun jarima",
       } as any);
 
-      if (absenceFine > 0) {
-        const jarimaCategory = await BonusPenaltyCategory.findOne({
-          where: { type: "jarima" },
-          order: [["created_at", "ASC"]],
-        });
-
-        await BonusPenaltyTransaction.create({
-          teacher_id: staffId,
-          amount: absenceFine,
-          type: "jarima",
-          category_id: jarimaCategory?.id ?? null,
-          description: "Ruxsatsiz ishga kelmagani uchun jarima",
-        } as any);
-
-        const [wallet] = await BonusPenaltyWallet.findOrCreate({
-          where: { teacher_id: staffId },
-          defaults: { teacher_id: staffId, amount: 0 } as any,
-        });
-        await wallet.update({ amount: wallet.amount - absenceFine });
-      }
-
-      await this.logEvent({
-        staffId,
-        attendanceId: absentRecord.id,
-        method: "cron_absent",
-        type: "absent",
-        outcome: "success",
-        note: "Auto-marked absent by cron job",
+      const [wallet] = await BonusPenaltyWallet.findOrCreate({
+        where: { teacher_id: staffId },
+        defaults: { teacher_id: staffId, amount: 0 } as any,
       });
+      await wallet.update({ amount: wallet.amount - absenceFine });
     }
+
+    await this.logEvent({
+      staffId,
+      attendanceId: absentRecord.id,
+      method: "cron_absent",
+      type: "absent",
+      outcome: "success",
+      note: "Auto-marked absent by cron job",
+    });
   }
 
   // ---------------------------------------------------------------------------
