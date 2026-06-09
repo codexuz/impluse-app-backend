@@ -7,6 +7,7 @@ import { LessonSchedule } from "../lesson-schedules/entities/lesson-schedule.ent
 import { Attendance } from "../attendance/entities/attendance.entity.js";
 import { Group, DaysEnum } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { User } from "../users/entities/user.entity.js";
 import { BonusPenaltyTransaction } from "../bonus-penalty/entities/bonus-penalty-transaction.entity.js";
 import { BonusPenaltyTransactionService } from "../bonus-penalty/bonus-penalty-transaction.service.js";
 import { BonusPenaltyType } from "../bonus-penalty/dto/create-bonus-penalty-transaction.dto.js";
@@ -32,8 +33,10 @@ function penaltyDescription(
   groupId: string,
   date: string,
   unmarkedCount: number,
+  studentNames: string[],
 ): string {
-  return `[auto] Baholanmagan: ${groupName} guruhida ${date} sanasida ${unmarkedCount} ta o'quvchi baholanmagan. Har bir baholanmagan o'quvchi uchun ${PENALTY_PER_STUDENT} so'm jarima.`;
+  const nameList = studentNames.join(", ");
+  return `[auto] Baholanmagan: ${groupName} guruhida ${date} sanasida ${unmarkedCount} ta o'quvchi baholanmagan (${nameList}). Har bir baholanmagan o'quvchi uchun ${PENALTY_PER_STUDENT} so'm jarima.`;
 }
 
 function lessonSchedulePenaltyDescription(
@@ -156,6 +159,7 @@ export class PenaltyCheckerService {
         status: "active",
       },
       attributes: ["id", "student_id"],
+      include: [{ model: User, attributes: ["first_name", "last_name"] }],
     });
 
     if (activeStudents.length === 0) {
@@ -180,8 +184,12 @@ export class PenaltyCheckerService {
     const markedStudentIds = new Set(attendanceRecords.map((a) => a.student_id));
 
     // 5. Find students NOT marked at all (no record = unmarked)
-    const unmarkedStudentIds = studentIds.filter(
-      (sid) => !markedStudentIds.has(sid),
+    const unmarkedStudents = activeStudents.filter(
+      (s) => !markedStudentIds.has(s.student_id),
+    );
+    const unmarkedStudentIds = unmarkedStudents.map((s) => s.student_id);
+    const unmarkedStudentNames = unmarkedStudents.map((s) =>
+      `${s.student?.first_name ?? ""} ${s.student?.last_name ?? ""}`.trim(),
     );
 
     if (unmarkedStudentIds.length === 0) {
@@ -201,6 +209,7 @@ export class PenaltyCheckerService {
       group.id,
       date,
       unmarkedStudentIds.length,
+      unmarkedStudentNames,
     );
 
     const existing = await this.penaltyTransactionModel.findOne({
