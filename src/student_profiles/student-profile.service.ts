@@ -418,6 +418,14 @@ export class StudentProfileService {
           [Op.gt]: profile.streaks,
         },
       },
+      include: [
+        {
+          association: "user",
+          attributes: [],
+          where: { is_active: true }, // Only count active users
+          required: true,
+        },
+      ],
     });
 
     return {
