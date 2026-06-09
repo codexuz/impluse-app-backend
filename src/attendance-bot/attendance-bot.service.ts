@@ -11,7 +11,7 @@ import { StaffPermission } from '../staff-attendance/entities/staff-permission.e
 import { StaffProfileService } from '../staff-profile/staff-profile.service.js';
 
 // Pending GPS verification state: chatId → staffId awaiting location share
-type PendingGps = { staffId: string; requestedAt: number };
+type PendingGps = { staffId: string; requestedAt: number; type: 'in' | 'out' };
 
 // Leave-request (ruxsat) conversation state: chatId → in-flight request
 type LeaveType = 'full_day' | 'late_arrival' | 'early_leave';
@@ -66,9 +66,9 @@ export class AttendanceBotService implements OnModuleInit {
     this.registerCommands();
 
     await this.bot.telegram.setMyCommands([
-      { command: 'davomat', description: 'Davomatni qo\'yish (GPS orqali)' },
+      { command: 'kirish', description: 'Ishga kirish (GPS orqali)' },
+      { command: 'chiqish', description: 'Ishdan chiqish (GPS orqali)' },
       { command: 'link', description: 'Telegram hisobni bog\'lash: /link <login>' },
-      { command: 'today', description: 'Bugungi davomat hisoboti' },
       { command: 'week', description: 'Shu haftalik hisobot' },
       { command: 'month', description: 'Shu oylik hisobot' },
       { command: 'ruxsat', description: 'Ruxsat (dam olish) so\'rovi yuborish' },
@@ -120,8 +120,8 @@ export class AttendanceBotService implements OnModuleInit {
         });
 
         if (self && self.user_id === staffId) {
-          // Self-attendance: ask for GPS
-          await this.requestGpsForSelf(ctx, self);
+          // Self-attendance: show the Kirish / Chiqish menu
+          await this.showStaffMenu(ctx, self);
           return;
         }
 
@@ -135,7 +135,7 @@ export class AttendanceBotService implements OnModuleInit {
           include: [{ association: 'roles' }],
         });
         if (self) {
-          await this.requestGpsForSelf(ctx, self);
+          await this.showStaffMenu(ctx, self);
           return;
         }
         await ctx.reply(
@@ -168,42 +168,29 @@ export class AttendanceBotService implements OnModuleInit {
       }
       await user.update({ telegram_chat_id: String(ctx.chat.id) });
       await ctx.reply(
-        `✅ Telegram hisobingiz muvaffaqiyatli bog\'landi!\n👤 ${user.first_name} ${user.last_name}\n\nEndi /start yoki /davomat buyrug\'i orqali davomatni o\'zingiz qo\'ya olasiz.`,
+        `✅ Telegram hisobingiz muvaffaqiyatli bog\'landi!\n👤 ${user.first_name} ${user.last_name}\n\nDavomat uchun quyidagi menyudan foydalaning.`,
+        this.staffMenuKeyboard(),
       );
     });
 
-    // /davomat — shortcut for self-attendance
-    this.bot.command('davomat', async (ctx) => {
-      const chatId = String(ctx.chat.id);
-      const self = await this.userModel.findOne({
-        where: { telegram_chat_id: chatId },
-        include: [{ association: 'roles' }],
-      });
+    // /kirish — check in
+    this.bot.command('kirish', async (ctx) => {
+      const self = await this.findLinkedStaff(String(ctx.chat.id));
       if (!self) {
         await ctx.reply('Hisobingiz bog\'lanmagan. /link <login> orqali bog\'lang.');
         return;
       }
-      await this.requestGpsForSelf(ctx, self);
+      await this.requestGpsForSelf(ctx, self, 'in');
     });
 
-    // /today [teacherId] — today's attendance summary
-    this.bot.command('today', async (ctx) => {
-      const chatId = String(ctx.chat.id);
-      const parts = ctx.message.text.split(' ');
-      const id = parts[1]?.trim();
-
-      if (id) {
-        if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
-        await this.sendTodaySummary(ctx, id);
-      } else {
-        // Teacher checking their own summary
-        const self = await this.userModel.findOne({ where: { telegram_chat_id: chatId } });
-        if (self) {
-          await this.sendTodaySummary(ctx, self.user_id);
-        } else {
-          await ctx.reply('Foydalanish: /today <teacher_id>');
-        }
+    // /chiqish — check out
+    this.bot.command('chiqish', async (ctx) => {
+      const self = await this.findLinkedStaff(String(ctx.chat.id));
+      if (!self) {
+        await ctx.reply('Hisobingiz bog\'lanmagan. /link <login> orqali bog\'lang.');
+        return;
       }
+      await this.requestGpsForSelf(ctx, self, 'out');
     });
 
     // /week [teacherId] — this week's summary
@@ -302,7 +289,7 @@ export class AttendanceBotService implements OnModuleInit {
 
       this.pendingGps.delete(chatId);
       const { latitude, longitude } = location;
-      await this.handleGpsAttendance(ctx, pending.staffId, latitude, longitude);
+      await this.handleGpsAttendance(ctx, pending.staffId, latitude, longitude, pending.type);
 
       // Delete the shared live-location message so it can't be re-used or forwarded.
       await this.safeDeleteMessage(ctx);
@@ -328,13 +315,20 @@ export class AttendanceBotService implements OnModuleInit {
         return;
       }
 
-      // Known teacher sending their own UUID or just any text → self-attendance
+      // Known staff member → Kirish / Chiqish menu buttons
       const self = await this.userModel.findOne({
         where: { telegram_chat_id: chatId },
         include: [{ association: 'roles' }],
       });
       if (self) {
-        await this.requestGpsForSelf(ctx, self);
+        if (text === '✅ Kirish') {
+          await this.requestGpsForSelf(ctx, self, 'in');
+        } else if (text === '🚪 Chiqish') {
+          await this.requestGpsForSelf(ctx, self, 'out');
+        } else {
+          // Any other text → show the menu again with current shift status
+          await this.showStaffMenu(ctx, self);
+        }
         return;
       }
 
@@ -347,41 +341,100 @@ export class AttendanceBotService implements OnModuleInit {
   // Self-attendance (GPS) flow
   // ---------------------------------------------------------------------------
 
-  /** Ask the teacher to share their live location */
-  private async requestGpsForSelf(ctx: Context, staff: User) {
+  /** Persistent reply keyboard with the two attendance actions. */
+  private staffMenuKeyboard() {
+    return Markup.keyboard([['✅ Kirish', '🚪 Chiqish']]).resize();
+  }
+
+  /** Look up a linked staff member by their Telegram chat id. */
+  private async findLinkedStaff(chatId: string): Promise<User | null> {
+    return this.userModel.findOne({
+      where: { telegram_chat_id: chatId },
+      include: [{ association: 'roles' }],
+    });
+  }
+
+  /** Show the current shift status plus the Kirish / Chiqish menu. */
+  private async showStaffMenu(ctx: Context, staff: User) {
+    const roleNames = ((staff.roles || []) as any[]).map((r) => r.name as string);
+    if (!this.isStaffRoles(roleNames)) {
+      await ctx.reply('Kechirasiz, siz ushbu botdan foydalanish huquqiga ega emassiz.');
+      return;
+    }
+
+    const plan = await this.staffAttendanceService.getNextScanPlan(staff.user_id);
+    let info = `👤 ${staff.first_name} ${staff.last_name}\n`;
+
+    if (plan.totalShifts === 0) {
+      info += '🕐 Smena belgilanmagan';
+    } else if (plan.allDone) {
+      info += `✅ Bugungi barcha smenalar (${plan.totalShifts} ta) uchun davomat yakunlangan`;
+    } else {
+      const shift = plan.shift!;
+      const shiftName = shift.name ? `${this.shiftNameLabel(shift.name)} ` : '';
+      info += `🕐 ${shiftName}smena: ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`;
+      if (plan.totalShifts > 1) info += `\n📌 Smena ${plan.shiftIndex + 1}/${plan.totalShifts}`;
+      info += `\n➡️ Keyingi: ${plan.nextType === 'in' ? 'KIRISH ✅' : 'CHIQISH 🚪'}`;
+    }
+
+    await ctx.reply(info, this.staffMenuKeyboard());
+  }
+
+  /**
+   * Validate the requested direction against the staff member's shift schedule,
+   * then ask for a live location. Check-in is refused when the current shift is
+   * already checked in (or all shifts are done); check-out when nothing is open.
+   */
+  private async requestGpsForSelf(ctx: Context, staff: User, requestedType: 'in' | 'out') {
     const chatId = String(ctx.chat.id);
     const roleNames = ((staff.roles || []) as any[]).map((r) => r.name as string);
-    const isStaff = roleNames.some((r) => ['teacher', 'admin', 'support_teacher'].includes(r));
-
-    if (!isStaff) {
+    if (!this.isStaffRoles(roleNames)) {
       await ctx.reply('Kechirasiz, siz ushbu botdan foydalanish huquqiga ega emassiz.');
       return;
     }
 
     // Shift-count-aware: which shift / direction is next for this staff member
     const plan = await this.staffAttendanceService.getNextScanPlan(staff.user_id);
-
-    if (plan.allDone) {
-      await ctx.reply(
-        `✅ ${staff.first_name} ${staff.last_name}, bugungi barcha smenalar ` +
-          `(${plan.totalShifts} ta) uchun davomat yakunlangan.`,
-        Markup.removeKeyboard(),
-      );
-      return;
-    }
-
-    const nextLabel = plan.nextType === 'in' ? 'KIRISH ✅' : 'CHIQISH 🚪';
     const shift = plan.shift;
     const shiftName = shift?.name ? `${this.shiftNameLabel(shift.name)} ` : '';
+
+    if (requestedType === 'in') {
+      if (plan.totalShifts > 0 && plan.allDone) {
+        await ctx.reply(
+          `✅ Bugungi barcha smenalar (${plan.totalShifts} ta) uchun davomat olingan.`,
+          this.staffMenuKeyboard(),
+        );
+        return;
+      }
+      // nextType "out" means the current shift already has a check-in
+      if (plan.nextType === 'out') {
+        await ctx.reply(
+          `⚠️ Siz ${shiftName}smenaga allaqachon kirgansiz. Chiqish uchun "🚪 Chiqish" ni bosing.`,
+          this.staffMenuKeyboard(),
+        );
+        return;
+      }
+    } else {
+      // Check-out needs an open check-in
+      if (plan.nextType === 'in') {
+        await ctx.reply(
+          '⚠️ Ochiq smena yo\'q. Avval "✅ Kirish" qiling.',
+          this.staffMenuKeyboard(),
+        );
+        return;
+      }
+    }
+
     const shiftInfo = shift
       ? `🕐 ${shiftName}smena: ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`
       : '🕐 Smena belgilanmagan';
     const shiftCounter = plan.totalShifts > 1 ? `\n📌 Smena ${plan.shiftIndex + 1}/${plan.totalShifts}` : '';
+    const label = requestedType === 'in' ? 'KIRISH ✅' : 'CHIQISH 🚪';
 
-    this.pendingGps.set(chatId, { staffId: staff.user_id, requestedAt: Date.now() });
+    this.pendingGps.set(chatId, { staffId: staff.user_id, requestedAt: Date.now(), type: requestedType });
 
     await ctx.reply(
-      `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}${shiftCounter}\n📍 Davomat: ${nextLabel}\n\n` +
+      `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}${shiftCounter}\n📍 Davomat: ${label}\n\n` +
         '📍 JONLI joylashuvingizni yuboring (3 daqiqa ichida):\n' +
         '📎 → Joylashuv (Location) → "Jonli joylashuvni ulashish" (Share Live Location)',
       Markup.keyboard([['❌ Bekor qilish']]).resize().oneTime(),
@@ -394,6 +447,7 @@ export class AttendanceBotService implements OnModuleInit {
     staffId: string,
     lat: number,
     lon: number,
+    type: 'in' | 'out',
   ) {
     const centerLat = parseFloat(process.env.CENTER_LATITUDE ?? '0');
     const centerLon = parseFloat(process.env.CENTER_LONGITUDE ?? '0');
@@ -424,17 +478,17 @@ export class AttendanceBotService implements OnModuleInit {
     }
 
     try {
-      const attendance = await this.staffAttendanceService.automaticScan(staffId);
+      const attendance = await this.staffAttendanceService.automaticScan(staffId, type);
       const msg = this.formatAttendanceMessage(teacher, attendance);
       await ctx.reply(
         `✅ GPS tasdiqlandi (${Math.round(distanceM)} m)\n\n${msg}\n\n` +
           'ℹ️ Endi jonli joylashuvni to\'xtatishingiz mumkin (Stop sharing).',
-        Markup.removeKeyboard(),
+        this.staffMenuKeyboard(),
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`GPS attendance error for ${staffId}: ${message}`);
-      await ctx.reply(`❌ Xatolik: ${message}`, Markup.removeKeyboard());
+      await ctx.reply(`❌ Xatolik: ${message}`, this.staffMenuKeyboard());
     }
   }
 
@@ -568,43 +622,6 @@ export class AttendanceBotService implements OnModuleInit {
       this.logger.error(`Error recording attendance: ${message}`);
       await ctx.reply(`❌ Xatolik: ${message}`);
     }
-  }
-
-  /** Show all of today's attendance records for a teacher */
-  private async sendTodaySummary(ctx: Context, teacherId: string) {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(teacherId)) return ctx.reply('Noto\'g\'ri ID formati.');
-
-    const teacher = await this.userModel.findByPk(teacherId);
-    if (!teacher) return ctx.reply('Foydalanuvchi topilmadi.');
-
-    const today = this.getToday();
-    const records = await StaffAttendance.findAll({
-      where: { teacher_id: teacherId, date: today },
-      order: [['createdAt', 'ASC']],
-    });
-
-    if (records.length === 0) {
-      return ctx.reply(`📋 ${teacher.first_name} ${teacher.last_name} bugun hali davomat qilmagan.`);
-    }
-
-    const statusMap: Record<string, string> = { early: 'Vaqli', on_time: "O'z vaqtida", late: 'Kechikdi' };
-    const typeMap: Record<string, string> = { in: 'Kirish', out: 'Chiqish' };
-
-    let msg = `📋 Bugungi davomat: ${teacher.first_name} ${teacher.last_name}\n\n`;
-    let totalFine = 0;
-
-    for (const r of records) {
-      msg += `• ${typeMap[r.type] || r.type} — ${statusMap[r.status] || r.status}`;
-      if (r.minutes_late > 0) msg += ` (${r.minutes_late} daq kechikdi)`;
-      if (r.fine_amount > 0) msg += ` | 💰 ${r.fine_amount.toLocaleString()} so'm`;
-      msg += '\n';
-      totalFine += r.fine_amount ?? 0;
-    }
-
-    if (totalFine > 0) msg += `\n💰 Jami jarima: ${totalFine.toLocaleString()} so'm`;
-
-    return ctx.reply(msg);
   }
 
   // ---------------------------------------------------------------------------
