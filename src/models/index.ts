@@ -139,6 +139,8 @@ import { StaffShift } from "../staff-profile/entities/staff-shift.entity.js";
 import { BonusPenaltyWallet } from "../bonus-penalty/entities/bonus-penalty-wallet.entity.js";
 import { BonusPenaltyTransaction } from "../bonus-penalty/entities/bonus-penalty-transaction.entity.js";
 import { BonusPenaltyCategory } from "../bonus-penalty/entities/bonus-penalty-category.entity.js";
+import { ShopItem } from "../shop/entities/shop-item.entity.js";
+import { ShopPurchase } from "../shop/entities/shop-purchase.entity.js";
 
 export const Models = [
   User,
@@ -270,6 +272,8 @@ export const Models = [
   BonusPenaltyWallet,
   BonusPenaltyTransaction,
   BonusPenaltyCategory,
+  ShopItem,
+  ShopPurchase,
 ];
 
 // Define associations after all models are loaded
@@ -1869,5 +1873,24 @@ export function initializeAssociations() {
   BonusPenaltyTransaction.belongsTo(BonusPenaltyCategory, {
     foreignKey: "category_id",
     as: "category",
+  });
+
+  // Shop associations
+  ShopItem.hasMany(ShopPurchase, {
+    foreignKey: "item_id",
+    as: "purchases",
+  });
+  ShopPurchase.belongsTo(ShopItem, {
+    foreignKey: "item_id",
+    as: "item",
+  });
+
+  User.hasMany(ShopPurchase, {
+    foreignKey: "user_id",
+    as: "shop_purchases",
+  });
+  ShopPurchase.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "user",
   });
 }
