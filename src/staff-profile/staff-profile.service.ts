@@ -84,6 +84,7 @@ export class StaffProfileService {
 
     return StaffShift.create({
       profile_id: profileId,
+      name: dto.name ?? null,
       day_of_week: dto.day_of_week ?? "every_day",
       in_time: dto.in_time,
       out_time: dto.out_time ?? null,
@@ -96,6 +97,7 @@ export class StaffProfileService {
     const shift = await StaffShift.findByPk(shiftId);
     if (!shift) throw new NotFoundException("Shift topilmadi");
     return shift.update({
+      ...(dto.name !== undefined ? { name: dto.name } : {}),
       ...(dto.day_of_week !== undefined ? { day_of_week: dto.day_of_week } : {}),
       ...(dto.in_time !== undefined ? { in_time: dto.in_time } : {}),
       ...(dto.out_time !== undefined ? { out_time: dto.out_time } : {}),

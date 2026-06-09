@@ -19,6 +19,8 @@ export type DayOfWeek =
   | "odd"   // Mon / Wed / Fri
   | "even"; // Tue / Thu / Sat
 
+export type ShiftName = "morning" | "evening";
+
 @Table({
   tableName: "staff_shifts",
   timestamps: true,
@@ -37,6 +39,13 @@ export class StaffShift extends Model {
     comment: "FK to staff_profiles.id",
   })
   profile_id: string;
+
+  @Column({
+    type: DataType.ENUM("morning", "evening"),
+    allowNull: true,
+    comment: "Shift label",
+  })
+  name: ShiftName | null;
 
   @Column({
     type: DataType.ENUM(

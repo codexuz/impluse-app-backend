@@ -14,7 +14,19 @@ const DAY_VALUES = [
   "friday", "saturday", "sunday", "every_day", "odd", "even",
 ] as const;
 
+const SHIFT_NAME_VALUES = ["morning", "evening"] as const;
+
 export class CreateStaffShiftDto {
+  @ApiProperty({
+    description: "Shift label",
+    enum: SHIFT_NAME_VALUES,
+    required: false,
+    example: "morning",
+  })
+  @IsEnum(SHIFT_NAME_VALUES)
+  @IsOptional()
+  name?: typeof SHIFT_NAME_VALUES[number];
+
   @ApiProperty({
     description: "Day(s) this shift applies to",
     enum: DAY_VALUES,

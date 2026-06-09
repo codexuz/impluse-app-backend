@@ -1,15 +1,28 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Cron } from '@nestjs/schedule';
 import { Op } from 'sequelize';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { User } from '../users/entities/user.entity.js';
 import { Group } from '../groups/entities/group.entity.js';
 import { StaffAttendanceService } from '../staff-attendance/staff-attendance.service.js';
 import { StaffAttendance } from '../staff-attendance/entities/staff-attendance.entity.js';
+import { StaffPermission } from '../staff-attendance/entities/staff-permission.entity.js';
 import { StaffProfileService } from '../staff-profile/staff-profile.service.js';
 
 // Pending GPS verification state: chatId → staffId awaiting location share
 type PendingGps = { staffId: string; requestedAt: number };
+
+// Leave-request (ruxsat) conversation state: chatId → in-flight request
+type LeaveType = 'full_day' | 'late_arrival' | 'early_leave';
+type PendingLeave = {
+  staffId: string;
+  type: LeaveType;
+  step: 'type' | 'date' | 'time' | 'reason';
+  startDate?: string;
+  endDate?: string;
+  permittedTime?: string;
+};
 
 @Injectable()
 export class AttendanceBotService implements OnModuleInit {
@@ -19,6 +32,18 @@ export class AttendanceBotService implements OnModuleInit {
   // In-memory map — survives only within the process lifetime (fine for a single instance)
   private readonly pendingGps = new Map<string, PendingGps>();
   private readonly GPS_TTL_MS = 3 * 60 * 1000; // 3 minutes to share location
+
+  // In-flight leave (ruxsat) requests, keyed by chatId
+  private readonly pendingLeave = new Map<string, PendingLeave>();
+
+  // Cron de-dup so a reminder / late alert fires only once per staff+shift+day.
+  private dedupDate = '';
+  private readonly remindersSent = new Set<string>();
+  private readonly lateAlertsSent = new Set<string>();
+
+  private static readonly STAFF_ROLES = ['teacher', 'admin', 'support_teacher'];
+  private readonly uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   // Authorized Telegram chat IDs — comma-separated in env ATTENDANCE_BOT_ADMIN_IDS
   private get authorizedIds(): string[] {
@@ -44,6 +69,9 @@ export class AttendanceBotService implements OnModuleInit {
       { command: 'davomat', description: 'Davomatni qo\'yish (GPS orqali)' },
       { command: 'link', description: 'Telegram hisobni bog\'lash: /link <login>' },
       { command: 'today', description: 'Bugungi davomat hisoboti' },
+      { command: 'week', description: 'Shu haftalik hisobot' },
+      { command: 'month', description: 'Shu oylik hisobot' },
+      { command: 'ruxsat', description: 'Ruxsat (dam olish) so\'rovi yuborish' },
     ]);
 
     const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
@@ -178,6 +206,15 @@ export class AttendanceBotService implements OnModuleInit {
       }
     });
 
+    // /week [teacherId] — this week's summary
+    this.bot.command('week', (ctx) => this.handleRangeReport(ctx, 'week'));
+
+    // /month [teacherId] — this month's summary
+    this.bot.command('month', (ctx) => this.handleRangeReport(ctx, 'month'));
+
+    // /ruxsat — start a leave (permission) request flow
+    this.bot.command('ruxsat', (ctx) => this.startLeaveRequest(ctx));
+
     // Callback: in/out button presses (admin) OR gps_cancel (teacher)
     this.bot.on('callback_query', async (ctx) => {
       const chatId = String(ctx.chat.id);
@@ -194,6 +231,34 @@ export class AttendanceBotService implements OnModuleInit {
         if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
         const [, teacherId, scanType] = data.split(':');
         await this.recordAttendance(ctx, teacherId, scanType as 'in' | 'out');
+        return;
+      }
+
+      // Leave flow: staff picked a permission type
+      if (data?.startsWith('leave:')) {
+        const type = data.split(':')[1] as LeaveType;
+        const state = this.pendingLeave.get(chatId);
+        if (!state) {
+          await ctx.reply('So\'rov eskirgan. /ruxsat ni qayta bosing.');
+          return;
+        }
+        state.type = type;
+        state.step = 'date';
+        await ctx.editMessageText(
+          `📋 ${this.leaveTypeLabel(type)}\n\n📅 Sanani yuboring:\n` +
+            '• "bugun" yoki "ertaga"\n' +
+            '• YYYY-MM-DD (masalan 2026-06-10)\n' +
+            '• Oraliq: 2026-06-10 2026-06-12',
+        );
+        return;
+      }
+
+      // Leave flow: admin approved / rejected
+      if (data?.startsWith('leave_approve:') || data?.startsWith('leave_reject:')) {
+        if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
+        const [, permissionId] = data.split(':');
+        const decision = data.startsWith('leave_approve') ? 'approved' : 'rejected';
+        await this.reviewLeaveByAdmin(ctx, permissionId, decision);
         return;
       }
     });
@@ -249,10 +314,17 @@ export class AttendanceBotService implements OnModuleInit {
       const text = ((ctx.message as any).text as string | undefined)?.trim();
       if (!text) return;
 
-      // Cancel button from GPS keyboard
+      // Cancel button from GPS / leave keyboard
       if (text === '❌ Bekor qilish') {
         this.pendingGps.delete(chatId);
-        await ctx.reply('❌ Davomat bekor qilindi.', Markup.removeKeyboard());
+        this.pendingLeave.delete(chatId);
+        await ctx.reply('❌ Bekor qilindi.', Markup.removeKeyboard());
+        return;
+      }
+
+      // Mid-flight leave request → consume this text as the next answer
+      if (this.pendingLeave.has(chatId)) {
+        await this.handleLeaveStep(ctx, text);
         return;
       }
 
@@ -541,6 +613,441 @@ export class AttendanceBotService implements OnModuleInit {
     if (totalFine > 0) msg += `\n💰 Jami jarima: ${totalFine.toLocaleString()} so'm`;
 
     return ctx.reply(msg);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reports & stats (/week, /month)
+  // ---------------------------------------------------------------------------
+
+  private async handleRangeReport(ctx: Context, range: 'week' | 'month') {
+    const chatId = String(ctx.chat.id);
+    const parts = ((ctx.message as any).text as string).split(' ');
+    const id = parts[1]?.trim();
+
+    let teacherId: string;
+    if (id) {
+      if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
+      teacherId = id;
+    } else {
+      const self = await this.userModel.findOne({ where: { telegram_chat_id: chatId } });
+      if (!self) {
+        await ctx.reply(`Foydalanish: /${range} <teacher_id>`);
+        return;
+      }
+      teacherId = self.user_id;
+    }
+
+    const { startDate, endDate, label } = this.getDateRange(range);
+    await this.sendRangeSummary(ctx, teacherId, startDate, endDate, label);
+  }
+
+  private getDateRange(range: 'week' | 'month'): {
+    startDate: string;
+    endDate: string;
+    label: string;
+  } {
+    const uz = this.getUzTime();
+    const fmt = (d: Date) =>
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(
+        d.getUTCDate(),
+      ).padStart(2, '0')}`;
+    const endDate = fmt(uz);
+
+    if (range === 'week') {
+      const diffToMon = (uz.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+      const monday = new Date(uz.getTime() - diffToMon * 24 * 60 * 60 * 1000);
+      return { startDate: fmt(monday), endDate, label: 'Shu hafta' };
+    }
+
+    const first = new Date(Date.UTC(uz.getUTCFullYear(), uz.getUTCMonth(), 1));
+    return { startDate: fmt(first), endDate, label: 'Shu oy' };
+  }
+
+  private async sendRangeSummary(
+    ctx: Context,
+    teacherId: string,
+    startDate: string,
+    endDate: string,
+    label: string,
+  ) {
+    if (!this.uuidRegex.test(teacherId)) return ctx.reply('Noto\'g\'ri ID formati.');
+    const teacher = await this.userModel.findByPk(teacherId);
+    if (!teacher) return ctx.reply('Foydalanuvchi topilmadi.');
+
+    const summary = await this.staffAttendanceService.getSummary({
+      startDate,
+      endDate,
+      teacherId,
+    });
+    const row = summary.data[0] as any;
+
+    let msg = `📊 ${label} (${startDate} — ${endDate})\n👤 ${teacher.first_name} ${teacher.last_name}\n\n`;
+    if (!row || row.total === 0) {
+      msg += 'Bu davr uchun davomat maʼlumoti yoʻq.';
+      return ctx.reply(msg);
+    }
+
+    msg += `✅ Oʻz vaqtida: ${row.on_time}\n`;
+    msg += `🟢 Vaqli: ${row.early}\n`;
+    msg += `⚠️ Kechikkan: ${row.late}\n`;
+    msg += `📈 Davomat darajasi: ${row.attendance_rate}%`;
+    if (row.late > 0) {
+      msg += `\n⏰ Oʻrtacha kechikish: ${Math.round(Number(row.avg_minutes_late))} daq`;
+    }
+    if (Number(row.total_fine) > 0) {
+      msg += `\n💰 Jami jarima: ${Number(row.total_fine).toLocaleString()} soʻm`;
+    }
+    return ctx.reply(msg);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Leave (ruxsat) request flow
+  // ---------------------------------------------------------------------------
+
+  private leaveTypeLabel(type: LeaveType): string {
+    const map: Record<LeaveType, string> = {
+      full_day: '🏖 Butun kun',
+      late_arrival: '🕐 Kech kelish',
+      early_leave: '🚪 Erta ketish',
+    };
+    return map[type] ?? type;
+  }
+
+  /** /ruxsat entry point — verify the staff is linked, then show type buttons. */
+  private async startLeaveRequest(ctx: Context) {
+    const chatId = String(ctx.chat.id);
+    const self = await this.userModel.findOne({
+      where: { telegram_chat_id: chatId },
+      include: [{ association: 'roles' }],
+    });
+    if (!self) {
+      await ctx.reply('Hisobingiz bogʻlanmagan. /link <login> orqali bogʻlang.');
+      return;
+    }
+    const roleNames = ((self.roles || []) as any[]).map((r) => r.name as string);
+    if (!this.isStaffRoles(roleNames)) {
+      await ctx.reply('Faqat xodimlar ruxsat soʻrashi mumkin.');
+      return;
+    }
+
+    this.pendingLeave.set(chatId, {
+      staffId: self.user_id,
+      type: 'full_day',
+      step: 'type',
+    });
+
+    await ctx.reply(
+      '📋 Ruxsat turini tanlang:',
+      Markup.inlineKeyboard([
+        [Markup.button.callback('🏖 Butun kun', 'leave:full_day')],
+        [Markup.button.callback('🕐 Kech kelish', 'leave:late_arrival')],
+        [Markup.button.callback('🚪 Erta ketish', 'leave:early_leave')],
+      ]),
+    );
+  }
+
+  /** Handle a text answer while a leave request is in progress. */
+  private async handleLeaveStep(ctx: Context, text: string) {
+    const chatId = String(ctx.chat.id);
+    const state = this.pendingLeave.get(chatId);
+    if (!state) return;
+
+    if (state.step === 'type') {
+      await ctx.reply('Iltimos, yuqoridagi tugmalardan birini tanlang.');
+      return;
+    }
+
+    if (state.step === 'date') {
+      const range = this.parseDateInput(text);
+      if (!range) {
+        await ctx.reply(
+          'Sana notoʻgʻri. Formatlar: "bugun", "ertaga", YYYY-MM-DD yoki oraliq "YYYY-MM-DD YYYY-MM-DD".',
+        );
+        return;
+      }
+      if (range.end < range.start) {
+        await ctx.reply('Tugash sanasi boshlanish sanasidan oldin boʻlmasligi kerak.');
+        return;
+      }
+      state.startDate = range.start;
+      state.endDate = range.end;
+
+      if (state.type === 'full_day') {
+        state.step = 'reason';
+        await ctx.reply('Sababini yozing (yoki "yoʻq"):');
+      } else {
+        state.step = 'time';
+        await ctx.reply(
+          state.type === 'late_arrival'
+            ? 'Nechada kelasiz? (HH:mm) Masalan: 10:30'
+            : 'Nechada ketasiz? (HH:mm) Masalan: 16:00',
+        );
+      }
+      return;
+    }
+
+    if (state.step === 'time') {
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(text)) {
+        await ctx.reply('Vaqt formati notoʻgʻri. HH:mm koʻrinishida yuboring, masalan 10:30.');
+        return;
+      }
+      state.permittedTime = text;
+      state.step = 'reason';
+      await ctx.reply('Sababini yozing (yoki "yoʻq"):');
+      return;
+    }
+
+    if (state.step === 'reason') {
+      const skip = ['yoʻq', 'yoq', "yo'q", '-', 'skip', 'yok'].includes(text.toLowerCase());
+      const reason = skip ? undefined : text;
+      this.pendingLeave.delete(chatId);
+      await this.submitLeaveRequest(ctx, state, reason);
+    }
+  }
+
+  /** Accept "bugun" / "ertaga" / a single date / a two-date range. */
+  private parseDateInput(text: string): { start: string; end: string } | null {
+    const fmt = (d: Date) =>
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(
+        d.getUTCDate(),
+      ).padStart(2, '0')}`;
+    const lower = text.trim().toLowerCase();
+    const uz = this.getUzTime();
+
+    if (lower === 'bugun') {
+      const s = fmt(uz);
+      return { start: s, end: s };
+    }
+    if (lower === 'ertaga') {
+      const s = fmt(new Date(uz.getTime() + 24 * 60 * 60 * 1000));
+      return { start: s, end: s };
+    }
+
+    const re = /^\d{4}-\d{2}-\d{2}$/;
+    const parts = text.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 1 && re.test(parts[0])) return { start: parts[0], end: parts[0] };
+    if (parts.length === 2 && re.test(parts[0]) && re.test(parts[1])) {
+      return { start: parts[0], end: parts[1] };
+    }
+    return null;
+  }
+
+  /** Persist the request via the attendance service and notify admins. */
+  private async submitLeaveRequest(
+    ctx: Context,
+    state: PendingLeave,
+    reason?: string,
+  ) {
+    try {
+      const permission = await this.staffAttendanceService.createPermission(
+        {
+          staff_id: state.staffId,
+          type: state.type,
+          start_date: state.startDate!,
+          end_date: state.endDate!,
+          permitted_time: state.permittedTime,
+          reason,
+        } as any,
+        state.staffId,
+      );
+
+      const dateLine =
+        state.startDate === state.endDate
+          ? state.startDate
+          : `${state.startDate} — ${state.endDate}`;
+      let msg = `✅ Soʻrovingiz yuborildi!\n📋 ${this.leaveTypeLabel(state.type)}\n📅 ${dateLine}`;
+      if (state.permittedTime) msg += `\n🕐 ${state.permittedTime}`;
+      if (reason) msg += `\n📝 ${reason}`;
+      msg += '\n\n⏳ Admin tasdiqlashini kuting.';
+      await ctx.reply(msg, Markup.removeKeyboard());
+
+      const staff = await this.userModel.findByPk(state.staffId);
+      await this.notifyAdminsOfLeave(permission, staff);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Leave request error for ${state.staffId}: ${message}`);
+      await ctx.reply(`❌ Xatolik: ${message}`, Markup.removeKeyboard());
+    }
+  }
+
+  /** DM every admin the new request with approve / reject buttons. */
+  private async notifyAdminsOfLeave(permission: StaffPermission, staff: User | null) {
+    const name = staff ? `${staff.first_name} ${staff.last_name}` : permission.staff_id;
+    const dateLine =
+      permission.start_date === permission.end_date
+        ? permission.start_date
+        : `${permission.start_date} — ${permission.end_date}`;
+
+    let msg = `🔔 Yangi ruxsat soʻrovi\n\n👤 ${name}\n📋 ${this.leaveTypeLabel(permission.type)}\n📅 ${dateLine}`;
+    if (permission.permitted_time) msg += `\n🕐 ${permission.permitted_time}`;
+    if (permission.reason) msg += `\n📝 ${permission.reason}`;
+
+    const keyboard = Markup.inlineKeyboard([
+      Markup.button.callback('✅ Tasdiqlash', `leave_approve:${permission.id}`),
+      Markup.button.callback('❌ Rad etish', `leave_reject:${permission.id}`),
+    ]);
+
+    await this.notifyAdmins(msg, keyboard);
+  }
+
+  /** Admin approve/reject handler — records the review and notifies the staff. */
+  private async reviewLeaveByAdmin(
+    ctx: Context,
+    permissionId: string,
+    decision: 'approved' | 'rejected',
+  ) {
+    const reviewer = await this.userModel.findOne({
+      where: { telegram_chat_id: String(ctx.chat.id) },
+    });
+
+    try {
+      const permission = await this.staffAttendanceService.reviewPermission(
+        permissionId,
+        { status: decision } as any,
+        reviewer?.user_id,
+      );
+
+      const verb = decision === 'approved' ? 'tasdiqlandi ✅' : 'rad etildi ❌';
+      const original = (ctx.callbackQuery as any).message?.text ?? '';
+      await ctx.editMessageText(`${original}\n\n— Soʻrov ${verb}`);
+
+      const staff = await this.userModel.findByPk(permission.staff_id);
+      if (staff?.telegram_chat_id) {
+        const dateLine =
+          permission.start_date === permission.end_date
+            ? permission.start_date
+            : `${permission.start_date} — ${permission.end_date}`;
+        await this.safeSend(
+          staff.telegram_chat_id,
+          `📋 Ruxsat soʻrovingiz ${verb}\n${this.leaveTypeLabel(permission.type)}\n📅 ${dateLine}`,
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Leave review error for ${permissionId}: ${message}`);
+      await ctx.reply(`❌ Xatolik: ${message}`);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reminders & notifications (cron)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Every 5 minutes: DM staff ~15 min before their shift starts, and alert
+   * admins when a staff member is running late with no approved permission.
+   * De-duped per staff+shift+day so each message fires at most once.
+   */
+  @Cron('0 */5 * * * *')
+  async shiftNotificationsCron() {
+    const now = this.getUzTime();
+    const today = this.getToday();
+    this.resetDedupIfNewDay(today);
+
+    const jsDay = now.getUTCDay();
+    const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+
+    const staffList = await this.userModel.findAll({
+      where: { telegram_chat_id: { [Op.ne]: null } },
+      include: [{ association: 'roles' }],
+    });
+
+    for (const staff of staffList) {
+      const roleNames = ((staff.roles || []) as any[]).map((r) => r.name as string);
+      if (!this.isStaffRoles(roleNames)) continue;
+
+      const chatId = staff.telegram_chat_id;
+      if (!chatId) continue;
+
+      const shifts = await this.staffProfileService.resolveShiftsForDay(staff.user_id, jsDay);
+      if (shifts.length === 0) continue;
+
+      // Already checked in → nothing to remind or alert about.
+      const checkedIn = await StaffAttendance.findOne({
+        where: { teacher_id: staff.user_id, date: today, type: 'in' },
+      });
+      if (checkedIn) continue;
+
+      // Approved permission covering today (full_day excuses entirely).
+      const permission = await StaffPermission.findOne({
+        where: {
+          staff_id: staff.user_id,
+          status: 'approved',
+          start_date: { [Op.lte]: today },
+          end_date: { [Op.gte]: today },
+        },
+      });
+      if (permission?.type === 'full_day') continue;
+
+      for (const shift of shifts) {
+        const [h, m] = shift.in_time.split(':').map(Number);
+        const startMin = h * 60 + m;
+        const grace = shift.grace_period_minutes ?? 0;
+        const shiftLabel = shift.name ? `${this.shiftNameLabel(shift.name)} ` : '';
+
+        // Pre-shift reminder: shift starts in the next ~20 minutes.
+        const untilStart = startMin - nowMinutes;
+        const remindKey = `${today}:${staff.user_id}:${shift.id}`;
+        if (untilStart > 0 && untilStart <= 20 && !this.remindersSent.has(remindKey)) {
+          this.remindersSent.add(remindKey);
+          await this.safeSend(
+            chatId,
+            `⏰ Eslatma: ${shiftLabel}smenangiz ${shift.in_time.slice(0, 5)} da boshlanadi ` +
+              `(${untilStart} daqiqadan keyin).\n\nDavomat uchun /davomat ni bosing.`,
+          );
+        }
+
+        // Late alert to admins: start + grace passed by >5 min (within an hour),
+        // and the staff isn't covered by an approved permission.
+        const lateBy = nowMinutes - (startMin + grace);
+        const lateKey = `late:${today}:${staff.user_id}:${shift.id}`;
+        if (!permission && lateBy > 5 && lateBy <= 60 && !this.lateAlertsSent.has(lateKey)) {
+          this.lateAlertsSent.add(lateKey);
+          await this.notifyAdmins(
+            `⚠️ Kechikish: ${staff.first_name} ${staff.last_name}\n` +
+              `${shiftLabel}smena ${shift.in_time.slice(0, 5)} — hali kelmagan ` +
+              `(${lateBy} daqiqa oʻtdi).`,
+          );
+        }
+      }
+    }
+  }
+
+  private resetDedupIfNewDay(today: string) {
+    if (this.dedupDate !== today) {
+      this.dedupDate = today;
+      this.remindersSent.clear();
+      this.lateAlertsSent.clear();
+    }
+  }
+
+  private shiftNameLabel(name: string): string {
+    const map: Record<string, string> = { morning: 'Ertalabki', evening: 'Kechki' };
+    return map[name] ?? name;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Messaging helpers
+  // ---------------------------------------------------------------------------
+
+  private isStaffRoles(roleNames: string[]): boolean {
+    return roleNames.some((r) => AttendanceBotService.STAFF_ROLES.includes(r));
+  }
+
+  /** Send a Telegram message, swallowing errors (blocked bot, invalid chat, …). */
+  private async safeSend(chatId: string, text: string, extra?: any): Promise<void> {
+    try {
+      await this.bot.telegram.sendMessage(chatId, text, extra);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`sendMessage to ${chatId} failed: ${message}`);
+    }
+  }
+
+  private async notifyAdmins(text: string, extra?: any): Promise<void> {
+    for (const adminId of this.authorizedIds) {
+      await this.safeSend(adminId, text, extra);
+    }
   }
 
   // ---------------------------------------------------------------------------
