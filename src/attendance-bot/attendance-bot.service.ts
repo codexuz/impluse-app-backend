@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cron } from '@nestjs/schedule';
+import { OnEvent } from '@nestjs/event-emitter';
 import { Op } from 'sequelize';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { User } from '../users/entities/user.entity.js';
@@ -208,6 +209,23 @@ export class AttendanceBotService implements OnModuleInit {
         if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
         const [, teacherId, scanType] = data.split(':');
         await this.recordAttendance(ctx, teacherId, scanType as 'in' | 'out');
+        return;
+      }
+
+      // Self check-out confirmation (no GPS)
+      if (data === 'checkout_cancel') {
+        await ctx.editMessageText('❌ Chiqish bekor qilindi.');
+        return;
+      }
+
+      if (data?.startsWith('checkout:')) {
+        const [, staffId] = data.split(':');
+        const self = await this.findLinkedStaff(chatId);
+        if (!self || self.user_id !== staffId) {
+          await ctx.editMessageText('❌ Ruxsat yo\'q.');
+          return;
+        }
+        await this.confirmCheckout(ctx, staffId);
         return;
       }
 
@@ -419,16 +437,49 @@ export class AttendanceBotService implements OnModuleInit {
       ? `🕐 ${shiftName}smena: ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`
       : '🕐 Smena belgilanmagan';
     const shiftCounter = plan.totalShifts > 1 ? `\n📌 Smena ${plan.shiftIndex + 1}/${plan.totalShifts}` : '';
-    const label = requestedType === 'in' ? 'KIRISH ✅' : 'CHIQISH 🚪';
 
+    // Check-out doesn't need GPS — just confirm with a button.
+    if (requestedType === 'out') {
+      await ctx.reply(
+        `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}${shiftCounter}\n📍 Davomat: CHIQISH 🚪\n\nChiqishni tasdiqlaysizmi?`,
+        Markup.inlineKeyboard([
+          Markup.button.callback('✅ Tasdiqlash', `checkout:${staff.user_id}`),
+          Markup.button.callback('❌ Bekor', 'checkout_cancel'),
+        ]),
+      );
+      return;
+    }
+
+    // Check-in requires a live location.
     this.pendingGps.set(chatId, { staffId: staff.user_id, requestedAt: Date.now(), type: requestedType });
 
     await ctx.reply(
-      `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}${shiftCounter}\n📍 Davomat: ${label}\n\n` +
+      `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}${shiftCounter}\n📍 Davomat: KIRISH ✅\n\n` +
         '📍 JONLI joylashuvingizni yuboring (3 daqiqa ichida):\n' +
         '📎 → Joylashuv (Location) → "Jonli joylashuvni ulashish" (Share Live Location)',
       Markup.keyboard([['❌ Bekor qilish']]).resize().oneTime(),
     );
+  }
+
+  /** Record a check-out after the staff member confirms (no GPS needed). */
+  private async confirmCheckout(ctx: Context, staffId: string) {
+    const teacher = await this.userModel.findByPk(staffId, {
+      include: [{ association: 'roles' }],
+    });
+    if (!teacher) {
+      await ctx.editMessageText('❌ Foydalanuvchi topilmadi.');
+      return;
+    }
+
+    try {
+      const attendance = await this.staffAttendanceService.automaticScan(staffId, 'out');
+      const msg = this.formatAttendanceMessage(teacher, attendance);
+      await ctx.editMessageText(`✅ Chiqish qayd etildi!\n\n${msg}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Checkout error for ${staffId}: ${message}`);
+      await ctx.editMessageText(`❌ Xatolik: ${message}`);
+    }
   }
 
   /** Validate GPS and record attendance for the teacher themselves */
@@ -804,7 +855,12 @@ export class AttendanceBotService implements OnModuleInit {
     await this.notifyAdmins(msg, keyboard);
   }
 
-  /** Admin approve/reject handler — records the review and notifies the staff. */
+  /**
+   * Admin approve/reject handler — records the review and updates the admin's
+   * message. The requester is notified separately via the
+   * `staff-permission.reviewed` event (see onPermissionReviewed), so the same
+   * DM is sent whether the review comes from here or the admin panel.
+   */
   private async reviewLeaveByAdmin(
     ctx: Context,
     permissionId: string,
@@ -815,7 +871,7 @@ export class AttendanceBotService implements OnModuleInit {
     });
 
     try {
-      const permission = await this.staffAttendanceService.reviewPermission(
+      await this.staffAttendanceService.reviewPermission(
         permissionId,
         { status: decision } as any,
         reviewer?.user_id,
@@ -824,23 +880,35 @@ export class AttendanceBotService implements OnModuleInit {
       const verb = decision === 'approved' ? 'tasdiqlandi ✅' : 'rad etildi ❌';
       const original = (ctx.callbackQuery as any).message?.text ?? '';
       await ctx.editMessageText(`${original}\n\n— Soʻrov ${verb}`);
-
-      const staff = await this.userModel.findByPk(permission.staff_id);
-      if (staff?.telegram_chat_id) {
-        const dateLine =
-          permission.start_date === permission.end_date
-            ? permission.start_date
-            : `${permission.start_date} — ${permission.end_date}`;
-        await this.safeSend(
-          staff.telegram_chat_id,
-          `📋 Ruxsat soʻrovingiz ${verb}\n${this.leaveTypeLabel(permission.type)}\n📅 ${dateLine}`,
-        );
-      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Leave review error for ${permissionId}: ${message}`);
       await ctx.reply(`❌ Xatolik: ${message}`);
     }
+  }
+
+  /**
+   * Fired whenever a permission is approved/rejected anywhere (bot buttons or
+   * admin panel). DMs the requesting staff member their decision.
+   */
+  @OnEvent('staff-permission.reviewed')
+  async onPermissionReviewed(permission: StaffPermission) {
+    if (permission.status !== 'approved' && permission.status !== 'rejected') return;
+
+    const staff = await this.userModel.findByPk(permission.staff_id);
+    if (!staff?.telegram_chat_id) return;
+
+    const verb = permission.status === 'approved' ? 'tasdiqlandi ✅' : 'rad etildi ❌';
+    const dateLine =
+      permission.start_date === permission.end_date
+        ? permission.start_date
+        : `${permission.start_date} — ${permission.end_date}`;
+
+    let msg = `📋 Ruxsat soʻrovingiz ${verb}\n${this.leaveTypeLabel(permission.type)}\n📅 ${dateLine}`;
+    if (permission.permitted_time) msg += `\n🕐 ${permission.permitted_time}`;
+    if (permission.review_note) msg += `\n📝 Izoh: ${permission.review_note}`;
+
+    await this.safeSend(staff.telegram_chat_id, msg);
   }
 
   // ---------------------------------------------------------------------------

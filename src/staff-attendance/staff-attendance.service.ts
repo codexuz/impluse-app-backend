@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Op } from "sequelize";
 import { StaffAttendance } from "./entities/staff-attendance.entity.js";
 import { AttendancePolicy } from "./entities/attendance-policy.entity.js";
@@ -23,7 +24,10 @@ import { ReviewStaffPermissionDto } from "./dto/review-staff-permission.dto.js";
 
 @Injectable()
 export class StaffAttendanceService {
-  constructor(private readonly staffProfileService: StaffProfileService) {}
+  constructor(
+    private readonly staffProfileService: StaffProfileService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   private getUzTime(): Date {
     const now = new Date();
@@ -887,12 +891,18 @@ export class StaffAttendanceService {
     const permission = await StaffPermission.findByPk(id);
     if (!permission) throw new NotFoundException("Ruxsat topilmadi");
 
-    return permission.update({
+    const updated = await permission.update({
       status: dto.status,
       review_note: dto.review_note ?? null,
       reviewed_by: reviewerId ?? null,
       reviewed_at: new Date(),
     });
+
+    // Notify the requester (e.g. Telegram bot) regardless of where the review
+    // happened — admin panel or bot buttons.
+    this.eventEmitter.emit("staff-permission.reviewed", updated);
+
+    return updated;
   }
 
   async updatePermission(id: string, dto: Partial<CreateStaffPermissionDto>) {
