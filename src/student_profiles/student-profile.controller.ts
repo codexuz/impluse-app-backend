@@ -189,37 +189,25 @@ export class StudentProfileController {
 
   @Get("leaderboard/level")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-  @ApiOperation({ summary: "Get leaderboard for students with same level as current user" })
+  @ApiOperation({ summary: "Get the weekly leaderboard across all active students (points earned this week)" })
   @ApiQuery({
     name: "limit",
     required: false,
     type: Number,
     description: "Number of results to return (default: 10)",
   })
-  @ApiQuery({
-    name: "userId",
-    required: true,
-    type: String,
-    description: "User ID to determine the level for filtering",
-  })
   @ApiResponse({
     status: 200,
-    description: "Return leaderboard by level",
+    description: "Return the weekly leaderboard",
     type: [LeaderboardItemDto],
   })
-  getLeaderboardByLevel(
-    @Query("limit") limit?: string,
-    @Query("userId") userId?: string
-  ) {
-    if (!userId) {
-      throw new Error("User ID is required for level-based leaderboard");
-    }
+  getLeaderboardByLevel(@Query("limit") limit?: string) {
     const numericLimit = limit ? parseInt(limit, 10) : undefined;
     const validLimit =
       numericLimit && !isNaN(numericLimit) && numericLimit > 0
         ? numericLimit
         : undefined;
-    return this.studentProfileService.getLeaderboardByLevel(userId, validLimit);
+    return this.studentProfileService.getLeaderboardByLevel(validLimit);
   }
 
   @Get("leaderboard/streaks")

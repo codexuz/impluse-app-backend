@@ -29,6 +29,7 @@ import { HomeworkSubmission } from "../homework_submissions/entities/homework_su
 import { HomeworkSection } from "../homework_submissions/entities/homework_sections.entity.js";
 import { GroupAssignedUnit } from "../group_assigned_units/entities/group_assigned_unit.entity.js";
 import { StudentProfile } from "../student_profiles/entities/student_profile.entity.js";
+import { PointsLog } from "../student_profiles/entities/points-log.entity.js";
 import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
 import { Notifications } from "../notifications/entities/notification.entity.js";
 import { LessonProgress } from "./../lesson_progress/entities/lesson_progress.entity.js";
@@ -274,6 +275,7 @@ export const Models = [
   BonusPenaltyCategory,
   ShopItem,
   ShopPurchase,
+  PointsLog,
 ];
 
 // Define associations after all models are loaded
@@ -882,6 +884,10 @@ export function initializeAssociations() {
   //StudentProfile Associations
   User.hasOne(StudentProfile, { foreignKey: "user_id", as: "student_profile" });
   StudentProfile.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+  //PointsLog Associations
+  User.hasMany(PointsLog, { foreignKey: "user_id", as: "points_logs" });
+  PointsLog.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
   //StudentParent Associations
   User.hasMany(StudentParent, {

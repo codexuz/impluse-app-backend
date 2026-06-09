@@ -4,8 +4,9 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
-import { Op } from "sequelize";
+import { Op, fn, col } from "sequelize";
 import { StudentProfile } from "./entities/student_profile.entity.js";
+import { PointsLog } from "./entities/points-log.entity.js";
 import { CreateStudentProfileDto } from "./dto/create-student-profile.dto.js";
 import { UpdateStudentProfileDto } from "./dto/update-student-profile.dto.js";
 
@@ -13,8 +14,24 @@ import { UpdateStudentProfileDto } from "./dto/update-student-profile.dto.js";
 export class StudentProfileService {
   constructor(
     @InjectModel(StudentProfile)
-    private studentProfileModel: typeof StudentProfile
+    private studentProfileModel: typeof StudentProfile,
+    @InjectModel(PointsLog)
+    private pointsLogModel: typeof PointsLog
   ) {}
+
+  /**
+   * Start of the current week (Monday 00:00:00, server local time).
+   * The weekly leaderboard sums PointsLog rows created at or after this.
+   */
+  private getWeekStart(): Date {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sunday ... 6 = Saturday
+    const diffToMonday = (day + 6) % 7; // days since Monday
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  }
 
   async create(
     createStudentProfileDto: CreateStudentProfileDto
@@ -63,6 +80,21 @@ export class StudentProfileService {
   async addPoints(userId: string, points: number): Promise<StudentProfile> {
     const profile = await this.findByUserId(userId);
     await profile.increment("points", { by: points });
+
+    // Record the award so time-windowed leaderboards (weekly) can be computed.
+    // Denormalize the user's current level for fast weekly-by-level grouping.
+    const userRecord = await this.studentProfileModel.sequelize.models.User.findOne(
+      {
+        where: { user_id: userId },
+        attributes: ["level_id"],
+      }
+    );
+    await this.pointsLogModel.create({
+      user_id: userId,
+      level_id: (userRecord?.get("level_id") as string) ?? null,
+      points,
+    });
+
     return profile.reload();
   }
 
@@ -109,6 +141,8 @@ export class StudentProfileService {
         {
           association: "user",
           attributes: ["user_id", "first_name", "last_name", "username","avatar_url"],
+          where: { is_active: true }, // Only active users
+          required: true,
         },
       ],
     });
@@ -136,7 +170,9 @@ export class StudentProfileService {
             level_id: {
               [Op.ne]: null, // Only include users that have a level_id
             },
+            is_active: true, // Only active users
           },
+          required: true,
         },
       ],
     });
@@ -153,46 +189,73 @@ export class StudentProfileService {
     };
   }
 
-  async getLeaderboardByLevel(userId: string, limit?: number): Promise<StudentProfile[]> {
+  /**
+   * Weekly leaderboard across all active students: ranks students by the points
+   * they earned during the current week (Monday onward), summed from the
+   * PointsLog ledger. Students with no points this week are excluded (so only
+   * students active this week appear). Not scoped by level.
+   */
+  async getLeaderboardByLevel(
+    limit?: number
+  ): Promise<
+    Array<{
+      user_id: string;
+      weekly_points: number;
+      user: any;
+      profile: StudentProfile | null;
+    }>
+  > {
     const validLimit = limit && limit > 0 ? limit : 10;
-    
-    // First, get the current user's level_id
-    const profile = await this.findByUserId(userId);
-    
-    // Get the user to access their level_id
-    const userRecord = await this.studentProfileModel.sequelize.models.User.findOne({
-      where: { user_id: profile.user_id },
-      attributes: ["level_id"],
-    });
-    
-    if (!userRecord || !userRecord.get("level_id")) {
-      return []; // Return empty array if user has no level
-    }
-    
-    const levelId = userRecord.get("level_id");
-    
-    return this.studentProfileModel.findAll({
-      include: [
-        {
-          association: "user",
-          attributes: [
-            "user_id",
-            "first_name",
-            "last_name",
-            "username",
-            "level_id",
-            "avatar_url"
-          ],
-          where: {
-            level_id: levelId, // Only include users with the same level as the current user
-          },
-        },
+    const weekStart = this.getWeekStart();
+
+    // Sum this week's points per user across all students, highest first.
+    const rows = await this.pointsLogModel.findAll({
+      attributes: [
+        "user_id",
+        [fn("SUM", col("points")), "weekly_points"],
       ],
-      order: [
-        ["points", "DESC"], // Sort by points since all users have the same level
-      ],
+      where: {
+        createdAt: { [Op.gte]: weekStart },
+      },
+      group: ["user_id"],
+      order: [[fn("SUM", col("points")), "DESC"]],
       limit: validLimit,
+      raw: true,
     });
+
+    if (rows.length === 0) return [];
+
+    // Hydrate each entry with the user record and the (lifetime) profile.
+    const userIds = rows.map((r: any) => r.user_id);
+    const [users, profiles] = await Promise.all([
+      this.studentProfileModel.sequelize.models.User.findAll({
+        where: { user_id: { [Op.in]: userIds }, is_active: true }, // Only active users
+        attributes: [
+          "user_id",
+          "first_name",
+          "last_name",
+          "username",
+          "level_id",
+          "avatar_url",
+        ],
+      }),
+      this.studentProfileModel.findAll({
+        where: { user_id: { [Op.in]: userIds } },
+      }),
+    ]);
+
+    const userById = new Map(users.map((u: any) => [u.get("user_id"), u]));
+    const profileByUserId = new Map(profiles.map((p) => [p.user_id, p]));
+
+    // Drop entries whose user is inactive (no active user record).
+    return rows
+      .filter((r: any) => userById.has(r.user_id))
+      .map((r: any) => ({
+        user_id: r.user_id,
+        weekly_points: Number(r.weekly_points) || 0,
+        user: userById.get(r.user_id),
+        profile: profileByUserId.get(r.user_id) ?? null,
+      }));
   }
 
   async getLeaderboardByStreaks(limit?: number): Promise<StudentProfile[]> {
@@ -204,6 +267,8 @@ export class StudentProfileService {
         {
           association: "user",
           attributes: ["user_id", "first_name", "last_name", "username","avatar_url"],
+          where: { is_active: true }, // Only active users
+          required: true,
         },
       ],
     });
@@ -222,6 +287,8 @@ export class StudentProfileService {
         {
           association: "user",
           attributes: ["user_id", "first_name", "last_name", "username","avatar_url"],
+          where: { is_active: true }, // Only active users
+          required: true,
         },
       ],
     });
@@ -238,6 +305,14 @@ export class StudentProfileService {
           [Op.gt]: profile.coins,
         },
       },
+      include: [
+        {
+          association: "user",
+          attributes: [],
+          where: { is_active: true }, // Only count active users
+          required: true,
+        },
+      ],
     });
 
     return {
@@ -265,7 +340,9 @@ export class StudentProfileService {
             level_id: {
               [Op.ne]: null, // Only include users that have a level_id
             },
+            is_active: true, // Only count active users
           },
+          required: true,
         },
       ],
     });
@@ -317,7 +394,9 @@ export class StudentProfileService {
           association: "user",
           where: {
             level_id: levelId,
+            is_active: true, // Only count active users
           },
+          required: true,
         },
       ],
     });

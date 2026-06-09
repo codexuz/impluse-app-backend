@@ -837,9 +837,12 @@ export class AudioService {
     try {
       const profile = await this.studentProfileService.findByUserId(userId);
 
-      // Add coins and points
+      // Add coins directly; route points through addPoints so the award is
+      // recorded in the PointsLog ledger (feeds the weekly leaderboard).
       await profile.increment("coins", { by: coins });
-      await profile.increment("points", { by: points });
+      if (points) {
+        await this.studentProfileService.addPoints(userId, points);
+      }
 
       // Level up logic
       await profile.reload();
