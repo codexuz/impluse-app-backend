@@ -15,6 +15,7 @@ import { BonusPenaltyWallet } from "../bonus-penalty/entities/bonus-penalty-wall
 import { BonusPenaltyCategory } from "../bonus-penalty/entities/bonus-penalty-category.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
+import { StaffShift } from "../staff-profile/entities/staff-shift.entity.js";
 import { StaffProfileService } from "../staff-profile/staff-profile.service.js";
 import { ScanStaffAttendanceDto } from "./dto/scan-staff-attendance.dto.js";
 import { CreateStaffPermissionDto } from "./dto/create-staff-permission.dto.js";
@@ -192,6 +193,50 @@ export class StaffAttendanceService {
     return this.staffProfileService.pickClosestShift(shifts, nowMinutes);
   }
 
+  /** Today's applicable shifts, sorted by start time (morning → evening). */
+  private async getShiftsSorted(teacherId: string, jsDay: number): Promise<StaffShift[]> {
+    const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, jsDay);
+    return [...shifts].sort((a, b) => this.toMinutes(a.in_time) - this.toMinutes(b.in_time));
+  }
+
+  /**
+   * Determines what the next scan should be, driven by how many shifts the
+   * staff member has today and how many in/out records already exist.
+   *
+   * Each shift is one IN→OUT pair, taken in start-time order:
+   *   1 shift  → IN, OUT                         (2 records)
+   *   2 shifts → IN, OUT, IN, OUT                (4 records)
+   *
+   * Records strictly alternate, so the count alone tells us the position:
+   *   nextType   = even count → "in",  odd count → "out"
+   *   shiftIndex = floor(count / 2)  (the shift this scan belongs to)
+   *   allDone    = next would be an IN but every shift is already complete
+   */
+  async getNextScanPlan(teacherId: string): Promise<{
+    nextType: "in" | "out";
+    shift: StaffShift | null;
+    shiftIndex: number;
+    totalShifts: number;
+    allDone: boolean;
+  }> {
+    const now = this.getUzTime();
+    const today = this.getToday(now);
+    const shiftsSorted = await this.getShiftsSorted(teacherId, now.getUTCDay());
+    const totalShifts = shiftsSorted.length;
+
+    const count = await StaffAttendance.count({
+      where: { teacher_id: teacherId, date: today },
+    });
+
+    const nextType: "in" | "out" = count % 2 === 0 ? "in" : "out";
+    const pairIndex = Math.floor(count / 2);
+    const allDone = totalShifts > 0 && nextType === "in" && pairIndex >= totalShifts;
+    const shiftIndex = totalShifts > 0 ? Math.min(pairIndex, totalShifts - 1) : -1;
+    const shift = shiftIndex >= 0 ? shiftsSorted[shiftIndex] : null;
+
+    return { nextType, shift, shiftIndex, totalShifts, allDone };
+  }
+
   // ---------------------------------------------------------------------------
   // Public scan methods
   // ---------------------------------------------------------------------------
@@ -207,22 +252,20 @@ export class StaffAttendanceService {
 
     const now = this.getUzTime();
     const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-    const today = this.getToday(now);
 
-    let attendanceType = type;
-    if (!attendanceType) {
-      const last = await StaffAttendance.findOne({
-        where: { teacher_id: teacherId, date: today },
-        order: [["createdAt", "DESC"]],
-      });
-      attendanceType = last?.type === "in" ? "out" : "in";
-    }
+    // Shift-count-aware plan: maps this scan to the correct shift (morning →
+    // evening) by its position in today's IN/OUT sequence.
+    const plan = await this.getNextScanPlan(teacherId);
+    const attendanceType = type ?? plan.nextType;
 
-    // Resolve shift — anchors to check-in time for checkout to avoid cross-shift confusion
-    const shift = await this.resolveShiftForScan(teacherId, today, now.getUTCDay(), nowMinutes, attendanceType);
-
-    // If shift found — use it for everyone, no group needed
-    if (shift) {
+    // Staff with configured shifts: one IN→OUT pair per shift, in order.
+    if (plan.totalShifts > 0) {
+      if (attendanceType === "in" && plan.allDone) {
+        throw new ConflictException(
+          `Bugungi barcha smenalar (${plan.totalShifts} ta) uchun davomat allaqachon olingan.`,
+        );
+      }
+      const shift = plan.shift!;
       return this.recordAttendance(teacherId, {
         group: null,
         lessonStart: shift.in_time,
@@ -230,6 +273,7 @@ export class StaffAttendanceService {
         gracePeriod: shift.grace_period_minutes,
         type: attendanceType,
         method: "auto_scan",
+        maxPerType: plan.totalShifts,
       });
     }
 
@@ -337,6 +381,7 @@ export class StaffAttendanceService {
       isAdmin?: boolean;
       method?: StaffAttendanceEvent["method"];
       rawPayload?: object;
+      maxPerType?: number;
     },
   ) {
     const { group, lessonStart, outTime, description, isAdmin } = options;
@@ -345,13 +390,15 @@ export class StaffAttendanceService {
     const today = this.getToday(now);
     const requestedType = options.type ?? "in";
 
-    // Sequence validation
+    // Sequence validation — one IN and one OUT per shift (defaults to 2 when no
+    // shift schedule is known, preserving the legacy two-session allowance).
+    const maxPerType = options.maxPerType ?? 2;
     const typeCount = await StaffAttendance.count({
       where: { teacher_id: teacherId, date: today, type: requestedType },
     });
 
-    if (typeCount >= 2) {
-      const note = `Bugun uchun davomat (${requestedType === "in" ? "kirish" : "chiqish"}) allaqachon 2 marta olingan`;
+    if (typeCount >= maxPerType) {
+      const note = `Bugun uchun davomat (${requestedType === "in" ? "kirish" : "chiqish"}) allaqachon ${maxPerType} marta olingan`;
       await this.logEvent({ staffId: teacherId, attendanceId: null, method, type: requestedType, outcome: "rejected", note });
       throw new ConflictException(note);
     }

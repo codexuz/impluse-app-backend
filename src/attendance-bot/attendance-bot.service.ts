@@ -358,32 +358,30 @@ export class AttendanceBotService implements OnModuleInit {
       return;
     }
 
-    const now = this.getUzTime();
-    const today = this.getToday();
-    const last = await StaffAttendance.findOne({
-      where: { teacher_id: staff.user_id, date: today },
-      order: [['createdAt', 'DESC']],
-    });
-    const nextType = last?.type === 'in' ? 'out' : 'in';
-    const nextLabel = nextType === 'in' ? 'KIRISH ✅' : 'CHIQISH 🚪';
+    // Shift-count-aware: which shift / direction is next for this staff member
+    const plan = await this.staffAttendanceService.getNextScanPlan(staff.user_id);
 
-    // Resolve shift for preview
-    const shifts = await this.staffProfileService.resolveShiftsForDay(staff.user_id, now.getUTCDay());
-    const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-    let anchorMinutes = nowMinutes;
-    if (nextType === 'out' && last?.type === 'in') {
-      const checkInUz = new Date(last.createdAt.getTime() + 5 * 60 * 60 * 1000);
-      anchorMinutes = checkInUz.getUTCHours() * 60 + checkInUz.getUTCMinutes();
+    if (plan.allDone) {
+      await ctx.reply(
+        `✅ ${staff.first_name} ${staff.last_name}, bugungi barcha smenalar ` +
+          `(${plan.totalShifts} ta) uchun davomat yakunlangan.`,
+        Markup.removeKeyboard(),
+      );
+      return;
     }
-    const shift = this.staffProfileService.pickClosestShift(shifts, anchorMinutes);
+
+    const nextLabel = plan.nextType === 'in' ? 'KIRISH ✅' : 'CHIQISH 🚪';
+    const shift = plan.shift;
+    const shiftName = shift?.name ? `${this.shiftNameLabel(shift.name)} ` : '';
     const shiftInfo = shift
-      ? `🕐 ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`
+      ? `🕐 ${shiftName}smena: ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`
       : '🕐 Smena belgilanmagan';
+    const shiftCounter = plan.totalShifts > 1 ? `\n📌 Smena ${plan.shiftIndex + 1}/${plan.totalShifts}` : '';
 
     this.pendingGps.set(chatId, { staffId: staff.user_id, requestedAt: Date.now() });
 
     await ctx.reply(
-      `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}\n📍 Davomat: ${nextLabel}\n\n` +
+      `👤 ${staff.first_name} ${staff.last_name}\n${shiftInfo}${shiftCounter}\n📍 Davomat: ${nextLabel}\n\n` +
         '📍 JONLI joylashuvingizni yuboring (3 daqiqa ichida):\n' +
         '📎 → Joylashuv (Location) → "Jonli joylashuvni ulashish" (Share Live Location)',
       Markup.keyboard([['❌ Bekor qilish']]).resize().oneTime(),
@@ -498,29 +496,23 @@ export class AttendanceBotService implements OnModuleInit {
     const now = this.getUzTime();
     const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
 
-    // Determine next scan type from today's last record
-    const today = this.getToday();
-    const last = await StaffAttendance.findOne({
-      where: { teacher_id: teacherId, date: today },
-      order: [['createdAt', 'DESC']],
-    });
-    const nextType = last?.type === 'in' ? 'out' : 'in';
+    // Shift-count-aware plan drives the next direction and the target shift.
+    const plan = await this.staffAttendanceService.getNextScanPlan(teacherId);
+    const nextType = plan.nextType;
     const nextLabel = nextType === 'in' ? '➡️ Keyingi: KIRISH' : '➡️ Keyingi: CHIQISH';
 
-    // Resolve shift — for checkout preview, anchor to check-in time (mirrors automaticScan logic)
-    const shifts = await this.staffProfileService.resolveShiftsForDay(teacherId, now.getUTCDay());
-    let anchorMinutes = nowMinutes;
-    if (nextType === 'out' && last?.type === 'in') {
-      const checkInUz = new Date(last.createdAt.getTime() + 5 * 60 * 60 * 1000);
-      anchorMinutes = checkInUz.getUTCHours() * 60 + checkInUz.getUTCMinutes();
-    }
-    const shift = this.staffProfileService.pickClosestShift(shifts, anchorMinutes);
-
     let scheduleInfo: string;
-    if (shift) {
-      scheduleInfo = `🕐 Smena: ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`;
+    if (plan.allDone) {
+      scheduleInfo = `✅ Bugungi barcha smenalar (${plan.totalShifts} ta) yakunlangan`;
+    } else if (plan.shift) {
+      const shift = plan.shift;
+      const shiftName = shift.name ? `${this.shiftNameLabel(shift.name)} ` : '';
+      scheduleInfo = `🕐 ${shiftName}Smena: ${shift.in_time.slice(0, 5)}–${shift.out_time ? shift.out_time.slice(0, 5) : '?'}`;
       if (shift.grace_period_minutes > 0) {
         scheduleInfo += ` (+${shift.grace_period_minutes} daq chegirma)`;
+      }
+      if (plan.totalShifts > 1) {
+        scheduleInfo += `\n📌 Smena ${plan.shiftIndex + 1}/${plan.totalShifts}`;
       }
     } else if (isTeacher) {
       // Fallback: closest group lesson time
