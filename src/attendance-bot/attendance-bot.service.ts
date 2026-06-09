@@ -42,8 +42,6 @@ export class AttendanceBotService implements OnModuleInit {
   private readonly lateAlertsSent = new Set<string>();
 
   private static readonly STAFF_ROLES = ['teacher', 'admin', 'support_teacher'];
-  private readonly uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   // Authorized Telegram chat IDs — comma-separated in env ATTENDANCE_BOT_ADMIN_IDS
   private get authorizedIds(): string[] {
@@ -69,8 +67,6 @@ export class AttendanceBotService implements OnModuleInit {
       { command: 'kirish', description: 'Ishga kirish (GPS orqali)' },
       { command: 'chiqish', description: 'Ishdan chiqish (GPS orqali)' },
       { command: 'link', description: 'Telegram hisobni bog\'lash: /link <login>' },
-      { command: 'week', description: 'Shu haftalik hisobot' },
-      { command: 'month', description: 'Shu oylik hisobot' },
       { command: 'ruxsat', description: 'Ruxsat (dam olish) so\'rovi yuborish' },
     ]);
 
@@ -192,12 +188,6 @@ export class AttendanceBotService implements OnModuleInit {
       }
       await this.requestGpsForSelf(ctx, self, 'out');
     });
-
-    // /week [teacherId] — this week's summary
-    this.bot.command('week', (ctx) => this.handleRangeReport(ctx, 'week'));
-
-    // /month [teacherId] — this month's summary
-    this.bot.command('month', (ctx) => this.handleRangeReport(ctx, 'month'));
 
     // /ruxsat — start a leave (permission) request flow
     this.bot.command('ruxsat', (ctx) => this.startLeaveRequest(ctx));
@@ -622,91 +612,6 @@ export class AttendanceBotService implements OnModuleInit {
       this.logger.error(`Error recording attendance: ${message}`);
       await ctx.reply(`❌ Xatolik: ${message}`);
     }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Reports & stats (/week, /month)
-  // ---------------------------------------------------------------------------
-
-  private async handleRangeReport(ctx: Context, range: 'week' | 'month') {
-    const chatId = String(ctx.chat.id);
-    const parts = ((ctx.message as any).text as string).split(' ');
-    const id = parts[1]?.trim();
-
-    let teacherId: string;
-    if (id) {
-      if (!this.isAuthorized(chatId)) return this.replyUnauthorized(ctx);
-      teacherId = id;
-    } else {
-      const self = await this.userModel.findOne({ where: { telegram_chat_id: chatId } });
-      if (!self) {
-        await ctx.reply(`Foydalanish: /${range} <teacher_id>`);
-        return;
-      }
-      teacherId = self.user_id;
-    }
-
-    const { startDate, endDate, label } = this.getDateRange(range);
-    await this.sendRangeSummary(ctx, teacherId, startDate, endDate, label);
-  }
-
-  private getDateRange(range: 'week' | 'month'): {
-    startDate: string;
-    endDate: string;
-    label: string;
-  } {
-    const uz = this.getUzTime();
-    const fmt = (d: Date) =>
-      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(
-        d.getUTCDate(),
-      ).padStart(2, '0')}`;
-    const endDate = fmt(uz);
-
-    if (range === 'week') {
-      const diffToMon = (uz.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
-      const monday = new Date(uz.getTime() - diffToMon * 24 * 60 * 60 * 1000);
-      return { startDate: fmt(monday), endDate, label: 'Shu hafta' };
-    }
-
-    const first = new Date(Date.UTC(uz.getUTCFullYear(), uz.getUTCMonth(), 1));
-    return { startDate: fmt(first), endDate, label: 'Shu oy' };
-  }
-
-  private async sendRangeSummary(
-    ctx: Context,
-    teacherId: string,
-    startDate: string,
-    endDate: string,
-    label: string,
-  ) {
-    if (!this.uuidRegex.test(teacherId)) return ctx.reply('Noto\'g\'ri ID formati.');
-    const teacher = await this.userModel.findByPk(teacherId);
-    if (!teacher) return ctx.reply('Foydalanuvchi topilmadi.');
-
-    const summary = await this.staffAttendanceService.getSummary({
-      startDate,
-      endDate,
-      teacherId,
-    });
-    const row = summary.data[0] as any;
-
-    let msg = `📊 ${label} (${startDate} — ${endDate})\n👤 ${teacher.first_name} ${teacher.last_name}\n\n`;
-    if (!row || row.total === 0) {
-      msg += 'Bu davr uchun davomat maʼlumoti yoʻq.';
-      return ctx.reply(msg);
-    }
-
-    msg += `✅ Oʻz vaqtida: ${row.on_time}\n`;
-    msg += `🟢 Vaqli: ${row.early}\n`;
-    msg += `⚠️ Kechikkan: ${row.late}\n`;
-    msg += `📈 Davomat darajasi: ${row.attendance_rate}%`;
-    if (row.late > 0) {
-      msg += `\n⏰ Oʻrtacha kechikish: ${Math.round(Number(row.avg_minutes_late))} daq`;
-    }
-    if (Number(row.total_fine) > 0) {
-      msg += `\n💰 Jami jarima: ${Number(row.total_fine).toLocaleString()} soʻm`;
-    }
-    return ctx.reply(msg);
   }
 
   // ---------------------------------------------------------------------------
