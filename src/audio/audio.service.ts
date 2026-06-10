@@ -704,13 +704,6 @@ export class AudioService {
 
       // Only increment judge count for new judges
       await audio.increment("judgeCount");
-
-      // Only reward for new judges, not updates
-      await this.rewardUser(
-        judgeUserId,
-        REWARDS.JUDGE.coins,
-        REWARDS.JUDGE.points,
-      );
     }
 
     // Always update average rating and trending score
