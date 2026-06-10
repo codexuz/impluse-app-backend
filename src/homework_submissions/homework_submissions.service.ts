@@ -326,28 +326,26 @@ export class HomeworkSubmissionsService {
       }
     }
 
-    // Award rewards on first attempt if score >= 80%
+    // Award rewards on first attempt only; retakes earn nothing.
+    // Score >= 80%: 5 points + 1 coin. Streak: once per calendar day via last_active_date.
     let rewards: { coins: number; streak: number; bonusPoints: number; totalEarnedPoints: number; } | null = null;
 
     const scorePercentage = section.score ?? 0;
     if (isFirstAttempt && scorePercentage >= 80 && submission.student_id) {
-      const bonusPoints = 5;
-      const coins = 2;
-      const streak = 1;
-      const totalEarnedPoints = Math.round(scorePercentage + bonusPoints);
+      const points = 5;
+      const coins = 1;
 
       try {
-        await this.studentProfileService.addPoints(submission.student_id, totalEarnedPoints);
+        await this.studentProfileService.addPoints(submission.student_id, points);
         await this.studentProfileService.addCoins(submission.student_id, coins);
-        await this.studentProfileService.incrementStreak(submission.student_id);
+        const { streakGranted } = await this.studentProfileService.incrementStreakIfNewDay(submission.student_id);
 
-        rewards = { coins, streak, bonusPoints, totalEarnedPoints };
+        rewards = { coins, streak: streakGranted ? 1 : 0, bonusPoints: 0, totalEarnedPoints: points };
         console.log(
-          `Rewards granted to student ${submission.student_id}: +${totalEarnedPoints} points, +${coins} coins, +${streak} streak`
+          `Rewards granted to student ${submission.student_id}: +${points} points, +${coins} coins${streakGranted ? ', +1 streak' : ''}`
         );
       } catch (error) {
         console.warn("Failed to apply rewards to student profile:", error);
-        // Don't fail the submission if rewards cannot be applied
       }
     }
 

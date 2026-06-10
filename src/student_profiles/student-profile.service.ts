@@ -125,6 +125,17 @@ export class StudentProfileService {
     return profile.reload();
   }
 
+  async incrementStreakIfNewDay(userId: string): Promise<{ streakGranted: boolean }> {
+    const profile = await this.findByUserId(userId);
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    if (profile.last_active_date === today) {
+      return { streakGranted: false };
+    }
+    await profile.increment('streaks');
+    await profile.update({ last_active_date: today });
+    return { streakGranted: true };
+  }
+
   async resetStreak(userId: string): Promise<StudentProfile> {
     const profile = await this.findByUserId(userId);
     profile.streaks = 0;
