@@ -44,6 +44,12 @@ export class StudentParent extends Model {
   })
   telegram_chat_id!: string | null;
 
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  is_archived!: boolean;
+
   @CreatedAt
   createdAt!: Date;
 

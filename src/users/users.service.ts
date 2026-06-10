@@ -30,6 +30,7 @@ import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 import { Course } from "../courses/entities/course.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
 import {
   BonusPenaltyWalletService,
   WALLET_ROLES,
@@ -52,6 +53,8 @@ export class UsersService {
     private groupStudentModel: typeof GroupStudent,
     @InjectModel(UserRole)
     private userRoleModel: typeof UserRole,
+    @InjectModel(StudentParent)
+    private studentParentModel: typeof StudentParent,
     private configService: ConfigService,
     private awsStorageService: AwsStorageService,
     private bonusPenaltyWalletService: BonusPenaltyWalletService,
@@ -409,6 +412,12 @@ export class UsersService {
     await this.archivedStudentModel.destroy({
       where: { user_id: id },
     });
+
+    // Restore the student's parents
+    await this.studentParentModel.update(
+      { is_archived: false },
+      { where: { student_id: id } },
+    );
 
     return user;
   }
@@ -1050,6 +1059,12 @@ export class UsersService {
 
     // Deactivate the student
     await this.deactivate(dto.user_id);
+
+    // Archive the student's parents
+    await this.studentParentModel.update(
+      { is_archived: true },
+      { where: { student_id: dto.user_id } },
+    );
 
     return archivedStudent;
   }
