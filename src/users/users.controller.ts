@@ -410,6 +410,16 @@ export class UsersController {
     return this.usersService.hardDeleteUser(id);
   }
 
+  @Patch(":id/promote-to-teacher")
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Promote a support teacher to teacher" })
+  @ApiResponse({ status: 200, description: "User promoted to teacher successfully" })
+  @ApiResponse({ status: 400, description: "User is not a support teacher" })
+  @ApiResponse({ status: 409, description: "User is already a teacher" })
+  promoteToTeacher(@Param("id") id: string) {
+    return this.usersService.promoteToTeacher(id);
+  }
+
   @Patch(":id/deactivate")
   @Roles(Role.ADMIN, Role.TEACHER)
   deactivate(@Param("id") id: string) {

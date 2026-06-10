@@ -1711,4 +1711,43 @@ export class UsersService {
 
     return { message: `Role "${role.name}" removed from user successfully` };
   }
+
+  async promoteToTeacher(userId: string): Promise<User> {
+    const user = await this.userModel.findByPk(userId, {
+      include: [{ model: Role, as: "roles", through: { attributes: [] } }],
+    });
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+
+    const isSupport = user.roles?.some((r) => r.name === "support_teacher");
+    if (!isSupport) {
+      throw new BadRequestException("User does not have the support_teacher role");
+    }
+
+    const alreadyTeacher = user.roles?.some((r) => r.name === "teacher");
+    if (alreadyTeacher) {
+      throw new ConflictException("User already has the teacher role");
+    }
+
+    // Swap roles: remove support_teacher, add teacher
+    const supportRole = await this.roleModel.findOne({ where: { name: "support_teacher" } });
+    const teacherRole = await this.roleModel.findOne({ where: { name: "teacher" } });
+    if (!teacherRole) {
+      throw new NotFoundException("Teacher role not found");
+    }
+
+    if (supportRole) {
+      await this.userRoleModel.destroy({ where: { userId, roleId: supportRole.id } });
+    }
+    await this.userRoleModel.create({
+      userId,
+      roleId: teacherRole.id,
+      assignedAt: new Date(),
+    } as any);
+
+    await this.ensureTeacherRecords(userId);
+
+    return this.findOne(userId);
+  }
 }
