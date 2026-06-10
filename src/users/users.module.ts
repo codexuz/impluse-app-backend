@@ -10,6 +10,9 @@ import { ArchivedStudent } from "./entities/archived-student.entity.js";
 import { SmsVerification } from "./entities/sms-verification.model.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
+import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
+import { TeacherProfile } from "../teacher-profile/entities/teacher-profile.entity.js";
+import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
 import { MinioModule } from "../minio/minio.module.js";
 import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
 import { BonusPenaltyModule } from "../bonus-penalty/bonus-penalty.module.js";
@@ -25,6 +28,9 @@ import { BonusPenaltyModule } from "../bonus-penalty/bonus-penalty.module.js";
       GroupStudent,
       SmsVerification,
       StudentParent,
+      TeacherWallet,
+      TeacherProfile,
+      StaffProfile,
     ]),
     MinioModule,
     AwsStorageModule,

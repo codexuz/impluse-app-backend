@@ -31,6 +31,8 @@ import { Course } from "../courses/entities/course.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
 import { StudentParent } from "../student-parents/entities/student_parents.entity.js";
+import { TeacherWallet } from "../teacher-wallet/entities/teacher-wallet.entity.js";
+import { StaffProfile } from "../staff-profile/entities/staff-profile.entity.js";
 import {
   BonusPenaltyWalletService,
   WALLET_ROLES,
@@ -55,6 +57,12 @@ export class UsersService {
     private userRoleModel: typeof UserRole,
     @InjectModel(StudentParent)
     private studentParentModel: typeof StudentParent,
+    @InjectModel(TeacherWallet)
+    private teacherWalletModel: typeof TeacherWallet,
+    @InjectModel(TeacherProfile)
+    private teacherProfileModel: typeof TeacherProfile,
+    @InjectModel(StaffProfile)
+    private staffProfileModel: typeof StaffProfile,
     private configService: ConfigService,
     private awsStorageService: AwsStorageService,
     private bonusPenaltyWalletService: BonusPenaltyWalletService,
@@ -62,6 +70,27 @@ export class UsersService {
 
   // Ensure a staff member (admin/teacher/support_teacher) owns a bonus &
   // penalty wallet. Never blocks user creation if the wallet write fails.
+  private async ensureTeacherRecords(userId: string): Promise<void> {
+    try {
+      await Promise.all([
+        this.teacherWalletModel.findOrCreate({
+          where: { teacher_id: userId },
+          defaults: { teacher_id: userId, amount: 0 } as any,
+        }),
+        this.teacherProfileModel.findOrCreate({
+          where: { user_id: userId },
+          defaults: { user_id: userId } as any,
+        }),
+        this.staffProfileModel.findOrCreate({
+          where: { staff_id: userId },
+          defaults: { staff_id: userId } as any,
+        }),
+      ]);
+    } catch (error: any) {
+      console.error(`Failed to create teacher records for ${userId}: ${error.message}`);
+    }
+  }
+
   private async ensureBonusPenaltyWallet(userId: string): Promise<void> {
     try {
       await this.bonusPenaltyWalletService.findOrCreate(userId);
@@ -118,6 +147,7 @@ export class UsersService {
     }
 
     await this.ensureBonusPenaltyWallet(user.user_id);
+    await this.ensureTeacherRecords(user.user_id);
 
     // Return user with profile included
     return this.findOne(user.user_id);
@@ -170,6 +200,9 @@ export class UsersService {
 
     if (WALLET_ROLES.includes(role)) {
       await this.ensureBonusPenaltyWallet(user.user_id);
+    }
+    if (role === "teacher") {
+      await this.ensureTeacherRecords(user.user_id);
     }
 
     return this.findOne(user.user_id);
@@ -426,6 +459,7 @@ export class UsersService {
     page: number = 1,
     limit: number = 10,
     query?: string,
+    is_archived: boolean = false,
   ): Promise<{
     data: User[];
     total: number;
@@ -435,7 +469,7 @@ export class UsersService {
   }> {
     const offset = (page - 1) * limit;
     const whereClause: any = {
-      is_active: true,
+      is_active: !is_archived,
     };
 
     // Add search query if provided

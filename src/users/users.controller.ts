@@ -102,11 +102,13 @@ export class UsersController {
     @Query("page") page?: number,
     @Query("limit") limit?: number,
     @Query("query") query?: string,
+    @Query("is_archived") is_archived?: string,
   ) {
     return this.usersService.getAllTeachers(
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
       query,
+      is_archived === "true",
     );
   }
 
