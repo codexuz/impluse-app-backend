@@ -119,9 +119,33 @@ export class StudentProfileService {
     return profile.reload();
   }
 
+  async deductPoints(userId: string, points: number): Promise<StudentProfile> {
+    const profile = await this.findByUserId(userId);
+    if (profile.points < points) {
+      throw new BadRequestException(
+        `Insufficient points: ${profile.points} available, ${points} required`
+      );
+    }
+    await profile.decrement("points", { by: points });
+    return profile.reload();
+  }
+
   async incrementStreak(userId: string): Promise<StudentProfile> {
     const profile = await this.findByUserId(userId);
     await profile.increment("streaks");
+    return profile.reload();
+  }
+
+  async addStreak(userId: string, amount: number): Promise<StudentProfile> {
+    const profile = await this.findByUserId(userId);
+    await profile.increment("streaks", { by: amount });
+    return profile.reload();
+  }
+
+  async deductStreak(userId: string, amount: number): Promise<StudentProfile> {
+    const profile = await this.findByUserId(userId);
+    const newStreak = Math.max(0, profile.streaks - amount);
+    await profile.update({ streaks: newStreak });
     return profile.reload();
   }
 

@@ -122,6 +122,26 @@ export class StudentProfileController {
     return this.studentProfileService.addCoins(id, amount);
   }
 
+  @Patch(":id/points/deduct/:amount")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Deduct points from student profile" })
+  @ApiParam({ name: "id", description: "User ID" })
+  @ApiParam({ name: "amount", description: "Amount of points to deduct" })
+  @ApiResponse({ status: 200, description: "Points deducted successfully" })
+  deductPoints(@Param("id") id: string, @Param("amount") amount: number) {
+    return this.studentProfileService.deductPoints(id, +amount);
+  }
+
+  @Patch(":id/coins/deduct/:amount")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Deduct coins from student profile" })
+  @ApiParam({ name: "id", description: "User ID" })
+  @ApiParam({ name: "amount", description: "Amount of coins to deduct" })
+  @ApiResponse({ status: 200, description: "Coins deducted successfully" })
+  deductCoins(@Param("id") id: string, @Param("amount") amount: number) {
+    return this.studentProfileService.deductCoins(id, +amount);
+  }
+
   @Patch(":id/streak/increment")
   @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Increment student streak" })
@@ -129,6 +149,26 @@ export class StudentProfileController {
   @ApiResponse({ status: 200, description: "Streak incremented successfully" })
   incrementStreak(@Param("id") id: string) {
     return this.studentProfileService.incrementStreak(id);
+  }
+
+  @Patch(":id/streak/add/:amount")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Add N streaks to student profile" })
+  @ApiParam({ name: "id", description: "User ID" })
+  @ApiParam({ name: "amount", description: "Amount of streaks to add" })
+  @ApiResponse({ status: 200, description: "Streak added successfully" })
+  addStreak(@Param("id") id: string, @Param("amount") amount: number) {
+    return this.studentProfileService.addStreak(id, +amount);
+  }
+
+  @Patch(":id/streak/deduct/:amount")
+  @Roles(Role.ADMIN, Role.TEACHER)
+  @ApiOperation({ summary: "Deduct N streaks from student profile (floors at 0)" })
+  @ApiParam({ name: "id", description: "User ID" })
+  @ApiParam({ name: "amount", description: "Amount of streaks to deduct" })
+  @ApiResponse({ status: 200, description: "Streak deducted successfully" })
+  deductStreak(@Param("id") id: string, @Param("amount") amount: number) {
+    return this.studentProfileService.deductStreak(id, +amount);
   }
 
   @Patch(":id/streak/reset")
