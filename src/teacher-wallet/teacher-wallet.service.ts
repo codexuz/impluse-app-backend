@@ -293,7 +293,7 @@ export class TeacherWalletService {
         .map((tp) => [tp.user_id, tp]),
     );
 
-    // Batch query for groups count
+    // Batch query for groups count (active groups only)
     const groupsCountResult = await this.groupModel.findAll({
       attributes: [
         "teacher_id",
@@ -301,6 +301,7 @@ export class TeacherWalletService {
       ],
       where: {
         teacher_id: { [Op.in]: teacherIds },
+        isDeleted: false,
       },
       group: ["teacher_id"],
       raw: true,
@@ -313,18 +314,21 @@ export class TeacherWalletService {
       ]),
     );
 
-    // Batch query for students count (distinct students across all groups)
+    // Batch query for students count (active students in active groups only)
     const studentsCountResult = await this.groupStudentModel.findAll({
       attributes: [
         [Sequelize.col("group.teacher_id"), "teacher_id"],
         [
           Sequelize.fn(
             "COUNT",
-            Sequelize.fn("DISTINCT", Sequelize.col("student_id")),
+            Sequelize.fn("DISTINCT", Sequelize.col("GroupStudent.student_id")),
           ),
           "studentsCount",
         ],
       ],
+      where: {
+        status: "active",
+      },
       include: [
         {
           model: this.groupModel,
@@ -332,6 +336,7 @@ export class TeacherWalletService {
           attributes: [],
           where: {
             teacher_id: { [Op.in]: teacherIds },
+            isDeleted: false,
           },
           required: true,
         },
