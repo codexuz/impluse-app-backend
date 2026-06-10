@@ -1,6 +1,6 @@
-import { IsOptional, IsString, IsInt, Min } from "class-validator";
+import { IsOptional, IsString, IsInt, Min, IsBoolean } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { Type, Transform } from "class-transformer";
 
 export class QueryStudentParentDto {
   @ApiProperty({
@@ -51,4 +51,28 @@ export class QueryStudentParentDto {
   @IsOptional()
   @IsString()
   student_name?: string;
+
+  @ApiProperty({
+    description: "Filter by archived status. Omit or false = active parents only, true = archived parents only",
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true)
+  @IsBoolean()
+  is_archived?: boolean;
+
+  @ApiProperty({
+    description: "Filter by Telegram connection. true = has Telegram, false = no Telegram, omit = all",
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === "true" || value === true) return true;
+    if (value === "false" || value === false) return false;
+    return undefined;
+  })
+  @IsBoolean()
+  has_telegram?: boolean;
 }

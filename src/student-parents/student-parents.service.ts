@@ -41,7 +41,16 @@ export class StudentParentsService {
       const limit = queryDto?.limit || 10;
       const offset = (page - 1) * limit;
 
-      const where: any = {};
+      const where: any = {
+        is_archived: queryDto?.is_archived === true,
+      };
+
+      if (queryDto?.has_telegram === true) {
+        where.telegram_chat_id = { [Op.not]: null };
+      } else if (queryDto?.has_telegram === false) {
+        where.telegram_chat_id = null;
+      }
+
       const studentWhere: any = {};
 
       // Filter by parent details
