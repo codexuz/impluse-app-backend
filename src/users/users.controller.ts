@@ -103,12 +103,16 @@ export class UsersController {
     @Query("limit") limit?: number,
     @Query("query") query?: string,
     @Query("is_archived") is_archived?: string,
+    @Query("role") role?: string,
   ) {
+    const resolvedRole =
+      role === "support_teacher" ? "support_teacher" : "teacher";
     return this.usersService.getAllTeachers(
       page ? Number(page) : 1,
       limit ? Number(limit) : 10,
       query,
       is_archived === "true",
+      resolvedRole,
     );
   }
 

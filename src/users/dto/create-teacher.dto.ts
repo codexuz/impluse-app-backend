@@ -4,6 +4,7 @@ import {
   IsOptional,
   MinLength,
   IsBoolean,
+  IsIn,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
@@ -56,4 +57,14 @@ export class CreateTeacherDto {
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
+
+  @ApiPropertyOptional({
+    description: "Role to assign: teacher (default) or support_teacher",
+    enum: ["teacher", "support_teacher"],
+    default: "teacher",
+  })
+  @IsString()
+  @IsIn(["teacher", "support_teacher"])
+  @IsOptional()
+  role?: "teacher" | "support_teacher";
 }

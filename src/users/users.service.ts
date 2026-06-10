@@ -138,16 +138,17 @@ export class UsersService {
       is_active: true,
     });
 
-    // Assign teacher role
-    const teacherRole = await this.roleModel.findOne({
-      where: { name: "teacher" },
-    });
-    if (teacherRole) {
-      await user.$add("roles", teacherRole);
+    // Assign role (teacher or support_teacher)
+    const roleName = createTeacherDto.role ?? "teacher";
+    const assignedRole = await this.roleModel.findOne({ where: { name: roleName } });
+    if (assignedRole) {
+      await user.$add("roles", assignedRole);
     }
 
     await this.ensureBonusPenaltyWallet(user.user_id);
-    await this.ensureTeacherRecords(user.user_id);
+    if (roleName === "teacher") {
+      await this.ensureTeacherRecords(user.user_id);
+    }
 
     // Return user with profile included
     return this.findOne(user.user_id);
@@ -460,6 +461,7 @@ export class UsersService {
     limit: number = 10,
     query?: string,
     is_archived: boolean = false,
+    role: "teacher" | "support_teacher" = "teacher",
   ): Promise<{
     data: User[];
     total: number;
@@ -491,7 +493,7 @@ export class UsersService {
         {
           model: Role,
           as: "roles",
-          where: { name: "teacher" },
+          where: { name: role },
           through: { attributes: [] },
         },
         {

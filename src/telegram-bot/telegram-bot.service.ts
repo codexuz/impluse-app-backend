@@ -1284,6 +1284,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     const parents = await this.studentParentModel.findAll({
       where: {
         telegram_chat_id: { [Op.ne]: null },
+        is_archived: false,
       },
       attributes: ["telegram_chat_id"],
       raw: true,
