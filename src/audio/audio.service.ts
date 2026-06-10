@@ -558,13 +558,6 @@ export class AudioService {
           // Update trending score after commit
           await this.updateTrendingScore(audioId);
 
-          // Reward the user who liked
-          await this.rewardUser(
-            userId,
-            REWARDS.LIKE.coins,
-            REWARDS.LIKE.points,
-          );
-
           // Notify audio owner
           if (audio.studentId !== userId) {
             await this.sendNotification({
@@ -619,15 +612,6 @@ export class AudioService {
 
     await audio.increment("commentCount");
     await this.updateTrendingScore(createCommentDto.audioId);
-
-    // Reward the user who commented only on their first comment on this audio
-    if (previousCommentCount === 0) {
-      await this.rewardUser(
-        userId,
-        REWARDS.COMMENT.coins,
-        REWARDS.COMMENT.points,
-      );
-    }
 
     // Notify audio owner
     if (audio.studentId !== userId) {
@@ -1029,8 +1013,8 @@ export class AudioService {
   @OnEvent('ai-feedback.completed')
   async handleAiFeedbackCompleted(payload: { audioId: number; studentId: string; aiScore: number }) {
     try {
-      // 1. Reward user if score > 80
-      if (payload.aiScore > 80) {
+      // 1. Reward user if score >= 80
+      if (payload.aiScore >= 80) {
         await this.rewardUser(payload.studentId, 20, 0); // Give 20 coins, 0 points
       }
 
