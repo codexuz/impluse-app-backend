@@ -42,6 +42,10 @@ export interface AssessResult {
     lexical_resource: number | null;
   };
   transcription: string | null;
+  /** Full result object from the SpeechSuper response. Contains all analytical
+   *  data: equivalent_scores, vocabulary_stats, pronunciation_stats,
+   *  grammar_stats, fluency_stats, sentences, speed, relevance, etc. */
+  detail: any;
   rewards: { coins: number; points: number; streak: number } | null;
   /** Non-null when SpeechSuper rejected the audio (e.g. silent/invalid). */
   error: string | null;
@@ -280,7 +284,7 @@ export class SpeechSuperService {
       ? null
       : await this.maybeAward(dto.student_id, scores.overall);
 
-    return { attempt, scores, transcription, rewards, error: apiError };
+    return { attempt, scores, transcription, detail: raw?.result ?? raw ?? null, rewards, error: apiError };
   }
 
   /** Download audio bytes from a URL. */
