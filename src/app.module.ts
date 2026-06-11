@@ -104,6 +104,7 @@ import { StaffProfileModule } from './staff-profile/staff-profile.module.js';
 import { BonusPenaltyModule } from './bonus-penalty/bonus-penalty.module.js';
 import { PenaltyCheckerModule } from "./penalty-checker/penalty-checker.module.js";
 import { ShopModule } from "./shop/shop.module.js";
+import { SpeechSuperModule } from "./speechsuper/speechsuper.module.js";
 
 @Module({
   imports: [
@@ -222,6 +223,7 @@ import { ShopModule } from "./shop/shop.module.js";
     BonusPenaltyModule,
     PenaltyCheckerModule,
     ShopModule,
+    SpeechSuperModule,
   ],
   controllers: [AppController],
   providers: [

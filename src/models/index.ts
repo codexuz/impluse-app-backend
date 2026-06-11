@@ -142,6 +142,9 @@ import { BonusPenaltyTransaction } from "../bonus-penalty/entities/bonus-penalty
 import { BonusPenaltyCategory } from "../bonus-penalty/entities/bonus-penalty-category.entity.js";
 import { ShopItem } from "../shop/entities/shop-item.entity.js";
 import { ShopPurchase } from "../shop/entities/shop-purchase.entity.js";
+import { SpeechSuperTopic } from "../speechsuper/entities/speechsuper-topic.entity.js";
+import { SpeechSuperQuestion } from "../speechsuper/entities/speechsuper-question.entity.js";
+import { SpeechSuperAttempt } from "../speechsuper/entities/speechsuper-attempt.entity.js";
 
 export const Models = [
   User,
@@ -275,6 +278,9 @@ export const Models = [
   BonusPenaltyCategory,
   ShopItem,
   ShopPurchase,
+  SpeechSuperTopic,
+  SpeechSuperQuestion,
+  SpeechSuperAttempt,
   PointsLog,
 ];
 
@@ -1898,5 +1904,28 @@ export function initializeAssociations() {
   ShopPurchase.belongsTo(User, {
     foreignKey: "user_id",
     as: "user",
+  });
+
+  // SpeechSuper associations
+  SpeechSuperTopic.hasMany(SpeechSuperQuestion, {
+    foreignKey: "topic_id",
+    as: "questions",
+  });
+  SpeechSuperQuestion.belongsTo(SpeechSuperTopic, {
+    foreignKey: "topic_id",
+    as: "topic",
+  });
+
+  SpeechSuperQuestion.hasMany(SpeechSuperAttempt, {
+    foreignKey: "question_id",
+    as: "attempts",
+  });
+  SpeechSuperAttempt.belongsTo(SpeechSuperQuestion, {
+    foreignKey: "question_id",
+    as: "question",
+  });
+  SpeechSuperAttempt.belongsTo(SpeechSuperTopic, {
+    foreignKey: "topic_id",
+    as: "topic",
   });
 }
