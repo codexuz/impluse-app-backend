@@ -235,6 +235,12 @@ export class SpeechSuperService {
       requestParams,
     });
 
+    // TEMP: log the raw response so we can confirm the result field names
+    // match extractScores(). Remove once the parser is verified.
+    this.logger.log(
+      `SpeechSuper raw response (${coreType}): ${JSON.stringify(raw)}`,
+    );
+
     const scores = this.extractScores(raw);
     const transcription = this.extractTranscription(raw);
     const apiError = raw?.errId || raw?.error || null;
