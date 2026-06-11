@@ -327,13 +327,14 @@ export class HomeworkSubmissionsService {
     }
 
     // Award rewards on first attempt only; retakes earn nothing.
-    // Score >= 80%: 5 points + 1 coin. Streak: once per calendar day via last_active_date.
+    // Reward scales linearly across the 80%–100% band: 80% earns the floor,
+    // 100% earns the max, everything in between is interpolated.
+    // Streak: once per calendar day via last_active_date.
     let rewards: { coins: number; streak: number; bonusPoints: number; totalEarnedPoints: number; } | null = null;
 
     const scorePercentage = section.score ?? 0;
     if (isFirstAttempt && scorePercentage >= 80 && submission.student_id) {
-      const points = 5;
-      const coins = 1;
+      const { points, coins } = this.computeScaledReward(scorePercentage);
 
       try {
         await this.studentProfileService.addPoints(submission.student_id, points);
@@ -360,6 +361,26 @@ export class HomeworkSubmissionsService {
     }
 
     return { submission, section, rewards };
+  }
+
+  // Reward floor (at 80%) and ceiling (at 100%) for a first-attempt pass.
+  private static readonly REWARD_FLOOR = { points: 5, coins: 1 };
+  private static readonly REWARD_MAX = { points: 10, coins: 3 };
+
+  /**
+   * Linearly scale points/coins across the 80%–100% score band.
+   * 80% → floor reward, 100% → max reward; scores in between are interpolated
+   * and rounded. Scores below 80% earn nothing (caller already gates on >= 80).
+   */
+  private computeScaledReward(score: number): { points: number; coins: number } {
+    const floor = HomeworkSubmissionsService.REWARD_FLOOR;
+    const max = HomeworkSubmissionsService.REWARD_MAX;
+    // t: 0 at 80%, 1 at 100% (clamped so >100% never over-rewards).
+    const t = Math.max(0, Math.min(score, 100) - 80) / 20;
+    return {
+      points: Math.round(floor.points + t * (max.points - floor.points)),
+      coins: Math.round(floor.coins + t * (max.coins - floor.coins)),
+    };
   }
 
   private async sendExerciseSubmittedPush(
