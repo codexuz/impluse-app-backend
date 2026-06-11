@@ -22,6 +22,8 @@ import {
   CORE_TYPE_IS_SCRIPTED,
   PART_TYPE_TO_CORE_TYPE,
   PART_TYPE_TO_IELTS_TASK,
+  SPEECHSUPER_CORE_TYPES,
+  SpeechSuperCoreType,
   SpeechSuperPartType,
 } from "./speechsuper.constants.js";
 import { StudentProfileService } from "../student_profiles/student-profile.service.js";
@@ -34,6 +36,10 @@ export interface AssessResult {
     fluency: number | null;
     integrity: number | null;
     rhythm: number | null;
+    /** speak.eval.pro only: grammar band score scaled to 0-100. */
+    grammar: number | null;
+    /** speak.eval.pro only: lexical resource band score scaled to 0-100. */
+    lexical_resource: number | null;
   };
   transcription: string | null;
   rewards: { coins: number; points: number; streak: number } | null;
@@ -217,8 +223,8 @@ export class SpeechSuperService {
       if (coreType === PART_TYPE_TO_CORE_TYPE.paragraph) {
         requestParams.paragraph_need_word_score = 1;
       }
-    } else if (coreType === PART_TYPE_TO_CORE_TYPE.part1) {
-      // IELTS speak.eval.pro
+    } else if (coreType === SPEECHSUPER_CORE_TYPES.IELTS) {
+      // speak.eval.pro
       requestParams.test_type = "ielts";
       requestParams.task_type = PART_TYPE_TO_IELTS_TASK[partType];
       if (prompt) requestParams.question_prompt = prompt;
@@ -237,7 +243,7 @@ export class SpeechSuperService {
       requestParams,
     });
 
-    const scores = this.extractScores(raw);
+    const scores = this.extractScores(raw, coreType);
     const transcription = this.extractTranscription(raw);
     // SpeechSuper reports top-level transport errors via errId, but content
     // problems (e.g. "No valid audio detected!") come back as result.warning[].
@@ -298,17 +304,18 @@ export class SpeechSuperService {
 
   /**
    * Normalize SpeechSuper's per-coreType result shapes into a flat 0-100 score
-   * set. Verified against a real `word.eval.promax` payload (scores live under
-   * `result`, e.g. result.overall / result.pronunciation). Other coreTypes
-   * share the same `result.<metric>` layout:
-   *  - word/sent/para: overall, pronunciation, fluency, integrity, rhythm
-   *  - speak.eval.pro (IELTS): overall is a 0-9 band -> scaled to 0-100, plus
-   *    pronunciation/fluency sub-scores
-   *  - asr.eval (general): overall + transcript only
-   * A metric may be a flat number or a nested object exposing `.overall`.
+   * set. Score layout by coreType:
+   *  - word.eval.promax:  overall, pronunciation; stress (0|100 binary) as rhythm
+   *  - sent.eval.promax:  overall, pronunciation, fluency, integrity, rhythm
+   *  - para.eval:         overall, pronunciation, fluency, integrity, rhythm
+   *  - speak.eval.pro:    overall, pronunciation, fluency_coherence, grammar,
+   *                       lexical_resource — all on 0-9 band scale
+   *  - asr.eval:          overall, pronunciation, fluency, rhythm, integrity
+   * A metric may be a flat number, numeric string, or nested object with .overall.
    */
-  private extractScores(raw: any): AssessResult["scores"] {
+  private extractScores(raw: any, coreType: SpeechSuperCoreType): AssessResult["scores"] {
     const r = raw?.result ?? raw ?? {};
+    const isIelts = coreType === SPEECHSUPER_CORE_TYPES.IELTS;
 
     // Read a metric that may be a number, numeric string, or { overall }.
     const num = (v: any): number | null => {
@@ -318,18 +325,23 @@ export class SpeechSuperService {
       return Number.isFinite(n) ? n : null;
     };
 
-    // IELTS returns a 0-9 band; scale to 0-100 so all coreTypes share a scale.
+    // speak.eval.pro returns 0-9 IELTS bands; all other coreTypes use 0-100.
     const toPercent = (v: number | null): number | null => {
       if (v === null) return null;
-      return v <= 9 ? Math.round(v * 11.111) : Math.round(v);
+      return isIelts ? Math.round(v * 11.111) : Math.round(v);
     };
+
+    // speak.eval.pro names the fluency dimension "fluency_coherence".
+    const fluencyRaw = isIelts ? (r.fluency_coherence ?? r.fluency) : r.fluency;
 
     return {
       overall: toPercent(num(r.overall)) ?? 0,
       pronunciation: toPercent(num(r.pronunciation)),
-      fluency: toPercent(num(r.fluency)),
-      integrity: toPercent(num(r.integrity)),
-      rhythm: toPercent(num(r.rhythm) ?? num(r.rhythmscore) ?? num(r.stress)),
+      fluency: toPercent(num(fluencyRaw)),
+      integrity: isIelts ? null : toPercent(num(r.integrity)),
+      rhythm: isIelts ? null : toPercent(num(r.rhythm) ?? num(r.rhythmscore) ?? num(r.stress)),
+      grammar: isIelts ? toPercent(num(r.grammar)) : null,
+      lexical_resource: isIelts ? toPercent(num(r.lexical_resource)) : null,
     };
   }
 
