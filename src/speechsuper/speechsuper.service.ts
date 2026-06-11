@@ -37,6 +37,8 @@ export interface AssessResult {
   };
   transcription: string | null;
   rewards: { coins: number; points: number; streak: number } | null;
+  /** Non-null when SpeechSuper rejected the audio (e.g. silent/invalid). */
+  error: string | null;
 }
 
 @Injectable()
@@ -235,15 +237,16 @@ export class SpeechSuperService {
       requestParams,
     });
 
-    // TEMP: log the raw response so we can confirm the result field names
-    // match extractScores(). Remove once the parser is verified.
-    this.logger.log(
-      `SpeechSuper raw response (${coreType}): ${JSON.stringify(raw)}`,
-    );
-
     const scores = this.extractScores(raw);
     const transcription = this.extractTranscription(raw);
-    const apiError = raw?.errId || raw?.error || null;
+    // SpeechSuper reports top-level transport errors via errId, but content
+    // problems (e.g. "No valid audio detected!") come back as result.warning[].
+    const apiError = this.extractError(raw);
+    if (apiError) {
+      this.logger.warn(
+        `SpeechSuper returned a warning/error for ${coreType}: ${apiError}`,
+      );
+    }
 
     // Persist the attempt.
     const attempt = await this.attemptModel.create({
@@ -265,10 +268,13 @@ export class SpeechSuperService {
       error: apiError ? String(apiError) : null,
     });
 
-    // Reward on a passing attempt (>= 80%), scaled 80->100%.
-    const rewards = await this.maybeAward(dto.student_id, scores.overall);
+    // Reward on a passing attempt (>= 80%), scaled 80->100%. A rejected attempt
+    // scores 0 and never rewards, so the apiError gate is implicit.
+    const rewards = apiError
+      ? null
+      : await this.maybeAward(dto.student_id, scores.overall);
 
-    return { attempt, scores, transcription, rewards };
+    return { attempt, scores, transcription, rewards, error: apiError };
   }
 
   /** Download audio bytes from a URL. */
@@ -291,42 +297,63 @@ export class SpeechSuperService {
   }
 
   /**
-   * Normalize SpeechSuper's per-coreType result shapes into a flat score set.
-   * The result block lives under `result` for all coreTypes; scripted types
-   * expose `overall`/`pronunciation`/`fluency`/`integrity`/`rhythm`, while
-   * IELTS/general expose `overall` plus an `ielts`/proficiency block.
+   * Normalize SpeechSuper's per-coreType result shapes into a flat 0-100 score
+   * set. Verified against a real `word.eval.promax` payload (scores live under
+   * `result`, e.g. result.overall / result.pronunciation). Other coreTypes
+   * share the same `result.<metric>` layout:
+   *  - word/sent/para: overall, pronunciation, fluency, integrity, rhythm
+   *  - speak.eval.pro (IELTS): overall is a 0-9 band -> scaled to 0-100, plus
+   *    pronunciation/fluency sub-scores
+   *  - asr.eval (general): overall + transcript only
+   * A metric may be a flat number or a nested object exposing `.overall`.
    */
   private extractScores(raw: any): AssessResult["scores"] {
     const r = raw?.result ?? raw ?? {};
+
+    // Read a metric that may be a number, numeric string, or { overall }.
     const num = (v: any): number | null => {
       if (v === undefined || v === null) return null;
+      if (typeof v === "object") return num(v.overall);
       const n = typeof v === "string" ? parseFloat(v) : Number(v);
       return Number.isFinite(n) ? n : null;
     };
 
-    // Prefer an explicit overall; otherwise fall back to the IELTS overall band
-    // scaled to 0-100, or the pronunciation score.
-    const overall =
-      num(r.overall) ??
-      num(r.pron) ??
-      num(r.pronunciation) ??
-      (num(r.overallBand) !== null
-        ? Math.round((num(r.overallBand) as number) * 11.1) // 9 band -> ~100
-        : null) ??
-      0;
+    // IELTS returns a 0-9 band; scale to 0-100 so all coreTypes share a scale.
+    const toPercent = (v: number | null): number | null => {
+      if (v === null) return null;
+      return v <= 9 ? Math.round(v * 11.111) : Math.round(v);
+    };
 
     return {
-      overall: overall ?? 0,
-      pronunciation: num(r.pronunciation) ?? num(r.pron),
-      fluency: num(r.fluency),
-      integrity: num(r.integrity),
-      rhythm: num(r.rhythm),
+      overall: toPercent(num(r.overall)) ?? 0,
+      pronunciation: toPercent(num(r.pronunciation)),
+      fluency: toPercent(num(r.fluency)),
+      integrity: toPercent(num(r.integrity)),
+      rhythm: toPercent(num(r.rhythm) ?? num(r.rhythmscore) ?? num(r.stress)),
     };
   }
 
   private extractTranscription(raw: any): string | null {
     const r = raw?.result ?? raw ?? {};
     return r.transcript ?? r.transcription ?? r.text ?? null;
+  }
+
+  /**
+   * Surface a failure reason from a SpeechSuper response. Transport errors come
+   * back as top-level `errId`/`error`; content problems (e.g. silent audio)
+   * come back as `result.warning[]` entries like
+   * `{ code: 1001, message: "No valid audio detected!" }`.
+   */
+  private extractError(raw: any): string | null {
+    if (raw?.errId) return `errId:${raw.errId}`;
+    if (raw?.error) return String(raw.error);
+    const warnings = raw?.result?.warning;
+    if (Array.isArray(warnings) && warnings.length > 0) {
+      return warnings
+        .map((w: any) => `${w.code ?? ""} ${w.message ?? ""}`.trim())
+        .join("; ");
+    }
+    return null;
   }
 
   /**
