@@ -410,46 +410,49 @@ export class AuthService {
       attempts: 0,
     });
 
-    // Try sending OTP: first via SMS, fallback to Telegram
-    let otpMethod = "sms";
-    let smsSent = false;
+    // Send OTP: Telegram is the default channel for admins, SMS is the fallback
+    let otpMethod = "telegram";
+    let otpSent = false;
 
-    // Try SMS first
-    if (user.phone) {
-      const smsMessage = `Impulse CRMga kirish kodingiz: ${code}`;
-      try {
-        await this.smsService.sendSms({
-          mobile_phone: user.phone,
-          message: smsMessage,
-        });
-        smsSent = true;
-        otpMethod = "sms";
-        console.log(`Admin OTP sent via SMS to ${user.phone}`);
-      } catch (error) {
-        console.error("Failed to send admin OTP via SMS:", error);
+    // Try Telegram first
+    if (user.telegram_chat_id) {
+      const telegramSent = await this.telegramAuthService.sendOtpCode(
+        user.telegram_chat_id,
+        code,
+      );
+      if (telegramSent) {
+        otpSent = true;
+        otpMethod = "telegram";
+        console.log(
+          `Admin OTP sent via Telegram to chat ${user.telegram_chat_id}`,
+        );
+      } else {
+        console.error("Failed to send admin OTP via Telegram");
       }
     }
 
-    // If SMS failed or no phone, try Telegram
-    if (!smsSent) {
-      if (user.telegram_chat_id) {
-        const telegramSent = await this.telegramAuthService.sendOtpCode(
-          user.telegram_chat_id,
-          code,
-        );
-        if (telegramSent) {
-          otpMethod = "telegram";
-          console.log(
-            `Admin OTP sent via Telegram to chat ${user.telegram_chat_id}`,
-          );
-        } else {
-          throw new BadRequestException(
-            "Failed to send OTP via both SMS and Telegram. Please try again.",
-          );
+    // If Telegram failed or no chat linked, fall back to SMS
+    if (!otpSent) {
+      if (user.phone) {
+        const smsMessage = `Impulse CRMga kirish kodingiz: ${code}`;
+        try {
+          await this.smsService.sendSms({
+            mobile_phone: user.phone,
+            message: smsMessage,
+          });
+          otpSent = true;
+          otpMethod = "sms";
+          console.log(`Admin OTP sent via SMS to ${user.phone}`);
+        } catch (error) {
+          console.error("Failed to send admin OTP via SMS:", error);
         }
-      } else {
+      }
+
+      if (!otpSent) {
         throw new BadRequestException(
-          "Failed to send OTP via SMS and no Telegram account linked. Please link your Telegram account first.",
+          user.telegram_chat_id
+            ? "Failed to send OTP via Telegram and SMS. Please try again."
+            : "No Telegram account linked. Please link your Telegram account to receive OTP codes.",
         );
       }
     }
