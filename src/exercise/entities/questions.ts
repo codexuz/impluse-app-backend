@@ -37,6 +37,7 @@ export class Questions extends Model {
       "translation",
       "dictation",
       "listen_and_choose",
+      "sentence_surgery",
     ),
     allowNull: false,
   })

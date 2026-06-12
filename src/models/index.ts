@@ -15,6 +15,7 @@ import { GapFilling } from "../exercise/entities/gap_filling.js";
 import { Translation } from "../exercise/entities/translation.js";
 import { Dictation } from "../exercise/entities/dictation.js";
 import { ListenAndChoose } from "../exercise/entities/listen_and_choose.js";
+import { SentenceSurgery } from "../exercise/entities/sentence_surgery.js";
 
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
@@ -265,6 +266,7 @@ export const Models = [
   Translation,
   Dictation,
   ListenAndChoose,
+  SentenceSurgery,
   DictionaryHistory,
   TelegramChatMessage,
   StaffAttendance,
@@ -471,6 +473,17 @@ export function initializeAssociations() {
   });
 
   ListenAndChoose.belongsTo(Questions, {
+    foreignKey: "question_id",
+    as: "question",
+  });
+
+  // SentenceSurgery associations
+  Questions.hasOne(SentenceSurgery, {
+    foreignKey: "question_id",
+    as: "sentence_surgery",
+  });
+
+  SentenceSurgery.belongsTo(Questions, {
     foreignKey: "question_id",
     as: "question",
   });

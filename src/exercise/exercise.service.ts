@@ -21,6 +21,7 @@ import { SentenceBuild } from "./entities/sentence_build.js";
 import { Translation } from "./entities/translation.js";
 import { Dictation } from "./entities/dictation.js";
 import { ListenAndChoose } from "./entities/listen_and_choose.js";
+import { SentenceSurgery } from "./entities/sentence_surgery.js";
 import { Transaction, Op } from "sequelize";
 import { Sequelize } from "sequelize-typescript";
 import { HomeworkSubmissionsService } from "../homework_submissions/homework_submissions.service.js";
@@ -48,6 +49,8 @@ export class ExerciseService {
     private dictationModel: typeof Dictation,
     @InjectModel(ListenAndChoose)
     private listenAndChooseModel: typeof ListenAndChoose,
+    @InjectModel(SentenceSurgery)
+    private sentenceSurgeryModel: typeof SentenceSurgery,
 
     private sequelize: Sequelize,
     private homeworkSubmissionsService: HomeworkSubmissionsService,
@@ -202,6 +205,16 @@ export class ExerciseService {
                 );
               }
               break;
+
+            case QuestionType.SENTENCE_SURGERY:
+              if (questionData.sentence_surgery) {
+                await this.createSentenceSurgery(
+                  question.id,
+                  questionData.sentence_surgery,
+                  transaction,
+                );
+              }
+              break;
           }
         }
       }
@@ -344,6 +357,11 @@ export class ExerciseService {
         {
           model: this.listenAndChooseModel,
           as: "listen_and_choose",
+          required: false,
+        },
+        {
+          model: this.sentenceSurgeryModel,
+          as: "sentence_surgery",
           required: false,
         },
       ],
@@ -493,6 +511,16 @@ export class ExerciseService {
                 await this.createListenAndChoose(
                   question.id,
                   questionData.listen_and_choose,
+                  transaction,
+                );
+              }
+              break;
+
+            case QuestionType.SENTENCE_SURGERY:
+              if (questionData.sentence_surgery) {
+                await this.createSentenceSurgery(
+                  question.id,
+                  questionData.sentence_surgery,
                   transaction,
                 );
               }
@@ -736,6 +764,16 @@ export class ExerciseService {
                 );
               }
               break;
+
+            case QuestionType.SENTENCE_SURGERY:
+              if (questionData.sentence_surgery) {
+                await this.createSentenceSurgery(
+                  question.id,
+                  questionData.sentence_surgery,
+                  transaction,
+                );
+              }
+              break;
           }
         }
       }
@@ -796,6 +834,11 @@ export class ExerciseService {
             as: "listen_and_choose",
             required: false,
           },
+          {
+            model: this.sentenceSurgeryModel,
+            as: "sentence_surgery",
+            required: false,
+          },
         ],
       },
     ];
@@ -847,6 +890,10 @@ export class ExerciseService {
         transaction,
       });
       await this.listenAndChooseModel.destroy({
+        where: { question_id: questionId },
+        transaction,
+      });
+      await this.sentenceSurgeryModel.destroy({
         where: { question_id: questionId },
         transaction,
       });
@@ -905,6 +952,10 @@ export class ExerciseService {
         transaction,
       });
       await this.listenAndChooseModel.destroy({
+        where: { question_id: question.id },
+        transaction,
+      });
+      await this.sentenceSurgeryModel.destroy({
         where: { question_id: question.id },
         transaction,
       });
@@ -1103,6 +1154,34 @@ export class ExerciseService {
         { transaction },
       );
     }
+  }
+
+  private async createSentenceSurgery(
+    questionId: string,
+    data: any,
+    transaction: Transaction,
+  ) {
+    if (
+      data == null ||
+      data.error_word == null ||
+      data.error_start == null ||
+      data.error_end == null ||
+      data.options == null
+    ) {
+      throw new BadRequestException(
+        "SentenceSurgery requires error_word, error_start, error_end, and options",
+      );
+    }
+    await this.sentenceSurgeryModel.create(
+      {
+        question_id: questionId,
+        error_word: data.error_word,
+        error_start: data.error_start,
+        error_end: data.error_end,
+        options: data.options,
+      },
+      { transaction },
+    );
   }
 
   async getGroupExerciseScores(groupId: string, exerciseId: string) {

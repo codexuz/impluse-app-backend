@@ -12,6 +12,7 @@ import { SentenceBuild } from './entities/sentence_build.js';
 import { Translation } from './entities/translation.js';
 import { Dictation } from './entities/dictation.js';
 import { ListenAndChoose } from './entities/listen_and_choose.js';
+import { SentenceSurgery } from './entities/sentence_surgery.js';
 import { HomeworkSubmissionsModule } from "../homework_submissions/homework_submissions.module.js";
 
 @Module({
@@ -26,7 +27,8 @@ import { HomeworkSubmissionsModule } from "../homework_submissions/homework_subm
       Choices,
       GapFilling,
       MatchingExercise,
-      TypingExercise
+      TypingExercise,
+      SentenceSurgery,
     ]),
     HomeworkSubmissionsModule
   ],

@@ -30,6 +30,7 @@ export enum QuestionType {
   TRANSLATION = "translation",
   DICTATION = "dictation",
   LISTEN_AND_CHOOSE = "listen_and_choose",
+  SENTENCE_SURGERY = "sentence_surgery",
 }
 // Dictation DTO
 export class CreateDictationDto {
@@ -134,6 +135,55 @@ export class CreateSentenceBuildDto {
   @IsString({ message: "correct_answer must be a string" })
   @IsNotEmpty({ message: "correct_answer should not be empty" })
   correct_answer: string;
+}
+
+// Sentence Surgery DTO
+export class CreateSentenceSurgeryOptionDto {
+  @ApiProperty({ description: "Replacement option text", example: "doesn't" })
+  @IsString()
+  @IsNotEmpty()
+  text: string;
+
+  @ApiProperty({ description: "Whether this option is correct", example: true })
+  @IsBoolean()
+  @IsNotEmpty()
+  is_correct: boolean;
+}
+
+export class CreateSentenceSurgeryDto {
+  @ApiProperty({
+    description: "The incorrect word or phrase in the sentence",
+    example: "don't",
+  })
+  @IsString()
+  @IsNotEmpty()
+  error_word: string;
+
+  @ApiProperty({
+    description: "Start character index of the error in question_text",
+    example: 4,
+  })
+  @IsInt()
+  @IsNotEmpty()
+  error_start: number;
+
+  @ApiProperty({
+    description: "End character index (exclusive) of the error in question_text",
+    example: 9,
+  })
+  @IsInt()
+  @IsNotEmpty()
+  error_end: number;
+
+  @ApiProperty({
+    description: "Exactly 3 correction options, one of which is correct",
+    type: [CreateSentenceSurgeryOptionDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateSentenceSurgeryOptionDto)
+  @IsNotEmpty()
+  options: CreateSentenceSurgeryOptionDto[];
 }
 
 // Base Exercise DTO
@@ -430,6 +480,16 @@ export class CreateCompleteQuestionDto extends CreateQuestionDto {
   @Type(() => CreateListenAndChooseDto)
   @IsOptional()
   listen_and_choose?: CreateListenAndChooseDto | CreateListenAndChooseDto[];
+
+  @ApiProperty({
+    description: "Sentence surgery data for sentence_surgery questions",
+    required: false,
+    type: CreateSentenceSurgeryDto,
+  })
+  @ValidateNested()
+  @Type(() => CreateSentenceSurgeryDto)
+  @IsOptional()
+  sentence_surgery?: CreateSentenceSurgeryDto;
 }
 
 // Complete Exercise Creation DTO
