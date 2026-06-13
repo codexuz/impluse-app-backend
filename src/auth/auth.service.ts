@@ -371,10 +371,11 @@ export class AuthService {
       throw new UnauthorizedException("Invalid username or password");
     }
 
-    // Check if user has admin role
+    // Check if user has admin, owner, or manager role
     const userRoles = user.roles.map((role) => role.name.toLowerCase());
-    if (!userRoles.includes("admin")) {
-      throw new UnauthorizedException("Access denied. User is not an admin");
+    const allowedRoles = ["admin", "owner", "manager"];
+    if (!userRoles.some((r) => allowedRoles.includes(r))) {
+      throw new UnauthorizedException("Access denied. User does not have administrative privileges");
     }
 
     // Invalidate any existing unused OTP codes for this user
