@@ -47,7 +47,7 @@ export class IeltsAnswersController {
 
   @Post("attempts")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Create a new answer attempt" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -58,7 +58,7 @@ export class IeltsAnswersController {
   }
 
   @Get("attempts")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all attempts for the current user" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -89,7 +89,7 @@ export class IeltsAnswersController {
   }
 
   @Get("attempts/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get an attempt by ID with all answers" })
   @ApiParam({ name: "id", description: "The attempt ID" })
   async findAttemptById(@CurrentUser() user: any, @Param("id") id: string) {
@@ -115,7 +115,7 @@ export class IeltsAnswersController {
   }
 
   @Patch("attempts/:id/submit")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Submit an attempt" })
   @ApiParam({ name: "id", description: "The attempt ID" })
   async submitAttempt(@CurrentUser() user: any, @Param("id") id: string) {
@@ -123,7 +123,7 @@ export class IeltsAnswersController {
   }
 
   @Patch("attempts/:id/abandon")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Abandon an attempt" })
   @ApiParam({ name: "id", description: "The attempt ID" })
   async abandonAttempt(@CurrentUser() user: any, @Param("id") id: string) {
@@ -133,7 +133,7 @@ export class IeltsAnswersController {
   // ========== Statistics ==========
 
   @Get("statistics")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({
     summary: "Get IELTS test statistics for the current user",
   })
@@ -152,7 +152,7 @@ export class IeltsAnswersController {
   // ========== Leaderboard ==========
 
   @Get("leaderboard")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({
     summary: "Get IELTS test leaderboard",
   })
@@ -167,7 +167,7 @@ export class IeltsAnswersController {
   // ========== Unfinished Tests ==========
 
   @Get("unfinished")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({
     summary: "Get unfinished (in-progress) tests for the current user",
   })
@@ -224,7 +224,7 @@ export class IeltsAnswersController {
 
   @Post("reading")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Save reading answers for an attempt" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -238,7 +238,7 @@ export class IeltsAnswersController {
   }
 
   @Get("reading/:attemptId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get reading answers for an attempt" })
   @ApiParam({ name: "attemptId", description: "The attempt ID" })
   async getReadingAnswers(
@@ -255,7 +255,7 @@ export class IeltsAnswersController {
 
   @Post("listening")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Save listening answers for an attempt" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -272,7 +272,7 @@ export class IeltsAnswersController {
   }
 
   @Get("listening/:attemptId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get listening answers for an attempt" })
   @ApiParam({ name: "attemptId", description: "The attempt ID" })
   async getListeningAnswers(
@@ -289,7 +289,7 @@ export class IeltsAnswersController {
 
   @Post("writing")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Save writing answers for an attempt" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -303,7 +303,7 @@ export class IeltsAnswersController {
   }
 
   @Get("writing/:attemptId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get writing answers for an attempt" })
   @ApiParam({ name: "attemptId", description: "The attempt ID" })
   async getWritingAnswers(
@@ -317,7 +317,7 @@ export class IeltsAnswersController {
   }
 
   @Patch("writing/:answerId/grade")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Grade a writing answer with IELTS criteria scores and feedback",
   })

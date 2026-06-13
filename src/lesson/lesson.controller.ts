@@ -17,7 +17,7 @@ export class LessonController {
   constructor(private readonly lessonService: LessonService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new lesson' })
   @ApiResponse({ 
     status: 201, 
@@ -29,7 +29,7 @@ export class LessonController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all lessons' })
   @ApiResponse({ 
     status: 200, 
@@ -54,7 +54,7 @@ export class LessonController {
   
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a specific lesson by ID' })
   @ApiResponse({ 
     status: 200, 
@@ -67,7 +67,7 @@ export class LessonController {
   }
 
   @Get(':id/content')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a lesson with its content' })
   @ApiResponse({ 
     status: 200, 
@@ -80,7 +80,7 @@ export class LessonController {
   }
 
   @Get(':id/vocabulary')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a lesson with its vocabulary sets' })
   @ApiResponse({ 
     status: 200, 
@@ -93,7 +93,7 @@ export class LessonController {
   }
 
   @Get(':id/exercise')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a lesson with its exercises' })
   @ApiResponse({ 
     status: 200, 
@@ -106,7 +106,7 @@ export class LessonController {
   }
 
   @Get(':id/full')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a lesson with content, exercises, speaking and vocabulary' })
   @ApiResponse({ 
     status: 200, 
@@ -119,7 +119,7 @@ export class LessonController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update a lesson' })
   @ApiResponse({ 
     status: 200, 
@@ -132,7 +132,7 @@ export class LessonController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Delete a lesson' })
   @ApiResponse({ status: 200, description: 'The lesson has been successfully deleted.' })
   @ApiResponse({ status: 404, description: 'Lesson not found' })
@@ -141,7 +141,7 @@ export class LessonController {
   }
 
   @Get('unit/:unitId')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lessons for a specific unit' })
   @ApiParam({ name: 'unitId', description: 'Unit ID', type: 'string' })
   @ApiQuery({ name: 'throwIfEmpty', required: false, type: 'boolean', description: 'Throw error if no lessons found' })
@@ -160,7 +160,7 @@ export class LessonController {
   }
 
   @Get('module/:moduleId')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lessons for a specific module' })
   @ApiParam({ name: 'moduleId', description: 'Module ID', type: 'string' })
   @ApiQuery({ name: 'includeContent', required: false, type: 'boolean', description: 'Include lesson content' })
@@ -178,7 +178,7 @@ export class LessonController {
   }
 
   @Get('module/:moduleId/with-content')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lessons for a specific module with content' })
   @ApiParam({ name: 'moduleId', description: 'Module ID', type: 'string' })
   @ApiResponse({ 
@@ -191,7 +191,7 @@ export class LessonController {
   }
 
   @Get('module/:moduleId/with-exercises')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lessons for a specific module with exercises' })
   @ApiParam({ name: 'moduleId', description: 'Module ID', type: 'string' })
   @ApiResponse({ 
@@ -204,7 +204,7 @@ export class LessonController {
   }
 
   @Get('module/:moduleId/with-vocabulary')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lessons for a specific module with vocabulary' })
   @ApiParam({ name: 'moduleId', description: 'Module ID', type: 'string' })
   @ApiResponse({ 

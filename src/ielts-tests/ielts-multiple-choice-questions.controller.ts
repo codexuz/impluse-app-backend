@@ -36,7 +36,7 @@ export class IeltsSubQuestionsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new sub question" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -47,14 +47,14 @@ export class IeltsSubQuestionsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all sub questions" })
   async findAll(@Query() query: SubQuestionQueryDto) {
     return await this.ieltsTestsService.findAllSubQuestions(query);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a sub question by ID" })
   @ApiParam({ name: "id", description: "The sub question ID" })
   async findOne(@Param("id") id: string) {
@@ -62,7 +62,7 @@ export class IeltsSubQuestionsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a sub question" })
   @ApiParam({ name: "id", description: "The sub question ID" })
   async update(
@@ -74,7 +74,7 @@ export class IeltsSubQuestionsController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a sub question" })
   @ApiParam({ name: "id", description: "The sub question ID" })
   async remove(@Param("id") id: string) {

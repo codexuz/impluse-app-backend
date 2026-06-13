@@ -44,7 +44,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post("teachers")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new teacher" })
   @ApiResponse({ status: 201, description: "Teacher created successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
@@ -54,7 +54,7 @@ export class UsersController {
   }
 
   @Post("admins")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new admin user" })
   @ApiResponse({ status: 201, description: "Admin created successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
@@ -64,7 +64,7 @@ export class UsersController {
   }
 
   @Post("support-teachers")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new staff member (role from request body)" })
   @ApiResponse({ status: 201, description: "Staff member created successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
@@ -74,7 +74,7 @@ export class UsersController {
   }
 
   @Get("staff")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get all staff (admins and support teachers)",
   })
@@ -95,7 +95,7 @@ export class UsersController {
   }
 
   @Get("teachers")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all teachers" })
   @ApiResponse({ status: 200, description: "List of all teachers" })
   getAllTeachers(
@@ -117,7 +117,7 @@ export class UsersController {
   }
 
   @Get("admins")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all admins" })
   @ApiResponse({ status: 200, description: "List of all admin users" })
   getAllAdmins(
@@ -133,7 +133,7 @@ export class UsersController {
   }
 
   @Get("students/stats")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get student statistics" })
   @ApiResponse({
     status: 200,
@@ -144,7 +144,7 @@ export class UsersController {
   }
 
   @Get("students")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all students" })
   @ApiResponse({ status: 200, description: "List of all students" })
   getAllStudents(
@@ -160,7 +160,7 @@ export class UsersController {
   }
 
   @Get("students/archived")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all archived students" })
   @ApiResponse({
     status: 200,
@@ -179,7 +179,7 @@ export class UsersController {
   }
 
   @Get("support-teachers")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all support teachers" })
   @ApiResponse({ status: 200, description: "List of all support teachers" })
   getAllSupportTeachers(
@@ -195,7 +195,7 @@ export class UsersController {
   }
 
   @Get("guest-students")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all guest students" })
   @ApiResponse({ status: 200, description: "List of all guest students" })
   getAllGuestStudents(
@@ -211,7 +211,7 @@ export class UsersController {
   }
 
   @Get("by-role/:roleName")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get users by role name" })
   @ApiResponse({
     status: 200,
@@ -233,7 +233,7 @@ export class UsersController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all users" })
   @ApiResponse({ status: 200, description: "Paginated list of all users" })
   findAll(
@@ -251,7 +251,7 @@ export class UsersController {
   // ==================== Archived Students ====================
 
   @Post("archived-students")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Archive a student" })
   @ApiResponse({ status: 201, description: "Student archived successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
@@ -260,7 +260,7 @@ export class UsersController {
   }
 
   @Get("archived-students")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all archived students" })
   @ApiResponse({ status: 200, description: "List of archived students" })
   findAllArchivedStudents(
@@ -276,7 +276,7 @@ export class UsersController {
   }
 
   @Get("archived-students/statistics")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get comprehensive archived student statistics" })
   @ApiResponse({
     status: 200,
@@ -297,7 +297,7 @@ export class UsersController {
   }
 
   @Get("archived-students/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get one archived student by ID" })
   @ApiResponse({ status: 200, description: "Archived student details" })
   @ApiResponse({ status: 404, description: "Not found" })
@@ -306,7 +306,7 @@ export class UsersController {
   }
 
   @Delete("archived-students/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete an archived student record" })
   @ApiResponse({ status: 204, description: "Deleted successfully" })
@@ -318,7 +318,7 @@ export class UsersController {
   // ==================== Roles CRUD ====================
 
   @Get("roles")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all roles" })
   @ApiResponse({ status: 200, description: "List of all roles" })
   findAllRoles() {
@@ -326,7 +326,7 @@ export class UsersController {
   }
 
   @Get("roles/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get a role by ID" })
   @ApiResponse({ status: 200, description: "Role details" })
   @ApiResponse({ status: 404, description: "Role not found" })
@@ -335,7 +335,7 @@ export class UsersController {
   }
 
   @Post("roles")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new role" })
   @ApiResponse({ status: 201, description: "Role created successfully" })
   @ApiResponse({
@@ -347,7 +347,7 @@ export class UsersController {
   }
 
   @Patch("roles/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update a role" })
   @ApiResponse({ status: 200, description: "Role updated successfully" })
   @ApiResponse({ status: 404, description: "Role not found" })
@@ -360,7 +360,7 @@ export class UsersController {
   }
 
   @Delete("roles/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete a role" })
   @ApiResponse({ status: 204, description: "Role deleted successfully" })
@@ -376,26 +376,26 @@ export class UsersController {
   // ==================== Parameterized :id routes ====================
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   findOne(@Param("id") id: string) {
     return this.usersService.findOne(id);
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   update(@Param("id") id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param("id") id: string) {
     return this.usersService.remove(id);
   }
 
   @Delete(":id/hard")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Permanently delete a user and all associated data",
     description:
@@ -411,7 +411,7 @@ export class UsersController {
   }
 
   @Patch(":id/promote-to-teacher")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Promote a support teacher to teacher" })
   @ApiResponse({ status: 200, description: "User promoted to teacher successfully" })
   @ApiResponse({ status: 400, description: "User is not a support teacher" })
@@ -421,19 +421,19 @@ export class UsersController {
   }
 
   @Patch(":id/deactivate")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   deactivate(@Param("id") id: string) {
     return this.usersService.deactivate(id);
   }
 
   @Patch(":id/activate")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   activate(@Param("id") id: string) {
     return this.usersService.activate(id);
   }
 
   @Patch(":id/update-password")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
   @ApiOperation({
     summary: "Update user password",
     description:
@@ -459,7 +459,7 @@ export class UsersController {
   }
 
   @Post(":id/upload-avatar")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
   @ApiOperation({
     summary: "Upload user avatar image",
     description:
@@ -510,7 +510,7 @@ export class UsersController {
   }
 
   @Patch(":id/avatar")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.SUPPORT_TEACHER)
   @ApiOperation({
     summary: "Update user avatar URL",
     description:
@@ -528,7 +528,7 @@ export class UsersController {
   // ==================== User Roles Management ====================
 
   @Get(":id/roles")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all roles assigned to a user" })
   @ApiResponse({ status: 200, description: "List of user roles" })
   @ApiResponse({ status: 404, description: "User not found" })
@@ -537,7 +537,7 @@ export class UsersController {
   }
 
   @Post(":id/roles")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Assign a role to a user" })
   @ApiResponse({ status: 201, description: "Role assigned successfully" })
   @ApiResponse({ status: 404, description: "User or role not found" })
@@ -550,7 +550,7 @@ export class UsersController {
   }
 
   @Delete(":id/roles/:roleId")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Remove a role from a user" })
   @ApiResponse({ status: 204, description: "Role removed successfully" })

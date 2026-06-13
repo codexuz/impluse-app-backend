@@ -38,14 +38,14 @@ export class TeacherTransactionController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new teacher transaction" })
   create(@Body() createTeacherTransactionDto: CreateTeacherTransactionDto) {
     return this.teacherTransactionService.create(createTeacherTransactionDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary:
       "Get all teacher transactions with pagination, filters, and student data",
@@ -109,7 +109,7 @@ export class TeacherTransactionController {
   }
 
   @Get("stats/salary/yearly")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary:
       "Get yearly oylik (salary) stats month by month for a given year",
@@ -140,7 +140,7 @@ export class TeacherTransactionController {
   }
 
   @Get("teacher/:teacherId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all transactions for a specific teacher" })
   @ApiParam({
     name: "teacherId",
@@ -160,7 +160,7 @@ export class TeacherTransactionController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get teacher transaction by ID" })
   @ApiParam({
     name: "id",
@@ -173,7 +173,7 @@ export class TeacherTransactionController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update teacher transaction" })
   @ApiParam({
     name: "id",
@@ -192,7 +192,7 @@ export class TeacherTransactionController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete teacher transaction (soft delete)" })
   @ApiParam({
     name: "id",

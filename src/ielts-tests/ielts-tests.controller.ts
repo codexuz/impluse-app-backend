@@ -49,7 +49,7 @@ export class IeltsTestsController {
   // ========== Tests ==========
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new IELTS test" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -70,7 +70,7 @@ export class IeltsTestsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all IELTS tests" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -82,7 +82,7 @@ export class IeltsTestsController {
 
   // ========== Skills (Reading, Listening, Writing combined) ==========
   @Get("skills")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({
     summary: "Get reading, listening, and writing with filters and pagination",
   })
@@ -97,7 +97,7 @@ export class IeltsTestsController {
 
   @Post("import/full-json")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @UseInterceptors(
     FileInterceptor("file", {
       storage: memoryStorage(),
@@ -145,7 +145,7 @@ export class IeltsTestsController {
   // ========== Questions ==========
   @Post("question")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new question" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -156,7 +156,7 @@ export class IeltsTestsController {
   }
 
   @Get("question/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a question by ID" })
   @ApiParam({ name: "id", description: "The question ID" })
   async findQuestionById(@Param("id") id: string) {
@@ -166,7 +166,7 @@ export class IeltsTestsController {
   // ========== Sub Questions ==========
   @Post("sub-question")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a sub question" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -177,7 +177,7 @@ export class IeltsTestsController {
   }
 
   @Get("sub-question/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a sub question by ID" })
   @ApiParam({ name: "id", description: "The sub question ID" })
   async findSubQuestionById(@Param("id") id: string) {
@@ -185,7 +185,7 @@ export class IeltsTestsController {
   }
 
   @Get(":id/download-json")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Download full IELTS test as JSON file" })
   @ApiParam({ name: "id", description: "The test ID" })
   @ApiResponse({
@@ -210,7 +210,7 @@ export class IeltsTestsController {
 
   // ========== Test by ID (must be LAST to avoid catching named routes) ==========
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get an IELTS test by ID" })
   @ApiParam({ name: "id", description: "The test ID" })
   @ApiResponse({
@@ -226,7 +226,7 @@ export class IeltsTestsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update an IELTS test" })
   @ApiParam({ name: "id", description: "The test ID" })
   @ApiResponse({
@@ -245,7 +245,7 @@ export class IeltsTestsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete an IELTS test" })
   @ApiParam({ name: "id", description: "The test ID" })
   @ApiResponse({

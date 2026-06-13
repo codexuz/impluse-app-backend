@@ -32,7 +32,7 @@ export class LessonProgressController {
   constructor(private readonly lessonProgressService: LessonProgressService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new lesson progress record" })
   @ApiResponse({ status: 201, type: LessonProgress })
   create(@Body() createLessonProgressDto: CreateLessonProgressDto) {
@@ -97,7 +97,7 @@ export class LessonProgressController {
   }
 
   @Post("student/:studentId/lesson/:lessonId/section/:section")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Update section progress for a lesson" })
   @ApiResponse({ status: 200, type: LessonProgress })
   updateSectionProgress(
@@ -113,7 +113,7 @@ export class LessonProgressController {
   }
 
   @Post("update-from-homework/:studentId/:homeworkId/:section")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Update lesson progress based on homework submission",
   })
@@ -139,7 +139,7 @@ export class LessonProgressController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a lesson progress record" })
   @ApiResponse({ status: 200, type: LessonProgress })
   @ApiResponse({ status: 404, description: "Not found" })
@@ -151,7 +151,7 @@ export class LessonProgressController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete a lesson progress record" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 404, description: "Not found" })

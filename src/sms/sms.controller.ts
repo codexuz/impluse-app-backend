@@ -37,7 +37,7 @@ export class SmsController {
 
   @Post("send")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Send a single SMS" })
   @ApiResponse({ status: 200, description: "SMS sent successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
@@ -48,7 +48,7 @@ export class SmsController {
 
   @Post("send-bulk")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Send bulk SMS to multiple recipients" })
   @ApiResponse({ status: 200, description: "Bulk SMS sent successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
@@ -59,7 +59,7 @@ export class SmsController {
 
   @Post("send-verification")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Send verification code SMS" })
   @ApiResponse({
     status: 200,
@@ -78,7 +78,7 @@ export class SmsController {
 
   @Post("send-notification")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Send notification SMS" })
   @ApiResponse({
     status: 200,
@@ -95,7 +95,7 @@ export class SmsController {
   }
 
   @Get("balance")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get SMS account balance" })
   @ApiResponse({ status: 200, description: "Balance retrieved successfully" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
@@ -104,7 +104,7 @@ export class SmsController {
   }
 
   @Get("report/monthly/:year")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get monthly SMS report for a specific year" })
   @ApiResponse({
     status: 200,
@@ -117,7 +117,7 @@ export class SmsController {
 
   @Post("report/total-by-range")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get total SMS report by date range with optional filters",
   })
@@ -140,7 +140,7 @@ export class SmsController {
 
   @Post("messages/get-user-messages")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get user SMS messages by date range with optional filters",
   })
@@ -164,7 +164,7 @@ export class SmsController {
 
   @Post("user/totals")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get user SMS totals by year and month",
   })
@@ -183,7 +183,7 @@ export class SmsController {
 
   @Post("templates")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new SMS template" })
   @ApiResponse({ status: 201, description: "Template created successfully" })
   @ApiResponse({ status: 400, description: "Bad request" })
@@ -193,7 +193,7 @@ export class SmsController {
   }
 
   @Get("templates")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all SMS templates" })
   @ApiResponse({ status: 200, description: "Templates retrieved successfully" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
@@ -202,7 +202,7 @@ export class SmsController {
   }
 
   @Get("status")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Check SMS service status" })
   @ApiResponse({ status: 200, description: "Service status retrieved" })
   async getStatus() {
@@ -216,7 +216,7 @@ export class SmsController {
 
   @Post("reinitialize")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Reinitialize SMS service" })
   @ApiResponse({
     status: 200,

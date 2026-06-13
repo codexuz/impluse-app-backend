@@ -41,7 +41,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) { }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all notifications" })
   @ApiResponse({
     status: 200,
@@ -59,7 +59,7 @@ export class NotificationsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get notification by ID" })
   @ApiParam({ name: "id", description: "Notification ID" })
   @ApiResponse({
@@ -73,7 +73,7 @@ export class NotificationsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create notification for all users" })
   @ApiBody({ type: CreateNotificationDto })
   @ApiResponse({
@@ -91,7 +91,7 @@ export class NotificationsController {
 
   @Patch("seen-all/user/:userId")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Mark all notifications as seen for a user" })
   async markAllSeen(
     @Param("userId") _userId: string,
@@ -103,7 +103,7 @@ export class NotificationsController {
 
   @Patch("seen/:notificationId/user/:userId")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Mark notification as seen" })
   @ApiParam({ name: "notificationId", description: "Notification ID" })
   @ApiParam({ name: "userId", description: "User ID" })
@@ -134,7 +134,7 @@ export class NotificationsController {
   // ✅ FIXED: app-update endpoint is now separate and will appear in Swagger
   @Post("app-update")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Send app update notification",
     description: "Send app update notification to all users or specific tokens",
@@ -159,7 +159,7 @@ export class NotificationsController {
   }
 
   @Get("unseen/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get unseen notifications for user" })
   @ApiParam({ name: "userId", description: "User ID" })
   @ApiResponse({
@@ -172,7 +172,7 @@ export class NotificationsController {
   }
 
   @Get("user/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all notifications with unseen count for user" })
   @ApiParam({ name: "userId", description: "User ID" })
   @ApiResponse({
@@ -202,7 +202,7 @@ export class NotificationsController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete a notification" })
   @ApiParam({ name: "id", description: "Notification ID" })
   @ApiResponse({ status: 204, description: "Notification deleted" })
@@ -213,7 +213,7 @@ export class NotificationsController {
   // Notification Token Endpoints
   @Post("tokens")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Create notification token" })
   @ApiBody({ type: CreateNotificationTokenDto })
   @ApiResponse({
@@ -226,7 +226,7 @@ export class NotificationsController {
   }
 
   @Get("tokens")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all notification tokens" })
   @ApiResponse({
     status: 200,
@@ -237,7 +237,7 @@ export class NotificationsController {
   }
 
   @Post("push")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Send push notification to a single device" })
   @ApiBody({
     schema: {
@@ -269,7 +269,7 @@ export class NotificationsController {
   }
 
   @Post("push/multicast")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Send push notification to multiple devices" })
   @ApiBody({
     schema: {
@@ -310,7 +310,7 @@ export class NotificationsController {
   }
 
   @Get("tokens/user/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get notification tokens by user ID" })
   @ApiParam({ name: "userId", description: "User ID" })
   @ApiResponse({
@@ -325,7 +325,7 @@ export class NotificationsController {
   }
 
   @Get("tokens/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get notification token by ID" })
   @ApiParam({ name: "id", description: "Notification Token ID" })
   @ApiResponse({
@@ -340,7 +340,7 @@ export class NotificationsController {
 
   @Patch("tokens/:id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Update notification token" })
   @ApiParam({ name: "id", description: "Notification Token ID" })
   @ApiBody({ type: UpdateNotificationTokenDto })
@@ -362,7 +362,7 @@ export class NotificationsController {
 
   @Patch("tokens/user/:userId")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Update notification token by user ID and old token",
   })
@@ -397,7 +397,7 @@ export class NotificationsController {
 
   @Delete("tokens/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Delete a notification token" })
   @ApiParam({ name: "id", description: "Notification Token ID" })
   @ApiResponse({ status: 204, description: "Notification token deleted" })

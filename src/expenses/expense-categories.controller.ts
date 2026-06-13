@@ -17,14 +17,14 @@ export class ExpenseCategoriesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Create a new expense category' })
   create(@Body() createExpenseCategoryDto: CreateExpenseCategoryDto) {
     return this.expensesService.createCategory(createExpenseCategoryDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Get all expense categories' })
   @ApiQuery({ name: 'name', required: false, description: 'Filter categories by name (partial, case-insensitive match)', type: 'string' })
   @ApiQuery({ name: 'names', required: false, description: 'Filter by multiple names at once (comma-separated, each a partial case-insensitive match)', type: 'string' })
@@ -36,7 +36,7 @@ export class ExpenseCategoriesController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Get expense category by ID' })
   @ApiParam({ name: 'id', description: 'Category ID (UUID)', type: 'string' })
   findOne(@Param('id') id: string) {
@@ -45,7 +45,7 @@ export class ExpenseCategoriesController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Update expense category' })
   @ApiParam({ name: 'id', description: 'Category ID (UUID)', type: 'string' })
   update(@Param('id') id: string, @Body() updateExpenseCategoryDto: UpdateExpenseCategoryDto) {
@@ -54,7 +54,7 @@ export class ExpenseCategoriesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete expense category (soft delete)' })
   @ApiParam({ name: 'id', description: 'Category ID (UUID)', type: 'string' })
   remove(@Param('id') id: string) {

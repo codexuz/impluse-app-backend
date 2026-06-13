@@ -18,21 +18,21 @@ export class StudentWalletController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new student wallet' })
   create(@Body() createStudentWalletDto: CreateStudentWalletDto) {
     return this.studentWalletService.create(createStudentWalletDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all student wallets' })
   findAll() {
     return this.studentWalletService.findAll();
   }
 
   @Get('student/:studentId')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get wallet by student ID' })
   @ApiParam({ name: 'studentId', description: 'Student ID (UUID)', type: 'string' })
   findByStudentId(@Param('studentId') studentId: string) {
@@ -40,7 +40,7 @@ export class StudentWalletController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get student wallet by ID' })
   @ApiParam({ name: 'id', description: 'Wallet ID (UUID)', type: 'string' })
   findOne(@Param('id') id: string) {
@@ -49,7 +49,7 @@ export class StudentWalletController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update student wallet' })
   @ApiParam({ name: 'id', description: 'Wallet ID (UUID)', type: 'string' })
   update(@Param('id') id: string, @Body() updateStudentWalletDto: UpdateStudentWalletDto) {
@@ -58,7 +58,7 @@ export class StudentWalletController {
 
   @Patch(':id/amount')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Add or deduct amount from student wallet' })
   @ApiParam({ name: 'id', description: 'Wallet ID (UUID)', type: 'string' })
   updateAmount(@Param('id') id: string, @Body() updateWalletAmountDto: UpdateWalletAmountDto) {
@@ -67,7 +67,7 @@ export class StudentWalletController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete student wallet (soft delete)' })
   @ApiParam({ name: 'id', description: 'Wallet ID (UUID)', type: 'string' })
   remove(@Param('id') id: string) {

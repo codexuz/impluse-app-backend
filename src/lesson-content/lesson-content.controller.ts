@@ -15,7 +15,7 @@ export class LessonContentController {
   constructor(private readonly lessonContentService: LessonContentService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new lesson content' })
   @ApiResponse({ status: 201, description: 'The lesson content has been created successfully.' })
   create(@Body() createLessonContentDto: CreateLessonContentDto) {
@@ -46,7 +46,7 @@ export class LessonContentController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update a lesson content' })
   @ApiResponse({ status: 200, description: 'The lesson content has been updated successfully.' })
   update(@Param('id') id: string, @Body() updateLessonContentDto: UpdateLessonContentDto) {
@@ -54,7 +54,7 @@ export class LessonContentController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete a lesson content' })
   @ApiResponse({ status: 200, description: 'The lesson content has been deleted successfully.' })
   remove(@Param('id') id: string) {

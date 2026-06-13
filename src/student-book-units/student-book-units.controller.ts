@@ -24,7 +24,7 @@ export class StudentBookUnitsController {
   constructor(private readonly studentBookUnitsService: StudentBookUnitsService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new student book unit' })
   @ApiResponse({ status: 201, description: 'Unit created successfully' })
   create(@Body() createStudentBookUnitDto: CreateStudentBookUnitDto) {
@@ -47,7 +47,7 @@ export class StudentBookUnitsController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update a student book unit' })
   @ApiResponse({ status: 200, description: 'Unit updated successfully' })
   @ApiResponse({ status: 404, description: 'Unit not found' })
@@ -59,7 +59,7 @@ export class StudentBookUnitsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete a student book unit' })
   @ApiResponse({ status: 200, description: 'Unit deleted successfully' })
   @ApiResponse({ status: 404, description: 'Unit not found' })

@@ -38,7 +38,7 @@ export class ExerciseController {
   constructor(private readonly exerciseService: ExerciseService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Create a new complete exercise with all question types",
   })
@@ -60,7 +60,7 @@ export class ExerciseController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all exercises" })
   @ApiResponse({
     status: 200,
@@ -73,7 +73,7 @@ export class ExerciseController {
   }
 
   @Get("lesson/:lessonId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all exercises for a lesson" })
   @ApiResponse({
     status: 200,
@@ -88,7 +88,7 @@ export class ExerciseController {
   }
 
   @Get("type/:exerciseType")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary:
       "Get exercises by exercise type (grammar, reading, listening, writing)",
@@ -106,7 +106,7 @@ export class ExerciseController {
   }
 
   @Get("type/:exerciseType/lesson/:lessonId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get exercises by both exercise type and lesson ID",
   })
@@ -129,7 +129,7 @@ export class ExerciseController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get exercise by id with all related data" })
   @ApiResponse({
     status: 200,
@@ -143,7 +143,7 @@ export class ExerciseController {
   }
 
   @Get(":id/questions")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all questions for a specific exercise" })
   @ApiResponse({
     status: 200,
@@ -156,7 +156,7 @@ export class ExerciseController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update an exercise with related data" })
   @ApiResponse({
     status: 200,
@@ -178,7 +178,7 @@ export class ExerciseController {
   }
 
   @Post("only")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create only the exercise without questions" })
   @ApiResponse({
     status: 201,
@@ -198,7 +198,7 @@ export class ExerciseController {
   }
 
   @Patch(":id/only")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Update only the exercise metadata without touching questions",
   })
@@ -222,7 +222,7 @@ export class ExerciseController {
   }
 
   @Put(":id/with-questions")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update exercise and add/replace questions" })
   @ApiResponse({
     status: 200,
@@ -247,7 +247,7 @@ export class ExerciseController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Soft delete an exercise (set isActive to false)" })
   @ApiResponse({
     status: 200,
@@ -261,7 +261,7 @@ export class ExerciseController {
   }
 
   @Delete(":exerciseId/questions/:questionId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a specific question from an exercise" })
   @ApiResponse({
     status: 200,
@@ -278,7 +278,7 @@ export class ExerciseController {
   }
 
   @Get(":exerciseId/group/:groupId/scores")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary:
       "Get scores for all students in a group for a specific exercise",

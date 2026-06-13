@@ -36,6 +36,8 @@ export class AudioCallController {
     Role.STUDENT,
     Role.TEACHER,
     Role.ADMIN,
+    Role.OWNER,
+    Role.MANAGER,
     Role.SUPPORT_TEACHER,
   )
   @ApiOperation({
@@ -82,6 +84,8 @@ export class AudioCallController {
     Role.STUDENT,
     Role.TEACHER,
     Role.ADMIN,
+    Role.OWNER,
+    Role.MANAGER,
     Role.SUPPORT_TEACHER,
   )
   @ApiOperation({
@@ -111,6 +115,8 @@ export class AudioCallController {
     Role.STUDENT,
     Role.TEACHER,
     Role.ADMIN,
+    Role.OWNER,
+    Role.MANAGER,
     Role.SUPPORT_TEACHER,
   )
   @ApiOperation({ summary: "Get the current user's call history" })

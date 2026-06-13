@@ -43,7 +43,7 @@ export class ShopController {
   // ---- Items ----
 
   @Post("items")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Create a shop item (admin)" })
   @ApiBody({ type: CreateShopItemDto })
@@ -53,7 +53,7 @@ export class ShopController {
   }
 
   @Get("items")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "List shop items" })
   @ApiQuery({
     name: "includeInactive",
@@ -67,12 +67,12 @@ export class ShopController {
     @Query("includeInactive") includeInactive?: string
   ) {
     // Only admins may see inactive items.
-    const isAdmin = (req.user?.roles ?? []).includes(Role.ADMIN);
+    const isAdmin = (req.user?.roles ?? []).some(role => [Role.ADMIN, Role.OWNER, Role.MANAGER].includes(role as any));
     return this.shopService.findAllItems(isAdmin && includeInactive === "true");
   }
 
   @Get("items/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a shop item by id" })
   @ApiParam({ name: "id", description: "Shop item ID" })
   @ApiResponse({ status: 200, description: "Return the shop item" })
@@ -81,7 +81,7 @@ export class ShopController {
   }
 
   @Patch("items/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update a shop item (admin)" })
   @ApiParam({ name: "id", description: "Shop item ID" })
   @ApiBody({ type: UpdateShopItemDto })
@@ -91,7 +91,7 @@ export class ShopController {
   }
 
   @Delete("items/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete a shop item (admin)" })
   @ApiParam({ name: "id", description: "Shop item ID" })
@@ -113,7 +113,7 @@ export class ShopController {
   }
 
   @Get("purchases")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "List all purchase requests (admin)" })
   @ApiQuery({
     name: "status",
@@ -135,7 +135,7 @@ export class ShopController {
   }
 
   @Get("purchases/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get a purchase request by id (admin)" })
   @ApiParam({ name: "id", description: "Purchase ID" })
   @ApiResponse({ status: 200, description: "Return the purchase" })
@@ -144,7 +144,7 @@ export class ShopController {
   }
 
   @Patch("purchases/:id/review")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Approve, reject or mark delivered a purchase request (admin)",
   })

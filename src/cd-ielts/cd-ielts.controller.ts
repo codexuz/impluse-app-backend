@@ -39,7 +39,7 @@ export class CdIeltsController {
 
   // CD IELTS Test Endpoints
   @Post("tests")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new IELTS test" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -50,7 +50,7 @@ export class CdIeltsController {
   }
 
   @Get("tests")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all IELTS tests" })
   @ApiResponse({ status: HttpStatus.OK, description: "Return all IELTS tests" })
   findAllTests(
@@ -61,7 +61,7 @@ export class CdIeltsController {
   }
 
   @Get("tests/active")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all active IELTS tests" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -72,7 +72,7 @@ export class CdIeltsController {
   }
 
   @Get("tests/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get an IELTS test by ID" })
   @ApiResponse({ status: HttpStatus.OK, description: "Return the IELTS test" })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "Test not found" })
@@ -81,7 +81,7 @@ export class CdIeltsController {
   }
 
   @Patch("tests/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update an IELTS test" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -97,7 +97,7 @@ export class CdIeltsController {
 
   @Delete("tests/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete an IELTS test" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
@@ -110,7 +110,7 @@ export class CdIeltsController {
 
   // CD IELTS Registration Endpoints
   @Post("registrations")
-  @Roles(Role.ADMIN, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.STUDENT)
   @ApiOperation({ summary: "Register for an IELTS test" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -121,7 +121,7 @@ export class CdIeltsController {
   }
 
   @Get("registrations")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all IELTS registrations" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -135,7 +135,7 @@ export class CdIeltsController {
   }
 
   @Get("registrations/test/:testId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all registrations for a specific test" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -149,7 +149,7 @@ export class CdIeltsController {
   }
 
   @Get("registrations/student/:studentId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all registrations for a specific student" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -166,7 +166,7 @@ export class CdIeltsController {
   }
 
   @Get("registrations/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a registration by ID" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -181,7 +181,7 @@ export class CdIeltsController {
   }
 
   @Patch("registrations/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update a registration" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -200,7 +200,7 @@ export class CdIeltsController {
 
   @Delete("registrations/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.STUDENT)
   @ApiOperation({ summary: "Delete a registration" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,

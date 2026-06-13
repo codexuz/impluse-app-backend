@@ -16,14 +16,14 @@ export class UserCourseController {
   constructor(private readonly userCourseService: UserCourseService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Assign a user to a course' })
   create(@Body() createUserCourseDto: CreateUserCourseDto) {
     return this.userCourseService.create(createUserCourseDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all user-course assignments, can filter by userId or courseId' })
   findAll(
     @Query('userId') userId?: string,
@@ -39,14 +39,14 @@ export class UserCourseController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get user-course assignment by id' })
   findOne(@Param('id') id: string) {
     return this.userCourseService.findOne(id);
   }
 
   @Get('user/:userId/course/:courseId')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get user-course assignment by user and course ids' })
   findByUserAndCourse(
     @Param('userId') userId: string,
@@ -56,14 +56,14 @@ export class UserCourseController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update user-course assignment' })
   update(@Param('id') id: string, @Body() updateUserCourseDto: UpdateUserCourseDto) {
     return this.userCourseService.update(id, updateUserCourseDto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete user-course assignment' })
   remove(@Param('id') id: string) {
     return this.userCourseService.remove(id);

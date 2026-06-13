@@ -47,7 +47,7 @@ export class GroupChatController {
 
   // Group Chat Endpoints
   @Post()
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Create a new group chat' })
   @ApiResponse({ status: 201, description: 'Group chat created successfully', type: GroupChatResponseDto })
   @ApiResponse({ status: 400, description: 'Bad request' })
@@ -57,7 +57,7 @@ export class GroupChatController {
   }
 
   @Get()
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Get all group chats for the current user' })
   @ApiResponse({ status: 200, description: 'Group chats retrieved successfully', type: PaginatedResponseDto<GroupChatResponseDto> })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -68,7 +68,7 @@ export class GroupChatController {
   }
 
   @Get(':id')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Get a specific group chat' })
   @ApiResponse({ status: 200, description: 'Group chat retrieved successfully', type: GroupChatResponseDto })
   @ApiResponse({ status: 404, description: 'Group chat not found' })
@@ -79,7 +79,7 @@ export class GroupChatController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update a group chat (Admin only)' })
   @ApiResponse({ status: 200, description: 'Group chat updated successfully', type: GroupChatResponseDto })
   @ApiResponse({ status: 404, description: 'Group chat not found' })
@@ -94,7 +94,7 @@ export class GroupChatController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete a group chat (Admin only)' })
   @ApiResponse({ status: 200, description: 'Group chat deleted successfully', type: SuccessResponseDto })
   @ApiResponse({ status: 404, description: 'Group chat not found' })
@@ -106,7 +106,7 @@ export class GroupChatController {
 
   // Message Endpoints
   @Post(':groupId/messages')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Send a message to a group' })
   @ApiResponse({ status: 201, description: 'Message sent successfully', type: MessageResponseDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Not a member of this group' })
@@ -122,7 +122,7 @@ export class GroupChatController {
   }
 
   @Get(':groupId/messages')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Get messages from a group' })
   @ApiResponse({ status: 200, description: 'Messages retrieved successfully', type: PaginatedResponseDto<MessageResponseDto> })
   @ApiResponse({ status: 403, description: 'Forbidden - Not a member of this group' })
@@ -138,7 +138,7 @@ export class GroupChatController {
   }
 
   @Patch('messages/:messageId')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Update a message (Own messages only)' })
   @ApiResponse({ status: 200, description: 'Message updated successfully', type: MessageResponseDto })
   @ApiResponse({ status: 404, description: 'Message not found' })
@@ -153,7 +153,7 @@ export class GroupChatController {
   }
 
   @Delete('messages/:messageId')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete a message (Own messages or group admin)' })
   @ApiResponse({ status: 200, description: 'Message deleted successfully', type: SuccessResponseDto })
   @ApiResponse({ status: 404, description: 'Message not found' })
@@ -168,7 +168,7 @@ export class GroupChatController {
 
   // Member Management Endpoints
   @Post(':groupId/members')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Add a member to the group (Admin only)' })
   @ApiResponse({ status: 201, description: 'Member added successfully', type: GroupMemberResponseDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Only admins can add members' })
@@ -183,7 +183,7 @@ export class GroupChatController {
   }
 
   @Get(':groupId/members')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN )
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER )
   @ApiOperation({ summary: 'Get all members of a group' })
   @ApiResponse({ status: 200, description: 'Members retrieved successfully', type: PaginatedResponseDto<GroupMemberResponseDto> })
   @ApiResponse({ status: 403, description: 'Forbidden - Not a member of this group' })
@@ -199,7 +199,7 @@ export class GroupChatController {
   }
 
   @Patch(':groupId/members/:memberId/role')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Update member role (Admin only)' })
   @ApiResponse({ status: 200, description: 'Member role updated successfully', type: SuccessResponseDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Only admins can update roles' })
@@ -216,7 +216,7 @@ export class GroupChatController {
   }
 
   @Delete(':groupId/members/:memberId')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Remove a member from the group (Admin only or self-removal)' })
   @ApiResponse({ status: 200, description: 'Member removed successfully', type: SuccessResponseDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Only admins can remove members or self-removal' })

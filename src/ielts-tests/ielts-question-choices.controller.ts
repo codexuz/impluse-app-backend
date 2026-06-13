@@ -36,7 +36,7 @@ export class IeltsQuestionChoicesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new question choice" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -47,14 +47,14 @@ export class IeltsQuestionChoicesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all question choices" })
   async findAll(@Query() query: QuestionOptionQueryDto) {
     return await this.ieltsTestsService.findAllQuestionOptions(query);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a question choice by ID" })
   @ApiParam({ name: "id", description: "The question choice ID" })
   async findOne(@Param("id") id: string) {
@@ -62,7 +62,7 @@ export class IeltsQuestionChoicesController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a question choice" })
   @ApiParam({ name: "id", description: "The question choice ID" })
   async update(
@@ -74,7 +74,7 @@ export class IeltsQuestionChoicesController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a question choice" })
   @ApiParam({ name: "id", description: "The question choice ID" })
   async remove(@Param("id") id: string) {

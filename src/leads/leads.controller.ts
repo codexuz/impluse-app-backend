@@ -42,7 +42,7 @@ export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new lead" })
   @ApiResponse({
     status: 201,
@@ -64,7 +64,7 @@ export class LeadsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all leads with pagination and filtering" })
   @ApiQuery({
     name: "page",
@@ -141,7 +141,7 @@ export class LeadsController {
   }
 
   @Get("archived")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get all archived leads with pagination and filtering",
   })
@@ -220,7 +220,7 @@ export class LeadsController {
   }
 
   @Get("stats")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get comprehensive lead statistics" })
   @ApiResponse({
     status: 200,
@@ -237,7 +237,7 @@ export class LeadsController {
   }
 
   @Get("stats/by-date-range")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get lead statistics by date range" })
   @ApiResponse({
     status: 200,
@@ -261,7 +261,7 @@ export class LeadsController {
   }
 
   @Get("stats/trends")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get lead trends data (daily/weekly/monthly)" })
   @ApiResponse({
     status: 200,
@@ -305,7 +305,7 @@ export class LeadsController {
   }
 
   @Get("stats/conversion-rates")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get lead conversion rates" })
   @ApiResponse({
     status: 200,
@@ -342,7 +342,7 @@ export class LeadsController {
   }
 
   @Get("stats/admin-performance")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get admin performance statistics with lead conversion rates",
   })
@@ -368,7 +368,7 @@ export class LeadsController {
   }
 
   @Get("stats/time-in-status")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get average time leads spend in each status" })
   @ApiResponse({
     status: 200,
@@ -390,7 +390,7 @@ export class LeadsController {
   }
 
   @Get("by-status/:status")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get leads by status" })
   @ApiParam({ name: "status", description: "Lead status" })
   @ApiResponse({
@@ -408,7 +408,7 @@ export class LeadsController {
   }
 
   @Get("my-leads")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get leads assigned to current admin" })
   @ApiResponse({
     status: 200,
@@ -425,7 +425,7 @@ export class LeadsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get lead by ID" })
   @ApiParam({ name: "id", description: "Lead ID" })
   @ApiResponse({
@@ -444,7 +444,7 @@ export class LeadsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update lead by ID" })
   @ApiParam({ name: "id", description: "Lead ID" })
   @ApiResponse({
@@ -464,7 +464,7 @@ export class LeadsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete lead by ID (soft delete)" })
   @ApiParam({ name: "id", description: "Lead ID" })
@@ -480,7 +480,7 @@ export class LeadsController {
   }
 
   @Patch(":id/archive")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Archive a lead by ID" })
   @ApiParam({ name: "id", description: "Lead ID" })
   @ApiResponse({
@@ -499,7 +499,7 @@ export class LeadsController {
   }
 
   @Patch(":id/unarchive")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Unarchive a lead by ID" })
   @ApiParam({ name: "id", description: "Lead ID" })
   @ApiResponse({

@@ -37,7 +37,7 @@ export class IeltsReadingPartsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new reading part" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -48,14 +48,14 @@ export class IeltsReadingPartsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all reading parts" })
   async findAllReadingParts(@Query() query: ReadingPartQueryDto) {
     return await this.ieltsTestsService.findAllReadingParts(query);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a reading part by ID" })
   @ApiParam({ name: "id", description: "The reading part ID" })
   async findReadingPartById(@Param("id") id: string) {
@@ -63,7 +63,7 @@ export class IeltsReadingPartsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a reading part" })
   @ApiParam({ name: "id", description: "The reading part ID" })
   async updateReadingPart(
@@ -78,7 +78,7 @@ export class IeltsReadingPartsController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a reading part" })
   @ApiParam({ name: "id", description: "The reading part ID" })
   async deleteReadingPart(@Param("id") id: string) {

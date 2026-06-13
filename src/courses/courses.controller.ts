@@ -30,13 +30,13 @@ export class CoursesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async create(@Body() createCourseDto: CreateCourseDto) {
     return await this.coursesService.create(createCourseDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   async findAll(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
@@ -77,14 +77,14 @@ export class CoursesController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   async findOne(@Param("id") id: string) {
     return await this.coursesService.findOne(id);
   }
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async update(
     @Param("id") id: string,
     @Body() updateCourseDto: UpdateCourseDto,
@@ -94,14 +94,14 @@ export class CoursesController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async remove(@Param("id") id: string) {
     return await this.coursesService.remove(id);
   }
 
   @Delete(":id/hard")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   async hardRemove(@Param("id") id: string) {
     return await this.coursesService.hardRemove(id);
   }

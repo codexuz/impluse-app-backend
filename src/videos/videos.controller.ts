@@ -27,7 +27,7 @@ export class VideosController {
   constructor(private readonly videosService: VideosService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new video' })
   @ApiResponse({ status: 201, description: 'Video created successfully' })
   create(@Body() createVideoDto: CreateVideoDto) {
@@ -35,7 +35,7 @@ export class VideosController {
   }
 
   @Get()
-  @Roles(Role.STUDENT, Role.ADMIN, Role.TEACHER)
+  @Roles(Role.STUDENT, Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all videos' })
   @ApiResponse({ status: 200, description: 'Return all videos' })
   findAll() {
@@ -43,7 +43,7 @@ export class VideosController {
   }
 
   @Get(':id')
-  @Roles(Role.TEACHER, Role.ADMIN, Role.STUDENT)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER, Role.STUDENT)
   @ApiOperation({ summary: 'Get video by id' })
   @ApiResponse({ status: 200, description: 'Return video by id' })
   findOne(@Param('id') id: string) {
@@ -51,7 +51,7 @@ export class VideosController {
   }
   
   @Get(':id/youtube')
-  @Roles(Role.TEACHER, Role.ADMIN, Role.STUDENT)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER, Role.STUDENT)
   @ApiOperation({ summary: 'Get video with YouTube ID' })
   @ApiResponse({ status: 200, description: 'Return video with extracted YouTube ID' })
   getVideoWithYouTubeId(@Param('id') id: string) {
@@ -59,7 +59,7 @@ export class VideosController {
   }
   
   @Get(':id/with-captions')
-  @Roles(Role.TEACHER, Role.ADMIN, Role.STUDENT)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER, Role.STUDENT)
   @ApiOperation({ summary: 'Get video by id with WebVTT captions' })
   @ApiResponse({ status: 200, description: 'Return video by id with WebVTT captions' })
   async findOneWithCaptions(@Param('id') id: string) {
@@ -73,7 +73,7 @@ export class VideosController {
   }
   
   @Get(':id/captions')
-  @Roles(Role.TEACHER, Role.ADMIN, Role.STUDENT)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER, Role.STUDENT)
   @ApiOperation({ summary: 'Get video captions in WebVTT format' })
   @ApiResponse({ status: 200, description: 'Return WebVTT format captions' })
   async getWebVTTCaptions(@Param('id') id: string) {
@@ -81,7 +81,7 @@ export class VideosController {
   }
   
   @Get(':id/captions/download')
-  @Roles(Role.TEACHER, Role.ADMIN, Role.STUDENT)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER, Role.STUDENT)
   @ApiOperation({ summary: 'Download video captions as WebVTT file' })
   @ApiResponse({ status: 200, description: 'Download WebVTT file' })
   async downloadWebVTTCaptions(@Param('id') id: string, @Res() response: Response) {
@@ -93,7 +93,7 @@ export class VideosController {
   }
   
   @Post(':id/refresh-captions')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Refresh video captions from YouTube' })
   @ApiResponse({ status: 200, description: 'Captions refreshed successfully' })
   refreshCaptions(@Param('id') id: string) {
@@ -101,7 +101,7 @@ export class VideosController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update video by id' })
   @ApiResponse({ status: 200, description: 'Video updated successfully' })
   update(@Param('id') id: string, @Body() updateVideoDto: UpdateVideoDto) {
@@ -109,14 +109,14 @@ export class VideosController {
   }
 
   @Post(':id/view')
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Increment video views' })
   incrementViews(@Param('id') id: string) {
     return this.videosService.incrementViews(id);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Delete video by id' })
   @ApiResponse({ status: 200, description: 'Video deleted successfully' })
   remove(@Param('id') id: string) {

@@ -35,7 +35,7 @@ export class ArticlesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new article" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -50,7 +50,7 @@ export class ArticlesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all articles" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -62,7 +62,7 @@ export class ArticlesController {
   }
 
   @Get("category/:category")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get articles by category" })
   @ApiParam({ name: "category", description: "The category name" })
   @ApiResponse({
@@ -74,7 +74,7 @@ export class ArticlesController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get an article by ID" })
   @ApiParam({ name: "id", description: "The article ID" })
   @ApiResponse({
@@ -90,7 +90,7 @@ export class ArticlesController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update an article" })
   @ApiParam({ name: "id", description: "The article ID" })
   @ApiResponse({
@@ -109,7 +109,7 @@ export class ArticlesController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete an article" })
   @ApiParam({ name: "id", description: "The article ID" })
@@ -126,7 +126,7 @@ export class ArticlesController {
   }
 
   @Post(":id/view")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Increment article view count" })
   @ApiParam({ name: "id", description: "The article ID" })
   @ApiResponse({

@@ -96,7 +96,7 @@ export class CompensateLessonsController {
   }
 
   @Get("all-teachers")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get all compensate lessons for all teachers (Admin only)",
   })
@@ -230,7 +230,7 @@ export class CompensateLessonsController {
   }
 
   @Get("wallet/all-teachers")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get all wallet entries for all teachers (Admin only)",
   })

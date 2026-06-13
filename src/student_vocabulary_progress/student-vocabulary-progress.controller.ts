@@ -38,7 +38,7 @@ export class StudentVocabularyProgressController {
   ) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Create a new vocabulary progress record" })
   @ApiResponse({
@@ -50,14 +50,14 @@ export class StudentVocabularyProgressController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all vocabulary progress records" })
   findAll() {
     return this.progressService.findAll();
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get progress record by id" })
   @ApiParam({ name: "id", description: "Progress record ID" })
   findOne(@Param("id") id: string) {
@@ -65,7 +65,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("student/:studentId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all progress records for a student" })
   @ApiParam({ name: "studentId", description: "Student ID" })
   findByStudent(@Param("studentId") studentId: string) {
@@ -73,7 +73,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("vocabulary/:vocabularyItemId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all progress records for a vocabulary item" })
   @ApiParam({ name: "vocabularyItemId", description: "Vocabulary Item ID" })
   findByVocabularyItem(@Param("vocabularyItemId") vocabularyItemId: string) {
@@ -81,7 +81,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("student/:studentId/vocabulary/:vocabularyItemId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get progress record for a specific student and vocabulary item",
   })
@@ -96,7 +96,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("student/:studentId/vocabulary/:vocabularyItemId/status")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get word status for a specific student and vocabulary item",
   })
@@ -114,7 +114,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Update progress record" })
   @ApiParam({ name: "id", description: "Progress record ID" })
   update(
@@ -125,7 +125,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Patch(":id/status/:status")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Update progress status" })
   @ApiParam({ name: "id", description: "Progress record ID" })
   @ApiParam({ name: "status", enum: VocabularyProgressStatus })
@@ -137,7 +137,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Patch("vocabulary/:vocabularyItemId/status/:status")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Update status for all progress records of a vocabulary item",
   })
@@ -154,7 +154,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("stats/student/:studentId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get basic vocabulary progress statistics for a student",
   })
@@ -164,7 +164,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("stats/student/:studentId/detailed")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get detailed vocabulary progress statistics for a student",
   })
@@ -174,7 +174,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("stats/vocabulary/:vocabularyItemId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get vocabulary item statistics" })
   @ApiParam({ name: "vocabularyItemId", description: "Vocabulary Item ID" })
   getVocabularyItemStats(@Param("vocabularyItemId") vocabularyItemId: string) {
@@ -182,14 +182,14 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("stats/global")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get global vocabulary progress statistics" })
   getGlobalStats() {
     return this.progressService.getGlobalStats();
   }
 
   @Get("stats/rankings")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get student rankings based on vocabulary mastery" })
   getStudentRankings(@Query("limit") limitParam?: string) {
     const limit = limitParam ? parseInt(limitParam, 10) : 10;
@@ -197,7 +197,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("stats/efficiency-rankings")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary:
       "Get student rankings based on learning efficiency (attempts to mastery)",
@@ -208,7 +208,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Get("stats/trends")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get vocabulary progress trends over time" })
   getProgressTrends(@Query("days") daysParam?: string) {
     const days = daysParam ? parseInt(daysParam, 10) : 30;
@@ -216,7 +216,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Post(":id/increment-attempts")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Increment attempts count for a progress record" })
   @ApiParam({ name: "id", description: "Progress record ID" })
@@ -225,7 +225,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Post("student/:studentId/vocabulary/:vocabularyItemId/record-attempt")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Record an attempt for a specific student and vocabulary item",
@@ -245,7 +245,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Post("student/:studentId/vocabulary/:vocabularyItemId/progress")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
@@ -268,7 +268,7 @@ export class StudentVocabularyProgressController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete progress record" })
   @ApiParam({ name: "id", description: "Progress record ID" })

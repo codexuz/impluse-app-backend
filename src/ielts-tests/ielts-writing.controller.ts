@@ -43,7 +43,7 @@ export class IeltsWritingController {
   // ========== Writing ==========
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new writing section" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -54,7 +54,7 @@ export class IeltsWritingController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all writing sections" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -67,7 +67,7 @@ export class IeltsWritingController {
   // ========== Writing Tasks ==========
   @Post("task")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new writing task" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -80,7 +80,7 @@ export class IeltsWritingController {
   // ========== Many-to-Many Link/Unlink ==========
   @Post("link-task")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Link an existing writing task to a writing (many-to-many)",
   })
@@ -97,7 +97,7 @@ export class IeltsWritingController {
   }
 
   @Delete("unlink-task")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Unlink a writing task from a writing" })
   @ApiResponse({
@@ -109,7 +109,7 @@ export class IeltsWritingController {
   }
 
   @Get("tasks")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all writing tasks" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -120,7 +120,7 @@ export class IeltsWritingController {
   }
 
   @Get("task/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a writing task by ID" })
   @ApiParam({ name: "id", description: "The writing task ID" })
   @ApiResponse({
@@ -132,7 +132,7 @@ export class IeltsWritingController {
   }
 
   @Patch("task/:id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a writing task" })
   @ApiParam({ name: "id", description: "The writing task ID" })
   @ApiResponse({
@@ -150,7 +150,7 @@ export class IeltsWritingController {
   }
 
   @Delete("task/:id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a writing task" })
   @ApiParam({ name: "id", description: "The writing task ID" })
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -159,7 +159,7 @@ export class IeltsWritingController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a writing section by ID" })
   @ApiParam({ name: "id", description: "The writing ID" })
   @ApiResponse({
@@ -171,7 +171,7 @@ export class IeltsWritingController {
   }
 
   @Get(":id/linked-tasks")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all linked writing tasks (many-to-many)" })
   @ApiParam({ name: "id", description: "The writing ID" })
   @ApiResponse({
@@ -183,7 +183,7 @@ export class IeltsWritingController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a writing section" })
   @ApiParam({ name: "id", description: "The writing ID" })
   @ApiResponse({
@@ -198,7 +198,7 @@ export class IeltsWritingController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a writing section" })
   @ApiParam({ name: "id", description: "The writing ID" })
   @HttpCode(HttpStatus.NO_CONTENT)

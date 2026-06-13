@@ -38,14 +38,14 @@ export class ExpensesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new expense" })
   create(@Body() createExpenseDto: CreateExpenseDto) {
     return this.expensesService.create(createExpenseDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all expenses" })
   @ApiQuery({
     name: "category_id",
@@ -89,7 +89,7 @@ export class ExpensesController {
   }
 
   @Get("reports/date-range")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get expenses by date range" })
   @ApiQuery({
     name: "start_date",
@@ -135,7 +135,7 @@ export class ExpensesController {
   }
 
   @Get("reports/monthly/:year/:month")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get expenses by month" })
   @ApiParam({ name: "year", description: "Year (YYYY)", type: "number" })
   @ApiParam({ name: "month", description: "Month (1-12)", type: "number" })
@@ -164,7 +164,7 @@ export class ExpensesController {
   }
 
   @Get("reports/total")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get total expenses by date range" })
   @ApiQuery({
     name: "start_date",
@@ -191,7 +191,7 @@ export class ExpensesController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get expense by ID" })
   @ApiParam({ name: "id", description: "Expense ID (UUID)", type: "string" })
   findOne(@Param("id") id: string) {
@@ -200,7 +200,7 @@ export class ExpensesController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update expense" })
   @ApiParam({ name: "id", description: "Expense ID (UUID)", type: "string" })
   update(@Param("id") id: string, @Body() updateExpenseDto: UpdateExpenseDto) {
@@ -209,7 +209,7 @@ export class ExpensesController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete expense (soft delete)" })
   @ApiParam({ name: "id", description: "Expense ID (UUID)", type: "string" })
   remove(@Param("id") id: string) {
@@ -217,7 +217,7 @@ export class ExpensesController {
   }
 
   @Get("teachers/salary-history")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary:
       "Get teacher salary history (oylik category only). Returns all teachers if teacherId not provided. Defaults to last 30 days if dates not provided.",
@@ -270,7 +270,7 @@ export class ExpensesController {
   }
 
   @Get("teachers/bonus-penalty")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary:
       "Get teachers' bonus and jarima (penalty) history. Returns both types and all teachers unless filtered. Supports date and amount range filters.",

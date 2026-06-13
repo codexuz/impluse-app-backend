@@ -40,7 +40,7 @@ export class AttendanceController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new attendance record" })
   @ApiResponse({
     status: 201,
@@ -66,7 +66,7 @@ export class AttendanceController {
 
   @Post("bulk")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Create multiple attendance records at once",
     description:
@@ -125,7 +125,7 @@ export class AttendanceController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all attendance records with optional filters" })
   @ApiQuery({
     name: "page",
@@ -208,7 +208,7 @@ export class AttendanceController {
   }
 
   @Get("group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get attendance records by group ID" })
   @ApiParam({ name: "groupId", description: "Group ID", type: "string" })
   @ApiResponse({
@@ -232,7 +232,7 @@ export class AttendanceController {
   }
 
   @Get("student/:studentId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get attendance records by student ID" })
   @ApiParam({ name: "studentId", description: "Student ID", type: "string" })
   @ApiResponse({
@@ -256,7 +256,7 @@ export class AttendanceController {
   }
 
   @Get("teacher/:teacherId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get attendance records by teacher ID" })
   @ApiParam({ name: "teacherId", description: "Teacher ID", type: "string" })
   @ApiResponse({
@@ -280,7 +280,7 @@ export class AttendanceController {
   }
 
   @Get("status/:status")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get attendance records by status" })
   @ApiParam({
     name: "status",
@@ -297,7 +297,7 @@ export class AttendanceController {
   }
 
   @Get("daterange")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get attendance records by date range" })
   @ApiQuery({
     name: "startDate",
@@ -326,7 +326,7 @@ export class AttendanceController {
   }
 
   @Get("group/:groupId/daterange")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Get attendance records by group ID and date range",
   })
@@ -365,7 +365,7 @@ export class AttendanceController {
   }
 
   @Get("student/:studentId/daterange")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get attendance records by student ID and date range",
   })
@@ -412,7 +412,7 @@ export class AttendanceController {
   }
 
   @Get("stats/summary")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get attendance statistics" })
   @ApiQuery({
     name: "groupId",
@@ -459,7 +459,7 @@ export class AttendanceController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get attendance record by ID" })
   @ApiParam({ name: "id", description: "Attendance record ID", type: "string" })
   @ApiResponse({
@@ -475,7 +475,7 @@ export class AttendanceController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update attendance record" })
   @ApiParam({ name: "id", description: "Attendance record ID", type: "string" })
   @ApiResponse({
@@ -502,7 +502,7 @@ export class AttendanceController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.OK) // Changed from NO_CONTENT to OK to return a JSON response
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete attendance record" })
   @ApiParam({ name: "id", description: "Attendance record ID", type: "string" })
   @ApiResponse({
@@ -520,7 +520,7 @@ export class AttendanceController {
   }
 
   @Get("student/:studentId/current-month")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get student's attendance summary for current month",
   })

@@ -17,14 +17,14 @@ export class StudentTransactionController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new student transaction' })
   create(@Body() createStudentTransactionDto: CreateStudentTransactionDto) {
     return this.studentTransactionService.create(createStudentTransactionDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all student transactions' })
   @ApiQuery({ name: 'type', required: false, description: 'Filter by transaction type' })
   findAll(@Query('type') type?: string) {
@@ -32,7 +32,7 @@ export class StudentTransactionController {
   }
 
   @Get('student/:studentId')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all transactions for a specific student' })
   @ApiParam({ name: 'studentId', description: 'Student ID (UUID)', type: 'string' })
   @ApiQuery({ name: 'type', required: false, description: 'Filter by transaction type' })
@@ -41,7 +41,7 @@ export class StudentTransactionController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get student transaction by ID' })
   @ApiParam({ name: 'id', description: 'Transaction ID (UUID)', type: 'string' })
   findOne(@Param('id') id: string) {
@@ -50,7 +50,7 @@ export class StudentTransactionController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Update student transaction' })
   @ApiParam({ name: 'id', description: 'Transaction ID (UUID)', type: 'string' })
   update(@Param('id') id: string, @Body() updateStudentTransactionDto: UpdateStudentTransactionDto) {
@@ -59,7 +59,7 @@ export class StudentTransactionController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete student transaction (soft delete)' })
   @ApiParam({ name: 'id', description: 'Transaction ID (UUID)', type: 'string' })
   remove(@Param('id') id: string) {

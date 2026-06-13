@@ -33,7 +33,7 @@ export class IeltsQuizAttemptsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Start a quiz attempt" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -44,7 +44,7 @@ export class IeltsQuizAttemptsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a quiz attempt by ID" })
   @ApiParam({ name: "id", description: "Attempt ID" })
   async findOne(@Param("id") id: string) {
@@ -52,7 +52,7 @@ export class IeltsQuizAttemptsController {
   }
 
   @Patch(":id/submit")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Submit a quiz attempt" })
   @ApiParam({ name: "id", description: "Attempt ID" })
   async submit(@Param("id") id: string) {
@@ -61,7 +61,7 @@ export class IeltsQuizAttemptsController {
 
   @Post("answer")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Submit an answer for a quiz attempt" })
   @ApiResponse({
     status: HttpStatus.CREATED,

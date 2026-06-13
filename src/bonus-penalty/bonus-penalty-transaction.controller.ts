@@ -38,7 +38,7 @@ export class BonusPenaltyTransactionController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary:
       "Create a new bonus / jarima (penalty) / referal transaction. Updates the teacher's bonus & penalty wallet.",
@@ -52,7 +52,7 @@ export class BonusPenaltyTransactionController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Get all bonus & penalty transactions with pagination and filters",
   })
@@ -74,7 +74,7 @@ export class BonusPenaltyTransactionController {
   }
 
   @Get("teacher/:teacherId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Get all bonus & penalty transactions for a specific teacher",
   })
@@ -96,7 +96,7 @@ export class BonusPenaltyTransactionController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get bonus & penalty transaction by ID" })
   @ApiParam({ name: "id", description: "Transaction ID (UUID)", type: "string" })
   findOne(@Param("id") id: string) {
@@ -105,7 +105,7 @@ export class BonusPenaltyTransactionController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update bonus & penalty transaction" })
   @ApiParam({ name: "id", description: "Transaction ID (UUID)", type: "string" })
   update(
@@ -120,7 +120,7 @@ export class BonusPenaltyTransactionController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary:
       "Delete bonus & penalty transaction (soft delete, reverses wallet balance)",

@@ -34,7 +34,7 @@ export class CertificatesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Generate and create a new certificate for a student",
   })
@@ -51,7 +51,7 @@ export class CertificatesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all certificates" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -62,7 +62,7 @@ export class CertificatesController {
   }
 
   @Get("student/:studentId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all certificates for a specific student" })
   @ApiParam({ name: "studentId", description: "The student user ID" })
   @ApiResponse({
@@ -74,7 +74,7 @@ export class CertificatesController {
   }
 
   @Get("verify/:certificatedId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Verify a certificate by certificate ID (10 digits)",
   })
@@ -97,7 +97,7 @@ export class CertificatesController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a certificate by ID" })
   @ApiParam({ name: "id", description: "The certificate ID" })
   @ApiResponse({
@@ -113,7 +113,7 @@ export class CertificatesController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a certificate" })
   @ApiParam({ name: "id", description: "The certificate ID" })
   @ApiResponse({
@@ -128,7 +128,7 @@ export class CertificatesController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete a certificate" })
   @ApiParam({ name: "id", description: "The certificate ID" })

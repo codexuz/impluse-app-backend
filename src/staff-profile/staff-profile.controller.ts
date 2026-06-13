@@ -30,42 +30,42 @@ export class StaffProfileController {
   // ---------------------------------------------------------------------------
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a staff profile (Admin only)" })
   async create(@Body() dto: CreateStaffProfileDto) {
     return this.staffProfileService.create(dto);
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "List all staff profiles with their shifts (Admin only)" })
   async findAll() {
     return this.staffProfileService.findAll();
   }
 
   @Get("staff/:staffId")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get a staff profile by user ID (Admin only)" })
   async findByStaffId(@Param("staffId") staffId: string) {
     return this.staffProfileService.findByStaffId(staffId);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get a staff profile by profile ID (Admin only)" })
   async findOne(@Param("id") id: string) {
     return this.staffProfileService.findOne(id);
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update a staff profile (Admin only)" })
   async update(@Param("id") id: string, @Body() dto: UpdateStaffProfileDto) {
     return this.staffProfileService.update(id, dto);
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete a staff profile and all its shifts (Admin only)" })
   async remove(@Param("id") id: string) {
     return this.staffProfileService.remove(id);
@@ -76,14 +76,14 @@ export class StaffProfileController {
   // ---------------------------------------------------------------------------
 
   @Get(":profileId/shifts")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "List all shifts for a staff profile" })
   async getShifts(@Param("profileId") profileId: string) {
     return this.staffProfileService.getShifts(profileId);
   }
 
   @Post(":profileId/shifts")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Add a shift to a staff profile" })
   async addShift(
     @Param("profileId") profileId: string,
@@ -93,7 +93,7 @@ export class StaffProfileController {
   }
 
   @Patch("shifts/:shiftId")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update a shift" })
   async updateShift(
     @Param("shiftId") shiftId: string,
@@ -103,7 +103,7 @@ export class StaffProfileController {
   }
 
   @Delete("shifts/:shiftId")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete a shift" })
   async removeShift(@Param("shiftId") shiftId: string) {
     return this.staffProfileService.removeShift(shiftId);

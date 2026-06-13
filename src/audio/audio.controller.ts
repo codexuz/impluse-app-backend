@@ -104,7 +104,7 @@ export class AudioController {
 
   // ========== TASK MANAGEMENT (Admin) ==========
   @Post("tasks")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new audio task for students" })
   @ApiResponse({ status: 201, description: "Task created successfully" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
@@ -114,7 +114,7 @@ export class AudioController {
   }
 
   @Get("tasks")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all audio tasks" })
   @ApiQuery({
     name: "page",
@@ -152,7 +152,7 @@ export class AudioController {
   }
 
   @Get("tasks/:id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get task by ID" })
   @ApiParam({ name: "id", description: "Task ID" })
   @ApiResponse({ status: 200, description: "Return task details" })
@@ -166,7 +166,7 @@ export class AudioController {
   }
 
   @Patch("tasks/:id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a task" })
   @ApiParam({ name: "id", description: "Task ID" })
   @ApiResponse({ status: 200, description: "Task updated successfully" })
@@ -183,7 +183,7 @@ export class AudioController {
   }
 
   @Get("tasks/:taskId/audios")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all audios for a specific task" })
   @ApiParam({ name: "taskId", description: "Task ID" })
   @ApiQuery({ name: "page", required: false, description: "Page number" })
@@ -202,7 +202,7 @@ export class AudioController {
   }
 
   @Get("tasks/:taskId/check-done")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Check if user has completed a task" })
   @ApiParam({ name: "taskId", description: "Task ID" })
   @ApiResponse({
@@ -241,7 +241,7 @@ export class AudioController {
 
   // ========== AUDIO MANAGEMENT (Student) ==========
   @Post("upload")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Upload an audio file",
     description:
@@ -391,7 +391,7 @@ export class AudioController {
   }
 
   @Get("trending")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get trending audios feed" })
   @ApiQuery({
     name: "page",
@@ -439,7 +439,7 @@ export class AudioController {
   }
 
   @Get("my-audios")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get my uploaded audios" })
   @ApiQuery({
     name: "page",
@@ -471,7 +471,7 @@ export class AudioController {
   }
 
   @Get(":id")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get audio by ID with full details" })
   @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({ status: 200, description: "Return audio details" })
@@ -485,7 +485,7 @@ export class AudioController {
   }
 
   @Get(":id/stream")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Stream audio file with range support" })
   @ApiParam({ name: "id", description: "Audio ID" })
   @Header("Accept-Ranges", "bytes")
@@ -571,7 +571,7 @@ export class AudioController {
   }
 
   @Post(":id/view")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Increment audio view count" })
   @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({ status: 200, description: "View count incremented" })
@@ -584,7 +584,7 @@ export class AudioController {
   }
 
   @Delete(":id")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete my audio" })
   @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({ status: 200, description: "Audio deleted successfully" })
@@ -601,7 +601,7 @@ export class AudioController {
 
   // ========== LIKES ==========
   @Post(":id/like")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Like or unlike an audio" })
   @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({
@@ -620,7 +620,7 @@ export class AudioController {
 
   // ========== COMMENTS ==========
   @Post("comments")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Add a comment to an audio" })
   @ApiResponse({
     status: 201,
@@ -636,7 +636,7 @@ export class AudioController {
   }
 
   @Get(":id/comments")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all comments for an audio" })
   @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({ status: 200, description: "Return audio comments" })
@@ -649,7 +649,7 @@ export class AudioController {
   }
 
   @Delete("comments/:commentId")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete my comment" })
   @ApiParam({ name: "commentId", description: "Comment ID" })
   @ApiResponse({ status: 200, description: "Comment deleted successfully" })
@@ -668,7 +668,7 @@ export class AudioController {
 
   // ========== JUDGE ==========
   @Post("judge")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Judge an audio with rating (0-5)" })
   @ApiResponse({
     status: 201,
@@ -682,7 +682,7 @@ export class AudioController {
   }
 
   @Get(":id/judges")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all judge ratings for an audio" })
   @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({
@@ -698,7 +698,7 @@ export class AudioController {
   }
 
   @Get(":id/ai-feedback")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get AI feedback for an audio" })
   @ApiParam({ name: "id", description: "Audio ID" })
   @ApiResponse({ status: 200, description: "Return AI feedback" })

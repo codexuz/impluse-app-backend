@@ -13,13 +13,13 @@ export class MoviesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async create(@Body() createMovieDto: CreateMovieDto) {
     return await this.moviesService.create(createMovieDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   async findAll(
     @Query('genre') genre?: MovieGenre,
     @Query('type') type?: MovieType,
@@ -29,48 +29,48 @@ export class MoviesController {
   }
 
   @Get('search')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   async search(@Query('term') searchTerm: string) {
     return await this.moviesService.search(searchTerm);
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   async findOne(@Param('id') id: string) {
     return await this.moviesService.findOne(id);
   }
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async update(@Param('id') id: string, @Body() updateMovieDto: UpdateMovieDto) {
     return await this.moviesService.update(id, updateMovieDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async remove(@Param('id') id: string) {
     return await this.moviesService.remove(id);
   }
 
   @Post(':id/restore')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async restore(@Param('id') id: string) {
     return await this.moviesService.restore(id);
   }
 
   @Delete(':id/hard')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   async hardRemove(@Param('id') id: string) {
     return await this.moviesService.hardRemove(id);
   }
 
   @Patch(':id/view')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   async incrementViewCount(@Param('id') id: string) {
     return await this.moviesService.incrementViewCount(id);
   }

@@ -36,7 +36,7 @@ export class IeltsQuizzesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new quiz" })
   @ApiResponse({ status: HttpStatus.CREATED, description: "Quiz created." })
   async create(@Body() dto: CreateQuizDto) {
@@ -44,14 +44,14 @@ export class IeltsQuizzesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all quizzes" })
   async findAll(@Query() query: QuizQueryDto) {
     return await this.ieltsCoursesService.findAllQuizzes(query);
   }
 
   @Get("lesson/:lessonId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a quiz by lesson ID" })
   @ApiParam({ name: "lessonId", description: "Lesson ID" })
   async findByLessonId(@Param("lessonId") lessonId: string) {
@@ -59,7 +59,7 @@ export class IeltsQuizzesController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a quiz by ID" })
   @ApiParam({ name: "id", description: "Quiz ID" })
   async findOne(@Param("id") id: string) {
@@ -67,7 +67,7 @@ export class IeltsQuizzesController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a quiz" })
   @ApiParam({ name: "id", description: "Quiz ID" })
   async update(@Param("id") id: string, @Body() dto: UpdateQuizDto) {
@@ -76,7 +76,7 @@ export class IeltsQuizzesController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a quiz" })
   @ApiParam({ name: "id", description: "Quiz ID" })
   async remove(@Param("id") id: string) {

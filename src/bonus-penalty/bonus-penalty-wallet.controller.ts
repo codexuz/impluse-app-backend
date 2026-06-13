@@ -36,21 +36,21 @@ export class BonusPenaltyWalletController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new bonus & penalty wallet" })
   create(@Body() createBonusPenaltyWalletDto: CreateBonusPenaltyWalletDto) {
     return this.bonusPenaltyWalletService.create(createBonusPenaltyWalletDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all bonus & penalty wallets" })
   findAll() {
     return this.bonusPenaltyWalletService.findAll();
   }
 
   @Get("teacher/:teacherId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get bonus & penalty wallet by teacher ID" })
   @ApiParam({
     name: "teacherId",
@@ -62,7 +62,7 @@ export class BonusPenaltyWalletController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get bonus & penalty wallet by ID" })
   @ApiParam({ name: "id", description: "Wallet ID (UUID)", type: "string" })
   findOne(@Param("id") id: string) {
@@ -71,7 +71,7 @@ export class BonusPenaltyWalletController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update bonus & penalty wallet" })
   @ApiParam({ name: "id", description: "Wallet ID (UUID)", type: "string" })
   update(
@@ -86,7 +86,7 @@ export class BonusPenaltyWalletController {
 
   @Patch(":id/amount")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Add or deduct amount from bonus & penalty wallet",
   })
@@ -103,7 +103,7 @@ export class BonusPenaltyWalletController {
 
   @Post("settle-all")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary:
       "Settle (reset) all wallets after payout. Zeroes every non-zero balance and returns the total paid.",
@@ -114,7 +114,7 @@ export class BonusPenaltyWalletController {
 
   @Patch("teacher/:teacherId/settle")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Settle (reset) a teacher's wallet after payout",
   })
@@ -129,7 +129,7 @@ export class BonusPenaltyWalletController {
 
   @Patch(":id/settle")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary:
       "Settle (reset) a wallet after payout. Captures the balance, then zeroes it.",
@@ -141,7 +141,7 @@ export class BonusPenaltyWalletController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete bonus & penalty wallet (soft delete)" })
   @ApiParam({ name: "id", description: "Wallet ID (UUID)", type: "string" })
   remove(@Param("id") id: string) {

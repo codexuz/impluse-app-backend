@@ -37,21 +37,21 @@ export class TeacherWalletController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new teacher wallet" })
   create(@Body() createTeacherWalletDto: CreateTeacherWalletDto) {
     return this.teacherWalletService.create(createTeacherWalletDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all teacher wallets" })
   findAll() {
     return this.teacherWalletService.findAll();
   }
 
   @Get("teacher/:teacherId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get wallet by teacher ID" })
   @ApiParam({
     name: "teacherId",
@@ -63,7 +63,7 @@ export class TeacherWalletController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get teacher wallet by ID" })
   @ApiParam({ name: "id", description: "Wallet ID (UUID)", type: "string" })
   findOne(@Param("id") id: string) {
@@ -72,7 +72,7 @@ export class TeacherWalletController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update teacher wallet" })
   @ApiParam({ name: "id", description: "Wallet ID (UUID)", type: "string" })
   update(
@@ -84,7 +84,7 @@ export class TeacherWalletController {
 
   @Patch(":id/amount")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Add or deduct amount from teacher wallet" })
   @ApiParam({ name: "id", description: "Wallet ID (UUID)", type: "string" })
   updateAmount(
@@ -96,7 +96,7 @@ export class TeacherWalletController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete teacher wallet (soft delete)" })
   @ApiParam({ name: "id", description: "Wallet ID (UUID)", type: "string" })
   remove(@Param("id") id: string) {
@@ -104,7 +104,7 @@ export class TeacherWalletController {
   }
 
   @Get("stats/teachers")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary:
       "Get teachers with statistics (groups count, students count, wallet balance, compensate balance)",

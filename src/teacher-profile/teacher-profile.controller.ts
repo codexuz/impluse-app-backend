@@ -17,21 +17,21 @@ export class TeacherProfileController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Create a new teacher profile' })
   create(@Body() createTeacherProfileDto: CreateTeacherProfileDto) {
     return this.teacherProfileService.create(createTeacherProfileDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Get all teacher profiles' })
   findAll() {
     return this.teacherProfileService.findAll();
   }
 
   @Get('user/:userId')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get teacher profile by user ID' })
   @ApiParam({ name: 'userId', description: 'User ID (UUID)', type: 'string' })
   findByUserId(@Param('userId') userId: string) {
@@ -39,7 +39,7 @@ export class TeacherProfileController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get teacher profile by ID' })
   @ApiParam({ name: 'id', description: 'Profile ID (UUID)', type: 'string' })
   findOne(@Param('id') id: string) {
@@ -48,7 +48,7 @@ export class TeacherProfileController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Update teacher profile' })
   @ApiParam({ name: 'id', description: 'Profile ID (UUID)', type: 'string' })
   update(@Param('id') id: string, @Body() updateTeacherProfileDto: UpdateTeacherProfileDto) {
@@ -57,7 +57,7 @@ export class TeacherProfileController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete teacher profile' })
   @ApiParam({ name: 'id', description: 'Profile ID (UUID)', type: 'string' })
   remove(@Param('id') id: string) {

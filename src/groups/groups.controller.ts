@@ -32,7 +32,7 @@ export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new group" })
   @ApiResponse({
     status: 201,
@@ -46,7 +46,7 @@ export class GroupsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all groups" })
   @ApiResponse({
     status: 200,
@@ -83,7 +83,7 @@ export class GroupsController {
   }
 
   @Get("group-count")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get count of all active groups" })
   @ApiResponse({
     status: 200,
@@ -96,7 +96,7 @@ export class GroupsController {
   }
 
   @Get("stats")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get group statistics" })
   @ApiResponse({
     status: 200,
@@ -108,7 +108,7 @@ export class GroupsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a group by id" })
   @ApiResponse({ status: 200, description: "Return the group.", type: Group })
   @ApiResponse({ status: 401, description: "Unauthorized." })
@@ -118,7 +118,7 @@ export class GroupsController {
   }
 
   @Get(":id/students")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all students in a group" })
   @ApiResponse({
     status: 200,
@@ -132,7 +132,7 @@ export class GroupsController {
   }
 
   @Get(":id/teacher")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get the teacher of a group" })
   @ApiResponse({
     status: 200,
@@ -146,7 +146,7 @@ export class GroupsController {
   }
 
   @Get("teacher/:teacherId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all groups for a teacher" })
   @ApiResponse({
     status: 200,
@@ -179,7 +179,7 @@ export class GroupsController {
   }
 
   @Get("level/:levelId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all groups for a level" })
   @ApiResponse({
     status: 200,
@@ -208,7 +208,7 @@ export class GroupsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a group" })
   @ApiResponse({
     status: 200,
@@ -226,7 +226,7 @@ export class GroupsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a group" })
   @ApiResponse({
     status: 200,

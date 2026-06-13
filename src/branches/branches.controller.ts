@@ -25,32 +25,32 @@ export class BranchesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   async create(@Body() createBranchDto: CreateBranchDto) {
     return await this.branchesService.create(createBranchDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async findAll() {
     return await this.branchesService.findAll();
   }
 
   @Get("owner/:ownerId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async findByOwner(@Param("ownerId") ownerId: string) {
     return await this.branchesService.findByOwner(ownerId);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   async findOne(@Param("id") id: string) {
     return await this.branchesService.findOne(id);
   }
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   async update(
     @Param("id") id: string,
     @Body() updateBranchDto: UpdateBranchDto
@@ -60,14 +60,14 @@ export class BranchesController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   async remove(@Param("id") id: string) {
     return await this.branchesService.remove(id);
   }
 
   @Delete(":id/hard")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   async hardRemove(@Param("id") id: string) {
     return await this.branchesService.hardRemove(id);
   }

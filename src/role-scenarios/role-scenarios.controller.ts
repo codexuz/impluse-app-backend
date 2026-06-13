@@ -17,7 +17,7 @@ export class RoleScenariosController {
   constructor(private readonly roleScenariosService: RoleScenariosService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new role scenario' })
   @ApiResponse({ status: 201, type: RoleScenario })
   create(@Body() createRoleScenarioDto: CreateRoleScenarioDto) {
@@ -47,7 +47,7 @@ export class RoleScenariosController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update a role scenario' })
   @ApiResponse({ status: 200, type: RoleScenario })
   @ApiResponse({ status: 404, description: 'Not found' })
@@ -56,7 +56,7 @@ export class RoleScenariosController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: 'Delete a role scenario' })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 404, description: 'Not found' })

@@ -83,7 +83,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all homework submissions" })
   @ApiResponse({
     status: 200,
@@ -96,7 +96,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("homework/:homeworkId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all submissions for a specific homework" })
   @ApiResponse({
     status: 200,
@@ -111,7 +111,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("student/:studentId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all submissions by a specific student" })
   @ApiResponse({
     status: 200,
@@ -126,7 +126,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Get all submissions by students in a specific group",
   })
@@ -146,7 +146,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("group/:groupId/progress")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Get group homework progress for all students by units/lessons",
   })
@@ -164,7 +164,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("student/:studentId/group-progress")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary:
       "Get student's group homework progress showing all group members' performance",
@@ -185,7 +185,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("student/:studentId/homework/:homeworkId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get a specific submission by student and homework",
   })
@@ -207,7 +207,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("section/:section")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all submissions by section" })
   @ApiResponse({
     status: 200,
@@ -222,7 +222,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("student/:studentId/section/:section")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all submissions by student and section" })
   @ApiResponse({
     status: 200,
@@ -242,7 +242,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("homework/:homeworkId/section/:section")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all submissions by homework and section" })
   @ApiResponse({
     status: 200,
@@ -261,7 +261,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("student/:studentId/homework/:homeworkId/section/:section")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get specific submission by student, homework, and section",
   })
@@ -285,7 +285,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a homework submission by id" })
   @ApiResponse({
     status: 200,
@@ -356,7 +356,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Patch("sections/:sectionId")
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Update a homework section",
     description:
@@ -381,7 +381,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Post("sections/:sectionId/check-writing")
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Check writing answers using AI writing assessment",
     description:
@@ -431,7 +431,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Post("sections/bulk-check-writing")
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Bulk check writing answers for multiple sections",
     description:
@@ -486,7 +486,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete a homework submission" })
   @ApiResponse({
     status: 200,
@@ -500,7 +500,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("student/:studentId/lesson/:lessonId/exercises")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get exercises with scores by student ID and lesson ID",
     description:
@@ -525,7 +525,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("student/:studentId/stats")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary:
       "Get student's homework statistics average by section type for all time",
@@ -547,7 +547,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("student/:studentId/average-speaking-score")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get student's average speaking score across all speaking tasks",
     description:
@@ -569,7 +569,7 @@ export class HomeworkSubmissionsController {
   }
 
   @Get("speaking/:speakingId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get homework sections by speaking exercise ID",
     description:

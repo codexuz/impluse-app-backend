@@ -33,7 +33,7 @@ export class ExamResultsController {
   constructor(private readonly examResultsService: ExamResultsService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new exam result' })
   @ApiResponse({ status: 201, description: 'The exam result has been successfully created' })
@@ -42,14 +42,14 @@ export class ExamResultsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all exam results' })
   findAll() {
     return this.examResultsService.findAll();
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a specific exam result by ID' })
   @ApiParam({ name: 'id', description: 'Exam result ID' })
   findOne(@Param('id') id: string) {
@@ -57,7 +57,7 @@ export class ExamResultsController {
   }
 
   @Get('exam/:examId')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all results for a specific exam' })
   @ApiParam({ name: 'examId', description: 'Exam ID' })
   findByExam(@Param('examId') examId: string) {
@@ -65,7 +65,7 @@ export class ExamResultsController {
   }
 
   @Get('student/:studentId')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all exam results for a specific student' })
   @ApiParam({ name: 'studentId', description: 'Student ID' })
   findByStudent(@Param('studentId') studentId: string) {
@@ -73,7 +73,7 @@ export class ExamResultsController {
   }
 
   @Get('exam/:examId/student/:studentId')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get exam result for a specific exam and student' })
   @ApiParam({ name: 'examId', description: 'Exam ID' })
   @ApiParam({ name: 'studentId', description: 'Student ID' })
@@ -85,7 +85,7 @@ export class ExamResultsController {
   }
 
   @Get('exam/:examId/statistics')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get statistics for a specific exam' })
   @ApiParam({ name: 'examId', description: 'Exam ID' })
   getExamStatistics(@Param('examId') examId: string) {
@@ -93,7 +93,7 @@ export class ExamResultsController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update an exam result' })
   @ApiParam({ name: 'id', description: 'Exam result ID' })
   update(@Param('id') id: string, @Body() updateExamResultDto: UpdateExamResultDto) {
@@ -101,7 +101,7 @@ export class ExamResultsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete an exam result' })
   @ApiParam({ name: 'id', description: 'Exam result ID' })

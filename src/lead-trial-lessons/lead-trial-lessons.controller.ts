@@ -43,7 +43,7 @@ export class LeadTrialLessonsController {
   ) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new trial lesson" })
   @ApiResponse({
     status: 201,
@@ -61,7 +61,7 @@ export class LeadTrialLessonsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get all trial lessons with pagination and filtering",
   })
@@ -131,7 +131,7 @@ export class LeadTrialLessonsController {
   }
 
   @Get("stats")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get trial lesson statistics" })
   @ApiResponse({
     status: 200,
@@ -148,7 +148,7 @@ export class LeadTrialLessonsController {
   }
 
   @Get("leads-statistics")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get leads statistics per teacher — assigned, became student, lost",
   })
@@ -192,7 +192,7 @@ export class LeadTrialLessonsController {
   }
 
   @Get("upcoming")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get upcoming trial lessons" })
   @ApiQuery({
     name: "limit",
@@ -215,7 +215,7 @@ export class LeadTrialLessonsController {
   }
 
   @Get("by-status/:status")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get trial lessons by status" })
   @ApiParam({ name: "status", description: "Trial lesson status" })
   @ApiResponse({
@@ -233,7 +233,7 @@ export class LeadTrialLessonsController {
   }
 
   @Get("by-teacher/:teacherId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get trial lessons by teacher" })
   @ApiParam({ name: "teacherId", description: "Teacher ID" })
   @ApiResponse({
@@ -251,7 +251,7 @@ export class LeadTrialLessonsController {
   }
 
   @Get("by-lead/:leadId")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get trial lessons by lead" })
   @ApiParam({ name: "leadId", description: "Lead ID" })
   @ApiResponse({
@@ -287,7 +287,7 @@ export class LeadTrialLessonsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get trial lesson by ID" })
   @ApiParam({ name: "id", description: "Trial lesson ID" })
   @ApiResponse({
@@ -306,7 +306,7 @@ export class LeadTrialLessonsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update trial lesson by ID" })
   @ApiParam({ name: "id", description: "Trial lesson ID" })
   @ApiResponse({
@@ -329,7 +329,7 @@ export class LeadTrialLessonsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete trial lesson by ID (soft delete)" })
   @ApiParam({ name: "id", description: "Trial lesson ID" })
@@ -348,7 +348,7 @@ export class LeadTrialLessonsController {
   }
 
   @Post(":id/notify")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Send manual SMS reminder to student about their trial lesson" })
   @ApiParam({ name: "id", description: "Trial lesson ID" })
   @ApiResponse({

@@ -39,14 +39,14 @@ export class StaffAttendanceController {
   // ---------------------------------------------------------------------------
 
   @Get("qr-payload/:groupId")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get QR code payload for a group (Admin only)" })
   async getQrPayload(@Param("groupId") groupId: string) {
     return this.staffAttendanceService.generateQrCodePayload(groupId);
   }
 
   @Get("static-qr/:teacherId")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get static QR code payload for a teacher (Admin only)" })
   async getStaticQr(@Param("teacherId") teacherId: string) {
     return this.staffAttendanceService.generateStaticTeacherQrCode(teacherId);
@@ -57,14 +57,14 @@ export class StaffAttendanceController {
   // ---------------------------------------------------------------------------
 
   @Post("automatic-scan")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Automatic attendance scan for Telegram bot" })
   async autoScan(@Body() body: { teacher_id: string; type?: "in" | "out" }) {
     return this.staffAttendanceService.automaticScan(body.teacher_id, body.type || "in");
   }
 
   @Post("scan")
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Scan QR code to mark staff attendance" })
   async scan(@CurrentUser() user: User, @Body() scanDto: ScanStaffAttendanceDto) {
     return this.staffAttendanceService.scanQrCode(user.id, scanDto);
@@ -82,7 +82,7 @@ export class StaffAttendanceController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "List all staff attendances (Admin only)" })
   @ApiQuery({ name: "page", required: false, type: Number })
   @ApiQuery({ name: "limit", required: false, type: Number })
@@ -122,7 +122,7 @@ export class StaffAttendanceController {
   // ---------------------------------------------------------------------------
 
   @Get("summary")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Attendance summary stats per staff for a date range" })
   @ApiQuery({ name: "startDate", required: true, type: String })
   @ApiQuery({ name: "endDate", required: true, type: String })
@@ -150,7 +150,7 @@ export class StaffAttendanceController {
   // ---------------------------------------------------------------------------
 
   @Get("events")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Raw audit event log (Admin only)" })
   @ApiQuery({ name: "staffId", required: false, type: String })
   @ApiQuery({ name: "limit", required: false, type: Number })
@@ -169,7 +169,7 @@ export class StaffAttendanceController {
   // ---------------------------------------------------------------------------
 
   @Post("permissions")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Request a staff permission / leave (ruxsat)" })
   async createPermission(
     @CurrentUser() user: User,
@@ -179,14 +179,14 @@ export class StaffAttendanceController {
   }
 
   @Get("my-permissions")
-  @Roles(Role.TEACHER, Role.ADMIN)
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get my permission / leave requests" })
   async getMyPermissions(@CurrentUser() user: User) {
     return this.staffAttendanceService.getStaffPermissions(user.id);
   }
 
   @Get("permissions")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "List staff permissions (Admin only)" })
   @ApiQuery({ name: "page", required: false, type: Number })
   @ApiQuery({ name: "limit", required: false, type: Number })
@@ -213,7 +213,7 @@ export class StaffAttendanceController {
   }
 
   @Patch("permissions/:id/review")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Approve or reject a permission (Admin only)" })
   async reviewPermission(
     @CurrentUser() user: User,
@@ -224,7 +224,7 @@ export class StaffAttendanceController {
   }
 
   @Patch("permissions/:id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Edit a pending permission" })
   async updatePermission(
     @Param("id") id: string,
@@ -234,7 +234,7 @@ export class StaffAttendanceController {
   }
 
   @Delete("permissions/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete a permission (Admin only)" })
   async deletePermission(@Param("id") id: string) {
     return this.staffAttendanceService.deletePermission(id);
@@ -245,7 +245,7 @@ export class StaffAttendanceController {
   // ---------------------------------------------------------------------------
 
   @Get("policies")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "List fine policies (Admin only)" })
   @ApiQuery({ name: "page", required: false, type: Number })
   @ApiQuery({ name: "limit", required: false, type: Number })
@@ -260,21 +260,21 @@ export class StaffAttendanceController {
   }
 
   @Post("policies")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a fine policy (Admin only)" })
   async createPolicy(@Body() dto: AttendancePolicyDto) {
     return this.staffAttendanceService.createPolicy(dto);
   }
 
   @Patch("policies/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update a fine policy (Admin only)" })
   async updatePolicy(@Param("id") id: string, @Body() dto: AttendancePolicyDto) {
     return this.staffAttendanceService.updatePolicy(id, dto);
   }
 
   @Delete("policies/:id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Deactivate a fine policy (Admin only)" })
   async deletePolicy(@Param("id") id: string) {
     return this.staffAttendanceService.deletePolicy(id);

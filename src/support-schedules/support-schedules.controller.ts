@@ -37,7 +37,7 @@ export class SupportSchedulesController {
   constructor(private readonly supportSchedulesService: SupportSchedulesService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER)
   @ApiOperation({ summary: 'Create a new support schedule' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -61,7 +61,7 @@ export class SupportSchedulesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all support schedules' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -81,7 +81,7 @@ export class SupportSchedulesController {
   }
 
   @Get('teacher/:teacherId')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get support schedules by teacher ID' })
   @ApiParam({ name: 'teacherId', description: 'Teacher ID' })
   @ApiResponse({
@@ -102,7 +102,7 @@ export class SupportSchedulesController {
   }
 
   @Get('group/:groupId')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get support schedules by group ID' })
   @ApiParam({ name: 'groupId', description: 'Group ID' })
   @ApiResponse({
@@ -123,7 +123,7 @@ export class SupportSchedulesController {
   }
 
   @Get('date-range')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get support schedules within a date range' })
   @ApiQuery({ name: 'startDate', description: 'Start date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'endDate', description: 'End date (YYYY-MM-DD)' })
@@ -154,7 +154,7 @@ export class SupportSchedulesController {
   }
 
   @Get('stats')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER)
   @ApiOperation({ summary: 'Get support schedule statistics' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -181,7 +181,7 @@ export class SupportSchedulesController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get a support schedule by ID' })
   @ApiParam({ name: 'id', description: 'Support schedule ID' })
   @ApiResponse({
@@ -206,7 +206,7 @@ export class SupportSchedulesController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER)
   @ApiOperation({ summary: 'Update a support schedule' })
   @ApiParam({ name: 'id', description: 'Support schedule ID' })
   @ApiResponse({
@@ -235,7 +235,7 @@ export class SupportSchedulesController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER)
   @ApiOperation({ summary: 'Delete a support schedule' })
   @ApiParam({ name: 'id', description: 'Support schedule ID' })
   @ApiResponse({

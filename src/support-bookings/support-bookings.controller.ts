@@ -38,7 +38,7 @@ export class SupportBookingsController {
   constructor(private readonly supportBookingsService: SupportBookingsService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Create a new support booking' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -62,7 +62,7 @@ export class SupportBookingsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all support bookings' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -82,7 +82,7 @@ export class SupportBookingsController {
   }
 
   @Get('student/:studentId')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get support bookings by student ID' })
   @ApiParam({ name: 'studentId', description: 'Student ID' })
   @ApiResponse({
@@ -103,7 +103,7 @@ export class SupportBookingsController {
   }
 
   @Get('teacher/:teacherId')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get support bookings by teacher ID' })
   @ApiParam({ name: 'teacherId', description: 'Teacher ID' })
   @ApiResponse({
@@ -124,7 +124,7 @@ export class SupportBookingsController {
   }
 
   @Get('status/:status')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get support bookings by status' })
   @ApiParam({ name: 'status', enum: BookingStatus, description: 'Booking status' })
   @ApiResponse({
@@ -145,7 +145,7 @@ export class SupportBookingsController {
   }
 
   @Get('schedule/:scheduleId')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get support bookings by schedule ID' })
   @ApiParam({ name: 'scheduleId', description: 'Schedule ID' })
   @ApiResponse({
@@ -166,7 +166,7 @@ export class SupportBookingsController {
   }
 
   @Get('date-range')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: 'Get support bookings within a date range' })
   @ApiQuery({ name: 'startDate', description: 'Start date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'endDate', description: 'End date (YYYY-MM-DD)' })
@@ -197,7 +197,7 @@ export class SupportBookingsController {
   }
 
   @Get('stats')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER)
   @ApiOperation({ summary: 'Get support booking statistics' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -225,7 +225,7 @@ export class SupportBookingsController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a support booking by ID' })
   @ApiParam({ name: 'id', description: 'Support booking ID' })
   @ApiResponse({
@@ -250,7 +250,7 @@ export class SupportBookingsController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Update a support booking' })
   @ApiParam({ name: 'id', description: 'Support booking ID' })
   @ApiResponse({
@@ -279,7 +279,7 @@ export class SupportBookingsController {
   }
 
   @Patch(':id/status')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER)
   @ApiOperation({ summary: 'Update support booking status' })
   @ApiParam({ name: 'id', description: 'Support booking ID' })
   @ApiResponse({
@@ -311,7 +311,7 @@ export class SupportBookingsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.SUPPORT_TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER)
   @ApiOperation({ summary: 'Delete a support booking' })
   @ApiParam({ name: 'id', description: 'Support booking ID' })
   @ApiResponse({

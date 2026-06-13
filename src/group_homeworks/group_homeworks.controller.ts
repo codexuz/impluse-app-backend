@@ -42,7 +42,7 @@ export class GroupHomeworksController {
   constructor(private readonly groupHomeworksService: GroupHomeworksService) { }
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new homework assignment for a group" })
   @ApiResponse({
     status: 201,
@@ -58,7 +58,7 @@ export class GroupHomeworksController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all homework assignments" })
   @ApiResponse({
     status: 200,
@@ -71,7 +71,7 @@ export class GroupHomeworksController {
   }
 
   @Get("group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.STUDENT)
   @ApiOperation({
     summary: "Get all homework assignments for a specific group",
   })
@@ -88,7 +88,7 @@ export class GroupHomeworksController {
   }
 
   @Get("teacher/:teacherId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Get all homework assignments by a specific teacher",
   })
@@ -105,7 +105,7 @@ export class GroupHomeworksController {
   }
 
   @Get("lesson/:lessonId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get all homework assignments for a specific lesson",
   })
@@ -126,7 +126,7 @@ export class GroupHomeworksController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a homework assignment by id" })
   @ApiResponse({
     status: 200,
@@ -140,7 +140,7 @@ export class GroupHomeworksController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a homework assignment" })
   @ApiResponse({
     status: 200,
@@ -158,7 +158,7 @@ export class GroupHomeworksController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a homework assignment" })
   @ApiResponse({
     status: 200,
@@ -172,7 +172,7 @@ export class GroupHomeworksController {
   }
 
   @Get("user/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary:
       "Get all homework assignments for a specific user with exercise completion status",
@@ -190,7 +190,7 @@ export class GroupHomeworksController {
   }
 
   @Get("active/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary:
       "Get active homework assignments for a specific user with exercise completion status",
@@ -210,7 +210,7 @@ export class GroupHomeworksController {
   }
 
   @Get("active/:userId/:date")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary:
       "Get active homework assignments for a specific user for a specific date with exercise completion status",
@@ -235,7 +235,7 @@ export class GroupHomeworksController {
   }
 
   @Get("content/:homeworkId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary:
       "Get homework with detailed lesson content including exercises and speaking activities",
@@ -257,7 +257,7 @@ export class GroupHomeworksController {
   }
 
   @Get("status/student/:studentId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get finished and unfinished homeworks for a specific student",
   })
@@ -285,7 +285,7 @@ export class GroupHomeworksController {
   }
 
   @Get("status/group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Get homework completion status for all students in a group",
   })
@@ -304,7 +304,7 @@ export class GroupHomeworksController {
   }
 
   @Get("stats/overview")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get overall homework statistics" })
   @ApiQuery({
     name: "groupId",

@@ -16,7 +16,7 @@ export class SpeakingController {
   constructor(private readonly speakingService: SpeakingService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create speaking exercise' })
   @ApiResponse({ status: 201, description: 'Successfully created.' })
   create(@Body() createSpeakingDto: CreateSpeakingDto) {
@@ -63,7 +63,7 @@ export class SpeakingController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update speaking exercise' })
   @ApiResponse({ status: 200, description: 'Successfully updated.' })
   update(@Param('id') id: string, @Body() updateSpeakingDto: UpdateSpeakingDto) {
@@ -71,7 +71,7 @@ export class SpeakingController {
   }
 
   @Get(':id/related/count')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Count all related entities (pronunciation exercises and IELTS questions)' })
   @ApiResponse({ status: 200, description: 'Return count of all related entities.' })
   countRelated(@Param('id') id: string) {
@@ -79,7 +79,7 @@ export class SpeakingController {
   }
 
   @Delete(':id/related')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Delete all related entities (pronunciation exercises and IELTS questions) without deleting the speaking exercise' })
   @ApiResponse({ status: 200, description: 'Successfully deleted related entities.' })
   removeRelated(@Param('id') id: string) {
@@ -87,7 +87,7 @@ export class SpeakingController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Delete speaking exercise and all its related entities' })
   @ApiResponse({ status: 200, description: 'Successfully deleted speaking exercise and related entities.' })
   remove(@Param('id') id: string) {

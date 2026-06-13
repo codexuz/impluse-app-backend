@@ -17,7 +17,7 @@ export class Ieltspart2QuestionController {
     constructor(private readonly ieltspart2QuestionService: Ieltspart2QuestionService) {}
 
     @Post()
-    @Roles(Role.ADMIN, Role.TEACHER)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
     @ApiOperation({ summary: 'Create a new IELTS Part 2 question' })
     @ApiResponse({ status: 201, description: 'The question has been successfully created.', type: Ieltspart2Question })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -27,7 +27,7 @@ export class Ieltspart2QuestionController {
     }
 
     @Get()
-    @Roles(Role.ADMIN, Role.TEACHER)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
     @ApiOperation({ summary: 'Get all IELTS Part 2 questions' })
     @ApiResponse({ status: 200, description: 'Return all IELTS Part 2 questions.', type: [Ieltspart2Question] })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -36,7 +36,7 @@ export class Ieltspart2QuestionController {
     }
 
     @Get('speaking/:speakingId')
-    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
     @ApiOperation({ summary: 'Get all questions for a specific speaking test' })
     @ApiResponse({ status: 200, description: 'Return all questions for the speaking test.', type: [Ieltspart2Question] })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -45,7 +45,7 @@ export class Ieltspart2QuestionController {
     }
 
     @Get(':id')
-    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
     @ApiOperation({ summary: 'Get a specific IELTS Part 2 question' })
     @ApiResponse({ status: 200, description: 'Return the IELTS Part 2 question.', type: Ieltspart2Question })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -55,7 +55,7 @@ export class Ieltspart2QuestionController {
     }
 
     @Patch(':id')
-    @Roles(Role.ADMIN, Role.TEACHER)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
     @ApiOperation({ summary: 'Update an IELTS Part 2 question' })
     @ApiResponse({ status: 200, description: 'The question has been successfully updated.', type: Ieltspart2Question })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -69,7 +69,7 @@ export class Ieltspart2QuestionController {
     }
 
     @Delete(':id')
-    @Roles(Role.ADMIN, Role.TEACHER)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
     @ApiOperation({ summary: 'Delete an IELTS Part 2 question' })
     @ApiResponse({ status: 200, description: 'The question has been successfully deleted.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })

@@ -36,7 +36,7 @@ export class StudentPaymentController {
   constructor(private readonly studentPaymentService: StudentPaymentService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new student payment" })
   @ApiResponse({ status: 201, description: "Payment successfully created." })
   @ApiResponse({
@@ -59,7 +59,7 @@ export class StudentPaymentController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all student payments" })
   @ApiResponse({ status: 200, description: "List of all payments." })
   @ApiResponse({ status: 401, description: "Unauthorized." })
@@ -106,7 +106,7 @@ export class StudentPaymentController {
   }
 
   @Get("date-range")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all student payments within a date range" })
   @ApiResponse({
     status: 200,
@@ -127,7 +127,7 @@ export class StudentPaymentController {
   }
 
   @Get("student/:studentId")
-  @Roles(Role.ADMIN, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.STUDENT)
   @ApiOperation({ summary: "Get all payments for a specific student" })
   @ApiResponse({ status: 200, description: "List of student's payments." })
   @ApiResponse({ status: 401, description: "Unauthorized." })
@@ -147,7 +147,7 @@ export class StudentPaymentController {
   }
 
   @Get("student/:studentId/status")
-  @Roles(Role.ADMIN, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.STUDENT)
   @ApiOperation({ summary: "Get payment status summary for a student" })
   @ApiResponse({
     status: 200,
@@ -168,7 +168,7 @@ export class StudentPaymentController {
   }
 
   @Get("upcoming")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get upcoming payments within specified days" })
   @ApiResponse({ status: 200, description: "List of upcoming payments." })
   @ApiResponse({ status: 401, description: "Unauthorized." })
@@ -178,7 +178,7 @@ export class StudentPaymentController {
   }
 
   @Get("stats")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary:
       "Get payment stats: upcoming (next 7 days) and overdue counts and amounts",
@@ -194,7 +194,7 @@ export class StudentPaymentController {
   }
 
   @Get("statistics/monthly")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary:
       "Get monthly payment statistics: total amount and count per month for a given year",
@@ -212,7 +212,7 @@ export class StudentPaymentController {
   }
 
   @Get("status/:status")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get payments by status" })
   @ApiResponse({
     status: 200,
@@ -235,7 +235,7 @@ export class StudentPaymentController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get a specific payment" })
   @ApiResponse({ status: 200, description: "Payment details." })
   @ApiResponse({ status: 401, description: "Unauthorized." })
@@ -246,7 +246,7 @@ export class StudentPaymentController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update a payment" })
   @ApiResponse({ status: 200, description: "Payment successfully updated." })
   @ApiResponse({ status: 401, description: "Unauthorized." })
@@ -260,7 +260,7 @@ export class StudentPaymentController {
   }
 
   @Patch(":id/status")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update payment status" })
   @ApiResponse({
     status: 200,
@@ -277,7 +277,7 @@ export class StudentPaymentController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete a payment" })
   @ApiResponse({ status: 204, description: "Payment successfully deleted." })
   @ApiResponse({ status: 401, description: "Unauthorized." })
@@ -289,7 +289,7 @@ export class StudentPaymentController {
   }
 
   @Post("trigger-payment-creation")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Manually trigger the automatic payment creation (admin only)",
   })
@@ -305,7 +305,7 @@ export class StudentPaymentController {
   }
 
   @Get("due-payments/check")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary:
       "Check which payments would be processed by the automatic payment job",
@@ -330,7 +330,7 @@ export class StudentPaymentController {
 
   // Keep backward compatibility with the original endpoint
   @Get("check-due-payments")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary:
       "Legacy endpoint - Check which payments would be processed by the automatic payment job",

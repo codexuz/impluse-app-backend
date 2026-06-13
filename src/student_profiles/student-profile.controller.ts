@@ -40,7 +40,7 @@ export class StudentProfileController {
   constructor(private readonly studentProfileService: StudentProfileService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Create a new student profile" })
   @ApiResponse({ status: 201, description: "Profile created successfully" })
@@ -50,7 +50,7 @@ export class StudentProfileController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all student profiles" })
   @ApiResponse({ status: 200, description: "Return all student profiles" })
   findAll() {
@@ -58,7 +58,7 @@ export class StudentProfileController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get student profile by id" })
   @ApiParam({ name: "id", description: "Student Profile ID" })
   @ApiResponse({ status: 200, description: "Return the student profile" })
@@ -68,7 +68,7 @@ export class StudentProfileController {
   }
 
   @Get("user/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get student profile by user id" })
   @ApiParam({ name: "userId", description: "User ID" })
   @ApiResponse({ status: 200, description: "Return the student profile" })
@@ -78,7 +78,7 @@ export class StudentProfileController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update student profile" })
   @ApiParam({ name: "id", description: "Student Profile ID" })
   @ApiBody({ type: UpdateStudentProfileDto })
@@ -92,7 +92,7 @@ export class StudentProfileController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete student profile" })
   @ApiParam({ name: "id", description: "Student Profile ID" })
@@ -103,7 +103,7 @@ export class StudentProfileController {
   }
 
   @Patch(":id/points/add/:amount")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Add points to student profile" })
   @ApiParam({ name: "id", description: "Student Profile ID" })
   @ApiParam({ name: "amount", description: "Amount of points to add" })
@@ -113,7 +113,7 @@ export class StudentProfileController {
   }
 
   @Patch(":id/coins/add/:amount")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Add coins to student profile" })
   @ApiParam({ name: "id", description: "Student Profile ID" })
   @ApiParam({ name: "amount", description: "Amount of coins to add" })
@@ -123,7 +123,7 @@ export class StudentProfileController {
   }
 
   @Patch(":id/points/deduct/:amount")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Deduct points from student profile" })
   @ApiParam({ name: "id", description: "User ID" })
   @ApiParam({ name: "amount", description: "Amount of points to deduct" })
@@ -133,7 +133,7 @@ export class StudentProfileController {
   }
 
   @Patch(":id/coins/deduct/:amount")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Deduct coins from student profile" })
   @ApiParam({ name: "id", description: "User ID" })
   @ApiParam({ name: "amount", description: "Amount of coins to deduct" })
@@ -143,7 +143,7 @@ export class StudentProfileController {
   }
 
   @Patch(":id/streak/increment")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Increment student streak" })
   @ApiParam({ name: "id", description: "Student Profile ID" })
   @ApiResponse({ status: 200, description: "Streak incremented successfully" })
@@ -152,7 +152,7 @@ export class StudentProfileController {
   }
 
   @Patch(":id/streak/add/:amount")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Add N streaks to student profile" })
   @ApiParam({ name: "id", description: "User ID" })
   @ApiParam({ name: "amount", description: "Amount of streaks to add" })
@@ -162,7 +162,7 @@ export class StudentProfileController {
   }
 
   @Patch(":id/streak/deduct/:amount")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Deduct N streaks from student profile (floors at 0)" })
   @ApiParam({ name: "id", description: "User ID" })
   @ApiParam({ name: "amount", description: "Amount of streaks to deduct" })
@@ -172,7 +172,7 @@ export class StudentProfileController {
   }
 
   @Patch(":id/streak/reset")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Reset student streak" })
   @ApiParam({ name: "id", description: "Student Profile ID" })
   @ApiResponse({ status: 200, description: "Streak reset successfully" })
@@ -182,7 +182,7 @@ export class StudentProfileController {
 
   // Leaderboard endpoints
   @Get("leaderboard/coins")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get leaderboard ranked by coins" })
   @ApiQuery({
     name: "limit",
@@ -205,7 +205,7 @@ export class StudentProfileController {
   }
 
   @Get("leaderboard/points")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get leaderboard ranked by points for users with level" })
   @ApiQuery({
     name: "limit",
@@ -228,7 +228,7 @@ export class StudentProfileController {
   }
 
   @Get("leaderboard/level")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get the weekly leaderboard across all active students (points earned this week)" })
   @ApiQuery({
     name: "limit",
@@ -251,7 +251,7 @@ export class StudentProfileController {
   }
 
   @Get("leaderboard/streaks")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get leaderboard ranked by streaks" })
   @ApiQuery({
     name: "limit",
@@ -274,7 +274,7 @@ export class StudentProfileController {
   }
 
   @Get("leaderboard/overall")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get overall leaderboard" })
   @ApiQuery({
     name: "limit",
@@ -297,7 +297,7 @@ export class StudentProfileController {
   }
 
   @Get("ranking/coins/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get user ranking by coins" })
   @ApiParam({ name: "userId", description: "User ID" })
   @ApiResponse({
@@ -310,7 +310,7 @@ export class StudentProfileController {
   }
 
   @Get("ranking/points/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get user ranking by points" })
   @ApiParam({ name: "userId", description: "User ID" })
   @ApiResponse({
@@ -323,7 +323,7 @@ export class StudentProfileController {
   }
 
   @Get("ranking/level/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get user ranking by level" })
   @ApiParam({ name: "userId", description: "User ID" })
   @ApiResponse({
@@ -336,7 +336,7 @@ export class StudentProfileController {
   }
 
   @Get("ranking/streaks/:userId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get user ranking by streaks" })
   @ApiParam({ name: "userId", description: "User ID" })
   @ApiResponse({

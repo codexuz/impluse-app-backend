@@ -39,7 +39,7 @@ export class LessonSchedulesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new lesson schedule" })
   @ApiResponse({
     status: 201,
@@ -60,7 +60,7 @@ export class LessonSchedulesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all lesson schedules" })
   @ApiResponse({
     status: 200,
@@ -77,7 +77,7 @@ export class LessonSchedulesController {
   }
 
   @Get("active")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({
     summary: "Get all active lesson schedules (current and future)",
   })
@@ -92,7 +92,7 @@ export class LessonSchedulesController {
   }
 
   @Get("group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get lesson schedules by group ID" })
   @ApiParam({ name: "groupId", description: "Group ID", type: "string" })
   @ApiResponse({
@@ -107,7 +107,7 @@ export class LessonSchedulesController {
   }
 
   @Get("teacher/:teacherId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get lesson schedules by teacher ID" })
   @ApiParam({ name: "teacherId", description: "Teacher ID", type: "string" })
   @ApiResponse({
@@ -121,7 +121,7 @@ export class LessonSchedulesController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get lesson schedule by ID" })
   @ApiParam({ name: "id", description: "Lesson schedule ID", type: "string" })
   @ApiResponse({
@@ -137,7 +137,7 @@ export class LessonSchedulesController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update lesson schedule" })
   @ApiParam({ name: "id", description: "Lesson schedule ID", type: "string" })
   @ApiResponse({
@@ -163,7 +163,7 @@ export class LessonSchedulesController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete lesson schedule" })
   @ApiParam({ name: "id", description: "Lesson schedule ID", type: "string" })
   @ApiResponse({

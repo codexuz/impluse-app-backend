@@ -35,7 +35,7 @@ export class IeltsLessonProgressController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Create lesson progress" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -46,7 +46,7 @@ export class IeltsLessonProgressController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get lesson progress by user and lesson" })
   @ApiQuery({ name: "userId", description: "User ID" })
   @ApiQuery({ name: "lessonId", description: "Lesson ID" })
@@ -58,7 +58,7 @@ export class IeltsLessonProgressController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Update lesson progress" })
   @ApiParam({ name: "id", description: "Progress ID" })
   async update(

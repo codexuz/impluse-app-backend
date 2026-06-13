@@ -37,7 +37,7 @@ export class IeltsListeningPartsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new listening part" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -52,14 +52,14 @@ export class IeltsListeningPartsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all listening parts" })
   async findAllListeningParts(@Query() query: ListeningPartQueryDto) {
     return await this.ieltsTestsService.findAllListeningParts(query);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a listening part by ID" })
   @ApiParam({ name: "id", description: "The listening part ID" })
   async findListeningPartById(@Param("id") id: string) {
@@ -67,7 +67,7 @@ export class IeltsListeningPartsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a listening part" })
   @ApiParam({ name: "id", description: "The listening part ID" })
   async updateListeningPart(
@@ -82,7 +82,7 @@ export class IeltsListeningPartsController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a listening part" })
   @ApiParam({ name: "id", description: "The listening part ID" })
   async deleteListeningPart(@Param("id") id: string) {

@@ -18,7 +18,7 @@ export class LessonVocabularySetController {
   constructor(private readonly lessonVocabularySetService: LessonVocabularySetService) { }
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new lesson vocabulary set' })
   @ApiResponse({
     status: 201,
@@ -30,7 +30,7 @@ export class LessonVocabularySetController {
   }
 
   @Post('bulk')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create multiple lesson vocabulary sets' })
   @ApiResponse({
     status: 201,
@@ -42,7 +42,7 @@ export class LessonVocabularySetController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lesson vocabulary sets' })
   @ApiResponse({
     status: 200,
@@ -54,7 +54,7 @@ export class LessonVocabularySetController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a specific lesson vocabulary set by ID' })
   @ApiResponse({
     status: 200,
@@ -67,7 +67,7 @@ export class LessonVocabularySetController {
   }
 
   @Get('lesson/:lesson_id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all vocabulary sets for a lesson' })
   @ApiResponse({
     status: 200,
@@ -82,7 +82,7 @@ export class LessonVocabularySetController {
   }
 
   @Get('unit-vocabulary-set/:unit_vocabulary_set_id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all lesson associations for a unit vocabulary set' })
   @ApiResponse({
     status: 200,
@@ -94,7 +94,7 @@ export class LessonVocabularySetController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update a lesson vocabulary set' })
   @ApiResponse({
     status: 200,
@@ -107,7 +107,7 @@ export class LessonVocabularySetController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Delete a lesson vocabulary set' })
   @ApiResponse({ status: 200, description: 'The lesson vocabulary set has been successfully deleted.' })
   @ApiResponse({ status: 404, description: 'Set not found' })
@@ -116,7 +116,7 @@ export class LessonVocabularySetController {
   }
 
   @Delete('lesson/:lesson_id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Delete all vocabulary sets for a lesson' })
   @ApiResponse({ status: 200, description: 'The vocabulary sets have been successfully deleted.' })
   removeByLessonId(@Param('lesson_id') lesson_id: string) {

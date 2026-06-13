@@ -17,7 +17,7 @@ export class PronunciationExerciseController {
   constructor(private readonly pronunciationExerciseService: PronunciationExerciseService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new pronunciation exercise' })
   @ApiResponse({ 
     status: 201, 
@@ -29,7 +29,7 @@ export class PronunciationExerciseController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all pronunciation exercises' })
   @ApiResponse({ 
     status: 200, 
@@ -41,7 +41,7 @@ export class PronunciationExerciseController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a specific pronunciation exercise by ID' })
   @ApiResponse({ 
     status: 200, 
@@ -54,7 +54,7 @@ export class PronunciationExerciseController {
   }
 
   @Get('speaking/:speaking_id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all pronunciation exercises for a speaking exercise' })
   @ApiResponse({ 
     status: 200, 
@@ -66,7 +66,7 @@ export class PronunciationExerciseController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update a pronunciation exercise' })
   @ApiResponse({ 
     status: 200, 
@@ -79,7 +79,7 @@ export class PronunciationExerciseController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Delete a pronunciation exercise' })
   @ApiResponse({ status: 200, description: 'The pronunciation exercise has been successfully deleted.' })
   @ApiResponse({ status: 404, description: 'Exercise not found' })

@@ -37,7 +37,7 @@ export class BonusPenaltyCategoryController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Create a new bonus & penalty category" })
   create(
     @Body() createBonusPenaltyCategoryDto: CreateBonusPenaltyCategoryDto,
@@ -48,7 +48,7 @@ export class BonusPenaltyCategoryController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all bonus & penalty categories" })
   @ApiQuery({
     name: "type",
@@ -61,7 +61,7 @@ export class BonusPenaltyCategoryController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get bonus & penalty category by ID" })
   @ApiParam({ name: "id", description: "Category ID (UUID)", type: "string" })
   findOne(@Param("id") id: string) {
@@ -70,7 +70,7 @@ export class BonusPenaltyCategoryController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update bonus & penalty category" })
   @ApiParam({ name: "id", description: "Category ID (UUID)", type: "string" })
   update(
@@ -85,7 +85,7 @@ export class BonusPenaltyCategoryController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete bonus & penalty category (soft delete)" })
   @ApiParam({ name: "id", description: "Category ID (UUID)", type: "string" })
   remove(@Param("id") id: string) {

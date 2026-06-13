@@ -17,7 +17,7 @@ export class StoriesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Create a new story' })
   @ApiResponse({ 
     status: HttpStatus.CREATED, 
@@ -28,7 +28,7 @@ export class StoriesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get all published stories' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -39,7 +39,7 @@ export class StoriesController {
   }
 
   @Get('type/:type')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get published stories by type (video or image)' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -50,7 +50,7 @@ export class StoriesController {
   }
 
   @Get('admin')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get all stories (including unpublished) - Admin only' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -61,7 +61,7 @@ export class StoriesController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a story by ID' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -76,7 +76,7 @@ export class StoriesController {
   }
 
   @Get('admin/:id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Get any story by ID (including unpublished) - Admin only' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -91,7 +91,7 @@ export class StoriesController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Update a story' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -106,7 +106,7 @@ export class StoriesController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a story' })
   @ApiResponse({ 
@@ -122,7 +122,7 @@ export class StoriesController {
   }
 
   @Patch(':id/publish')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Publish a story' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -137,7 +137,7 @@ export class StoriesController {
   }
 
   @Patch(':id/unpublish')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: 'Unpublish a story' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -152,7 +152,7 @@ export class StoriesController {
   }
 
   @Patch(':id/view')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Increment the view count of a story' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -167,7 +167,7 @@ export class StoriesController {
   }
 
   @Patch(':id/like')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Increment the likes count of a story' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -182,7 +182,7 @@ export class StoriesController {
   }
 
   @Patch(':id/unlike')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Decrement the likes count of a story' })
   @ApiResponse({ 
     status: HttpStatus.OK, 

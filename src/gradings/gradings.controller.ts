@@ -33,7 +33,7 @@ export class GradingsController {
   constructor(private readonly gradingsService: GradingsService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new grading" })
   @ApiResponse({
     status: 201,
@@ -45,7 +45,7 @@ export class GradingsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all gradings" })
   @ApiQuery({
     name: "studentId",
@@ -91,7 +91,7 @@ export class GradingsController {
   }
 
   @Get("student/:studentId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get gradings by student ID" })
   @ApiQuery({ name: "startDate", required: false, description: "Filter from start date (ISO string)" })
   @ApiQuery({ name: "endDate", required: false, description: "Filter to end date (ISO string)" })
@@ -118,7 +118,7 @@ export class GradingsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a grading by id" })
   @ApiResponse({
     status: 200,
@@ -131,7 +131,7 @@ export class GradingsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a grading" })
   @ApiResponse({
     status: 200,
@@ -144,7 +144,7 @@ export class GradingsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a grading" })
   @ApiResponse({
     status: 200,

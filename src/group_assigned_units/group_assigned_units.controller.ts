@@ -17,7 +17,7 @@ export class GroupAssignedUnitsController {
     constructor(private readonly groupAssignedUnitsService: GroupAssignedUnitsService) {}
 
     @Post()
-    @Roles(Role.ADMIN, Role.TEACHER)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
     @ApiOperation({ summary: 'Create a new unit assignment for a group' })
     @ApiResponse({ status: 201, description: 'The unit has been successfully assigned to the group.', type: GroupAssignedUnit })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -27,7 +27,7 @@ export class GroupAssignedUnitsController {
     }
 
     @Get()
-    @Roles(Role.ADMIN, Role.TEACHER)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
     @ApiOperation({ summary: 'Get all assigned units' })
     @ApiResponse({ status: 200, description: 'Return all assigned units.', type: [GroupAssignedUnit] })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -36,7 +36,7 @@ export class GroupAssignedUnitsController {
     }
 
     @Get('group/:groupId')
-    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
     @ApiOperation({ summary: 'Get all assigned units for a specific group' })
     @ApiResponse({ status: 200, description: 'Return all units assigned to the group.', type: [GroupAssignedUnit] })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -45,7 +45,7 @@ export class GroupAssignedUnitsController {
     }
 
     @Get(':id')
-    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
     @ApiOperation({ summary: 'Get an assigned unit by id' })
     @ApiResponse({ status: 200, description: 'Return the assigned unit.', type: GroupAssignedUnit })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -55,7 +55,7 @@ export class GroupAssignedUnitsController {
     }
 
     @Patch(':id')
-    @Roles(Role.ADMIN, Role.TEACHER)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
     @ApiOperation({ summary: 'Update an assigned unit' })
     @ApiResponse({ status: 200, description: 'The assigned unit has been successfully updated.', type: GroupAssignedUnit })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -69,7 +69,7 @@ export class GroupAssignedUnitsController {
     }
 
     @Delete(':id')
-    @Roles(Role.ADMIN, Role.TEACHER)
+    @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
     @ApiOperation({ summary: 'Delete an assigned unit' })
     @ApiResponse({ status: 200, description: 'The assigned unit has been successfully deleted.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })

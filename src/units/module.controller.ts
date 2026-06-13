@@ -29,21 +29,21 @@ export class ModuleController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new unit" })
   async create(@Body() createUnitDto: CreateUnitDto) {
     return await this.moduleService.create(createUnitDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all units" })
   async findAll() {
     return await this.moduleService.findAll();
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get unit by id" })
   async findOne(@Param("id") id: string) {
     return await this.moduleService.findOne(id);
@@ -51,7 +51,7 @@ export class ModuleController {
 
 
   @Get("roadmap/:student_id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get student progress roadmap" })
   async getProgress(@Param("student_id") student_id: string) {
     return await this.moduleService.getRoadMapWithProgress(student_id);
@@ -69,7 +69,7 @@ export class ModuleController {
   }
 
   @Get("roadmap/:student_id/course/:courseId/group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get student progress roadmap for a specific course and group" })
   async getRoadMapByGroup(
     @Param("student_id") student_id: string,
@@ -81,7 +81,7 @@ export class ModuleController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update unit by id" })
   async update(@Param("id") id: string, @Body() updateUnitDto: UpdateUnitDto) {
     return await this.moduleService.update(id, updateUnitDto);
@@ -89,21 +89,21 @@ export class ModuleController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete unit by id" })
   async remove(@Param("id") id: string) {
     return await this.moduleService.remove(id);
   }
 
   @Get("course/:courseId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get units by course ID" })
   async findByCourse(@Param("courseId") courseId: string) {
     return await this.moduleService.findByCourse(courseId);
   }
 
   @Get("group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get units and lessons by group ID (uses group level_id as course)" })
   async findByGroupId(@Param("groupId") groupId: string) {
     return await this.moduleService.findByGroupId(groupId);

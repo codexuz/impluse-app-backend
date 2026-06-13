@@ -41,7 +41,7 @@ export class IeltsListeningController {
   // ========== Listening ==========
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new listening section" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -52,7 +52,7 @@ export class IeltsListeningController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all listening sections" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -65,7 +65,7 @@ export class IeltsListeningController {
   // ========== Many-to-Many Link/Unlink ==========
   @Post("link-part")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Link an existing listening part to a listening (many-to-many)" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -80,7 +80,7 @@ export class IeltsListeningController {
   }
 
   @Delete("unlink-part")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Unlink a listening part from a listening" })
   @ApiResponse({
@@ -92,7 +92,7 @@ export class IeltsListeningController {
   }
 
   @Get(":id/linked-parts")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all linked listening parts (many-to-many)" })
   @ApiParam({ name: "id", description: "The listening ID" })
   @ApiResponse({
@@ -104,7 +104,7 @@ export class IeltsListeningController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a listening section by ID" })
   @ApiParam({ name: "id", description: "The listening ID" })
   async findListeningById(@Param("id") id: string) {
@@ -112,7 +112,7 @@ export class IeltsListeningController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a listening section" })
   @ApiParam({ name: "id", description: "The listening ID" })
   @ApiResponse({
@@ -127,7 +127,7 @@ export class IeltsListeningController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a listening section" })
   @ApiParam({ name: "id", description: "The listening ID" })
   @HttpCode(HttpStatus.NO_CONTENT)

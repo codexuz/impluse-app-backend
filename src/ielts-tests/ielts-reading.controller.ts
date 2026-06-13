@@ -41,7 +41,7 @@ export class IeltsReadingController {
   // ========== Reading ==========
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new reading section" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -52,7 +52,7 @@ export class IeltsReadingController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all reading sections" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -65,7 +65,7 @@ export class IeltsReadingController {
   // ========== Many-to-Many Link/Unlink ==========
   @Post("link-part")
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Link an existing reading part to a reading (many-to-many)" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -80,7 +80,7 @@ export class IeltsReadingController {
   }
 
   @Delete("unlink-part")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Unlink a reading part from a reading" })
   @ApiResponse({
@@ -92,7 +92,7 @@ export class IeltsReadingController {
   }
 
   @Get(":id/linked-parts")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all linked reading parts (many-to-many)" })
   @ApiParam({ name: "id", description: "The reading ID" })
   @ApiResponse({
@@ -104,7 +104,7 @@ export class IeltsReadingController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a reading section by ID" })
   @ApiParam({ name: "id", description: "The reading ID" })
   @ApiResponse({
@@ -116,7 +116,7 @@ export class IeltsReadingController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a reading section" })
   @ApiParam({ name: "id", description: "The reading ID" })
   @ApiResponse({
@@ -131,7 +131,7 @@ export class IeltsReadingController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a reading section" })
   @ApiParam({ name: "id", description: "The reading ID" })
   @HttpCode(HttpStatus.NO_CONTENT)

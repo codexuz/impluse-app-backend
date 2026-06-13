@@ -32,7 +32,7 @@ export class GroupStudentsController {
   constructor(private readonly groupStudentsService: GroupStudentsService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Add a student to a group" })
   @ApiResponse({
     status: 201,
@@ -48,7 +48,7 @@ export class GroupStudentsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all group student entries" })
   @ApiResponse({
     status: 200,
@@ -61,7 +61,7 @@ export class GroupStudentsController {
   }
 
   @Get("group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all students in a specific group" })
   @ApiResponse({
     status: 200,
@@ -76,7 +76,7 @@ export class GroupStudentsController {
   }
 
   @Get("group/:groupId/active")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get all active students in a specific group" })
   @ApiResponse({
     status: 200,
@@ -91,7 +91,7 @@ export class GroupStudentsController {
   }
 
   @Get("student/:studentId")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all groups for a specific student" })
   @ApiResponse({
     status: 200,
@@ -106,7 +106,7 @@ export class GroupStudentsController {
   }
 
   @Get("teacher/:teacherId/count")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Get the count of all active students for a specific teacher",
   })
@@ -125,7 +125,7 @@ export class GroupStudentsController {
   }
 
   @Get("teacher/:teacherId/students")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary:
       "Get all active students for a specific teacher across all their groups",
@@ -144,7 +144,7 @@ export class GroupStudentsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get a group student entry by id" })
   @ApiResponse({
     status: 200,
@@ -158,7 +158,7 @@ export class GroupStudentsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a group student entry" })
   @ApiResponse({
     status: 200,
@@ -176,7 +176,7 @@ export class GroupStudentsController {
   }
 
   @Patch(":id/status")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a student's status in the group" })
   @ApiResponse({
     status: 200,
@@ -194,7 +194,7 @@ export class GroupStudentsController {
   }
 
   @Post("transfer")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
     summary: "Transfer a student from one group to another",
     description:
@@ -239,7 +239,7 @@ export class GroupStudentsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a group student entry" })
   @ApiResponse({
     status: 200,

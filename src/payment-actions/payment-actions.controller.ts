@@ -40,7 +40,7 @@ export class PaymentActionsController {
   constructor(private readonly paymentActionsService: PaymentActionsService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Create a new payment action" })
   @ApiResponse({
@@ -60,7 +60,7 @@ export class PaymentActionsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get all payment actions with optional filters" })
   @ApiQuery({
     name: "payment_id",
@@ -108,7 +108,7 @@ export class PaymentActionsController {
   }
 
   @Get("upcoming")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({
     summary: "Get all upcoming payment actions (due today or earlier)",
   })
@@ -124,7 +124,7 @@ export class PaymentActionsController {
   }
 
   @Get("by-payment/:payment_id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get payment actions by payment ID" })
   @ApiResponse({
     status: 200,
@@ -141,7 +141,7 @@ export class PaymentActionsController {
   }
 
   @Get("by-manager/:manager_id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get payment actions by manager ID" })
   @ApiResponse({
     status: 200,
@@ -158,7 +158,7 @@ export class PaymentActionsController {
   }
 
   @Get("by-stage/:stage")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get payment actions by stage" })
   @ApiResponse({
     status: 200,
@@ -179,7 +179,7 @@ export class PaymentActionsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get a payment action by ID" })
   @ApiResponse({
     status: 200,
@@ -197,7 +197,7 @@ export class PaymentActionsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Update a payment action" })
   @ApiResponse({
     status: 200,
@@ -218,7 +218,7 @@ export class PaymentActionsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete a payment action" })
   @ApiResponse({

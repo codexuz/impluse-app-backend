@@ -36,7 +36,7 @@ export class IeltsLessonsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Create a new lesson" })
   @ApiResponse({ status: HttpStatus.CREATED, description: "Lesson created." })
   async create(@Body() dto: CreateIeltsLessonDto) {
@@ -44,14 +44,14 @@ export class IeltsLessonsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get all lessons" })
   async findAll(@Query() query: LessonQueryDto) {
     return await this.ieltsCoursesService.findAllLessons(query);
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: "Get a lesson by ID" })
   @ApiParam({ name: "id", description: "Lesson ID" })
   async findOne(@Param("id") id: string) {
@@ -59,7 +59,7 @@ export class IeltsLessonsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Update a lesson" })
   @ApiParam({ name: "id", description: "Lesson ID" })
   async update(@Param("id") id: string, @Body() dto: UpdateIeltsLessonDto) {
@@ -68,7 +68,7 @@ export class IeltsLessonsController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Delete a lesson" })
   @ApiParam({ name: "id", description: "Lesson ID" })
   async remove(@Param("id") id: string) {

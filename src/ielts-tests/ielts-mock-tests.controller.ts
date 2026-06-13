@@ -37,7 +37,7 @@ export class IeltsMockTestsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Assign a mock test to a student" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -48,7 +48,7 @@ export class IeltsMockTestsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all mock tests with filters" })
   @ApiQuery({ name: "user_id", required: false })
   @ApiQuery({ name: "test_id", required: false })
@@ -79,14 +79,14 @@ export class IeltsMockTestsController {
   }
 
   @Get("my")
-  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get mock tests assigned to current user" })
   async findMy(@CurrentUser() user: any) {
     return await this.ieltsMockTestsService.findByUser(user.userId);
   }
 
   @Get("group/:groupId")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get mock tests by group" })
   @ApiParam({ name: "groupId", description: "Group ID" })
   async findByGroup(@Param("groupId") groupId: string) {
@@ -94,7 +94,7 @@ export class IeltsMockTestsController {
   }
 
   @Get(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get a mock test by ID" })
   @ApiParam({ name: "id", description: "Mock test ID" })
   @ApiResponse({
@@ -110,7 +110,7 @@ export class IeltsMockTestsController {
   }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT, Role.GUEST)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Update a mock test" })
   @ApiParam({ name: "id", description: "Mock test ID" })
   @ApiResponse({
@@ -122,7 +122,7 @@ export class IeltsMockTestsController {
   }
 
   @Patch(":id/archive")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Archive a mock test" })
   @ApiParam({ name: "id", description: "Mock test ID" })
   @ApiResponse({
@@ -134,7 +134,7 @@ export class IeltsMockTestsController {
   }
 
   @Patch(":id/unarchive")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Unarchive a mock test" })
   @ApiParam({ name: "id", description: "Mock test ID" })
   @ApiResponse({
@@ -146,7 +146,7 @@ export class IeltsMockTestsController {
   }
 
   @Delete(":id")
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete a mock test" })
   @ApiParam({ name: "id", description: "Mock test ID" })
