@@ -72,9 +72,18 @@ export class CoursesService {
         {
           model: Unit,
           as: "units",
+          where: { isActive: true },
+          required: false,
           separate: true,
           order: [["order", "ASC"]],
-          include: ["lessons"],
+          include: [
+            {
+              model: Lesson,
+              as: "lessons",
+              where: { isActive: true },
+              required: false,
+            },
+          ],
         },
       ],
     };
@@ -133,7 +142,16 @@ export class CoursesService {
         {
           model: Unit,
           as: "units",
-          include: ["lessons"],
+          where: { isActive: true },
+          required: false,
+          include: [
+            {
+              model: Lesson,
+              as: "lessons",
+              where: { isActive: true },
+              required: false,
+            },
+          ],
         },
       ],
     })) as Course & { units: (Unit & { lessons: Lesson[] })[] };
@@ -306,7 +324,16 @@ export class CoursesService {
         {
           model: Unit,
           as: "units",
-          include: ["lessons"],
+          where: { isActive: true },
+          required: false,
+          include: [
+            {
+              model: Lesson,
+              as: "lessons",
+              where: { isActive: true },
+              required: false,
+            },
+          ],
         },
       ],
     })) as (Course & { units: (Unit & { lessons: Lesson[] })[] })[];
