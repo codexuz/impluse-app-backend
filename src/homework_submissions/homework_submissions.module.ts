@@ -10,6 +10,10 @@ import { GroupStudentsModule } from "../group-students/group-students.module.js"
 import { OpenaiService } from "../services/openai/openai.service.js";
 import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
 import { Lesson } from "../lesson/entities/lesson.entity.js";
+import { Unit } from "../units/entities/units.entity.js";
+import { Course } from "../courses/entities/course.entity.js";
+import { Speaking } from "../speaking/entities/speaking.entity.js";
+import { LessonProgress } from "../lesson_progress/entities/lesson_progress.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import { StudentProfileModule } from "../student_profiles/student-profile.module.js";
 import { NotificationsModule } from "../notifications/notifications.module.js";
@@ -22,6 +26,10 @@ import { NotificationsModule } from "../notifications/notifications.module.js";
       SpeakingResponse,
       GroupHomework,
       Lesson,
+      Unit,
+      Course,
+      Speaking,
+      LessonProgress,
       User,
     ]),
     LessonProgressModule,

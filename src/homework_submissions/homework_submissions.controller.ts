@@ -485,6 +485,30 @@ export class HomeworkSubmissionsController {
     );
   }
 
+  @Delete("student/:studentId/course/:courseId/reset")
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
+  @ApiOperation({
+    summary: "Reset a student's exercise progress for an entire course",
+    description:
+      "Soft-deletes the student's homework submissions, sections and speaking responses for every active lesson in the course, and resets their lesson progress, so they can redo all exercises (e.g. after failing a final exam). Already-earned coins/points are kept, and the redo will NOT re-award them.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Course exercises reset. Returns counts of affected records.",
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized." })
+  @ApiResponse({ status: 403, description: "Forbidden." })
+  @ApiResponse({ status: 404, description: "Course not found." })
+  async resetCourseExercises(
+    @Param("studentId") studentId: string,
+    @Param("courseId") courseId: string,
+  ) {
+    return await this.homeworkSubmissionsService.resetCourseExercises(
+      studentId,
+      courseId,
+    );
+  }
+
   @Delete(":id")
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Delete a homework submission" })

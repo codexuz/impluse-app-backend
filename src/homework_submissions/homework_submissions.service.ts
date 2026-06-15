@@ -12,6 +12,10 @@ import { GroupStudentsService } from "../group-students/group-students.service.j
 import { OpenaiService } from "../services/openai/openai.service.js";
 import { GroupHomework } from "../group_homeworks/entities/group_homework.entity.js";
 import { Lesson } from "../lesson/entities/lesson.entity.js";
+import { Unit } from "../units/entities/units.entity.js";
+import { Course } from "../courses/entities/course.entity.js";
+import { Speaking } from "../speaking/entities/speaking.entity.js";
+import { LessonProgress } from "../lesson_progress/entities/lesson_progress.entity.js";
 import { User } from "../users/entities/user.entity.js";
 import {
   GroupHomeworkProgressResponseDto,
@@ -35,6 +39,12 @@ export class HomeworkSubmissionsService {
     private groupHomeworkModel: typeof GroupHomework,
     @InjectModel(Lesson)
     private lessonModel: typeof Lesson,
+    @InjectModel(Course)
+    private courseModel: typeof Course,
+    @InjectModel(Speaking)
+    private speakingModel: typeof Speaking,
+    @InjectModel(LessonProgress)
+    private lessonProgressModel: typeof LessonProgress,
     @InjectModel(User)
     private userModel: typeof User,
     private lessonProgressService: LessonProgressService,
@@ -276,7 +286,46 @@ export class HomeworkSubmissionsService {
         speaking_id: createHomeworkSubmissionDto.speaking_id,
         answers: createHomeworkSubmissionDto.answers || {},
       });
-    } else {
+    } else if (createHomeworkSubmissionDto.exercise_id) {
+      // No active section, but check whether one was ever submitted (and later
+      // reset/soft-deleted) for this exercise. If so, this is a redo — not a
+      // first attempt — so rewards must NOT be granted again.
+      //
+      // A reset soft-deletes the old submission too, so saveBySection creates a
+      // fresh submission with a new id. We therefore can't scope by submission_id;
+      // we look across ALL of this student's submissions for the lesson, including
+      // soft-deleted ones, for a section with this exercise_id.
+      const priorSubmissions = await this.homeworkSubmissionModel.findAll({
+        where: {
+          student_id: createHomeworkSubmissionDto.student_id,
+          ...(createHomeworkSubmissionDto.lesson_id
+            ? { lesson_id: createHomeworkSubmissionDto.lesson_id }
+            : {}),
+          ...(createHomeworkSubmissionDto.homework_id
+            ? { homework_id: createHomeworkSubmissionDto.homework_id }
+            : {}),
+        },
+        attributes: ["id"],
+        paranoid: false,
+      });
+      const priorSubmissionIds = priorSubmissions.map((s) => s.id);
+
+      if (priorSubmissionIds.length) {
+        const everSubmitted = await this.homeworkSectionModel.findOne({
+          where: {
+            submission_id: { [Op.in]: priorSubmissionIds },
+            section: createHomeworkSubmissionDto.section,
+            exercise_id: createHomeworkSubmissionDto.exercise_id,
+          },
+          paranoid: false, // include soft-deleted rows from a previous reset
+        });
+        if (everSubmitted) {
+          isFirstAttempt = false;
+        }
+      }
+    }
+
+    if (!section) {
       // Create new section (either because no section exists for this exercise_id or exercise_id is not provided)
       section = await this.homeworkSectionModel.create({
         submission_id: submission.id,
@@ -570,6 +619,139 @@ export class HomeworkSubmissionsService {
   async remove(id: string): Promise<void> {
     const submission = await this.findOne(id);
     await submission.destroy();
+  }
+
+  /**
+   * Reset all exercise progress for a single student across every active lesson
+   * in a course, so they can redo the entire course (e.g. after failing a final
+   * exam).
+   *
+   * Soft-deletes the student's homework submissions, homework sections and
+   * speaking responses for the course's lessons, and resets their LessonProgress
+   * rows. Because the deletes are soft (paranoid), saveBySection can still tell a
+   * redo from a genuine first attempt and will NOT re-award coins/points for
+   * exercises the student already earned rewards on.
+   *
+   * @param studentId The student to reset
+   * @param courseId  The course whose lessons should be reset
+   */
+  async resetCourseExercises(
+    studentId: string,
+    courseId: string,
+  ): Promise<{
+    course_id: string;
+    student_id: string;
+    lessons_reset: number;
+    submissions_deleted: number;
+    sections_deleted: number;
+    speaking_responses_deleted: number;
+    progress_reset: number;
+  }> {
+    // Resolve the course's active lessons (course -> active units -> active lessons).
+    const course = (await this.courseModel.findOne({
+      where: { id: courseId },
+      include: [
+        {
+          model: Unit,
+          as: "units",
+          where: { isActive: true },
+          required: false,
+          include: [
+            {
+              model: Lesson,
+              as: "lessons",
+              where: { isActive: true },
+              required: false,
+            },
+          ],
+        },
+      ],
+    })) as (Course & { units: (Unit & { lessons: Lesson[] })[] }) | null;
+
+    if (!course) {
+      throw new NotFoundException(`Course with ID ${courseId} not found`);
+    }
+
+    const lessons = (course.units ?? []).flatMap((u) => u.lessons ?? []);
+    const lessonIds = lessons.map((l) => l.id);
+
+    if (!lessonIds.length) {
+      return {
+        course_id: courseId,
+        student_id: studentId,
+        lessons_reset: 0,
+        submissions_deleted: 0,
+        sections_deleted: 0,
+        speaking_responses_deleted: 0,
+        progress_reset: 0,
+      };
+    }
+
+    // 1. Find the student's submissions for these lessons (active ones only —
+    //    already soft-deleted rows from a prior reset stay as-is).
+    const submissions = await this.homeworkSubmissionModel.findAll({
+      where: { student_id: studentId, lesson_id: { [Op.in]: lessonIds } },
+      attributes: ["id"],
+    });
+    const submissionIds = submissions.map((s) => s.id);
+
+    // 2. Soft-delete their sections, then the submissions themselves.
+    let sectionsDeleted = 0;
+    if (submissionIds.length) {
+      sectionsDeleted = await this.homeworkSectionModel.destroy({
+        where: { submission_id: { [Op.in]: submissionIds } },
+      });
+    }
+    const submissionsDeleted = submissionIds.length
+      ? await this.homeworkSubmissionModel.destroy({
+          where: { id: { [Op.in]: submissionIds } },
+        })
+      : 0;
+
+    // 3. Soft-delete speaking responses tied to this course's speaking tasks.
+    const speakingTasks = await this.speakingModel.findAll({
+      where: { lessonId: { [Op.in]: lessonIds } },
+      attributes: ["id"],
+    });
+    const speakingIds = speakingTasks.map((s) => s.id);
+    const speakingResponsesDeleted = speakingIds.length
+      ? await this.speakingResponseModel.destroy({
+          where: {
+            student_id: studentId,
+            speaking_id: { [Op.in]: speakingIds },
+          },
+        })
+      : 0;
+
+    // 4. Reset lesson progress so completion gates/bars start fresh.
+    const [progressReset] = await this.lessonProgressModel.update(
+      {
+        completed: false,
+        progress_percentage: 0,
+        completed_sections_count: 0,
+        reading_completed: false,
+        listening_completed: false,
+        grammar_completed: false,
+        writing_completed: false,
+        speaking_completed: false,
+      },
+      {
+        where: {
+          student_id: studentId,
+          lesson_id: { [Op.in]: lessonIds },
+        },
+      },
+    );
+
+    return {
+      course_id: courseId,
+      student_id: studentId,
+      lessons_reset: lessonIds.length,
+      submissions_deleted: submissionsDeleted,
+      sections_deleted: sectionsDeleted,
+      speaking_responses_deleted: speakingResponsesDeleted,
+      progress_reset: progressReset,
+    };
   }
 
   /**

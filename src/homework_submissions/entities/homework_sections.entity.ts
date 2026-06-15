@@ -5,11 +5,13 @@ import {
   DataType,
   CreatedAt,
   UpdatedAt,
+  DeletedAt,
 } from "sequelize-typescript";
 
 @Table({
   tableName: "homework_sections",
   timestamps: true,
+  paranoid: true,
 })
 export class HomeworkSection extends Model {
   @Column({
@@ -66,4 +68,7 @@ export class HomeworkSection extends Model {
 
   @UpdatedAt
   updatedAt: Date;
+
+  @DeletedAt
+  deletedAt: Date;
 }
