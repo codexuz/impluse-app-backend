@@ -7,6 +7,10 @@ import { InjectModel } from "@nestjs/sequelize";
 import { CreateGroupStudentDto } from "./dto/create-group-student.dto.js";
 import { UpdateGroupStudentDto } from "./dto/update-group-student.dto.js";
 import { GroupStudent } from "./entities/group-student.entity.js";
+import {
+  GroupEnrollmentEvent,
+  EnrollmentEventType,
+} from "./entities/group-enrollment-event.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { User } from "../users/entities/user.entity.js";
 
@@ -17,7 +21,44 @@ export class GroupStudentsService {
     private groupStudentModel: typeof GroupStudent,
     @InjectModel(Group)
     private groupModel: typeof Group,
+    @InjectModel(GroupEnrollmentEvent)
+    private enrollmentEventModel: typeof GroupEnrollmentEvent,
   ) {}
+
+  /**
+   * Append a membership change to the enrollment-event log, snapshotting the
+   * group's current teacher and branch so retention stats survive later
+   * teacher/branch reassignments. Best-effort: a logging failure must never
+   * break the enrollment operation itself.
+   */
+  private async recordEnrollmentEvent(
+    groupId: string,
+    studentId: string,
+    eventType: EnrollmentEventType,
+    occurredAt: Date,
+    reason?: string,
+  ): Promise<void> {
+    try {
+      const group = await this.groupModel.findByPk(groupId, {
+        attributes: ["id", "teacher_id", "branch_id"],
+      });
+
+      await this.enrollmentEventModel.create({
+        group_id: groupId,
+        student_id: studentId,
+        teacher_id: group?.teacher_id ?? null,
+        branch_id: group?.branch_id ?? null,
+        event_type: eventType,
+        reason: reason ?? null,
+        occurred_at: occurredAt,
+      });
+    } catch (err) {
+      console.error("Failed to record enrollment event", err);
+    }
+  }
+
+  /** Statuses that mean the student is no longer participating in the group. */
+  private static readonly LEFT_STATUSES = ["removed", "completed"];
 
   async create(createDto: CreateGroupStudentDto): Promise<GroupStudent> {
     // Check if student is already in this specific group
@@ -35,9 +76,19 @@ export class GroupStudentsService {
       );
     }
 
-    return await this.groupStudentModel.create({
+    const created = await this.groupStudentModel.create({
       ...createDto,
     });
+
+    await this.recordEnrollmentEvent(
+      created.group_id,
+      created.student_id,
+      EnrollmentEventType.JOINED,
+      created.enrolled_at ?? new Date(),
+      String(created.status),
+    );
+
+    return created;
   }
 
   async findAll(): Promise<GroupStudent[]> {
@@ -245,26 +296,61 @@ export class GroupStudentsService {
   }
 
   async remove(id: string): Promise<{ id: string; deleted: boolean }> {
-    const [affectedCount] = await this.groupStudentModel.update(
-      { status: "removed" },
-      { where: { id } },
-    );
-
-    if (affectedCount === 0) {
+    const enrollment = await this.groupStudentModel.findByPk(id);
+    if (!enrollment) {
       throw new NotFoundException(`Group student with ID ${id} not found`);
     }
+
+    const leftAt = new Date();
+    await enrollment.update({ status: "removed", left_at: leftAt });
+
+    await this.recordEnrollmentEvent(
+      enrollment.group_id,
+      enrollment.student_id,
+      EnrollmentEventType.LEFT,
+      leftAt,
+      "removed",
+    );
 
     return { id, deleted: true };
   }
 
   async updateStatus(id: string, status: string): Promise<GroupStudent> {
-    const [affectedCount] = await this.groupStudentModel.update(
-      { status },
-      { where: { id } },
-    );
-
-    if (affectedCount === 0) {
+    const enrollment = await this.groupStudentModel.findByPk(id);
+    if (!enrollment) {
       throw new NotFoundException(`Group student with ID ${id} not found`);
+    }
+
+    const previousStatus = String(enrollment.status);
+    const isLeaving = GroupStudentsService.LEFT_STATUSES.includes(status);
+    const wasLeft = GroupStudentsService.LEFT_STATUSES.includes(previousStatus);
+    const now = new Date();
+
+    await enrollment.update({
+      status,
+      // Stamp left_at when transitioning into a terminal status; clear it if the
+      // student is re-activated from a terminal status.
+      ...(isLeaving && !wasLeft ? { left_at: now } : {}),
+      ...(!isLeaving && wasLeft ? { left_at: null } : {}),
+    });
+
+    if (isLeaving && !wasLeft) {
+      await this.recordEnrollmentEvent(
+        enrollment.group_id,
+        enrollment.student_id,
+        EnrollmentEventType.LEFT,
+        now,
+        status,
+      );
+    } else if (!isLeaving && wasLeft) {
+      // Re-enrollment after having left.
+      await this.recordEnrollmentEvent(
+        enrollment.group_id,
+        enrollment.student_id,
+        EnrollmentEventType.JOINED,
+        now,
+        status,
+      );
     }
 
     return await this.findOne(id);
@@ -305,16 +391,33 @@ export class GroupStudentsService {
       );
     }
 
-    // Remove from current group (set status to 'removed')
-    await existingEnrollment.destroy();
+    const now = new Date();
+
+    // Soft-remove from current group (keep the row + history instead of
+    // hard-deleting, so retention can account for the transfer out).
+    await existingEnrollment.update({ status: "removed", left_at: now });
+    await this.recordEnrollmentEvent(
+      fromGroupId,
+      studentId,
+      EnrollmentEventType.TRANSFERRED_OUT,
+      now,
+      "transfer",
+    );
 
     // Add to new group
     const newEnrollment = await this.groupStudentModel.create({
       group_id: toGroupId,
       student_id: studentId,
-      enrolled_at: new Date(),
+      enrolled_at: now,
       status: "active",
     });
+    await this.recordEnrollmentEvent(
+      toGroupId,
+      studentId,
+      EnrollmentEventType.TRANSFERRED_IN,
+      now,
+      "transfer",
+    );
 
     return {
       removed: existingEnrollment,

@@ -19,6 +19,7 @@ import { SentenceSurgery } from "../exercise/entities/sentence_surgery.js";
 
 import { Group } from "../groups/entities/group.entity.js";
 import { GroupStudent } from "../group-students/entities/group-student.entity.js";
+import { GroupEnrollmentEvent } from "../group-students/entities/group-enrollment-event.entity.js";
 import { GroupAssignedLesson } from "../group_assigned_lessons/entities/group_assigned_lesson.entity.js";
 import { VocabularySet } from "../vocabulary_sets/entities/vocabulary_set.entity.js";
 import { VocabularyItem } from "../vocabulary_items/entities/vocabulary_item.entity.js";
@@ -170,6 +171,7 @@ export const Models = [
   GroupAssignedLesson,
   Group,
   GroupStudent,
+  GroupEnrollmentEvent,
   Attendance,
   AttendanceLog,
   VocabularySet,
@@ -519,6 +521,34 @@ export function initializeAssociations() {
     foreignKey: "student_id",
     otherKey: "group_id",
     as: "groups",
+  });
+
+  // GroupEnrollmentEvent associations (membership history for retention stats)
+  Group.hasMany(GroupEnrollmentEvent, {
+    foreignKey: "group_id",
+    as: "enrollment_events",
+  });
+  GroupEnrollmentEvent.belongsTo(Group, {
+    foreignKey: "group_id",
+    as: "group",
+  });
+
+  User.hasMany(GroupEnrollmentEvent, {
+    foreignKey: "student_id",
+    as: "enrollment_events",
+  });
+  GroupEnrollmentEvent.belongsTo(User, {
+    foreignKey: "student_id",
+    as: "student",
+  });
+
+  User.hasMany(GroupEnrollmentEvent, {
+    foreignKey: "teacher_id",
+    as: "taught_enrollment_events",
+  });
+  GroupEnrollmentEvent.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "teacher",
   });
 
   // GroupAssignedLesson associations

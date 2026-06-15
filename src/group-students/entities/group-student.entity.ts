@@ -50,6 +50,12 @@ export class GroupStudent extends Model {
     })
     enrolled_at: Date;
 
+     @Column({
+        type: DataType.DATE,
+        allowNull: true,
+    })
+    left_at: Date; // Set when the student leaves the group (removed / completed / transferred out)
+
 
      @Column({
         type: DataType.ENUM('active', 'removed', 'completed', 'frozen'),
