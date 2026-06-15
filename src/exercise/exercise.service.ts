@@ -230,7 +230,7 @@ export class ExerciseService {
   async findAll(): Promise<Exercise[]> {
     return await this.exerciseModel.findAll({
       where: { isActive: true },
-      order: [["createdAt", "DESC"]],
+      order: [["createdAt", "ASC"]],
       include: this.getIncludeOptions(),
     });
   }
@@ -259,7 +259,7 @@ export class ExerciseService {
   async findByType(exerciseType: string): Promise<Exercise[]> {
     return await this.exerciseModel.findAll({
       where: { exercise_type: exerciseType, isActive: true },
-      order: [["createdAt", "DESC"]],
+      order: [["createdAt", "ASC"]],
       include: this.getIncludeOptions(),
     });
   }

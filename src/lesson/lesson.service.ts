@@ -56,11 +56,13 @@ export class LessonService {
           as: "exercises",
           where: { isActive: true },
           required: false,
+          separate: true,
           order: [["createdAt", "ASC"]],
         },
         {
           model: Speaking,
           as: "speaking",
+          separate: true,
           order: [["createdAt", "ASC"]],
         },
         {
@@ -187,6 +189,8 @@ export class LessonService {
           as: "exercises",
           where: { isActive: true },
           required: false,
+          separate: true,
+          order: [["createdAt", "ASC"]],
         },
       ],
     });
@@ -219,11 +223,15 @@ export class LessonService {
           as: "exercises",
           where: { isActive: true },
           required: false,
+          separate: true,
+          order: [["createdAt", "ASC"]],
           attributes: ["id", "exercise_type", "lessonId"],
         },
         {
           model: Speaking,
           as: "speaking",
+          separate: true,
+          order: [["createdAt", "ASC"]],
           attributes: ["id", "lessonId"],
         },
         {
@@ -291,9 +299,8 @@ export class LessonService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error(
-        `Failed to fetch lessons for unit ${unitId}: ${error.message}`,
-      );
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to fetch lessons for unit ${unitId}: ${message}`);
     }
   }
 
@@ -344,6 +351,8 @@ export class LessonService {
           as: "exercises",
           where: { isActive: true },
           required: false,
+          separate: true,
+          order: [["createdAt", "ASC"]],
         },
       ],
     });
