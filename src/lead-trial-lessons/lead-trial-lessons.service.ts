@@ -473,16 +473,17 @@ export class LeadTrialLessonsService {
       ],
     });
 
-    // Focus on ATTENDED leads that reached a final outcome (enrolled or lost) —
-    // pending leads are excluded. Per teacher: how many converted, how many were
-    // lost, and the conversion rate (converted / decided).
+    // Count every ATTENDED lead (showed up to a trial). Per teacher: how many
+    // attended, how many converted, how many were lost, how many are still
+    // undecided (pending), and the conversion rate among DECIDED leads only.
     type TeacherStat = {
       teacher_id: string;
       teacherName: string;
-      attended: number; // decided attended leads (became_student + lost)
+      attended: number; // all attended leads (becameStudent + lost + pending)
       becameStudent: number; // attended leads that enrolled
       lost: number; // attended leads that were lost
-      conversionRate: number; // becameStudent / attended, 0-100
+      pending: number; // attended leads with no final outcome yet
+      conversionRate: number; // becameStudent / (becameStudent + lost), 0-100
       leads: {
         lead_id: string;
         leadName: string;
@@ -494,11 +495,10 @@ export class LeadTrialLessonsService {
     const teacherMap = new Map<string, TeacherStat>();
 
     for (const a of assignments) {
-      // Only attended leads with a final outcome (no pending).
+      // Count every attended lead; pending (undecided) leads are included.
       if (!a.attended) continue;
       const isConverted = a.outcome === LeadAssignmentOutcome.BECAME_STUDENT;
       const isLost = a.outcome === LeadAssignmentOutcome.LOST;
-      if (!isConverted && !isLost) continue;
 
       const tId = a.teacher_id;
       if (!teacherMap.has(tId)) {
@@ -514,6 +514,7 @@ export class LeadTrialLessonsService {
           attended: 0,
           becameStudent: 0,
           lost: 0,
+          pending: 0,
           conversionRate: 0,
           leads: [],
         });
@@ -522,7 +523,8 @@ export class LeadTrialLessonsService {
       const stats = teacherMap.get(tId)!;
       stats.attended++;
       if (isConverted) stats.becameStudent++;
-      else stats.lost++;
+      else if (isLost) stats.lost++;
+      else stats.pending++;
 
       const leadInfo = (a as any).leadInfo;
       stats.leads.push({
@@ -536,14 +538,15 @@ export class LeadTrialLessonsService {
       });
     }
 
-    const teachers = Array.from(teacherMap.values()).map((t) => ({
-      ...t,
-      // Conversion rate among decided attended leads.
-      conversionRate:
-        t.attended > 0
-          ? Math.round((t.becameStudent / t.attended) * 100)
-          : 0,
-    }));
+    const teachers = Array.from(teacherMap.values()).map((t) => {
+      // Conversion rate among DECIDED attended leads (exclude pending).
+      const decided = t.becameStudent + t.lost;
+      return {
+        ...t,
+        conversionRate:
+          decided > 0 ? Math.round((t.becameStudent / decided) * 100) : 0,
+      };
+    });
 
     // Best converters first.
     teachers.sort(
@@ -555,16 +558,19 @@ export class LeadTrialLessonsService {
       teachers.reduce((s, t) => s + (t[key] as number), 0);
     const totalAttended = sum("attended");
     const totalBecameStudent = sum("becameStudent");
+    const totalLost = sum("lost");
+    const totalDecided = totalBecameStudent + totalLost;
 
     return {
       summary: {
         totalAttended,
         totalBecameStudent,
-        totalLost: sum("lost"),
+        totalLost,
+        totalPending: sum("pending"),
         // Overall conversion rate among decided attended leads.
         overallConversionRate:
-          totalAttended > 0
-            ? Math.round((totalBecameStudent / totalAttended) * 100)
+          totalDecided > 0
+            ? Math.round((totalBecameStudent / totalDecided) * 100)
             : 0,
       },
       teachers,
