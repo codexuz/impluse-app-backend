@@ -191,6 +191,19 @@ export class LeadTrialLessonsController {
     );
   }
 
+  @Post("leads-statistics/sync")
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
+  @ApiOperation({
+    summary:
+      "Rebuild the lead_assignments table from trial lessons (backfill / manual refresh)",
+  })
+  @ApiResponse({ status: 200, description: "Assignments synced." })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  syncLeadAssignments() {
+    return this.leadTrialLessonsService.syncAssignmentsFromTrials();
+  }
+
   @Get("upcoming")
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Get upcoming trial lessons" })

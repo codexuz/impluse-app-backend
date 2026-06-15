@@ -63,6 +63,7 @@ import { Video } from "../videos/entities/video.entity.js";
 import { chatHistory } from "../ai-chat-bot/entities/ai-chat-bot.entity.js";
 import { Lead } from "../leads/entities/lead.entity.js";
 import { LeadTrialLesson } from "../lead-trial-lessons/entities/lead-trial-lesson.entity.js";
+import { LeadAssignment } from "../lead-trial-lessons/entities/lead-assignment.entity.js";
 import { Exam } from "../exams/entities/exam.entity.js";
 import { ExamResult } from "../exams/entities/exam_result.entity.js";
 
@@ -204,6 +205,7 @@ export const Models = [
   chatHistory,
   Lead,
   LeadTrialLesson,
+  LeadAssignment,
   Exam,
   ExamResult,
   Messages,
@@ -1020,6 +1022,26 @@ export function initializeAssociations() {
   LeadTrialLesson.belongsTo(User, {
     foreignKey: "teacher_id",
     as: "teacherData",
+  });
+
+  // LeadAssignment associations (one row per teacher+lead, source of truth for
+  // per-teacher assigned-lead statistics)
+  User.hasMany(LeadAssignment, {
+    foreignKey: "teacher_id",
+    as: "lead_assignments",
+  });
+  LeadAssignment.belongsTo(User, {
+    foreignKey: "teacher_id",
+    targetKey: "user_id",
+    as: "teacherInfo",
+  });
+  Lead.hasMany(LeadAssignment, {
+    foreignKey: "lead_id",
+    as: "assignments",
+  });
+  LeadAssignment.belongsTo(Lead, {
+    foreignKey: "lead_id",
+    as: "leadInfo",
   });
 
   // chatHistory associations

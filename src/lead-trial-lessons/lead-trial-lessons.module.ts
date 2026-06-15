@@ -3,13 +3,14 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { LeadTrialLessonsService } from './lead-trial-lessons.service.js';
 import { LeadTrialLessonsController } from './lead-trial-lessons.controller.js';
 import { LeadTrialLesson } from './entities/lead-trial-lesson.entity.js';
+import { LeadAssignment } from './entities/lead-assignment.entity.js';
 import { Lead } from '../leads/entities/lead.entity.js';
 import { Course } from '../courses/entities/course.entity.js';
 import { SmsModule } from '../sms/sms.module.js';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([LeadTrialLesson, Lead, Course]),
+    SequelizeModule.forFeature([LeadTrialLesson, LeadAssignment, Lead, Course]),
     SmsModule
   ],
   controllers: [LeadTrialLessonsController],
