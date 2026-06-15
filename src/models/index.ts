@@ -525,25 +525,18 @@ export function initializeAssociations() {
     as: "groups",
   });
 
-  // GroupEnrollmentEvent associations (membership history for retention stats)
+  // GroupEnrollmentEvent associations (membership history for retention stats).
+  // The `group` and `student` belongsTo sides are declared via @BelongsTo
+  // decorators on the entity; only the reverse hasMany and the (decorator-less)
+  // teacher side are registered here to avoid duplicate-alias errors.
   Group.hasMany(GroupEnrollmentEvent, {
     foreignKey: "group_id",
     as: "enrollment_events",
   });
-  GroupEnrollmentEvent.belongsTo(Group, {
-    foreignKey: "group_id",
-    as: "group",
-  });
-
   User.hasMany(GroupEnrollmentEvent, {
     foreignKey: "student_id",
     as: "enrollment_events",
   });
-  GroupEnrollmentEvent.belongsTo(User, {
-    foreignKey: "student_id",
-    as: "student",
-  });
-
   User.hasMany(GroupEnrollmentEvent, {
     foreignKey: "teacher_id",
     as: "taught_enrollment_events",
@@ -1025,23 +1018,16 @@ export function initializeAssociations() {
   });
 
   // LeadAssignment associations (one row per teacher+lead, source of truth for
-  // per-teacher assigned-lead statistics)
+  // per-teacher assigned-lead statistics). The `teacherInfo` and `leadInfo`
+  // belongsTo sides come from @BelongsTo decorators on the entity; only the
+  // reverse hasMany sides are registered here.
   User.hasMany(LeadAssignment, {
     foreignKey: "teacher_id",
     as: "lead_assignments",
   });
-  LeadAssignment.belongsTo(User, {
-    foreignKey: "teacher_id",
-    targetKey: "user_id",
-    as: "teacherInfo",
-  });
   Lead.hasMany(LeadAssignment, {
     foreignKey: "lead_id",
     as: "assignments",
-  });
-  LeadAssignment.belongsTo(Lead, {
-    foreignKey: "lead_id",
-    as: "leadInfo",
   });
 
   // chatHistory associations
