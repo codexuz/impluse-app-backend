@@ -60,6 +60,57 @@ export class GroupStudentsService {
   /** Statuses that mean the student is no longer participating in the group. */
   private static readonly LEFT_STATUSES = ["removed", "completed"];
 
+  /** Statuses that mean the student is currently participating in the group. */
+  private static readonly PARTICIPATING_STATUSES = ["active", "frozen"];
+
+  /**
+   * Single choke point for changing a membership's status: it stamps/clears
+   * `left_at` and appends the matching enrollment event so the retention log
+   * always stays in sync with `group_students`. No-ops when the status is
+   * unchanged. Returns whether the status actually moved.
+   */
+  private async applyStatusChange(
+    enrollment: GroupStudent,
+    newStatus: string,
+    occurredAt: Date = new Date(),
+    reason?: string,
+  ): Promise<boolean> {
+    const previousStatus = String(enrollment.status);
+    if (newStatus === previousStatus) return false;
+
+    const isLeaving = GroupStudentsService.LEFT_STATUSES.includes(newStatus);
+    const wasLeft = GroupStudentsService.LEFT_STATUSES.includes(previousStatus);
+
+    await enrollment.update({
+      status: newStatus,
+      // Stamp left_at when transitioning into a terminal status; clear it if the
+      // student is re-activated from a terminal status.
+      ...(isLeaving && !wasLeft ? { left_at: occurredAt } : {}),
+      ...(!isLeaving && wasLeft ? { left_at: null } : {}),
+    });
+
+    if (isLeaving && !wasLeft) {
+      await this.recordEnrollmentEvent(
+        enrollment.group_id,
+        enrollment.student_id,
+        EnrollmentEventType.LEFT,
+        occurredAt,
+        reason ?? newStatus,
+      );
+    } else if (!isLeaving && wasLeft) {
+      // Re-enrollment after having left.
+      await this.recordEnrollmentEvent(
+        enrollment.group_id,
+        enrollment.student_id,
+        EnrollmentEventType.JOINED,
+        occurredAt,
+        reason ?? newStatus,
+      );
+    }
+
+    return true;
+  }
+
   async create(createDto: CreateGroupStudentDto): Promise<GroupStudent> {
     // Check if student is already in this specific group
     const existingInSameGroup = await this.groupStudentModel.findOne({
@@ -130,6 +181,51 @@ export class GroupStudentsService {
   async findOne(id: string): Promise<GroupStudent> {
     const groupStudent = await this.groupStudentModel.findOne({
       where: { id, status: "active" },
+      include: [
+        {
+          model: User,
+          as: "student",
+          attributes: [
+            "user_id",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar_url",
+          ],
+        },
+        {
+          model: Group,
+          as: "group",
+          include: [
+            {
+              model: User,
+              as: "teacher",
+              attributes: [
+                "user_id",
+                "username",
+                "first_name",
+                "last_name",
+                "avatar_url",
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!groupStudent) {
+      throw new NotFoundException(`Group student with ID ${id} not found`);
+    }
+
+    return groupStudent;
+  }
+
+  /**
+   * Like {@link findOne} but does not filter by status, so it can return a
+   * membership that has just been moved to a terminal status (removed/completed).
+   */
+  async findOneAny(id: string): Promise<GroupStudent> {
+    const groupStudent = await this.groupStudentModel.findByPk(id, {
       include: [
         {
           model: User,
@@ -284,15 +380,23 @@ export class GroupStudentsService {
     id: string,
     updateDto: UpdateGroupStudentDto,
   ): Promise<GroupStudent> {
-    const [affectedCount] = await this.groupStudentModel.update(updateDto, {
-      where: { id },
-    });
-
-    if (affectedCount === 0) {
+    const enrollment = await this.groupStudentModel.findByPk(id);
+    if (!enrollment) {
       throw new NotFoundException(`Group student with ID ${id} not found`);
     }
 
-    return await this.findOne(id);
+    const { status, ...rest } = updateDto as any;
+
+    // Route status changes through the single choke point so the retention log
+    // and left_at stay consistent; apply any remaining fields directly.
+    if (status !== undefined) {
+      await this.applyStatusChange(enrollment, String(status));
+    }
+    if (Object.keys(rest).length > 0) {
+      await enrollment.update(rest);
+    }
+
+    return await this.findOneAny(id);
   }
 
   async remove(id: string): Promise<{ id: string; deleted: boolean }> {
@@ -321,39 +425,53 @@ export class GroupStudentsService {
       throw new NotFoundException(`Group student with ID ${id} not found`);
     }
 
-    const previousStatus = String(enrollment.status);
-    const isLeaving = GroupStudentsService.LEFT_STATUSES.includes(status);
-    const wasLeft = GroupStudentsService.LEFT_STATUSES.includes(previousStatus);
-    const now = new Date();
+    await this.applyStatusChange(enrollment, status);
 
-    await enrollment.update({
-      status,
-      // Stamp left_at when transitioning into a terminal status; clear it if the
-      // student is re-activated from a terminal status.
-      ...(isLeaving && !wasLeft ? { left_at: now } : {}),
-      ...(!isLeaving && wasLeft ? { left_at: null } : {}),
+    return await this.findOneAny(id);
+  }
+
+  /**
+   * Mark every active/frozen membership of a student as `removed`, recording a
+   * LEFT event for each so retention reflects the departure. Used when a student
+   * is deactivated or archived account-wide. Returns the affected group ids.
+   */
+  async deactivateStudentMemberships(
+    studentId: string,
+    reason = "removed",
+  ): Promise<string[]> {
+    const memberships = await this.groupStudentModel.findAll({
+      where: {
+        student_id: studentId,
+        status: GroupStudentsService.PARTICIPATING_STATUSES,
+      },
     });
 
-    if (isLeaving && !wasLeft) {
-      await this.recordEnrollmentEvent(
-        enrollment.group_id,
-        enrollment.student_id,
-        EnrollmentEventType.LEFT,
-        now,
-        status,
-      );
-    } else if (!isLeaving && wasLeft) {
-      // Re-enrollment after having left.
-      await this.recordEnrollmentEvent(
-        enrollment.group_id,
-        enrollment.student_id,
-        EnrollmentEventType.JOINED,
-        now,
-        status,
-      );
+    const now = new Date();
+    const affected: string[] = [];
+    for (const membership of memberships) {
+      await this.applyStatusChange(membership, "removed", now, reason);
+      affected.push(membership.group_id);
     }
+    return affected;
+  }
 
-    return await this.findOne(id);
+  /**
+   * Restore every `removed` membership of a student back to `active`, recording
+   * a JOINED event for each. Used when a deactivated/archived account is
+   * re-activated. Returns the affected group ids.
+   */
+  async reactivateStudentMemberships(studentId: string): Promise<string[]> {
+    const memberships = await this.groupStudentModel.findAll({
+      where: { student_id: studentId, status: "removed" },
+    });
+
+    const now = new Date();
+    const affected: string[] = [];
+    for (const membership of memberships) {
+      await this.applyStatusChange(membership, "active", now, "active");
+      affected.push(membership.group_id);
+    }
+    return affected;
   }
 
   async transferStudent(

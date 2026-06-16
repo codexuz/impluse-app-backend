@@ -37,6 +37,7 @@ import {
   BonusPenaltyWalletService,
   WALLET_ROLES,
 } from "../bonus-penalty/bonus-penalty-wallet.service.js";
+import { GroupStudentsService } from "../group-students/group-students.service.js";
 
 @Injectable()
 export class UsersService {
@@ -66,6 +67,7 @@ export class UsersService {
     private configService: ConfigService,
     private awsStorageService: AwsStorageService,
     private bonusPenaltyWalletService: BonusPenaltyWalletService,
+    private groupStudentsService: GroupStudentsService,
   ) {}
 
   // Ensure a staff member (admin/teacher/support_teacher) owns a bonus &
@@ -415,14 +417,13 @@ export class UsersService {
     const hasStudentRole = user.roles?.some((role) => role.name === "student");
 
     if (hasStudentRole) {
-      // Set student status to 'removed' in all groups
-      const models = this.userModel.sequelize.models;
-      if (models.GroupStudent) {
-        await models.GroupStudent.update(
-          { status: "removed" },
-          { where: { student_id: id } },
-        );
-      }
+      // Leave every group, recording an enrollment event for each so retention
+      // stats see the departure (single source of truth lives in
+      // GroupStudentsService).
+      await this.groupStudentsService.deactivateStudentMemberships(
+        id,
+        "deactivated",
+      );
     }
 
     await user.update({ is_active: false });
@@ -433,14 +434,9 @@ export class UsersService {
     const user = await this.findOne(id);
     await user.update({ is_active: true });
 
-    // Set student status back to 'active' in all groups
-    const models = this.userModel.sequelize.models;
-    if (models.GroupStudent) {
-      await models.GroupStudent.update(
-        { status: "active" },
-        { where: { student_id: id, status: "removed" } },
-      );
-    }
+    // Restore every previously-removed membership, recording a re-join event for
+    // each so retention stats stay consistent.
+    await this.groupStudentsService.reactivateStudentMemberships(id);
 
     // Remove from archived students
     await this.archivedStudentModel.destroy({
