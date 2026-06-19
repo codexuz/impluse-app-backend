@@ -549,10 +549,9 @@ export class IeltsAnswersService {
         const bandScore = this.calculateBandScore(correctCount, totalQ);
         bandScores.push(bandScore);
 
-        const test = (attempt as any).test;
         if (recentScores.length < 10) {
           recentScores.push({
-            title: test ? test.title : null,
+            title: await this.resolveAttemptTitle(attempt),
             score: bandScore,
           });
         }
@@ -1204,6 +1203,47 @@ export class IeltsAnswersService {
         task: plain.task_id ? taskMap.get(plain.task_id) || null : null,
       };
     });
+  }
+
+  /**
+   * Resolve a display title for an attempt. Full-test attempts use the test
+   * title; module/part/task-scoped attempts fall back to that entity's title.
+   */
+  private async resolveAttemptTitle(attempt: any): Promise<string | null> {
+    const test = attempt.test;
+    if (test && test.title) return test.title;
+
+    if (attempt.module_id) {
+      const [reading, listening, writing] = await Promise.all([
+        this.readingModel.findByPk(attempt.module_id, { attributes: ["title"] }),
+        this.listeningModel.findByPk(attempt.module_id, {
+          attributes: ["title"],
+        }),
+        this.writingModel.findByPk(attempt.module_id, { attributes: ["title"] }),
+      ]);
+      return (
+        (reading as any)?.title ||
+        (listening as any)?.title ||
+        (writing as any)?.title ||
+        null
+      );
+    }
+
+    if (attempt.part_id) {
+      const [readingPart, listeningPart] = await Promise.all([
+        this.readingPartModel.findByPk(attempt.part_id, {
+          attributes: ["title"],
+        }),
+        this.listeningPartModel.findByPk(attempt.part_id, {
+          attributes: ["title"],
+        }),
+      ]);
+      return (
+        (readingPart as any)?.title || (listeningPart as any)?.title || null
+      );
+    }
+
+    return null;
   }
 
   /**
