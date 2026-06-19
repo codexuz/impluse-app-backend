@@ -549,12 +549,10 @@ export class IeltsAnswersService {
         const bandScore = this.calculateBandScore(correctCount, totalQ);
         bandScores.push(bandScore);
 
-        if (recentScores.length < 10) {
-          recentScores.push({
-            title: await this.resolveAttemptTitle(attempt),
-            score: bandScore,
-          });
-        }
+        recentScores.push({
+          title: await this.resolveAttemptTitle(attempt),
+          score: bandScore,
+        });
       }
 
       if (attempt.started_at && attempt.finished_at) {
