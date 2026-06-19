@@ -460,6 +460,7 @@ export class IeltsAnswersService {
     const listeningBandScores: number[] = [];
     const writingBandScores: number[] = [];
     const bandScores: number[] = [];
+    const recentScores: any[] = [];
     const timeSpentList: number[] = [];
 
     for (const attempt of submittedAttempts) {
@@ -545,7 +546,16 @@ export class IeltsAnswersService {
       const totalQ = allResults.length + allScopeQuestions.length;
       const correctCount = rCorrect + lCorrect;
       if (totalQ > 0) {
-        bandScores.push(this.calculateBandScore(correctCount, totalQ));
+        const bandScore = this.calculateBandScore(correctCount, totalQ);
+        bandScores.push(bandScore);
+
+        const test = (attempt as any).test;
+        if (recentScores.length < 10) {
+          recentScores.push({
+            title: test ? test.title : null,
+            score: bandScore,
+          });
+        }
       }
 
       if (attempt.started_at && attempt.finished_at) {
@@ -583,7 +593,7 @@ export class IeltsAnswersService {
         averageTimeSpentMinutes: avgTimeSpentMinutes,
         totalTimeSpentMinutes,
       },
-      recentScores: bandScores.slice(0, 10),
+      recentScores,
     };
   }
 
