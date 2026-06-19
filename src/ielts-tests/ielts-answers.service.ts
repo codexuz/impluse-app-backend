@@ -454,21 +454,11 @@ export class IeltsAnswersService {
       order: [["finished_at", "DESC"]],
     });
 
-    // Per-skill statistics
-    let totalReadingCorrect = 0;
-    let totalReadingQuestions = 0;
-    let totalListeningCorrect = 0;
-    let totalListeningQuestions = 0;
-    let totalWritingAnswers = 0;
-    let totalWritingWordCount = 0;
-    const writingScoreSums = {
-      task_response: 0,
-      lexical_resources: 0,
-      grammar_range_and_accuracy: 0,
-      coherence_and_cohesion: 0,
-      overall: 0,
-    };
-    let writingScoredCount = 0;
+    // Per-skill band scores, ordered most-recent first (submittedAttempts
+    // is ordered by finished_at DESC, so the first entry pushed is the latest).
+    const readingBandScores: number[] = [];
+    const listeningBandScores: number[] = [];
+    const writingBandScores: number[] = [];
     const bandScores: number[] = [];
     const timeSpentList: number[] = [];
 
@@ -533,27 +523,21 @@ export class IeltsAnswersService {
       const rCorrect = readingResults.filter((r) => r.isCorrect).length;
       const lCorrect = listeningResults.filter((r) => r.isCorrect).length;
 
-      totalReadingCorrect += rCorrect;
-      totalReadingQuestions += readingResults.length;
-      totalListeningCorrect += lCorrect;
-      totalListeningQuestions += listeningResults.length;
-      totalWritingAnswers += writingAnswers.length;
-      totalWritingWordCount += writingAnswers.reduce(
-        (sum: number, w: any) => sum + (w.word_count || 0),
-        0,
-      );
-
+      // Per-skill band scores
+      if (readingResults.length > 0) {
+        readingBandScores.push(
+          this.calculateBandScore(rCorrect, readingResults.length),
+        );
+      }
+      if (listeningResults.length > 0) {
+        listeningBandScores.push(
+          this.calculateBandScore(lCorrect, listeningResults.length),
+        );
+      }
       for (const w of writingAnswers) {
         const s = (w as any).score;
-        if (s && typeof s === "object") {
-          writingScoredCount++;
-          writingScoreSums.task_response += s.task_response || 0;
-          writingScoreSums.lexical_resources += s.lexical_resources || 0;
-          writingScoreSums.grammar_range_and_accuracy +=
-            s.grammar_range_and_accuracy || 0;
-          writingScoreSums.coherence_and_cohesion +=
-            s.coherence_and_cohesion || 0;
-          writingScoreSums.overall += s.overall || 0;
+        if (s && typeof s === "object" && s.overall != null) {
+          writingBandScores.push(Number(s.overall));
         }
       }
 
@@ -573,12 +557,6 @@ export class IeltsAnswersService {
       }
     }
 
-    const avgBandScore =
-      bandScores.length > 0
-        ? Math.round(
-          (bandScores.reduce((a, b) => a + b, 0) / bandScores.length) * 10,
-        ) / 10
-        : 0;
     const bestBandScore = bandScores.length > 0 ? Math.max(...bandScores) : 0;
     const avgTimeSpentMinutes =
       timeSpentList.length > 0
@@ -597,68 +575,10 @@ export class IeltsAnswersService {
         totalAbandoned,
         totalAttempts: totalAttempts + totalInProgress + totalAbandoned,
       },
-      scores: {
-        averageBandScore: avgBandScore,
-        bestBandScore,
-      },
-      reading: {
-        totalQuestions: totalReadingQuestions,
-        correctAnswers: totalReadingCorrect,
-        accuracy:
-          totalReadingQuestions > 0
-            ? Math.round(
-              (totalReadingCorrect / totalReadingQuestions) * 10000,
-            ) / 100
-            : 0,
-      },
-      listening: {
-        totalQuestions: totalListeningQuestions,
-        correctAnswers: totalListeningCorrect,
-        accuracy:
-          totalListeningQuestions > 0
-            ? Math.round(
-              (totalListeningCorrect / totalListeningQuestions) * 10000,
-            ) / 100
-            : 0,
-      },
-      writing: {
-        totalAnswers: totalWritingAnswers,
-        averageWordCount:
-          totalWritingAnswers > 0
-            ? Math.round(totalWritingWordCount / totalWritingAnswers)
-            : 0,
-        averageScores:
-          writingScoredCount > 0
-            ? {
-              task_response:
-                Math.round(
-                  (writingScoreSums.task_response / writingScoredCount) * 10,
-                ) / 10,
-              lexical_resources:
-                Math.round(
-                  (writingScoreSums.lexical_resources / writingScoredCount) *
-                  10,
-                ) / 10,
-              grammar_range_and_accuracy:
-                Math.round(
-                  (writingScoreSums.grammar_range_and_accuracy /
-                    writingScoredCount) *
-                  10,
-                ) / 10,
-              coherence_and_cohesion:
-                Math.round(
-                  (writingScoreSums.coherence_and_cohesion /
-                    writingScoredCount) *
-                  10,
-                ) / 10,
-              overall:
-                Math.round(
-                  (writingScoreSums.overall / writingScoredCount) * 10,
-                ) / 10,
-            }
-            : null,
-        scoredCount: writingScoredCount,
-      },
+      highestScore: bestBandScore,
+      listening: listeningBandScores.length > 0 ? listeningBandScores[0] : 0,
+      reading: readingBandScores.length > 0 ? readingBandScores[0] : 0,
+      writing: writingBandScores.length > 0 ? writingBandScores[0] : 0,
       time: {
         averageTimeSpentMinutes: avgTimeSpentMinutes,
         totalTimeSpentMinutes,
