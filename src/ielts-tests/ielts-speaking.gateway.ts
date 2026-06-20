@@ -26,6 +26,7 @@ import {
   IeltsSpeakingPart,
   SpeakingPart,
 } from "./entities/ielts-speaking-part.entity.js";
+import { IeltsSpeakingQuestion } from "./entities/ielts-speaking-question.entity.js";
 import {
   EndSpeakingDto,
   MuteSpeakingDto,
@@ -36,6 +37,11 @@ import {
 interface AuthenticatedSocket extends Socket {
   user?: { id: string; username: string; roles: string[] };
 }
+
+// Associations are loaded via `include` (defined centrally in models/index.ts),
+// not declared as entity fields, so we type the eager-loaded shape locally.
+type LoadedPart = IeltsSpeakingPart & { questions?: IeltsSpeakingQuestion[] };
+type LoadedSpeaking = IeltsSpeaking & { parts?: LoadedPart[] };
 
 // Hard cap on a speaking session (15 minutes is well beyond a real exam).
 const SESSION_MAX_MS = 15 * 60 * 1000;
@@ -156,9 +162,11 @@ export class IeltsSpeakingGateway
       return;
     }
 
-    let speaking: IeltsSpeaking;
+    let speaking: LoadedSpeaking;
     try {
-      speaking = await this.speakingService.findSpeakingById(data.speaking_id);
+      speaking = (await this.speakingService.findSpeakingById(
+        data.speaking_id,
+      )) as LoadedSpeaking;
     } catch {
       client.emit("speaking:error", { message: "Speaking topic not found." });
       return;
@@ -440,14 +448,14 @@ export class IeltsSpeakingGateway
 
   /** Build the examiner persona + the full exam script from the topic. */
   private buildInstructions(
-    speaking: IeltsSpeaking,
-    parts: IeltsSpeakingPart[],
+    speaking: LoadedSpeaking,
+    parts: LoadedPart[],
   ): string {
     const part1s = parts.filter((p) => p.part === SpeakingPart.PART_1);
     const part2 = parts.find((p) => p.part === SpeakingPart.PART_2);
     const part3s = parts.filter((p) => p.part === SpeakingPart.PART_3);
 
-    const listQuestions = (ps: IeltsSpeakingPart[]): string => {
+    const listQuestions = (ps: LoadedPart[]): string => {
       const lines: string[] = [];
       for (const p of ps) {
         if (p.title) lines.push(`  Topic: ${p.title}`);
