@@ -1,5 +1,8 @@
 import { Module } from "@nestjs/common";
 import { SequelizeModule } from "@nestjs/sequelize";
+import { JwtModule } from "@nestjs/jwt";
+import type { StringValue } from "ms";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { IeltsTestsService } from "./ielts-tests.service.js";
 import { IeltsTestsController } from "./ielts-tests.controller.js";
 import { IeltsReadingController } from "./ielts-reading.controller.js";
@@ -34,9 +37,29 @@ import { Group } from "../groups/entities/group.entity.js";
 import { IeltsReadingReadingPart } from "./entities/ielts-reading-reading-part.entity.js";
 import { IeltsListeningListeningPart } from "./entities/ielts-listening-listening-part.entity.js";
 import { IeltsWritingWritingTask } from "./entities/ielts-writing-writing-task.entity.js";
+import { IeltsSpeaking } from "./entities/ielts-speaking.entity.js";
+import { IeltsSpeakingPart } from "./entities/ielts-speaking-part.entity.js";
+import { IeltsSpeakingQuestion } from "./entities/ielts-speaking-question.entity.js";
+import { IeltsSpeakingAttempt } from "./entities/ielts-speaking-attempt.entity.js";
+import { IeltsSpeakingService } from "./ielts-speaking.service.js";
+import { IeltsSpeakingController } from "./ielts-speaking.controller.js";
+import { IeltsSpeakingRealtimeService } from "./ielts-speaking-realtime.service.js";
+import { IeltsSpeakingGateway } from "./ielts-speaking.gateway.js";
 
 @Module({
   imports: [
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>("JWT_SECRET") || "your-secret-key",
+        signOptions: {
+          expiresIn: (configService.get<string>("JWT_EXPIRY") ||
+            "1h") as StringValue,
+        },
+      }),
+      inject: [ConfigService],
+    }),
     SequelizeModule.forFeature([
       IeltsTest,
       IeltsReading,
@@ -58,6 +81,10 @@ import { IeltsWritingWritingTask } from "./entities/ielts-writing-writing-task.e
       IeltsReadingReadingPart,
       IeltsListeningListeningPart,
       IeltsWritingWritingTask,
+      IeltsSpeaking,
+      IeltsSpeakingPart,
+      IeltsSpeakingQuestion,
+      IeltsSpeakingAttempt,
     ]),
   ],
   controllers: [
@@ -72,8 +99,16 @@ import { IeltsWritingWritingTask } from "./entities/ielts-writing-writing-task.e
     IeltsQuestionChoicesController,
     IeltsSubQuestionsController,
     IeltsMockTestsController,
+    IeltsSpeakingController,
   ],
-  providers: [IeltsTestsService, IeltsAnswersService, IeltsMockTestsService],
+  providers: [
+    IeltsTestsService,
+    IeltsAnswersService,
+    IeltsMockTestsService,
+    IeltsSpeakingService,
+    IeltsSpeakingRealtimeService,
+    IeltsSpeakingGateway,
+  ],
   exports: [IeltsTestsService, IeltsAnswersService, IeltsMockTestsService],
 })
 export class IeltsTestsModule { }
