@@ -4,12 +4,10 @@ import {
   Model,
   DataType,
   ForeignKey,
-  HasMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsSpeaking } from "./ielts-speaking.entity.js";
-import { IeltsSpeakingQuestion } from "./ielts-speaking-question.entity.js";
 
 export enum SpeakingPart {
   PART_1 = "PART_1",
@@ -89,9 +87,6 @@ export class IeltsSpeakingPart extends Model<IeltsSpeakingPart> {
     defaultValue: 0,
   })
   order: number;
-
-  @HasMany(() => IeltsSpeakingQuestion)
-  questions: IeltsSpeakingQuestion[];
 
   @CreatedAt
   createdAt: Date;

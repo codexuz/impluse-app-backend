@@ -4,13 +4,10 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
-  HasMany,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
 import { IeltsTest } from "./ielts-test.entity.js";
-import { IeltsSpeakingPart } from "./ielts-speaking-part.entity.js";
 
 /**
  * A Speaking topic/section (the "test" the AI examiner runs).
@@ -76,12 +73,6 @@ export class IeltsSpeaking extends Model<IeltsSpeaking> {
     allowNull: false,
   })
   orderId: number;
-
-  @BelongsTo(() => IeltsTest)
-  test: IeltsTest;
-
-  @HasMany(() => IeltsSpeakingPart)
-  parts: IeltsSpeakingPart[];
 
   @CreatedAt
   createdAt: Date;

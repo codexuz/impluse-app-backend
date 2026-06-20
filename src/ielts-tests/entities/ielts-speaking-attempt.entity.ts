@@ -4,10 +4,8 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
   CreatedAt,
   UpdatedAt,
-  Index,
 } from "sequelize-typescript";
 import { User } from "../../users/entities/user.entity.js";
 import { IeltsSpeaking } from "./ielts-speaking.entity.js";
@@ -26,7 +24,7 @@ export enum SpeakingAttemptStatus {
 @Table({
   tableName: "ielts_speaking_attempts",
   timestamps: true,
-  indexes: [{ fields: ["user_id", "created_at"] }],
+  indexes: [{ fields: ["user_id", "started_at"] }],
 })
 export class IeltsSpeakingAttempt extends Model<IeltsSpeakingAttempt> {
   @Column({
@@ -89,9 +87,6 @@ export class IeltsSpeakingAttempt extends Model<IeltsSpeakingAttempt> {
     defaultValue: 0,
   })
   duration_seconds: number;
-
-  @BelongsTo(() => IeltsSpeaking)
-  speaking: IeltsSpeaking;
 
   @CreatedAt
   createdAt: Date;

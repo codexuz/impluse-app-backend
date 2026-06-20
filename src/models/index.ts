@@ -130,6 +130,10 @@ import { ArchivedStudent } from "../users/entities/archived-student.entity.js";
 import { IeltsReadingReadingPart } from "../ielts-tests/entities/ielts-reading-reading-part.entity.js";
 import { IeltsListeningListeningPart } from "../ielts-tests/entities/ielts-listening-listening-part.entity.js";
 import { IeltsWritingWritingTask } from "../ielts-tests/entities/ielts-writing-writing-task.entity.js";
+import { IeltsSpeaking } from "../ielts-tests/entities/ielts-speaking.entity.js";
+import { IeltsSpeakingPart } from "../ielts-tests/entities/ielts-speaking-part.entity.js";
+import { IeltsSpeakingQuestion } from "../ielts-tests/entities/ielts-speaking-question.entity.js";
+import { IeltsSpeakingAttempt } from "../ielts-tests/entities/ielts-speaking-attempt.entity.js";
 
 import { Grading } from "../gradings/entities/grading.entity.js";
 import { DictionaryHistory } from "../dictionary/entities/dictionary-history.entity.js";
@@ -266,6 +270,10 @@ export const Models = [
   IeltsReadingReadingPart,
   IeltsListeningListeningPart,
   IeltsWritingWritingTask,
+  IeltsSpeaking,
+  IeltsSpeakingPart,
+  IeltsSpeakingQuestion,
+  IeltsSpeakingAttempt,
   Grading,
   Translation,
   Dictation,
@@ -1557,6 +1565,43 @@ export function initializeAssociations() {
     foreignKey: "writing_id",
     as: "writing",
   });
+
+  // IELTS Speaking associations
+  IeltsTest.hasMany(IeltsSpeaking, { foreignKey: "test_id", as: "speakings" });
+  IeltsSpeaking.belongsTo(IeltsTest, { foreignKey: "test_id", as: "test" });
+
+  IeltsSpeaking.hasMany(IeltsSpeakingPart, {
+    foreignKey: "speaking_id",
+    as: "parts",
+  });
+  IeltsSpeakingPart.belongsTo(IeltsSpeaking, {
+    foreignKey: "speaking_id",
+    as: "speaking",
+  });
+
+  IeltsSpeakingPart.hasMany(IeltsSpeakingQuestion, {
+    foreignKey: "part_id",
+    as: "questions",
+  });
+  IeltsSpeakingQuestion.belongsTo(IeltsSpeakingPart, {
+    foreignKey: "part_id",
+    as: "part",
+  });
+
+  IeltsSpeaking.hasMany(IeltsSpeakingAttempt, {
+    foreignKey: "speaking_id",
+    as: "attempts",
+  });
+  IeltsSpeakingAttempt.belongsTo(IeltsSpeaking, {
+    foreignKey: "speaking_id",
+    as: "speaking",
+  });
+
+  User.hasMany(IeltsSpeakingAttempt, {
+    foreignKey: "user_id",
+    as: "speaking_attempts",
+  });
+  IeltsSpeakingAttempt.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
   // IeltsQuestion associations
   IeltsQuestion.belongsTo(IeltsReadingPart, {

@@ -214,7 +214,7 @@ export class IeltsSpeakingService {
           required: false,
         },
       ],
-      order: [["created_at", "DESC"]],
+      order: [["started_at", "DESC"]],
       limit,
       offset: (page - 1) * limit,
     });
