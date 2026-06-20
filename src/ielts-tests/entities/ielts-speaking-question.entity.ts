@@ -4,7 +4,6 @@ import {
   Model,
   DataType,
   ForeignKey,
-  BelongsTo,
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
@@ -49,9 +48,6 @@ export class IeltsSpeakingQuestion extends Model<IeltsSpeakingQuestion> {
     defaultValue: 0,
   })
   order: number;
-
-  @BelongsTo(() => IeltsSpeakingPart)
-  part: IeltsSpeakingPart;
 
   @CreatedAt
   createdAt: Date;

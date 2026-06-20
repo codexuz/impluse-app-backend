@@ -4,6 +4,7 @@ import {
   Model,
   DataType,
   ForeignKey,
+  BelongsTo,
   HasMany,
   CreatedAt,
   UpdatedAt,
@@ -75,6 +76,9 @@ export class IeltsSpeaking extends Model<IeltsSpeaking> {
     allowNull: false,
   })
   orderId: number;
+
+  @BelongsTo(() => IeltsTest)
+  test: IeltsTest;
 
   @HasMany(() => IeltsSpeakingPart)
   parts: IeltsSpeakingPart[];
