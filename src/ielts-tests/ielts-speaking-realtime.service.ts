@@ -4,6 +4,20 @@ import OpenAI from "openai";
 import { OpenAIRealtimeWS } from "openai/realtime/ws";
 
 const REALTIME_MODEL = "gpt-realtime-mini";
+const FEEDBACK_MODEL = "gpt-4o-mini";
+
+export interface SpeakingBandFeedback {
+  overall_band: number;
+  criteria: {
+    fluency_coherence: number;
+    lexical_resource: number;
+    grammatical_range_accuracy: number;
+    pronunciation: number;
+  };
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+}
 
 export interface RealtimeTool {
   type: "function";
@@ -289,5 +303,68 @@ export class IeltsSpeakingRealtimeService {
 
   hasSession(sessionId: string): boolean {
     return this.sessions.has(sessionId);
+  }
+
+  /**
+   * Produce an IELTS band-score feedback summary from a finished session's
+   * transcript using a (non-realtime) chat completion. Returns null if the
+   * client is unavailable or the model output can't be parsed. Pronunciation
+   * is estimated cautiously since it can't be fully judged from text.
+   */
+  async generateBandFeedback(
+    topicTitle: string,
+    transcript: Array<{ role: "examiner" | "candidate"; text: string }>,
+  ): Promise<SpeakingBandFeedback | null> {
+    if (!this.client) return null;
+
+    const candidateTurns = transcript.filter((t) => t.role === "candidate");
+    if (candidateTurns.length === 0) return null;
+
+    const dialogue = transcript
+      .map((t) => `${t.role === "examiner" ? "Examiner" : "Candidate"}: ${t.text}`)
+      .join("\n");
+
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: FEEDBACK_MODEL,
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a certified IELTS Speaking examiner. Assess ONLY the candidate's " +
+              "turns from the transcript of a live speaking test and return JSON with these " +
+              "exact fields:\n" +
+              `{
+  "overall_band": <number 0-9, rounded to nearest 0.5>,
+  "criteria": {
+    "fluency_coherence": <0-9, nearest 0.5>,
+    "lexical_resource": <0-9, nearest 0.5>,
+    "grammatical_range_accuracy": <0-9, nearest 0.5>,
+    "pronunciation": <0-9, nearest 0.5>
+  },
+  "summary": "2-3 sentence overall assessment",
+  "strengths": ["short bullet", "..."],
+  "improvements": ["short actionable bullet", "..."]
+}\n` +
+              "Use the official IELTS band descriptors. Pronunciation cannot be fully judged " +
+              "from text, so estimate conservatively from word choice and structure and note " +
+              "this limitation in the summary. Keep strengths and improvements to max 4 each.",
+          },
+          {
+            role: "user",
+            content: `Speaking test topic: "${topicTitle}"\n\nTranscript:\n${dialogue}`,
+          },
+        ],
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) return null;
+      return JSON.parse(content) as SpeakingBandFeedback;
+    } catch (e: any) {
+      this.logger.error(`Failed to generate band feedback: ${e?.message}`);
+      return null;
+    }
   }
 }

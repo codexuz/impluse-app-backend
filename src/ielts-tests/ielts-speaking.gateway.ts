@@ -53,6 +53,7 @@ interface ActiveSession {
   socketId: string;
   attemptId: string;
   speakingId: string;
+  title: string;
   startedAt: number;
   muted: boolean;
   phase: Phase;
@@ -192,6 +193,7 @@ export class IeltsSpeakingGateway
       socketId: client.id,
       attemptId: attempt.id,
       speakingId: speaking.id,
+      title: speaking.title,
       startedAt: Date.now(),
       muted: false,
       phase: "part1",
@@ -397,6 +399,30 @@ export class IeltsSpeakingGateway
     if (s.speakTimer) clearTimeout(s.speakTimer);
     this.realtime.endSession(sessionId);
 
+    this.server.to(`user:${s.userId}`).emit("speaking:ended", {
+      session_id: sessionId,
+      reason,
+    });
+
+    // Generate an AI band-score summary for genuinely completed exams that have
+    // candidate speech. Skipped for abandoned/disconnected sessions to save cost.
+    let feedbackJson: string | null = null;
+    if (
+      status === SpeakingAttemptStatus.COMPLETED &&
+      s.transcript.some((t) => t.role === "candidate")
+    ) {
+      const feedback = await this.realtime
+        .generateBandFeedback(s.title, s.transcript)
+        .catch(() => null);
+      if (feedback) {
+        feedbackJson = JSON.stringify(feedback);
+        this.server.to(`user:${s.userId}`).emit("speaking:feedback", {
+          session_id: sessionId,
+          feedback,
+        });
+      }
+    }
+
     const durationSeconds = Math.max(0, Math.round((Date.now() - s.startedAt) / 1000));
     await this.attemptModel
       .update(
@@ -405,15 +431,11 @@ export class IeltsSpeakingGateway
           finished_at: new Date(),
           duration_seconds: durationSeconds,
           transcript: s.transcript,
+          ...(feedbackJson ? { feedback: feedbackJson } : {}),
         },
         { where: { id: s.attemptId } },
       )
       .catch((e) => this.logger.error(`Failed to persist attempt: ${e?.message}`));
-
-    this.server.to(`user:${s.userId}`).emit("speaking:ended", {
-      session_id: sessionId,
-      reason,
-    });
   }
 
   /** Build the examiner persona + the full exam script from the topic. */
