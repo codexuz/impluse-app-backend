@@ -192,3 +192,10 @@ export class SpeakingQuestionQueryDto extends PaginationDto {
   @IsOptional()
   partId?: string;
 }
+
+export class SpeakingAttemptQueryDto extends PaginationDto {
+  @ApiProperty({ required: false, description: "Filter by speaking topic ID" })
+  @IsString()
+  @IsOptional()
+  speakingId?: string;
+}

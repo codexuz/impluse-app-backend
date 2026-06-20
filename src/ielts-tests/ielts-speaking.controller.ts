@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Request,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -23,6 +24,7 @@ import {
   CreateSpeakingDto,
   CreateSpeakingPartDto,
   CreateSpeakingQuestionDto,
+  SpeakingAttemptQueryDto,
   SpeakingPartQueryDto,
   SpeakingQueryDto,
   SpeakingQuestionQueryDto,
@@ -125,6 +127,28 @@ export class IeltsSpeakingController {
   @ApiParam({ name: "id" })
   async deleteQuestion(@Param("id") id: string) {
     return this.speakingService.deleteQuestion(id);
+  }
+
+  // ========== Attempts (speaking session history) ==========
+  @Get("me/attempts")
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER)
+  @ApiOperation({ summary: "List my past speaking attempts (with feedback)" })
+  async getMyAttempts(@Request() req, @Query() query: SpeakingAttemptQueryDto) {
+    return this.speakingService.getMyAttempts(req.user.userId, query);
+  }
+
+  @Get("attempt/:id")
+  @Roles(Role.STUDENT, Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER)
+  @ApiOperation({
+    summary: "Get a speaking attempt (transcript + feedback). Owner or staff only.",
+  })
+  @ApiParam({ name: "id" })
+  async getAttemptById(@Request() req, @Param("id") id: string) {
+    return this.speakingService.getAttemptById(
+      id,
+      req.user.userId,
+      req.user.roles ?? [],
+    );
   }
 
   // ========== Topics ==========

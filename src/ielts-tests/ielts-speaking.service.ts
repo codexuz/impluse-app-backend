@@ -1,18 +1,19 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { Op } from "sequelize";
 import { IeltsSpeaking } from "./entities/ielts-speaking.entity.js";
 import {
   IeltsSpeakingPart,
-  SpeakingPart,
 } from "./entities/ielts-speaking-part.entity.js";
 import { IeltsSpeakingQuestion } from "./entities/ielts-speaking-question.entity.js";
+import { IeltsSpeakingAttempt } from "./entities/ielts-speaking-attempt.entity.js";
 import { IeltsTest } from "./entities/ielts-test.entity.js";
 import {
   BulkCreateSpeakingQuestionsDto,
   CreateSpeakingDto,
   CreateSpeakingPartDto,
   CreateSpeakingQuestionDto,
+  SpeakingAttemptQueryDto,
   SpeakingPartQueryDto,
   SpeakingQueryDto,
   SpeakingQuestionQueryDto,
@@ -20,6 +21,9 @@ import {
   UpdateSpeakingPartDto,
   UpdateSpeakingQuestionDto,
 } from "./dto/speaking.dto.js";
+
+// Roles allowed to view any candidate's attempts (not just their own).
+const PRIVILEGED_ROLES = ["admin", "owner", "manager", "teacher", "support_teacher"];
 
 @Injectable()
 export class IeltsSpeakingService {
@@ -30,6 +34,8 @@ export class IeltsSpeakingService {
     private readonly partModel: typeof IeltsSpeakingPart,
     @InjectModel(IeltsSpeakingQuestion)
     private readonly questionModel: typeof IeltsSpeakingQuestion,
+    @InjectModel(IeltsSpeakingAttempt)
+    private readonly attemptModel: typeof IeltsSpeakingAttempt,
   ) {}
 
   // ==================== Topics ====================
@@ -188,6 +194,77 @@ export class IeltsSpeakingService {
     const question = await this.questionModel.findByPk(id);
     if (!question) throw new NotFoundException("Speaking question not found");
     await question.destroy();
+  }
+
+  // ==================== Attempts ====================
+
+  /** A user's own past speaking attempts (newest first), with topic title. */
+  async getMyAttempts(userId: string, query: SpeakingAttemptQueryDto) {
+    const { page = 1, limit = 10, speakingId } = query;
+    const where: any = { user_id: userId };
+    if (speakingId) where.speaking_id = speakingId;
+
+    const { rows, count } = await this.attemptModel.findAndCountAll({
+      where,
+      include: [
+        {
+          model: IeltsSpeaking,
+          as: "speaking",
+          attributes: ["id", "title"],
+          required: false,
+        },
+      ],
+      order: [["created_at", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
+    });
+
+    return {
+      data: rows.map((r) => this.mapAttempt(r)),
+      total: count,
+      page,
+      limit,
+    };
+  }
+
+  /**
+   * A single attempt with its transcript and parsed feedback. Owners can always
+   * read their own; privileged roles (teacher/admin/…) can read any.
+   */
+  async getAttemptById(id: string, userId: string, roles: string[] = []) {
+    const attempt = await this.attemptModel.findByPk(id, {
+      include: [
+        {
+          model: IeltsSpeaking,
+          as: "speaking",
+          attributes: ["id", "title"],
+          required: false,
+        },
+      ],
+    });
+    if (!attempt) throw new NotFoundException("Speaking attempt not found");
+
+    const isOwner = attempt.user_id === userId;
+    const isPrivileged = roles.some((r) => PRIVILEGED_ROLES.includes(r));
+    if (!isOwner && !isPrivileged) {
+      throw new ForbiddenException("You cannot view this attempt");
+    }
+
+    return this.mapAttempt(attempt);
+  }
+
+  /** Shape an attempt row, parsing the stored feedback JSON into an object. */
+  private mapAttempt(attempt: IeltsSpeakingAttempt) {
+    const json = attempt.toJSON() as any;
+    let feedback: unknown = null;
+    if (json.feedback) {
+      try {
+        feedback = JSON.parse(json.feedback);
+      } catch {
+        feedback = json.feedback; // fall back to raw text if not valid JSON
+      }
+    }
+    return { ...json, feedback };
   }
 
   // ==================== Helpers ====================
