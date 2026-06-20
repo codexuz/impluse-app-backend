@@ -10,6 +10,8 @@ import { StaffAttendanceService } from '../staff-attendance/staff-attendance.ser
 import { StaffAttendance } from '../staff-attendance/entities/staff-attendance.entity.js';
 import { StaffPermission } from '../staff-attendance/entities/staff-permission.entity.js';
 import { StaffProfileService } from '../staff-profile/staff-profile.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+import { NotificationToken } from '../notifications/entities/notification-token.entity.js';
 
 // Pending GPS verification state: chatId → staffId awaiting location share
 type PendingGps = { staffId: string; requestedAt: number; type: 'in' | 'out' };
@@ -55,6 +57,7 @@ export class AttendanceBotService implements OnModuleInit {
     private readonly userModel: typeof User,
     private readonly staffAttendanceService: StaffAttendanceService,
     private readonly staffProfileService: StaffProfileService,
+    private readonly notificationsService: NotificationsService,
   ) {
     const token = process.env.ATTENDANCE_BOT_TOKEN;
     if (!token) throw new Error('ATTENDANCE_BOT_TOKEN env variable is not set');
@@ -977,6 +980,14 @@ export class AttendanceBotService implements OnModuleInit {
             `⏰ Eslatma: ${shiftLabel}smenangiz ${shift.in_time.slice(0, 5)} da boshlanadi ` +
               `(${untilStart} daqiqadan keyin).\n\nDavomat uchun /davomat ni bosing.`,
           );
+          // Mirror the reminder as a mobile push so staff are nudged even if
+          // they don't have the Telegram bot open.
+          await this.sendShiftReminderPush(
+            staff.user_id,
+            shiftLabel,
+            shift.in_time,
+            untilStart,
+          );
         }
 
         // Late alert to admins: start + grace passed by >5 min (within an hour),
@@ -1029,6 +1040,37 @@ export class AttendanceBotService implements OnModuleInit {
   private async notifyAdmins(text: string, extra?: any): Promise<void> {
     for (const adminId of this.authorizedIds) {
       await this.safeSend(adminId, text, extra);
+    }
+  }
+
+  /**
+   * Send the pre-shift attendance reminder as a mobile push to every device the
+   * staff member has registered. Mirrors the Telegram reminder so staff who keep
+   * the app (not the bot) open still get nudged. Swallows errors — a failed push
+   * must never break the cron loop for other staff.
+   */
+  private async sendShiftReminderPush(
+    userId: string,
+    shiftLabel: string,
+    inTime: string,
+    untilStart: number,
+  ): Promise<void> {
+    try {
+      const tokens = (
+        await NotificationToken.findAll({ where: { user_id: userId } })
+      ).map((t) => t.token);
+      if (tokens.length === 0) return;
+
+      await this.notificationsService.notifyMultipleUsers(
+        tokens,
+        'Davomat eslatmasi',
+        `${shiftLabel}smenangiz ${inTime.slice(0, 5)} da boshlanadi ` +
+          `(${untilStart} daqiqadan keyin). Davomatni belgilashni unutmang.`,
+        { type: 'attendance_reminder', screen: 'home' },
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Shift reminder push to ${userId} failed: ${message}`);
     }
   }
 
