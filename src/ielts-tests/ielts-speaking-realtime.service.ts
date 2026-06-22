@@ -13,6 +13,7 @@ export interface SpeakingBandFeedback {
     lexical_resource: number;
     grammatical_range_accuracy: number;
     pronunciation: number;
+    topic_relevance: number;
   };
   summary: string;
   strengths: string[];
@@ -59,6 +60,10 @@ interface RealtimeSession {
   closed: boolean;
   voice: string;
   turnDetection: TurnDetectionConfig;
+  // True while the examiner has a response in flight. We hold the mic closed
+  // for this window so the bot never "hears itself" or gets barged into before
+  // it has finished speaking.
+  examinerSpeaking: boolean;
 }
 
 /**
@@ -111,13 +116,17 @@ export class IeltsSpeakingRealtimeService {
       prefix_padding_ms: 300,
       silence_duration_ms: 700,
       create_response: true,
-      interrupt_response: true,
+      // The examiner must finish its turn before the candidate is heard — no
+      // barge-in. We also gate the mic in appendAudio so audio captured while
+      // the examiner is speaking is discarded rather than buffered.
+      interrupt_response: false,
     };
     const session: RealtimeSession = {
       ws,
       closed: false,
       voice: opts.voice ?? "alloy",
       turnDetection,
+      examinerSpeaking: false,
     };
     this.sessions.set(sessionId, session);
 
@@ -168,6 +177,13 @@ export class IeltsSpeakingRealtimeService {
         }
       });
 
+      // The examiner is "speaking" from the moment a response is created until
+      // it is done; while this holds we drop incoming mic audio (see
+      // appendAudio) so the bot doesn't listen until it stops talking.
+      ws.on("response.created", () => {
+        session.examinerSpeaking = true;
+      });
+
       ws.on("response.output_audio.delta", (event: any) => {
         if (event?.delta) cb.onAudioDelta(event.delta);
       });
@@ -204,6 +220,12 @@ export class IeltsSpeakingRealtimeService {
       });
 
       ws.on("response.done", () => {
+        session.examinerSpeaking = false;
+        // Discard anything the mic captured while the examiner was talking so
+        // the candidate's real answer starts from a clean buffer.
+        if (!session.closed) {
+          session.ws.send({ type: "input_audio_buffer.clear" });
+        }
         if (cb.onResponseDone) cb.onResponseDone();
       });
 
@@ -215,10 +237,14 @@ export class IeltsSpeakingRealtimeService {
     });
   }
 
-  /** Forward a base64 PCM16 chunk from the candidate's mic to OpenAI. */
+  /**
+   * Forward a base64 PCM16 chunk from the candidate's mic to OpenAI. While the
+   * examiner has a turn in flight we drop the chunk: the bot must not start
+   * listening until it has finished its own speech.
+   */
   appendAudio(sessionId: string, base64Audio: string): void {
     const session = this.sessions.get(sessionId);
-    if (!session || session.closed) return;
+    if (!session || session.closed || session.examinerSpeaking) return;
     session.ws.send({ type: "input_audio_buffer.append", audio: base64Audio });
   }
 
@@ -248,6 +274,7 @@ export class IeltsSpeakingRealtimeService {
   cancelResponse(sessionId: string): void {
     const session = this.sessions.get(sessionId);
     if (!session || session.closed) return;
+    session.examinerSpeaking = false;
     session.ws.send({ type: "response.cancel" });
   }
 
@@ -333,28 +360,51 @@ export class IeltsSpeakingRealtimeService {
           {
             role: "system",
             content:
-              "You are a certified IELTS Speaking examiner. Assess ONLY the candidate's " +
-              "turns from the transcript of a live speaking test and return JSON with these " +
-              "exact fields:\n" +
+              "You are a strict but fair certified IELTS Speaking examiner. Assess ONLY the " +
+              "candidate's turns, judged against the examiner's questions and the test topic. " +
+              "Return JSON with these exact fields:\n" +
               `{
   "overall_band": <number 0-9, rounded to nearest 0.5>,
   "criteria": {
     "fluency_coherence": <0-9, nearest 0.5>,
     "lexical_resource": <0-9, nearest 0.5>,
     "grammatical_range_accuracy": <0-9, nearest 0.5>,
-    "pronunciation": <0-9, nearest 0.5>
+    "pronunciation": <0-9, nearest 0.5>,
+    "topic_relevance": <0-9, nearest 0.5>
   },
   "summary": "2-3 sentence overall assessment",
   "strengths": ["short bullet", "..."],
   "improvements": ["short actionable bullet", "..."]
-}\n` +
-              "Use the official IELTS band descriptors. Pronunciation cannot be fully judged " +
-              "from text, so estimate conservatively from word choice and structure and note " +
-              "this limitation in the summary. Keep strengths and improvements to max 4 each.",
+}\n\n` +
+              "Scoring rules — apply the official IELTS band descriptors and do NOT inflate:\n" +
+              "- There is NO default or courtesy band. Score strictly from the language the " +
+              "candidate actually produced. A candidate who barely speaks must NOT receive a " +
+              "mid-band score.\n" +
+              "- topic_relevance measures how directly and fully each answer addresses the " +
+              "examiner's question and the test topic. 8-9 = answers fully and stays on topic; " +
+              "5-6 = partially relevant or under-developed; 3-4 = mostly vague, evasive or " +
+              "drifting off topic; 1-2 = does not answer the questions or is off topic.\n" +
+              "- Non-answers count as failure to communicate: filler like \"hmm\", \"I don't " +
+              "know\", silence, one-word replies, or content unrelated to the question must " +
+              "score Band 1.0-2.0 across the relevant criteria — never 4.0.\n" +
+              "- overall_band must be consistent with topic_relevance: if the candidate largely " +
+              "fails to answer on topic, overall_band cannot exceed ~3.5 no matter how a few " +
+              "isolated words look. Roughly average the five criteria, then sanity-check against " +
+              "the descriptors.\n" +
+              "- Very short, undeveloped, or repetitive answers cap fluency_coherence and " +
+              "lexical_resource regardless of accuracy.\n" +
+              "- Pronunciation cannot be fully judged from text, so estimate it conservatively " +
+              "from word choice and structure and note this limitation in the summary.\n" +
+              "Keep strengths and improvements to max 4 each. If the candidate produced almost " +
+              "no usable language, say so plainly in the summary.",
           },
           {
             role: "user",
-            content: `Speaking test topic: "${topicTitle}"\n\nTranscript:\n${dialogue}`,
+            content:
+              `Speaking test topic: "${topicTitle}"\n\n` +
+              "Below is the live transcript. Judge each candidate turn against the examiner " +
+              "question that precedes it for topic relevance.\n\n" +
+              `Transcript:\n${dialogue}`,
           },
         ],
       });
