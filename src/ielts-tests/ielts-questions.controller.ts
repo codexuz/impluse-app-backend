@@ -46,6 +46,23 @@ export class IeltsQuestionsController {
     return await this.ieltsTestsService.createQuestion(createQuestionDto);
   }
 
+  @Post(":id/ai-explain")
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
+  @ApiOperation({
+    summary:
+      "Auto-generate explanation and fromPassage for a reading question (and its sub-questions/options) using AI",
+  })
+  @ApiParam({ name: "id", description: "The question ID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      "Explanation and fromPassage fields generated from the reading passage and saved.",
+  })
+  async aiExplain(@Param("id") id: string) {
+    return await this.ieltsTestsService.generateReadingQuestionExplanation(id);
+  }
+
   @Get()
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT, Role.GUEST)
   @ApiOperation({ summary: "Get all questions" })

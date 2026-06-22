@@ -204,6 +204,102 @@ Majburiy ravishda o'zbek tilida javob bering!`;
     return result.output_parsed;
   }
 
+  private readingExplanationFormat = z.object({
+    question: z.object({
+      explanation: z
+        .string()
+        .describe(
+          "Concise, clear explanation (in Uzbek) of how the correct answer is derived from the passage",
+        ),
+      fromPassage: z
+        .string()
+        .describe(
+          "The exact sentence or phrase quoted VERBATIM from the passage that supports the answer. Empty string if nothing is relevant.",
+        ),
+    }),
+    subQuestions: z.array(
+      z.object({
+        index: z
+          .number()
+          .describe("The index of the sub-question exactly as given in the input"),
+        explanation: z
+          .string()
+          .describe(
+            "Explanation (in Uzbek) of why the correct answer for this sub-question is correct",
+          ),
+        fromPassage: z
+          .string()
+          .describe(
+            "Exact sentence/phrase quoted verbatim from the passage supporting this sub-question's answer",
+          ),
+      }),
+    ),
+    options: z.array(
+      z.object({
+        index: z
+          .number()
+          .describe("The index of the option exactly as given in the input"),
+        explanation: z
+          .string()
+          .describe(
+            "Explanation (in Uzbek) of why this option is correct or incorrect based on the passage",
+          ),
+        fromPassage: z
+          .string()
+          .describe(
+            "Exact sentence/phrase quoted verbatim from the passage relevant to this option",
+          ),
+      }),
+    ),
+  });
+
+  /**
+   * Generates IELTS reading explanations and supporting passage quotes for a
+   * question and its sub-questions/options, based on the reading passage.
+   */
+  async explainReadingQuestion(input: {
+    passage: string;
+    question: {
+      type?: string | null;
+      questionText?: string | null;
+      instruction?: string | null;
+    };
+    subQuestions: {
+      index: number;
+      questionText?: string | null;
+      correctAnswer?: string | null;
+    }[];
+    options: {
+      index: number;
+      optionKey?: string | null;
+      optionText?: string | null;
+      isCorrect?: boolean | null;
+    }[];
+  }) {
+    const systemPrompt = `You are an expert IELTS Reading examiner. You are given a reading passage and a question that may include sub-questions and/or answer options.
+
+For the question itself, and for EACH provided sub-question and option, produce:
+- "explanation": a concise, clear explanation IN UZBEK of why the correct answer is correct, referencing the relevant idea in the passage. The explanation text must be written in Uzbek.
+- "fromPassage": the exact sentence or phrase, QUOTED VERBATIM from the passage, that supports the answer. Copy it exactly as it appears in the passage (in the passage's original language); do not translate, paraphrase, or change wording. If nothing in the passage is relevant, return an empty string.
+
+Return exactly one entry per provided sub-question and one entry per provided option, preserving the same "index" value that was given for each item.`;
+
+    const userPayload = JSON.stringify(input, null, 2);
+
+    const result = await this.openai.responses.parse({
+      model: "gpt-4o-mini",
+      input: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPayload },
+      ],
+      text: {
+        format: zodTextFormat(this.readingExplanationFormat, "readingExplanation"),
+      },
+    });
+
+    return result.output_parsed;
+  }
+
   async agentBotChat(prompt: string) {
     let thread: AgentInputItem[] = [];
 

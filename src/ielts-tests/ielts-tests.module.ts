@@ -45,10 +45,12 @@ import { IeltsSpeakingService } from "./ielts-speaking.service.js";
 import { IeltsSpeakingController } from "./ielts-speaking.controller.js";
 import { IeltsSpeakingRealtimeService } from "./ielts-speaking-realtime.service.js";
 import { IeltsSpeakingGateway } from "./ielts-speaking.gateway.js";
+import { OpenaiModule } from "../services/openai/openai.module.js";
 
 @Module({
   imports: [
     ConfigModule,
+    OpenaiModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

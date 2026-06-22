@@ -64,6 +64,7 @@ import {
   CombinedSkillsQueryDto,
 } from "./dto/query.dto.js";
 import { User } from "../users/entities/user.entity.js";
+import { OpenaiService } from "../services/openai/openai.service.js";
 import { Op } from "sequelize";
 import { Sequelize } from "sequelize-typescript";
 
@@ -98,6 +99,7 @@ export class IeltsTestsService {
     private readonly ieltsWritingWritingTaskModel: typeof IeltsWritingWritingTask,
     @InjectConnection()
     private readonly sequelize: Sequelize,
+    private readonly openaiService: OpenaiService,
   ) {}
 
   // ========== Helpers ==========
@@ -1475,6 +1477,102 @@ export class IeltsTestsService {
         [{ model: IeltsQuestionOption, as: "options" }, "orderIndex", "ASC"],
       ],
     });
+  }
+
+  /**
+   * Uses AI to auto-fill the `explanation` and `fromPassage` fields of a reading
+   * question (and its sub-questions/options) based on the reading passage.
+   */
+  async generateReadingQuestionExplanation(id: string): Promise<IeltsQuestion> {
+    const question = await this.ieltsQuestionModel.findByPk(id, {
+      include: [
+        { model: IeltsReadingPart, as: "readingPart" },
+        { model: IeltsSubQuestion, as: "questions" },
+        { model: IeltsQuestionOption, as: "options" },
+      ],
+    });
+
+    if (!question) {
+      throw new NotFoundException(`Question with ID ${id} not found`);
+    }
+
+    const passage = (question as any).readingPart?.content;
+    if (!passage || !passage.trim()) {
+      throw new BadRequestException(
+        "This question is not linked to a reading part with passage content. AI explanations are only available for reading questions.",
+      );
+    }
+
+    const subQuestions: IeltsSubQuestion[] = (question as any).questions ?? [];
+    const options: IeltsQuestionOption[] = (question as any).options ?? [];
+
+    const ai = await this.openaiService.explainReadingQuestion({
+      passage,
+      question: {
+        type: question.type,
+        questionText: question.questionText,
+        instruction: question.instruction,
+      },
+      subQuestions: subQuestions.map((sq, index) => ({
+        index,
+        questionText: sq.questionText,
+        correctAnswer: sq.correctAnswer,
+      })),
+      options: options.map((opt, index) => ({
+        index,
+        optionKey: opt.optionKey,
+        optionText: opt.optionText,
+        isCorrect: opt.isCorrect,
+      })),
+    });
+
+    if (!ai) {
+      throw new BadRequestException("Failed to generate AI explanation.");
+    }
+
+    const transaction = await this.sequelize.transaction();
+    try {
+      await question.update(
+        {
+          explanation: ai.question.explanation,
+          fromPassage: ai.question.fromPassage,
+        } as any,
+        { transaction },
+      );
+
+      for (const item of ai.subQuestions ?? []) {
+        const target = subQuestions[item.index];
+        if (target) {
+          await target.update(
+            {
+              explanation: item.explanation,
+              fromPassage: item.fromPassage,
+            } as any,
+            { transaction },
+          );
+        }
+      }
+
+      for (const item of ai.options ?? []) {
+        const target = options[item.index];
+        if (target) {
+          await target.update(
+            {
+              explanation: item.explanation,
+              fromPassage: item.fromPassage,
+            } as any,
+            { transaction },
+          );
+        }
+      }
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+
+    return this.findQuestionById(id);
   }
 
   async findAllQuestions(query: QuestionQueryDto) {
