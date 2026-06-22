@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsObject } from 'class-validator';
+import { IsNotEmpty, IsString, IsObject, IsOptional } from 'class-validator';
 
 export class CreateResponseDto {
   @ApiProperty({
@@ -21,4 +21,22 @@ export class CreateResponseDto {
   @IsNotEmpty()
   @IsObject()
   answers: any;
+
+  @ApiProperty({
+    description: 'Phone number that received the SMS code (required when the form has smsVerification enabled)',
+    example: '+998901234567',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({
+    description: 'SMS verification code (required when the form has smsVerification enabled)',
+    example: '123456',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  code?: string;
 }

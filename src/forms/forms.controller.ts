@@ -5,6 +5,7 @@ import { CreateFormDto } from './dto/create-form.dto.js';
 import { UpdateFormDto } from './dto/update-form.dto.js';
 import { CreateResponseDto } from './dto/create-response.dto.js';
 import { UpdateResponseDto } from './dto/update-response.dto.js';
+import { RequestFormOtpDto } from './dto/request-form-otp.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Public } from '../auth/decorators/public.decorator.js';
@@ -59,9 +60,21 @@ export class FormsController {
 
   // Response endpoints
   @Public()
+  @Post('responses/request-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request an SMS verification code to submit a response (forms with smsVerification enabled)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Verification code sent' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Form does not require SMS verification' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Form not found' })
+  requestResponseOtp(@Body() requestFormOtpDto: RequestFormOtpDto) {
+    return this.formsService.requestResponseOtp(requestFormOtpDto);
+  }
+
+  @Public()
   @Post('responses')
   @ApiOperation({ summary: 'Submit a form response' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'The response has been successfully created' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Missing or invalid SMS verification code' })
   createResponse(@Body() createResponseDto: CreateResponseDto) {
     return this.formsService.createResponse(createResponseDto);
   }

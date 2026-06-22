@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { Form } from './entities/form.entity.js';
 import { Response } from './entities/response.entity.js';
 import { CreateFormDto } from './dto/create-form.dto.js';
 import { UpdateFormDto } from './dto/update-form.dto.js';
 import { CreateResponseDto } from './dto/create-response.dto.js';
 import { UpdateResponseDto } from './dto/update-response.dto.js';
+import { RequestFormOtpDto } from './dto/request-form-otp.dto.js';
+import { SmsVerification } from '../users/entities/sms-verification.model.js';
+import { SmsService } from '../sms/sms.service.js';
 
 @Injectable()
 export class FormsService {
@@ -14,6 +18,9 @@ export class FormsService {
     private formModel: typeof Form,
     @InjectModel(Response)
     private responseModel: typeof Response,
+    @InjectModel(SmsVerification)
+    private smsVerificationModel: typeof SmsVerification,
+    private smsService: SmsService,
   ) {}
 
   // Form CRUD operations
@@ -44,11 +51,76 @@ export class FormsService {
     await form.destroy();
   }
 
+  // SMS verification for form responses
+  async requestResponseOtp(dto: RequestFormOtpDto): Promise<{ message: string }> {
+    const form = await this.findOne(dto.form_id);
+
+    if (!form.smsVerification) {
+      throw new BadRequestException('This form does not require SMS verification');
+    }
+
+    // Invalidate any existing unused codes for this phone + form
+    await this.smsVerificationModel.update(
+      { isVerified: true },
+      {
+        where: {
+          phone: dto.phone,
+          isVerified: false,
+        },
+      },
+    );
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+    await this.smsVerificationModel.create({
+      phone: dto.phone,
+      code,
+      isVerified: false,
+      expiresAt,
+    });
+
+    await this.smsService.sendVerificationCode(dto.phone, code);
+
+    return { message: 'Verification code sent' };
+  }
+
+  private async verifyResponseOtp(phone: string, code: string): Promise<void> {
+    const verification = await this.smsVerificationModel.findOne({
+      where: {
+        phone,
+        code,
+        isVerified: false,
+        expiresAt: { [Op.gt]: new Date() },
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (!verification) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    await verification.update({ isVerified: true });
+  }
+
   // Response CRUD operations
   async createResponse(createResponseDto: CreateResponseDto): Promise<Response> {
     // Verify form exists
-    await this.findOne(createResponseDto.form_id);
-    return this.responseModel.create({ ...createResponseDto });
+    const form = await this.findOne(createResponseDto.form_id);
+
+    if (form.smsVerification) {
+      const { phone, code } = createResponseDto;
+      if (!phone || !code) {
+        throw new BadRequestException(
+          'Phone and verification code are required for this form',
+        );
+      }
+      await this.verifyResponseOtp(phone, code);
+    }
+
+    const { phone, code, ...responseData } = createResponseDto;
+    return this.responseModel.create({ ...responseData });
   }
 
   async findAllResponses(): Promise<Response[]> {

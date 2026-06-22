@@ -33,6 +33,14 @@ export class Form extends Model {
     })
     schema: any;
 
+    // When true, submitting a response requires a verified SMS code
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    })
+    smsVerification: boolean;
+
     @CreatedAt
     createdAt: Date;
 

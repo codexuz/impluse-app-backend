@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsObject, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class CreateFormDto {
   @ApiProperty({
@@ -23,4 +23,14 @@ export class CreateFormDto {
   @IsNotEmpty()
   @IsObject()
   schema: any;
+
+  @ApiProperty({
+    description: 'When true, a verified SMS code is required to submit a response',
+    example: false,
+    required: false,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  smsVerification?: boolean;
 }
