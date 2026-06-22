@@ -158,7 +158,7 @@ export class SmsService implements OnModuleInit {
    * @returns Response from Eskiz SMS API
    */
   async sendVerificationCode(mobile_phone: string, code: string): Promise<any> {
-    const message = `Your verification code is: ${code}. Do not share this code with anyone.`;
+    const message = `Tasdiqlash kodingiz: ${code}. Ushbu kodni hech kimga bermang. Impulse Study`;
 
     return this.sendSms({
       mobile_phone,
