@@ -1205,9 +1205,10 @@ export class StudentPaymentService {
    * Get monthly payment statistics: total amount and count grouped by month.
    * Only completed payments are included.
    * @param year - optional year filter (defaults to current year)
+   * @param month - optional month filter (1-12) for currentMonth (defaults to the current month)
    * @returns Array of monthly stats sorted chronologically
    */
-  async getMonthlyStatistics(year?: number): Promise<{
+  async getMonthlyStatistics(year?: number, month?: number): Promise<{
     year: number;
     currentMonth: {
       month: number;
@@ -1279,15 +1280,24 @@ export class StudentPaymentService {
     });
 
     const now = new Date();
-    const currentMonth =
-      now.getFullYear() === targetYear
-        ? months[now.getMonth()]
-        : {
-            month: now.getMonth() + 1,
-            monthName: monthNames[now.getMonth()],
-            count: 0,
-            totalAmount: 0,
-          };
+    // If a specific month is requested via query, return that month's stats.
+    // Otherwise default to the current calendar month.
+    const selectedMonthIndex =
+      month && month >= 1 && month <= 12 ? month - 1 : now.getMonth();
+
+    const selectedYearMatchesTarget =
+      month && month >= 1 && month <= 12
+        ? true
+        : now.getFullYear() === targetYear;
+
+    const currentMonth = selectedYearMatchesTarget
+      ? months[selectedMonthIndex]
+      : {
+          month: selectedMonthIndex + 1,
+          monthName: monthNames[selectedMonthIndex],
+          count: 0,
+          totalAmount: 0,
+        };
 
     return {
       year: targetYear,

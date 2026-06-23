@@ -205,9 +205,13 @@ export class StudentPaymentController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiResponse({ status: 403, description: "Forbidden." })
-  getMonthlyStatistics(@Query("year") year?: number) {
+  getMonthlyStatistics(
+    @Query("year") year?: number,
+    @Query("month") month?: number,
+  ) {
     return this.studentPaymentService.getMonthlyStatistics(
       year ? Number(year) : undefined,
+      month ? Number(month) : undefined,
     );
   }
 
