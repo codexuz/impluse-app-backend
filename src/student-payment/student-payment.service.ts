@@ -1209,6 +1209,12 @@ export class StudentPaymentService {
    */
   async getMonthlyStatistics(year?: number): Promise<{
     year: number;
+    currentMonth: {
+      month: number;
+      monthName: string;
+      count: number;
+      totalAmount: number;
+    };
     months: {
       month: number;
       monthName: string;
@@ -1272,8 +1278,20 @@ export class StudentPaymentService {
       };
     });
 
+    const now = new Date();
+    const currentMonth =
+      now.getFullYear() === targetYear
+        ? months[now.getMonth()]
+        : {
+            month: now.getMonth() + 1,
+            monthName: monthNames[now.getMonth()],
+            count: 0,
+            totalAmount: 0,
+          };
+
     return {
       year: targetYear,
+      currentMonth,
       months,
       grandTotal,
     };
