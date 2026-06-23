@@ -180,6 +180,69 @@ export class AuthController {
     return this.authService.verifyAdminOtp(dto, userAgent, ip);
   }
 
+  @Post("owner-manager/login")
+  @ApiOperation({ summary: "Owner/Manager login - sends 4-digit OTP" })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 200,
+    description: "Credentials verified, 4-digit OTP sent to owner/manager",
+    schema: {
+      properties: {
+        otpRequired: { type: "boolean", example: true },
+        otpToken: { type: "string" },
+        otpMethod: { type: "string", enum: ["sms", "telegram"] },
+        message: { type: "string" },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: "Unauthorized - Invalid credentials or not an owner/manager",
+  })
+  async ownerManagerLogin(
+    @Body() loginDto: LoginDto,
+    @Request() req,
+    @Ip() ip: string,
+    @Headers("user-agent") userAgent?: string,
+  ) {
+    return this.authService.ownerManagerLoginWithOtp(loginDto, userAgent, ip);
+  }
+
+  @Post("owner-manager/verify-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify 4-digit OTP code for owner/manager login" })
+  @ApiBody({ type: VerifyAdminOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: "OTP verified, owner/manager login successful",
+    schema: {
+      properties: {
+        access_token: { type: "string" },
+        refresh_token: { type: "string" },
+        user: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            username: { type: "string" },
+            phone: { type: "string" },
+            first_name: { type: "string" },
+            last_name: { type: "string" },
+            roles: { type: "array", items: { type: "string" } },
+          },
+        },
+        sessionId: { type: "string" },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: "Invalid or expired OTP" })
+  async verifyOwnerManagerOtp(
+    @Body() dto: VerifyAdminOtpDto,
+    @Ip() ip: string,
+    @Headers("user-agent") userAgent?: string,
+  ) {
+    return this.authService.verifyAdminOtp(dto, userAgent, ip);
+  }
+
   @Post("register")
   @ApiOperation({ summary: "Register new student account" })
   @ApiBody({ type: RegisterDto })

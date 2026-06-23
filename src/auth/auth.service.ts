@@ -469,6 +469,150 @@ export class AuthService {
     };
   }
 
+  /**
+   * Step 1 of owner/manager login: verify credentials and send a 4-digit OTP.
+   * Only users holding the "owner" or "manager" role may use this flow.
+   * The OTP is delivered via Telegram (preferred) with SMS as a fallback.
+   */
+  async ownerManagerLoginWithOtp(
+    loginDto: LoginDto,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<{ otpRequired: boolean; otpToken: string; message: string; otpMethod: string }> {
+    const identifier = loginDto.username || loginDto.phone;
+    if (!identifier) {
+      throw new BadRequestException("Either username or phone is required");
+    }
+
+    const orConditions = [];
+    if (loginDto.username) orConditions.push({ username: loginDto.username });
+    if (loginDto.phone) orConditions.push({ phone: loginDto.phone });
+
+    const user = await this.userModel.findOne({
+      where: {
+        [Op.or]: orConditions,
+        is_active: true,
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          include: ["permissions"],
+        },
+      ],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("Invalid username/phone or password");
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password_hash,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("Invalid username/phone or password");
+    }
+
+    // Check if user has owner or manager role
+    const userRoles = user.roles.map((role) => role.name.toLowerCase());
+    const allowedRoles = ["owner", "manager"];
+    if (!userRoles.some((r) => allowedRoles.includes(r))) {
+      throw new UnauthorizedException(
+        "Access denied. User is not an owner or manager",
+      );
+    }
+
+    // Invalidate any existing unused OTP codes for this user
+    await this.smsVerificationModel.update(
+      { isVerified: true },
+      {
+        where: {
+          userId: user.user_id,
+          isVerified: false,
+          expiresAt: { [Op.gt]: new Date() },
+        },
+      },
+    );
+
+    // Generate 4-digit OTP code
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // OTP expires in 3 minutes
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 3);
+
+    // Generate an OTP token to identify this login attempt
+    const otpToken = uuidv4();
+
+    // Save verification record
+    await this.smsVerificationModel.create({
+      id: otpToken,
+      userId: user.user_id,
+      phone: user.phone || "",
+      code,
+      isVerified: false,
+      expiresAt,
+      attempts: 0,
+    });
+
+    // Send OTP: Telegram is the default channel, SMS is the fallback
+    let otpMethod = "telegram";
+    let otpSent = false;
+
+    if (user.telegram_chat_id) {
+      const telegramSent = await this.telegramAuthService.sendOtpCode(
+        user.telegram_chat_id,
+        code,
+      );
+      if (telegramSent) {
+        otpSent = true;
+        otpMethod = "telegram";
+        console.log(
+          `Owner/manager OTP sent via Telegram to chat ${user.telegram_chat_id}`,
+        );
+      } else {
+        console.error("Failed to send owner/manager OTP via Telegram");
+      }
+    }
+
+    if (!otpSent) {
+      if (user.phone) {
+        const smsMessage = `Impulse CRMga kirish kodingiz: ${code}`;
+        try {
+          await this.smsService.sendSms({
+            mobile_phone: user.phone,
+            message: smsMessage,
+          });
+          otpSent = true;
+          otpMethod = "sms";
+          console.log(`Owner/manager OTP sent via SMS to ${user.phone}`);
+        } catch (error) {
+          console.error("Failed to send owner/manager OTP via SMS:", error);
+        }
+      }
+
+      if (!otpSent) {
+        throw new BadRequestException(
+          user.telegram_chat_id
+            ? "Failed to send OTP via Telegram and SMS. Please try again."
+            : "No phone number or Telegram account available to receive OTP codes.",
+        );
+      }
+    }
+
+    return {
+      otpRequired: true,
+      otpToken,
+      otpMethod,
+      message:
+        otpMethod === "telegram"
+          ? "OTP code sent to your Telegram"
+          : "OTP code sent to your phone",
+    };
+  }
+
   async verifyAdminOtp(
     dto: VerifyAdminOtpDto,
     userAgent?: string,
