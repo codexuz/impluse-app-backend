@@ -58,4 +58,13 @@ export class CreateExamDto {
     @IsBoolean()
     @IsOptional()
     is_online?: boolean = false;
+
+    @ApiPropertyOptional({
+        description: 'Whether a bonus or penalty has been applied for this exam',
+        default: false,
+        example: false
+    })
+    @IsBoolean()
+    @IsOptional()
+    bonusOrPenaltyAdded?: boolean = false;
 }

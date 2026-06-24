@@ -64,6 +64,13 @@ export class Exam extends Model<Exam> {
   })
   is_online: boolean;
 
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+  })
+  bonusOrPenaltyAdded: boolean;
+
   @CreatedAt
   created_at: Date;
 
