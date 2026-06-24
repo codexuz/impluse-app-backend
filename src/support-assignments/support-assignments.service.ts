@@ -111,8 +111,9 @@ export class SupportAssignmentsService {
     }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string): Promise<{ message: string }> {
     const assignment = await this.findOne(id);
     await assignment.destroy();
+    return { message: "Support assignment deleted successfully" };
   }
 }
