@@ -69,6 +69,8 @@ import { ExamResult } from "../exams/entities/exam_result.entity.js";
 
 import { SupportSchedule } from "../support-schedules/entities/support-schedule.entity.js";
 import { SupportBooking } from "../support-bookings/entities/support-booking.entity.js";
+import { SupportAssignment } from "../support-assignments/entities/support-assignment.entity.js";
+import { SupportAttendance } from "../support-attendance/entities/support-attendance.entity.js";
 import { GroupChat } from "../group-chat/entities/group-chat.entity.js";
 import { Messages } from "../group-chat/entities/messages.js";
 import { GroupChatMembers } from "../group-chat/entities/chat_group_members.js";
@@ -249,6 +251,8 @@ export const Models = [
   IeltsSubQuestion,
   SupportSchedule,
   SupportBooking,
+  SupportAssignment,
+  SupportAttendance,
   IeltsVocabulary,
   IeltsVocabularyDeck,
   IeltsDeckWord,
@@ -1183,6 +1187,58 @@ export function initializeAssociations() {
   SupportBooking.belongsTo(SupportSchedule, {
     foreignKey: "schedule_id",
     as: "schedule",
+  });
+
+  // SupportAssignment associations
+  User.hasMany(SupportAssignment, {
+    foreignKey: "support_teacher_id",
+    as: "support_assignments",
+  });
+  SupportAssignment.belongsTo(User, {
+    foreignKey: "support_teacher_id",
+    as: "teacher",
+  });
+  Group.hasMany(SupportAssignment, {
+    foreignKey: "group_id",
+    as: "support_assignments",
+  });
+  SupportAssignment.belongsTo(Group, {
+    foreignKey: "group_id",
+    as: "group",
+  });
+
+  // SupportAttendance associations
+  SupportAssignment.hasMany(SupportAttendance, {
+    foreignKey: "assignment_id",
+    as: "attendance",
+  });
+  SupportAttendance.belongsTo(SupportAssignment, {
+    foreignKey: "assignment_id",
+    as: "assignment",
+  });
+  Group.hasMany(SupportAttendance, {
+    foreignKey: "group_id",
+    as: "support_attendance",
+  });
+  SupportAttendance.belongsTo(Group, {
+    foreignKey: "group_id",
+    as: "group",
+  });
+  User.hasMany(SupportAttendance, {
+    foreignKey: "student_id",
+    as: "support_attendance_records",
+  });
+  SupportAttendance.belongsTo(User, {
+    foreignKey: "student_id",
+    as: "student",
+  });
+  User.hasMany(SupportAttendance, {
+    foreignKey: "support_teacher_id",
+    as: "support_attendance_marked",
+  });
+  SupportAttendance.belongsTo(User, {
+    foreignKey: "support_teacher_id",
+    as: "teacher",
   });
 
   // GroupChatMembers associations

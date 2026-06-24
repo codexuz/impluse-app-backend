@@ -65,6 +65,8 @@ import { HttpModule } from "@nestjs/axios";
 import { UploadModule } from "./upload/upload.module.js";
 import { SupportSchedulesModule } from "./support-schedules/support-schedules.module.js";
 import { SupportBookingsModule } from "./support-bookings/support-bookings.module.js";
+import { SupportAssignmentsModule } from "./support-assignments/support-assignments.module.js";
+import { SupportAttendanceModule } from "./support-attendance/support-attendance.module.js";
 import { GroupChatModule } from "./group-chat/group-chat.module.js";
 import { AudioCallModule } from "./audio-call/audio-call.module.js";
 import { StoriesModule } from "./stories/stories.module.js";
@@ -185,6 +187,8 @@ import { SpeechSuperModule } from "./speechsuper/speechsuper.module.js";
     UploadModule,
     SupportSchedulesModule,
     SupportBookingsModule,
+    SupportAssignmentsModule,
+    SupportAttendanceModule,
     GroupChatModule,
     AudioCallModule,
     StoriesModule,
