@@ -42,12 +42,22 @@ export class SupportAssignmentsService {
     }
   }
 
-  async findAll(filters?: {
-    support_teacher_id?: string;
-    teacher_id?: string;
-    group_id?: string;
-    days?: string;
-  }): Promise<SupportAssignment[]> {
+  async findAll(
+    page = 1,
+    limit = 10,
+    filters?: {
+      support_teacher_id?: string;
+      teacher_id?: string;
+      group_id?: string;
+      days?: string;
+    },
+  ): Promise<{
+    data: SupportAssignment[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    const offset = (page - 1) * limit;
     const where: any = {};
     if (filters?.support_teacher_id)
       where.support_teacher_id = filters.support_teacher_id;
@@ -55,11 +65,21 @@ export class SupportAssignmentsService {
     if (filters?.group_id) where.group_id = filters.group_id;
     if (filters?.days) where.days = filters.days;
 
-    return this.supportAssignmentModel.findAll({
+    const { count, rows } = await this.supportAssignmentModel.findAndCountAll({
       where,
       include: baseInclude,
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return {
+      data: rows,
+      total: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+    };
   }
 
   async findOne(id: string): Promise<SupportAssignment> {

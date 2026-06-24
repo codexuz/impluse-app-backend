@@ -47,6 +47,16 @@ export class SupportAssignmentsController {
   @Get()
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: "Get all support assignments (with optional filters)" })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    description: "Page number (default: 1)",
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Items per page (default: 10)",
+  })
   @ApiQuery({ name: "support_teacher_id", required: false })
   @ApiQuery({ name: "teacher_id", required: false })
   @ApiQuery({ name: "group_id", required: false })
@@ -56,12 +66,14 @@ export class SupportAssignmentsController {
     enum: ["odd", "even", "every_day", "other_day"],
   })
   findAll(
+    @Query("page") page = 1,
+    @Query("limit") limit = 10,
     @Query("support_teacher_id") support_teacher_id?: string,
     @Query("teacher_id") teacher_id?: string,
     @Query("group_id") group_id?: string,
     @Query("days") days?: string,
   ) {
-    return this.supportAssignmentsService.findAll({
+    return this.supportAssignmentsService.findAll(+page, +limit, {
       support_teacher_id,
       teacher_id,
       group_id,
