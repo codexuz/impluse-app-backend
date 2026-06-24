@@ -7,8 +7,15 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from "@nestjs/swagger";
 import { SupportAssignmentsService } from "./support-assignments.service.js";
 import {
   CreateSupportAssignmentDto,
@@ -39,9 +46,24 @@ export class SupportAssignmentsController {
 
   @Get()
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
-  @ApiOperation({ summary: "Get all support assignments" })
-  findAll() {
-    return this.supportAssignmentsService.findAll();
+  @ApiOperation({ summary: "Get all support assignments (with optional filters)" })
+  @ApiQuery({ name: "support_teacher_id", required: false })
+  @ApiQuery({ name: "group_id", required: false })
+  @ApiQuery({
+    name: "days",
+    required: false,
+    enum: ["odd", "even", "every_day", "other_day"],
+  })
+  findAll(
+    @Query("support_teacher_id") support_teacher_id?: string,
+    @Query("group_id") group_id?: string,
+    @Query("days") days?: string,
+  ) {
+    return this.supportAssignmentsService.findAll({
+      support_teacher_id,
+      group_id,
+      days,
+    });
   }
 
   @Get("teacher/:teacherId")
