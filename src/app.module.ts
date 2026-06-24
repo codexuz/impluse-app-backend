@@ -67,6 +67,7 @@ import { SupportSchedulesModule } from "./support-schedules/support-schedules.mo
 import { SupportBookingsModule } from "./support-bookings/support-bookings.module.js";
 import { SupportAssignmentsModule } from "./support-assignments/support-assignments.module.js";
 import { SupportAttendanceModule } from "./support-attendance/support-attendance.module.js";
+import { SupportBotModule } from "./support-bot/support-bot.module.js";
 import { GroupChatModule } from "./group-chat/group-chat.module.js";
 import { AudioCallModule } from "./audio-call/audio-call.module.js";
 import { StoriesModule } from "./stories/stories.module.js";
@@ -189,6 +190,7 @@ import { SpeechSuperModule } from "./speechsuper/speechsuper.module.js";
     SupportBookingsModule,
     SupportAssignmentsModule,
     SupportAttendanceModule,
+    SupportBotModule,
     GroupChatModule,
     AudioCallModule,
     StoriesModule,
