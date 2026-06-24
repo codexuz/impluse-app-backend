@@ -499,7 +499,10 @@ export class SupportBotService implements OnModuleInit {
       const today = this.dateInTashkent(0);
       const weekday = this.weekdayNum(today);
 
-      const all = await this.supportAssignmentsService.findAll();
+      const { data: all } = await this.supportAssignmentsService.findAll(
+        1,
+        10000,
+      );
       const todays = all.filter(
         (a: any) => a.is_active && this.assignmentRunsOn(a.days, weekday),
       );
