@@ -15,6 +15,10 @@ const baseInclude = [
     association: "teacher",
     attributes: ["user_id", "username", "first_name", "last_name", "avatar_url"],
   },
+  {
+    association: "main_teacher",
+    attributes: ["user_id", "username", "first_name", "last_name", "avatar_url"],
+  },
   { association: "group" },
 ];
 
@@ -40,12 +44,14 @@ export class SupportAssignmentsService {
 
   async findAll(filters?: {
     support_teacher_id?: string;
+    teacher_id?: string;
     group_id?: string;
     days?: string;
   }): Promise<SupportAssignment[]> {
     const where: any = {};
     if (filters?.support_teacher_id)
       where.support_teacher_id = filters.support_teacher_id;
+    if (filters?.teacher_id) where.teacher_id = filters.teacher_id;
     if (filters?.group_id) where.group_id = filters.group_id;
     if (filters?.days) where.days = filters.days;
 
@@ -69,6 +75,14 @@ export class SupportAssignmentsService {
   async findByTeacher(teacherId: string): Promise<SupportAssignment[]> {
     return this.supportAssignmentModel.findAll({
       where: { support_teacher_id: teacherId },
+      include: baseInclude,
+      order: [["createdAt", "DESC"]],
+    });
+  }
+
+  async findByMainTeacher(teacherId: string): Promise<SupportAssignment[]> {
+    return this.supportAssignmentModel.findAll({
+      where: { teacher_id: teacherId },
       include: baseInclude,
       order: [["createdAt", "DESC"]],
     });

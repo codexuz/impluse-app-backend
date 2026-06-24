@@ -25,6 +25,9 @@ export class SupportAssignment extends Model {
   @Column({ type: DataType.UUID, allowNull: false })
   support_teacher_id!: string; // FK to User where role = 'support_teacher'
 
+  @Column({ type: DataType.UUID, allowNull: true })
+  teacher_id!: string; // FK to User (the group's main teacher)
+
   @Column({ type: DataType.UUID, allowNull: false })
   group_id!: string; // FK to Group
 

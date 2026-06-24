@@ -20,6 +20,14 @@ export class CreateSupportAssignmentDto {
   @IsNotEmpty()
   support_teacher_id: string;
 
+  @ApiPropertyOptional({
+    description: "Main (group) teacher ID this support covers",
+    example: "123e4567-e89b-12d3-a456-426614174002",
+  })
+  @IsUUID()
+  @IsOptional()
+  teacher_id?: string;
+
   @ApiProperty({
     description: "Group ID the support teacher is assigned to",
     example: "123e4567-e89b-12d3-a456-426614174001",

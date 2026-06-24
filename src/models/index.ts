@@ -1198,6 +1198,14 @@ export function initializeAssociations() {
     foreignKey: "support_teacher_id",
     as: "teacher",
   });
+  User.hasMany(SupportAssignment, {
+    foreignKey: "teacher_id",
+    as: "support_assignments_as_main_teacher",
+  });
+  SupportAssignment.belongsTo(User, {
+    foreignKey: "teacher_id",
+    as: "main_teacher",
+  });
   Group.hasMany(SupportAssignment, {
     foreignKey: "group_id",
     as: "support_assignments",

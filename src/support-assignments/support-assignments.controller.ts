@@ -48,6 +48,7 @@ export class SupportAssignmentsController {
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
   @ApiOperation({ summary: "Get all support assignments (with optional filters)" })
   @ApiQuery({ name: "support_teacher_id", required: false })
+  @ApiQuery({ name: "teacher_id", required: false })
   @ApiQuery({ name: "group_id", required: false })
   @ApiQuery({
     name: "days",
@@ -56,11 +57,13 @@ export class SupportAssignmentsController {
   })
   findAll(
     @Query("support_teacher_id") support_teacher_id?: string,
+    @Query("teacher_id") teacher_id?: string,
     @Query("group_id") group_id?: string,
     @Query("days") days?: string,
   ) {
     return this.supportAssignmentsService.findAll({
       support_teacher_id,
+      teacher_id,
       group_id,
       days,
     });
@@ -72,6 +75,14 @@ export class SupportAssignmentsController {
   @ApiParam({ name: "teacherId", description: "Support teacher ID" })
   findByTeacher(@Param("teacherId") teacherId: string) {
     return this.supportAssignmentsService.findByTeacher(teacherId);
+  }
+
+  @Get("main-teacher/:teacherId")
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.SUPPORT_TEACHER, Role.TEACHER)
+  @ApiOperation({ summary: "Get support assignments by main (group) teacher ID" })
+  @ApiParam({ name: "teacherId", description: "Main teacher ID" })
+  findByMainTeacher(@Param("teacherId") teacherId: string) {
+    return this.supportAssignmentsService.findByMainTeacher(teacherId);
   }
 
   @Get("group/:groupId")
