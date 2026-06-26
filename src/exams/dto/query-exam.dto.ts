@@ -1,5 +1,5 @@
-import { IsOptional, IsUUID, IsEnum, IsDateString, IsInt, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsUUID, IsEnum, IsDateString, IsInt, Min, IsBoolean } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ExamStatus } from './create-exam.dto.js';
 
@@ -42,4 +42,10 @@ export class QueryExamDto {
   @IsOptional()
   @IsDateString()
   end_date?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by bonus or penalty status' })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  bonusOrPenaltyAdded?: boolean;
 }

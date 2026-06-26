@@ -84,7 +84,7 @@ export class ExamService {
   }
 
   async findAll(query: QueryExamDto) {
-    const { page = 1, limit = 10, status, group_id, teacher_id, start_date, end_date } = query;
+    const { page = 1, limit = 10, status, group_id, teacher_id, start_date, end_date, bonusOrPenaltyAdded } = query;
     const where: WhereOptions = {};
 
     if (status) {
@@ -109,6 +109,10 @@ export class ExamService {
       if (start_date) dateFilter[Op.gte] = new Date(start_date);
       if (end_date) dateFilter[Op.lte] = new Date(end_date);
       where['scheduled_at'] = dateFilter;
+    }
+
+    if (bonusOrPenaltyAdded !== undefined) {
+      where['bonusOrPenaltyAdded'] = bonusOrPenaltyAdded;
     }
 
     const offset = (page - 1) * limit;
