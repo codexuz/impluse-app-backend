@@ -139,8 +139,14 @@ export class UsersController {
     status: 200,
     description: "Active students count and new students this month",
   })
-  getStudentStats() {
-    return this.usersService.getStudentStats();
+  getStudentStats(
+    @Query("page") page?: number,
+    @Query("limit") limit?: number,
+  ) {
+    return this.usersService.getStudentStats(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+    );
   }
 
   @Get("students")

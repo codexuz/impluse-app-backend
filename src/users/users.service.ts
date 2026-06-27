@@ -646,21 +646,42 @@ export class UsersService {
     };
   }
 
-  async getStudentStats(): Promise<{
+  async getStudentStats(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{
     activeStudentsCount: number;
     newStudentsThisMonth: number;
-    students: User[];
+    students: {
+      data: User[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
   }> {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
+
+    const emptyStudents = {
+      data: [] as User[],
+      total: 0,
+      page,
+      limit,
+      totalPages: 0,
+    };
 
     const studentRole = await this.roleModel.findOne({
       where: { name: "student" },
     });
 
     if (!studentRole) {
-      return { activeStudentsCount: 0, newStudentsThisMonth: 0, students: [] };
+      return {
+        activeStudentsCount: 0,
+        newStudentsThisMonth: 0,
+        students: emptyStudents,
+      };
     }
 
     const activeStudentsCount = await this.userModel.count({
@@ -706,7 +727,8 @@ export class UsersService {
       distinct: true,
     });
 
-    const students = await this.userModel.findAll({
+    const offset = (page - 1) * limit;
+    const { count, rows } = await this.userModel.findAndCountAll({
       where: {
         is_active: true,
         created_at: { [Op.gte]: startOfMonth },
@@ -743,9 +765,22 @@ export class UsersService {
           required: false,
         },
       ],
+      limit,
+      offset,
+      distinct: true,
     });
 
-    return { activeStudentsCount, newStudentsThisMonth, students };
+    return {
+      activeStudentsCount,
+      newStudentsThisMonth,
+      students: {
+        data: rows,
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit),
+      },
+    };
   }
 
   async getAllStudents(
