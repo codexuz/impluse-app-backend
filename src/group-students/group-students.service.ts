@@ -13,6 +13,7 @@ import {
 } from "./entities/group-enrollment-event.entity.js";
 import { Group } from "../groups/entities/group.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { UserCourseService } from "../user-course/user-course.service.js";
 
 @Injectable()
 export class GroupStudentsService {
@@ -23,7 +24,27 @@ export class GroupStudentsService {
     private groupModel: typeof Group,
     @InjectModel(GroupEnrollmentEvent)
     private enrollmentEventModel: typeof GroupEnrollmentEvent,
+    private userCourseService: UserCourseService,
   ) {}
+
+  /**
+   * Auto-enroll the student in the course tied to the group's level, so joining
+   * a group automatically gives the student its course. Best-effort: never
+   * breaks the enrollment operation itself.
+   */
+  private async enrollInGroupCourse(
+    groupId: string,
+    studentId: string,
+  ): Promise<void> {
+    try {
+      const group = await this.groupModel.findByPk(groupId, {
+        attributes: ["id", "level_id"],
+      });
+      await this.userCourseService.enrollIfNeeded(studentId, group?.level_id);
+    } catch (err) {
+      console.error("Failed to auto-enroll student in group course", err);
+    }
+  }
 
   /**
    * Append a membership change to the enrollment-event log, snapshotting the
@@ -138,6 +159,8 @@ export class GroupStudentsService {
       created.enrolled_at ?? new Date(),
       String(created.status),
     );
+
+    await this.enrollInGroupCourse(created.group_id, created.student_id);
 
     return created;
   }
@@ -536,6 +559,8 @@ export class GroupStudentsService {
       now,
       "transfer",
     );
+
+    await this.enrollInGroupCourse(toGroupId, studentId);
 
     return {
       removed: existingEnrollment,

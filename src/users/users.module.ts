@@ -17,6 +17,7 @@ import { MinioModule } from "../minio/minio.module.js";
 import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
 import { BonusPenaltyModule } from "../bonus-penalty/bonus-penalty.module.js";
 import { GroupStudentsModule } from "../group-students/group-students.module.js";
+import { UserCourseModule } from "../user-course/user-course.module.js";
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { GroupStudentsModule } from "../group-students/group-students.module.js"
     AwsStorageModule,
     BonusPenaltyModule,
     GroupStudentsModule,
+    UserCourseModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

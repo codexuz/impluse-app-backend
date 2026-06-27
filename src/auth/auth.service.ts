@@ -31,6 +31,7 @@ import { SmsVerification } from "../users/entities/sms-verification.model.js";
 import { AwsStorageService } from "../aws-storage/aws-storage.service.js";
 import { SmsService } from "../sms/sms.service.js";
 import { TelegramAuthService } from "./telegram-auth.service.js";
+import { UserCourseService } from "../user-course/user-course.service.js";
 import * as bcrypt from "bcrypt";
 
 @Injectable()
@@ -53,6 +54,7 @@ export class AuthService {
     private awsStorageService: AwsStorageService,
     private smsService: SmsService,
     private telegramAuthService: TelegramAuthService,
+    private userCourseService: UserCourseService,
   ) {}
 
   async validateUser(username: string, pass: string): Promise<User | null> {
@@ -291,6 +293,12 @@ export class AuthService {
         student_id: user.user_id,
         amount: 0,
       });
+
+      // Auto-enroll the student in the course matching their level.
+      await this.userCourseService.enrollIfNeeded(
+        user.user_id,
+        registerDto.level_id,
+      );
 
       // Create parent record if parent data is provided
       if (

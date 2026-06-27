@@ -38,6 +38,7 @@ import {
   WALLET_ROLES,
 } from "../bonus-penalty/bonus-penalty-wallet.service.js";
 import { GroupStudentsService } from "../group-students/group-students.service.js";
+import { UserCourseService } from "../user-course/user-course.service.js";
 
 @Injectable()
 export class UsersService {
@@ -68,6 +69,7 @@ export class UsersService {
     private awsStorageService: AwsStorageService,
     private bonusPenaltyWalletService: BonusPenaltyWalletService,
     private groupStudentsService: GroupStudentsService,
+    private userCourseService: UserCourseService,
   ) {}
 
   // Ensure a staff member (admin/teacher/support_teacher) owns a bonus &
@@ -394,6 +396,12 @@ export class UsersService {
     }
 
     await user.update(updateUserDto);
+
+    // Auto-enroll the student in the course matching their (new) level.
+    if (updateUserDto.level_id) {
+      await this.userCourseService.enrollIfNeeded(id, updateUserDto.level_id);
+    }
+
     return this.findOne(id);
   }
 
@@ -641,6 +649,7 @@ export class UsersService {
   async getStudentStats(): Promise<{
     activeStudentsCount: number;
     newStudentsThisMonth: number;
+    students: User[];
   }> {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
@@ -651,7 +660,7 @@ export class UsersService {
     });
 
     if (!studentRole) {
-      return { activeStudentsCount: 0, newStudentsThisMonth: 0 };
+      return { activeStudentsCount: 0, newStudentsThisMonth: 0, students: [] };
     }
 
     const activeStudentsCount = await this.userModel.count({
@@ -697,7 +706,45 @@ export class UsersService {
       distinct: true,
     });
 
-    return { activeStudentsCount, newStudentsThisMonth };
+    const students = await this.userModel.findAll({
+      where: {
+        is_active: true,
+        // Exclude users who have multiple roles (e.g. student+teacher, student+guest)
+        [Op.and]: [
+          Sequelize.literal(
+            `(SELECT COUNT(*) FROM user_roles WHERE user_roles.userId = \`User\`.user_id) = 1`,
+          ),
+        ],
+      },
+      attributes: {
+        exclude: ["password_hash"],
+      },
+      include: [
+        {
+          model: Role,
+          as: "roles",
+          where: { name: "student" },
+          required: true,
+          through: { attributes: [] },
+        },
+        {
+          model: StudentProfile,
+          as: "student_profile",
+        },
+        {
+          model: Course,
+          as: "level",
+          required: false,
+        },
+        {
+          model: this.userModel.sequelize.models.StudentParent,
+          as: "student_parents",
+          required: false,
+        },
+      ],
+    });
+
+    return { activeStudentsCount, newStudentsThisMonth, students };
   }
 
   async getAllStudents(

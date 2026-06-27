@@ -17,6 +17,33 @@ export class UserCourseService {
     });
   }
 
+  /**
+   * Idempotently enroll a student in a course. Used to auto-assign a student's
+   * course whenever their level/group is set. Best-effort: a missing courseId is
+   * skipped and any failure is swallowed so it never breaks the caller's main
+   * operation (group enrollment, user update, registration).
+   */
+  async enrollIfNeeded(
+    userId: string,
+    courseId?: string | null,
+  ): Promise<UserCourse | null> {
+    if (!userId || !courseId) return null;
+
+    try {
+      const [userCourse] = await this.userCourseModel.findOrCreate({
+        where: { userId, courseId },
+        defaults: { userId, courseId } as any,
+      });
+      return userCourse;
+    } catch (err) {
+      console.error(
+        `Failed to auto-enroll user ${userId} in course ${courseId}`,
+        err,
+      );
+      return null;
+    }
+  }
+
   async findAll(): Promise<UserCourse[]> {
     return this.userCourseModel.findAll();
   }

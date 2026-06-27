@@ -20,11 +20,13 @@ import { SmsVerification } from "../users/entities/sms-verification.model.js";
 import { AwsStorageModule } from "../aws-storage/aws-storage.module.js";
 import { SmsModule } from "../sms/sms.module.js";
 import { TelegramAuthService } from "./telegram-auth.service.js";
+import { UserCourseModule } from "../user-course/user-course.module.js";
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule,
+    UserCourseModule,
     AwsStorageModule,
     SmsModule,
     JwtModule.registerAsync({
