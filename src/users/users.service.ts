@@ -709,6 +709,7 @@ export class UsersService {
     const students = await this.userModel.findAll({
       where: {
         is_active: true,
+        created_at: { [Op.gte]: startOfMonth },
         // Exclude users who have multiple roles (e.g. student+teacher, student+guest)
         [Op.and]: [
           Sequelize.literal(
