@@ -50,6 +50,39 @@ export class ExamResultsController {
     return this.examResultsService.findAll();
   }
 
+  @Get('unit-test-failures')
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
+  @ApiOperation({
+    summary: 'Get students who failed unit tests at least N times (default 3)',
+  })
+  @ApiQuery({
+    name: 'minFailures',
+    required: false,
+    description: 'Minimum number of failed unit tests (default 3)',
+    example: 3,
+  })
+  @ApiQuery({
+    name: 'groupId',
+    required: false,
+    description: 'Only count unit tests of this group',
+  })
+  @ApiQuery({
+    name: 'teacherId',
+    required: false,
+    description: 'Only count unit tests of this teacher',
+  })
+  findUnitTestFailures(
+    @Query('minFailures') minFailures?: string,
+    @Query('groupId') groupId?: string,
+    @Query('teacherId') teacherId?: string,
+  ) {
+    return this.examResultsService.findUnitTestFailures({
+      minFailures: minFailures ? parseInt(minFailures, 10) : 3,
+      groupId,
+      teacherId,
+    });
+  }
+
   @Get(':id')
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER, Role.STUDENT)
   @ApiOperation({ summary: 'Get a specific exam result by ID' })
@@ -84,39 +117,6 @@ export class ExamResultsController {
     @Param('studentId') studentId: string,
   ) {
     return this.examResultsService.findByExamAndStudent(examId, studentId);
-  }
-
-  @Get('unit-test-failures')
-  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
-  @ApiOperation({
-    summary: 'Get students who failed unit tests at least N times (default 3)',
-  })
-  @ApiQuery({
-    name: 'minFailures',
-    required: false,
-    description: 'Minimum number of failed unit tests (default 3)',
-    example: 3,
-  })
-  @ApiQuery({
-    name: 'groupId',
-    required: false,
-    description: 'Only count unit tests of this group',
-  })
-  @ApiQuery({
-    name: 'teacherId',
-    required: false,
-    description: 'Only count unit tests of this teacher',
-  })
-  findUnitTestFailures(
-    @Query('minFailures') minFailures?: string,
-    @Query('groupId') groupId?: string,
-    @Query('teacherId') teacherId?: string,
-  ) {
-    return this.examResultsService.findUnitTestFailures({
-      minFailures: minFailures ? parseInt(minFailures, 10) : 3,
-      groupId,
-      teacherId,
-    });
   }
 
   @Get('exam/:examId/statistics')
