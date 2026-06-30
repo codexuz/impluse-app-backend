@@ -9,6 +9,14 @@ export enum ExamStatus {
     CANCELLED = 'cancelled'
 }
 
+export enum ExamType {
+    UNIT_TEST = 'unit_test',
+    LEVEL_TEST = 'level_test',
+    HAFTALIK_TEST = 'haftalik_test',
+    OYLIK_TEST = 'oylik_test',
+    MID_COURSE_TEST = 'mid_course_test'
+}
+
 export class CreateExamDto {
     @ApiProperty({
         description: 'The title of the exam',
@@ -23,6 +31,23 @@ export class CreateExamDto {
     })
     @IsUUID()
     group_id: string;
+
+    @ApiPropertyOptional({
+        description: 'The type of the exam',
+        enum: ExamType,
+        example: ExamType.UNIT_TEST
+    })
+    @IsEnum(ExamType)
+    @IsOptional()
+    type?: ExamType;
+
+    @ApiPropertyOptional({
+        description: 'The UUID of the unit this exam covers (for unit_test)',
+        example: '123e4567-e89b-12d3-a456-426614174002'
+    })
+    @IsUUID()
+    @IsOptional()
+    unit_id?: string;
 
     @ApiPropertyOptional({
         description: 'The UUID of the teacher conducting the exam',

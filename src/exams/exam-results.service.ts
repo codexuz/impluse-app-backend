@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
+import { QueryTypes } from "sequelize";
 import { ExamResult } from "./entities/exam_result.entity.js";
 import { CreateExamResultDto } from "./dto/create-exam-result.dto.js";
 import { UpdateExamResultDto } from "./dto/update-exam-result.dto.js";
@@ -207,6 +208,101 @@ export class ExamResultsService {
   async remove(id: string): Promise<void> {
     const result = await this.findOne(id);
     await result.destroy();
+  }
+
+  /**
+   * Find students who failed unit tests at least `minFailures` times within a
+   * given level (course). A "unit test" is an exam with type = 'unit_test', and
+   * the level is matched against exams.level_id (the course UUID).
+   *
+   * Optionally narrow by group, teacher and/or unit. Since a student may have
+   * failed across several groups/units/teachers, the matched ones are returned
+   * as aggregated lists per student.
+   *
+   * Example: pass the elementary course's id with minFailures = 3 to get back
+   * "Alex" who failed 3 unit tests in elementary.
+   */
+  async findUnitTestFailuresByLevel(filters: {
+    levelId: string;
+    minFailures?: number;
+    groupId?: string;
+    teacherId?: string;
+    unitId?: string;
+  }): Promise<
+    Array<{
+      student_id: string;
+      first_name: string;
+      last_name: string;
+      failed_count: number;
+      groups: Array<{ id: string; name: string }>;
+      teachers: Array<{ id: string; first_name: string; last_name: string }>;
+      units: Array<{ id: string; title: string }>;
+    }>
+  > {
+    const { levelId, groupId, teacherId, unitId } = filters;
+    const minFailures = filters.minFailures ?? 3;
+
+    const rows = await this.examResultModel.sequelize.query(
+      `
+      SELECT
+        er.student_id,
+        u.first_name,
+        u.last_name,
+        COUNT(*) AS failed_count,
+        CONCAT('[', GROUP_CONCAT(DISTINCT
+          JSON_OBJECT('id', e.group_id, 'name', g.name)), ']') AS groups_raw,
+        CONCAT('[', GROUP_CONCAT(DISTINCT
+          JSON_OBJECT('id', e.teacher_id, 'first_name', t.first_name, 'last_name', t.last_name)), ']') AS teachers_raw,
+        CONCAT('[', GROUP_CONCAT(DISTINCT
+          JSON_OBJECT('id', e.unit_id, 'title', un.title)), ']') AS units_raw
+      FROM exam_results er
+      JOIN exams e ON e.id = er.exam_id AND e.deleted_at IS NULL
+      JOIN users u ON u.user_id = er.student_id
+      LEFT JOIN \`groups\` g ON g.id = e.group_id
+      LEFT JOIN users t ON t.user_id = e.teacher_id
+      LEFT JOIN units un ON un.id = e.unit_id
+      WHERE er.result = 'failed'
+        AND e.type = 'unit_test'
+        AND e.level_id = :levelId
+        AND (:groupId IS NULL OR e.group_id = :groupId)
+        AND (:teacherId IS NULL OR e.teacher_id = :teacherId)
+        AND (:unitId IS NULL OR e.unit_id = :unitId)
+      GROUP BY er.student_id, u.first_name, u.last_name
+      HAVING COUNT(*) >= :minFailures
+      ORDER BY failed_count DESC
+      `,
+      {
+        replacements: {
+          levelId,
+          minFailures,
+          groupId: groupId ?? null,
+          teacherId: teacherId ?? null,
+          unitId: unitId ?? null,
+        },
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    const parseJson = <T>(raw: string | null): T[] => {
+      if (!raw) return [];
+      const arr = JSON.parse(raw) as Array<Record<string, unknown>>;
+      // Filter out rows where the joined id was NULL (LEFT JOIN misses).
+      return arr.filter((o) => o && o.id != null) as T[];
+    };
+
+    return rows.map((r: any) => ({
+      student_id: r.student_id,
+      first_name: r.first_name,
+      last_name: r.last_name,
+      failed_count: Number(r.failed_count),
+      groups: parseJson<{ id: string; name: string }>(r.groups_raw),
+      teachers: parseJson<{
+        id: string;
+        first_name: string;
+        last_name: string;
+      }>(r.teachers_raw),
+      units: parseJson<{ id: string; title: string }>(r.units_raw),
+    }));
   }
 
   async getExamStatistics(examId: string): Promise<{

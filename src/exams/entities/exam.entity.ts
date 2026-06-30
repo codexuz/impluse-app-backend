@@ -28,10 +28,39 @@ export class Exam extends Model<Exam> {
   title: string;
 
   @Column({
+    type: DataType.ENUM(
+      "unit_test",
+      "level_test",
+      "haftalik_test",
+      "oylik_test",
+      "mid_course_test",
+    ),
+    allowNull: true,
+  })
+  type:
+    | "unit_test"
+    | "level_test"
+    | "haftalik_test"
+    | "oylik_test"
+    | "mid_course_test";
+
+  @Column({
     type: DataType.UUID,
     allowNull: false,
   })
   group_id: string;
+
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  unit_id: string;
+
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  level_id: string; // FK to courses
 
   @Column({
     type: DataType.UUID,

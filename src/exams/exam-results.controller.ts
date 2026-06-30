@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -23,6 +24,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Exam Results')
@@ -82,6 +84,53 @@ export class ExamResultsController {
     @Param('studentId') studentId: string,
   ) {
     return this.examResultsService.findByExamAndStudent(examId, studentId);
+  }
+
+  @Get('unit-test-failures/level/:levelId')
+  @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
+  @ApiOperation({
+    summary:
+      'Get students who failed unit tests at least N times within a level',
+  })
+  @ApiParam({
+    name: 'levelId',
+    description: 'Level (course) UUID, matched against exams.level_id',
+  })
+  @ApiQuery({
+    name: 'minFailures',
+    required: false,
+    description: 'Minimum number of failed unit tests (default 3)',
+    example: 3,
+  })
+  @ApiQuery({
+    name: 'groupId',
+    required: false,
+    description: 'Only count unit tests of this group',
+  })
+  @ApiQuery({
+    name: 'teacherId',
+    required: false,
+    description: 'Only count unit tests of this teacher',
+  })
+  @ApiQuery({
+    name: 'unitId',
+    required: false,
+    description: 'Only count unit tests of this unit',
+  })
+  findUnitTestFailuresByLevel(
+    @Param('levelId') levelId: string,
+    @Query('minFailures') minFailures?: string,
+    @Query('groupId') groupId?: string,
+    @Query('teacherId') teacherId?: string,
+    @Query('unitId') unitId?: string,
+  ) {
+    return this.examResultsService.findUnitTestFailuresByLevel({
+      levelId,
+      minFailures: minFailures ? parseInt(minFailures, 10) : 3,
+      groupId,
+      teacherId,
+      unitId,
+    });
   }
 
   @Get('exam/:examId/statistics')

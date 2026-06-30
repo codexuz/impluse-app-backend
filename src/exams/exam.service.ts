@@ -27,7 +27,15 @@ export class ExamService {
   ) {}
 
   async create(createExamDto: CreateExamDto): Promise<Exam> {
-    const exam = await this.examModel.create({ ...createExamDto });
+    // Derive the level (course) from the group rather than accepting it directly.
+    const group = await this.groupModel.findByPk(createExamDto.group_id, {
+      attributes: ["level_id"],
+    });
+
+    const exam = await this.examModel.create({
+      ...createExamDto,
+      level_id: group?.level_id ?? null,
+    });
 
     // Send notifications to students in the group
     try {
