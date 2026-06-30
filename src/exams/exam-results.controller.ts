@@ -86,15 +86,10 @@ export class ExamResultsController {
     return this.examResultsService.findByExamAndStudent(examId, studentId);
   }
 
-  @Get('unit-test-failures/level/:levelId')
+  @Get('unit-test-failures')
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({
-    summary:
-      'Get students who failed unit tests at least N times within a level',
-  })
-  @ApiParam({
-    name: 'levelId',
-    description: 'Level (course) UUID, matched against exams.level_id',
+    summary: 'Get students who failed unit tests at least N times (default 3)',
   })
   @ApiQuery({
     name: 'minFailures',
@@ -112,24 +107,15 @@ export class ExamResultsController {
     required: false,
     description: 'Only count unit tests of this teacher',
   })
-  @ApiQuery({
-    name: 'unitId',
-    required: false,
-    description: 'Only count unit tests of this unit',
-  })
-  findUnitTestFailuresByLevel(
-    @Param('levelId') levelId: string,
+  findUnitTestFailures(
     @Query('minFailures') minFailures?: string,
     @Query('groupId') groupId?: string,
     @Query('teacherId') teacherId?: string,
-    @Query('unitId') unitId?: string,
   ) {
-    return this.examResultsService.findUnitTestFailuresByLevel({
-      levelId,
+    return this.examResultsService.findUnitTestFailures({
       minFailures: minFailures ? parseInt(minFailures, 10) : 3,
       groupId,
       teacherId,
-      unitId,
     });
   }
 

@@ -11,6 +11,8 @@ import { ExamResult } from "./entities/exam_result.entity.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import { NotificationToken } from "../notifications/entities/notification-token.entity.js";
 import { User } from "../users/entities/user.entity.js";
+import { Unit } from "../units/entities/units.entity.js";
+import { Course } from "../courses/entities/course.entity.js";
 
 @Injectable()
 export class ExamService {
@@ -23,6 +25,12 @@ export class ExamService {
     private groupStudentModel: typeof GroupStudent,
     @InjectModel(Group)
     private groupModel: typeof Group,
+    @InjectModel(Unit)
+    private unitModel: typeof Unit,
+    @InjectModel(Course)
+    private courseModel: typeof Course,
+    @InjectModel(User)
+    private userModel: typeof User,
     private notificationsService: NotificationsService
   ) {}
 
@@ -133,9 +141,10 @@ export class ExamService {
     });
 
     await this.resolveTeacherIds(rows);
+    const data = await this.attachRelations(rows);
 
     return {
-      data: rows,
+      data,
       total: count,
       page,
       limit,
@@ -143,9 +152,60 @@ export class ExamService {
     };
   }
 
-  async findOne(id: string): Promise<Exam> {
+  /**
+   * Enrich exams with their related group, teacher, unit and level (course)
+   * objects. The exam table only stores ids, so we batch-fetch each related
+   * model and attach the full record (or null) to every exam.
+   */
+  private async attachRelations(exams: Exam[]): Promise<any[]> {
+    if (exams.length === 0) return [];
+
+    const groupIds = [...new Set(exams.map((e) => e.group_id).filter(Boolean))];
+    const teacherIds = [
+      ...new Set(exams.map((e) => e.teacher_id).filter(Boolean)),
+    ];
+    const unitIds = [...new Set(exams.map((e) => e.unit_id).filter(Boolean))];
+    const levelIds = [...new Set(exams.map((e) => e.level_id).filter(Boolean))];
+
+    const [groups, teachers, units, levels] = await Promise.all([
+      groupIds.length
+        ? this.groupModel.findAll({ where: { id: { [Op.in]: groupIds } } })
+        : Promise.resolve([]),
+      teacherIds.length
+        ? this.userModel.findAll({
+            where: { user_id: { [Op.in]: teacherIds } },
+            attributes: ["user_id", "first_name", "last_name", "phone"],
+          })
+        : Promise.resolve([]),
+      unitIds.length
+        ? this.unitModel.findAll({ where: { id: { [Op.in]: unitIds } } })
+        : Promise.resolve([]),
+      levelIds.length
+        ? this.courseModel.findAll({ where: { id: { [Op.in]: levelIds } } })
+        : Promise.resolve([]),
+    ]);
+
+    const groupMap = new Map(groups.map((g: any) => [g.id, g]));
+    const teacherMap = new Map(teachers.map((t: any) => [t.user_id, t]));
+    const unitMap = new Map(units.map((u: any) => [u.id, u]));
+    const levelMap = new Map(levels.map((l: any) => [l.id, l]));
+
+    return exams.map((exam) => ({
+      ...exam.toJSON(),
+      group: groupMap.get(exam.group_id) ?? null,
+      teacher: exam.teacher_id ? (teacherMap.get(exam.teacher_id) ?? null) : null,
+      unit: exam.unit_id ? (unitMap.get(exam.unit_id) ?? null) : null,
+      // `level` is an existing string column on the exam; the related course
+      // record is exposed separately as `level_data`.
+      level_data: exam.level_id ? (levelMap.get(exam.level_id) ?? null) : null,
+    }));
+  }
+
+  async findOne(id: string): Promise<any> {
     const exam = await this.examModel.findByPk(id);
-    if (exam && !exam.teacher_id) {
+    if (!exam) return exam;
+
+    if (!exam.teacher_id) {
       const group = await this.groupModel.findOne({
         where: { id: exam.group_id },
         attributes: ['teacher_id'],
@@ -154,7 +214,9 @@ export class ExamService {
         exam.setDataValue('teacher_id', group.teacher_id);
       }
     }
-    return exam;
+
+    const [enriched] = await this.attachRelations([exam]);
+    return enriched;
   }
 
   private async resolveTeacherIds(exams: Exam[]): Promise<void> {

@@ -211,24 +211,20 @@ export class ExamResultsService {
   }
 
   /**
-   * Find students who failed unit tests at least `minFailures` times within a
-   * given level (course). A "unit test" is an exam with type = 'unit_test', and
-   * the level is matched against exams.level_id (the course UUID).
+   * Find students who failed unit tests at least `minFailures` times (default 3).
+   * A "unit test" is an exam with type = 'unit_test'.
    *
-   * Optionally narrow by group, teacher and/or unit. Since a student may have
-   * failed across several groups/units/teachers, the matched ones are returned
-   * as aggregated lists per student.
+   * Optionally narrow by group and/or teacher. Since a student may have failed
+   * across several groups/units/teachers, the matched ones are returned as
+   * aggregated lists per student.
    *
-   * Example: pass the elementary course's id with minFailures = 3 to get back
-   * "Alex" who failed 3 unit tests in elementary.
+   * Example: with no filters, returns every student who failed 3+ unit tests.
    */
-  async findUnitTestFailuresByLevel(filters: {
-    levelId: string;
+  async findUnitTestFailures(filters: {
     minFailures?: number;
     groupId?: string;
     teacherId?: string;
-    unitId?: string;
-  }): Promise<
+  } = {}): Promise<
     Array<{
       student_id: string;
       first_name: string;
@@ -239,7 +235,7 @@ export class ExamResultsService {
       units: Array<{ id: string; title: string }>;
     }>
   > {
-    const { levelId, groupId, teacherId, unitId } = filters;
+    const { groupId, teacherId } = filters;
     const minFailures = filters.minFailures ?? 3;
 
     const rows = await this.examResultModel.sequelize.query(
@@ -263,21 +259,17 @@ export class ExamResultsService {
       LEFT JOIN units un ON un.id = e.unit_id
       WHERE er.result = 'failed'
         AND e.type = 'unit_test'
-        AND e.level_id = :levelId
         AND (:groupId IS NULL OR e.group_id = :groupId)
         AND (:teacherId IS NULL OR e.teacher_id = :teacherId)
-        AND (:unitId IS NULL OR e.unit_id = :unitId)
       GROUP BY er.student_id, u.first_name, u.last_name
       HAVING COUNT(*) >= :minFailures
       ORDER BY failed_count DESC
       `,
       {
         replacements: {
-          levelId,
           minFailures,
           groupId: groupId ?? null,
           teacherId: teacherId ?? null,
-          unitId: unitId ?? null,
         },
         type: QueryTypes.SELECT,
       }
