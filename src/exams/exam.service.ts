@@ -289,28 +289,34 @@ export class ExamService {
     });
   }
 
-  async getByTeacherId(teacherId: string): Promise<Exam[]> {
+  async getByTeacherId(teacherId: string): Promise<any[]> {
     // First, find all groups where the user is the teacher
     const teacherGroups = await this.groupModel.findAll({
       where: {
         teacher_id: teacherId,
       },
-      attributes: ["id"],
     });
 
     if (!teacherGroups.length) {
       return []; // Return empty array if teacher has no groups
     }
 
-    // Extract group IDs
+    // Extract group IDs and build a lookup by id
     const groupIds = teacherGroups.map((tg) => tg.id);
+    const groupsById = new Map(teacherGroups.map((g) => [g.id, g]));
 
     // Find all exams for these groups
-    return this.examModel.findAll({
+    const exams = await this.examModel.findAll({
       where: {
         group_id: groupIds,
       },
       order: [["scheduled_at", "DESC"]],
     });
+
+    // Attach the corresponding group data to each exam
+    return exams.map((exam) => ({
+      ...exam.toJSON(),
+      group: groupsById.get(exam.group_id) ?? null,
+    }));
   }
 }
