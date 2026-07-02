@@ -152,11 +152,46 @@ export class TeacherTransactionController {
     required: false,
     description: "Filter by transaction type",
   })
+  @ApiQuery({
+    name: "start_date",
+    required: false,
+    description: "Start date (ISO 8601)",
+    type: String,
+  })
+  @ApiQuery({
+    name: "end_date",
+    required: false,
+    description: "End date (ISO 8601)",
+    type: String,
+  })
+  @ApiQuery({
+    name: "month",
+    required: false,
+    description:
+      "Month number (1-12); filters the full month (day 1 to 30/31)",
+    type: Number,
+  })
+  @ApiQuery({
+    name: "year",
+    required: false,
+    description: "Year for the month filter (defaults to current year)",
+    type: Number,
+  })
   findByTeacherId(
     @Param("teacherId") teacherId: string,
     @Query("type") type?: string,
+    @Query("start_date") start_date?: string,
+    @Query("end_date") end_date?: string,
+    @Query("month") month?: string,
+    @Query("year") year?: string,
   ) {
-    return this.teacherTransactionService.findByTeacherId(teacherId, type);
+    return this.teacherTransactionService.findByTeacherId(teacherId, {
+      type,
+      start_date,
+      end_date,
+      month: month ? parseInt(month, 10) : undefined,
+      year: year ? parseInt(year, 10) : undefined,
+    });
   }
 
   @Get(":id")

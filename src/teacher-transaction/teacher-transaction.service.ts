@@ -169,24 +169,51 @@ export class TeacherTransactionService {
 
   async findByTeacherId(
     teacherId: string,
-    type?: string,
+    filters: {
+      type?: string;
+      start_date?: string;
+      end_date?: string;
+      month?: number;
+      year?: number;
+    } = {},
   ): Promise<TeacherTransaction[]> {
+    const { type, start_date, end_date, month, year } = filters;
+
     const whereCondition: any = { teacher_id: teacherId };
 
     if (type) {
       whereCondition.type = type;
     }
 
+    // Build the created_at date range.
+    const dateFilter: any = {};
+
+    // month (1-12): span the full month (day 1 -> last day, 30/31/28),
+    // using `year` when provided, otherwise the current year.
+    if (month) {
+      const targetYear = year ?? new Date().getFullYear();
+      // month - 1 because JS months are 0-indexed; day 0 of next month
+      // gives the last day of the target month automatically.
+      dateFilter[Op.gte] = new Date(targetYear, month - 1, 1, 0, 0, 0, 0);
+      dateFilter[Op.lte] = new Date(targetYear, month, 0, 23, 59, 59, 999);
+    }
+
+    // Explicit start/end dates take precedence over the month range.
+    if (start_date) {
+      dateFilter[Op.gte] = new Date(start_date);
+    }
+    if (end_date) {
+      dateFilter[Op.lte] = new Date(end_date);
+    }
+
+    if (Object.getOwnPropertySymbols(dateFilter).length > 0) {
+      whereCondition.created_at = dateFilter;
+    }
+
     const transactions = await this.teacherTransactionModel.findAll({
       where: whereCondition,
       order: [["created_at", "DESC"]],
     });
-
-    if (!transactions || transactions.length === 0) {
-      throw new NotFoundException(
-        `No transactions found for teacher with ID "${teacherId}"`,
-      );
-    }
 
     return transactions;
   }
