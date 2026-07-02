@@ -25,7 +25,6 @@ import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { Role } from "../roles/role.enum.js";
 import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
-import { User } from "../users/entities/user.entity.js";
 
 @ApiTags("Staff Attendance")
 @ApiBearerAuth()
@@ -77,18 +76,18 @@ export class StaffAttendanceController {
   @Post("scan")
   @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Scan QR code to mark staff attendance" })
-  async scan(@CurrentUser() user: User, @Body() scanDto: ScanStaffAttendanceDto) {
-    return this.staffAttendanceService.scanQrCode(user.id, scanDto);
+  async scan(@CurrentUser() user: any, @Body() scanDto: ScanStaffAttendanceDto) {
+    return this.staffAttendanceService.scanQrCode(user.userId, scanDto);
   }
 
   @Post("gps-scan")
   @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "GPS-based self check-in/out for the authenticated staff member" })
   async gpsScan(
-    @CurrentUser() user: User,
+    @CurrentUser() user: any,
     @Body() body: { type?: "in" | "out"; latitude?: number; longitude?: number },
   ) {
-    return this.staffAttendanceService.automaticScan(user.id, body.type || "in", {
+    return this.staffAttendanceService.automaticScan(user.userId, body.type || "in", {
       latitude: body.latitude,
       longitude: body.longitude,
     });
@@ -101,8 +100,8 @@ export class StaffAttendanceController {
   @Get("my-attendances")
   @Roles(Role.TEACHER)
   @ApiOperation({ summary: "Get my staff attendances" })
-  async getMyAttendances(@CurrentUser() user: User) {
-    return this.staffAttendanceService.getTeacherAttendances(user.id);
+  async getMyAttendances(@CurrentUser() user: any) {
+    return this.staffAttendanceService.getTeacherAttendances(user.userId);
   }
 
   @Get()
@@ -196,17 +195,17 @@ export class StaffAttendanceController {
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
   @ApiOperation({ summary: "Request a staff permission / leave (ruxsat)" })
   async createPermission(
-    @CurrentUser() user: User,
+    @CurrentUser() user: any,
     @Body() dto: CreateStaffPermissionDto,
   ) {
-    return this.staffAttendanceService.createPermission(dto, user.id);
+    return this.staffAttendanceService.createPermission(dto, user.userId);
   }
 
   @Get("my-permissions")
   @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Get my permission / leave requests" })
-  async getMyPermissions(@CurrentUser() user: User) {
-    return this.staffAttendanceService.getStaffPermissions(user.id);
+  async getMyPermissions(@CurrentUser() user: any) {
+    return this.staffAttendanceService.getStaffPermissions(user.userId);
   }
 
   @Get("permissions")
@@ -240,11 +239,11 @@ export class StaffAttendanceController {
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "Approve or reject a permission (Admin only)" })
   async reviewPermission(
-    @CurrentUser() user: User,
+    @CurrentUser() user: any,
     @Param("id") id: string,
     @Body() dto: ReviewStaffPermissionDto,
   ) {
-    return this.staffAttendanceService.reviewPermission(id, dto, user.id);
+    return this.staffAttendanceService.reviewPermission(id, dto, user.userId);
   }
 
   @Patch("permissions/:id")
