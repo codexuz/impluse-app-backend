@@ -81,6 +81,19 @@ export class StaffAttendanceController {
     return this.staffAttendanceService.scanQrCode(user.id, scanDto);
   }
 
+  @Post("gps-scan")
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
+  @ApiOperation({ summary: "GPS-based self check-in/out for the authenticated staff member" })
+  async gpsScan(
+    @CurrentUser() user: User,
+    @Body() body: { type?: "in" | "out"; latitude?: number; longitude?: number },
+  ) {
+    return this.staffAttendanceService.automaticScan(user.id, body.type || "in", {
+      latitude: body.latitude,
+      longitude: body.longitude,
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Query endpoints
   // ---------------------------------------------------------------------------
