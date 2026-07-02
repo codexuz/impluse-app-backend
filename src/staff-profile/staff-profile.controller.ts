@@ -17,6 +17,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { Role } from "../roles/role.enum.js";
+import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 
 @ApiTags("Staff Profile")
 @ApiBearerAuth()
@@ -48,6 +49,13 @@ export class StaffProfileController {
   @ApiOperation({ summary: "Get a staff profile by user ID (Admin only)" })
   async findByStaffId(@Param("staffId") staffId: string) {
     return this.staffProfileService.findByStaffId(staffId);
+  }
+
+  @Get("my-today-shifts")
+  @Roles(Role.TEACHER, Role.ADMIN, Role.OWNER, Role.MANAGER)
+  @ApiOperation({ summary: "Get the authenticated staff member's shift times for today" })
+  async getMyTodayShifts(@CurrentUser() user: any) {
+    return this.staffProfileService.getTodayShifts(user.userId);
   }
 
   @Get(":id")

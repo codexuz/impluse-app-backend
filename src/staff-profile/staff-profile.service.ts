@@ -167,6 +167,30 @@ export class StaffProfileService {
     return matching.filter((s) => score(s) === maxScore);
   }
 
+  /**
+   * Returns the shift times that apply to a staff member today, based on the
+   * server's current day-of-week. Used by the "my today's shift" endpoint.
+   */
+  async getTodayShifts(staffId: string) {
+    const now = new Date();
+    const shifts = await this.resolveShiftsForDay(staffId, now.getDay());
+
+    return {
+      date: now.toISOString().slice(0, 10),
+      day_of_week: [
+        "sunday", "monday", "tuesday", "wednesday",
+        "thursday", "friday", "saturday",
+      ][now.getDay()],
+      shifts: shifts.map((s) => ({
+        id: s.id,
+        name: s.name,
+        in_time: s.in_time,
+        out_time: s.out_time,
+        grace_period_minutes: s.grace_period_minutes,
+      })),
+    };
+  }
+
   /** Convenience: pick the single shift whose in_time is closest to nowMinutes. */
   pickClosestShift(shifts: StaffShift[], nowMinutes: number): StaffShift | null {
     if (shifts.length === 0) return null;
