@@ -58,9 +58,20 @@ export class StaffAttendanceController {
 
   @Post("automatic-scan")
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER, Role.TEACHER)
-  @ApiOperation({ summary: "Automatic attendance scan for Telegram bot" })
-  async autoScan(@Body() body: { teacher_id: string; type?: "in" | "out" }) {
-    return this.staffAttendanceService.automaticScan(body.teacher_id, body.type || "in");
+  @ApiOperation({ summary: "Automatic attendance scan (Telegram bot / GPS check-in)" })
+  async autoScan(
+    @Body()
+    body: {
+      teacher_id: string;
+      type?: "in" | "out";
+      latitude?: number;
+      longitude?: number;
+    },
+  ) {
+    return this.staffAttendanceService.automaticScan(body.teacher_id, body.type || "in", {
+      latitude: body.latitude,
+      longitude: body.longitude,
+    });
   }
 
   @Post("scan")

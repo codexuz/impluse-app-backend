@@ -44,6 +44,87 @@ export class StaffAttendanceService {
   private static readonly ADMIN_LESSON_START = "09:00";
 
   // ---------------------------------------------------------------------------
+  // Geofence — center/radius come from env so no schema/policy change is needed.
+  // Shared with the attendance Telegram bot so both enforce the same fence:
+  //   GEOFENCE_ENABLED=true       (master switch; anything but "true" = off)
+  //   CENTER_LATITUDE=41.311081
+  //   CENTER_LONGITUDE=69.240562
+  //   GPS_RADIUS_METERS=200
+  // Only check-INS are geofenced; check-outs are allowed from anywhere.
+  // ---------------------------------------------------------------------------
+
+  private getGeofenceConfig() {
+    const enabled = String(process.env.GEOFENCE_ENABLED).toLowerCase() === "true";
+    const lat = parseFloat(process.env.CENTER_LATITUDE ?? "");
+    const lng = parseFloat(process.env.CENTER_LONGITUDE ?? "");
+    const radius = parseInt(process.env.GPS_RADIUS_METERS ?? "200", 10);
+    return {
+      enabled,
+      lat,
+      lng,
+      radius: Number.isFinite(radius) && radius > 0 ? radius : 200,
+    };
+  }
+
+  /** Great-circle distance between two coordinates, in meters (Haversine). */
+  private distanceMeters(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+  ): number {
+    const R = 6371000; // Earth radius in meters
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+
+  /**
+   * Rejects a check-IN when geofencing is enabled and the device coordinates are
+   * missing, invalid, or farther than the allowed radius from the center.
+   * No-op when GEOFENCE_ENABLED is not "true" or when `type` is "out"
+   * (check-outs are allowed from anywhere).
+   */
+  private assertWithinGeofence(
+    latitude?: number,
+    longitude?: number,
+    type: "in" | "out" = "in",
+  ): void {
+    if (type === "out") return;
+
+    const geo = this.getGeofenceConfig();
+    if (!geo.enabled) return;
+
+    if (!Number.isFinite(geo.lat) || !Number.isFinite(geo.lng)) {
+      throw new ConflictException(
+        "Geofence sozlamalari noto'g'ri (markaz koordinatalari belgilanmagan).",
+      );
+    }
+
+    if (
+      typeof latitude !== "number" ||
+      typeof longitude !== "number" ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      throw new ConflictException(
+        "Davomat olish uchun joylashuv (GPS) ma'lumotlari talab qilinadi.",
+      );
+    }
+
+    const distance = this.distanceMeters(geo.lat, geo.lng, latitude, longitude);
+    if (distance > geo.radius) {
+      throw new ConflictException(
+        `Siz o'quv markazidan ${Math.round(distance)} m uzoqdasiz. Davomat faqat markaz hududida (${geo.radius} m) olinadi.`,
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Policy engine
   // ---------------------------------------------------------------------------
 
@@ -245,7 +326,12 @@ export class StaffAttendanceService {
   // Public scan methods
   // ---------------------------------------------------------------------------
 
-  async automaticScan(teacherId: string, type?: "in" | "out") {
+  async automaticScan(
+    teacherId: string,
+    type?: "in" | "out",
+    coords?: { latitude?: number; longitude?: number },
+    options?: { skipGeofence?: boolean },
+  ) {
     const user = await User.findByPk(teacherId, {
       include: [{ association: "roles" }],
     });
@@ -261,6 +347,12 @@ export class StaffAttendanceService {
     // evening) by its position in today's IN/OUT sequence.
     const plan = await this.getNextScanPlan(teacherId);
     const attendanceType = type ?? plan.nextType;
+
+    // Enforce the center geofence for check-ins. Trusted callers (e.g. an admin
+    // scanning a QR at the gate, who has no device GPS) bypass via skipGeofence.
+    if (!options?.skipGeofence) {
+      this.assertWithinGeofence(coords?.latitude, coords?.longitude, attendanceType);
+    }
 
     // Staff with configured shifts: one IN→OUT pair per shift, in order.
     if (plan.totalShifts > 0) {
@@ -344,6 +436,8 @@ export class StaffAttendanceService {
   }
 
   async scanQrCode(teacherId: string, dto: ScanStaffAttendanceDto) {
+    this.assertWithinGeofence(dto.latitude, dto.longitude, dto.type ?? "in");
+
     const group = await Group.findByPk(dto.group_id);
     if (!group) throw new NotFoundException("Guruh topilmadi");
     if (!group.lesson_start) {

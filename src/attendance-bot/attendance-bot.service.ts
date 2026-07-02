@@ -493,26 +493,6 @@ export class AttendanceBotService implements OnModuleInit {
     lon: number,
     type: 'in' | 'out',
   ) {
-    const centerLat = parseFloat(process.env.CENTER_LATITUDE ?? '0');
-    const centerLon = parseFloat(process.env.CENTER_LONGITUDE ?? '0');
-    const radiusM = parseFloat(process.env.GPS_RADIUS_METERS ?? '200');
-
-    if (!centerLat || !centerLon) {
-      this.logger.error('CENTER_LATITUDE/CENTER_LONGITUDE not configured');
-      await ctx.reply('❌ GPS tekshiruvi sozlanmagan. Admin bilan bog\'laning.');
-      return;
-    }
-
-    const distanceM = this.haversineDistance(lat, lon, centerLat, centerLon);
-
-    if (distanceM > radiusM) {
-      await ctx.reply(
-        `❌ Siz o'quv markazidan tashqaridasiz.\n📏 Masofa: ${Math.round(distanceM)} m (ruxsat: ${radiusM} m)\n\nDavomat faqat o'quv markazi hududida qo'yilishi mumkin.`,
-        Markup.removeKeyboard(),
-      );
-      return;
-    }
-
     const teacher = await this.userModel.findByPk(staffId, {
       include: [{ association: 'roles' }],
     });
@@ -522,10 +502,17 @@ export class AttendanceBotService implements OnModuleInit {
     }
 
     try {
-      const attendance = await this.staffAttendanceService.automaticScan(staffId, type);
+      // The geofence is enforced centrally by the attendance service using the
+      // same CENTER_* env config, so we just forward the device coordinates.
+      // If the staff member is outside the radius, the service throws a
+      // ConflictException whose message already states the distance.
+      const attendance = await this.staffAttendanceService.automaticScan(staffId, type, {
+        latitude: lat,
+        longitude: lon,
+      });
       const msg = this.formatAttendanceMessage(teacher, attendance);
       await ctx.reply(
-        `✅ GPS tasdiqlandi (${Math.round(distanceM)} m)\n\n${msg}\n\n` +
+        `✅ Joylashuv tasdiqlandi\n\n${msg}\n\n` +
           'ℹ️ Endi jonli joylashuvni to\'xtatishingiz mumkin (Stop sharing).',
         this.staffMenuKeyboard(),
       );
@@ -544,18 +531,6 @@ export class AttendanceBotService implements OnModuleInit {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.debug(`Could not delete message: ${message}`);
     }
-  }
-
-  /** Haversine formula — returns distance in metres between two GPS points */
-  private haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371000; // Earth radius in metres
-    const toRad = (deg: number) => (deg * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
   // ---------------------------------------------------------------------------
@@ -659,7 +634,14 @@ export class AttendanceBotService implements OnModuleInit {
     if (!teacher) return ctx.reply('Foydalanuvchi topilmadi.');
 
     try {
-      const attendance = await this.staffAttendanceService.automaticScan(teacherId, type);
+      // Admin/guard scanning a teacher's QR at the gate is trusted and has no
+      // device GPS of its own, so bypass the geofence for this flow.
+      const attendance = await this.staffAttendanceService.automaticScan(
+        teacherId,
+        type,
+        undefined,
+        { skipGeofence: true },
+      );
       await ctx.editMessageText(this.formatAttendanceMessage(teacher, attendance));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

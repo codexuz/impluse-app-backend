@@ -1,5 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsUUID, IsOptional, IsString, IsEnum } from "class-validator";
+import {
+  IsNotEmpty,
+  IsUUID,
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsNumber,
+  Min,
+  Max,
+} from "class-validator";
 
 export class ScanStaffAttendanceDto {
   @ApiProperty({ description: "Group ID obtained from the QR code" })
@@ -16,4 +25,18 @@ export class ScanStaffAttendanceDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({ description: "Device GPS latitude (required when geofencing is enabled)", required: false })
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  @IsOptional()
+  latitude?: number;
+
+  @ApiProperty({ description: "Device GPS longitude (required when geofencing is enabled)", required: false })
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  @IsOptional()
+  longitude?: number;
 }
