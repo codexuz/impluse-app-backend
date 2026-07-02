@@ -128,6 +128,31 @@ export class StaffAttendanceController {
     });
   }
 
+  @Get("my-attendances/stats")
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: "Aggregate stats for my staff attendances" })
+  @ApiQuery({ name: "status", required: false, enum: ["early", "on_time", "late", "excused"] })
+  @ApiQuery({ name: "type", required: false, enum: ["in", "out"] })
+  @ApiQuery({ name: "groupId", required: false, type: String })
+  @ApiQuery({ name: "startDate", required: false, type: String })
+  @ApiQuery({ name: "endDate", required: false, type: String })
+  async getMyAttendanceStats(
+    @CurrentUser() user: any,
+    @Query("status") status?: string,
+    @Query("type") type?: string,
+    @Query("groupId") groupId?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.staffAttendanceService.getTeacherAttendanceStats(user.userId, {
+      status,
+      type,
+      groupId,
+      startDate,
+      endDate,
+    });
+  }
+
   @Get()
   @Roles(Role.ADMIN, Role.OWNER, Role.MANAGER)
   @ApiOperation({ summary: "List all staff attendances (Admin only)" })

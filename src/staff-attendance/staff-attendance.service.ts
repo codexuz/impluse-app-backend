@@ -820,6 +820,32 @@ export class StaffAttendanceService {
   // Queries
   // ---------------------------------------------------------------------------
 
+  // Shared filter builder for a single teacher's attendance queries.
+  private buildTeacherAttendanceWhere(
+    teacherId: string,
+    options: {
+      status?: string;
+      type?: string;
+      groupId?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+  ): any {
+    const where: any = { teacher_id: teacherId };
+    if (options.status) where.status = options.status;
+    if (options.type) where.type = options.type;
+    if (options.groupId) where.group_id = options.groupId;
+
+    if (options.startDate && options.endDate) {
+      where.date = { [Op.between]: [options.startDate, options.endDate] };
+    } else if (options.startDate) {
+      where.date = { [Op.gte]: options.startDate };
+    } else if (options.endDate) {
+      where.date = { [Op.lte]: options.endDate };
+    }
+    return where;
+  }
+
   async getTeacherAttendances(
     teacherId: string,
     options: {
@@ -836,18 +862,7 @@ export class StaffAttendanceService {
     const limit = options.limit && options.limit > 0 ? options.limit : 20;
     const offset = (page - 1) * limit;
 
-    const where: any = { teacher_id: teacherId };
-    if (options.status) where.status = options.status;
-    if (options.type) where.type = options.type;
-    if (options.groupId) where.group_id = options.groupId;
-
-    if (options.startDate && options.endDate) {
-      where.date = { [Op.between]: [options.startDate, options.endDate] };
-    } else if (options.startDate) {
-      where.date = { [Op.gte]: options.startDate };
-    } else if (options.endDate) {
-      where.date = { [Op.lte]: options.endDate };
-    }
+    const where = this.buildTeacherAttendanceWhere(teacherId, options);
 
     const { count, rows } = await StaffAttendance.findAndCountAll({
       where,
@@ -859,6 +874,52 @@ export class StaffAttendanceService {
     });
 
     return { data: rows, total: count, page, limit, totalPages: Math.ceil(count / limit) };
+  }
+
+  /**
+   * Aggregate stats over a teacher's whole (filtered) attendance set — used for
+   * the summary card so totals don't depend on how many pages are loaded.
+   */
+  async getTeacherAttendanceStats(
+    teacherId: string,
+    options: {
+      status?: string;
+      type?: string;
+      groupId?: string;
+      startDate?: string;
+      endDate?: string;
+    } = {},
+  ) {
+    const where = this.buildTeacherAttendanceWhere(teacherId, options);
+
+    const records = await StaffAttendance.findAll({
+      where,
+      attributes: ["status", "type", "fine_amount", "minutes_late"],
+      raw: true,
+    });
+
+    const stats = {
+      total: records.length,
+      in: 0,
+      out: 0,
+      early: 0,
+      on_time: 0,
+      late: 0,
+      excused: 0,
+      totalFine: 0,
+      totalMinutesLate: 0,
+    };
+
+    for (const r of records as any[]) {
+      if (r.type in stats) stats[r.type as "in" | "out"] += 1;
+      if (r.status in stats) {
+        stats[r.status as "early" | "on_time" | "late" | "excused"] += 1;
+      }
+      stats.totalFine += r.fine_amount || 0;
+      stats.totalMinutesLate += r.minutes_late || 0;
+    }
+
+    return stats;
   }
 
   async getAllAttendances(options: {
