@@ -820,12 +820,45 @@ export class StaffAttendanceService {
   // Queries
   // ---------------------------------------------------------------------------
 
-  async getTeacherAttendances(teacherId: string) {
-    return StaffAttendance.findAll({
-      where: { teacher_id: teacherId },
-      order: [["createdAt", "DESC"]],
+  async getTeacherAttendances(
+    teacherId: string,
+    options: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      type?: string;
+      groupId?: string;
+      startDate?: string;
+      endDate?: string;
+    } = {},
+  ) {
+    const page = options.page && options.page > 0 ? options.page : 1;
+    const limit = options.limit && options.limit > 0 ? options.limit : 20;
+    const offset = (page - 1) * limit;
+
+    const where: any = { teacher_id: teacherId };
+    if (options.status) where.status = options.status;
+    if (options.type) where.type = options.type;
+    if (options.groupId) where.group_id = options.groupId;
+
+    if (options.startDate && options.endDate) {
+      where.date = { [Op.between]: [options.startDate, options.endDate] };
+    } else if (options.startDate) {
+      where.date = { [Op.gte]: options.startDate };
+    } else if (options.endDate) {
+      where.date = { [Op.lte]: options.endDate };
+    }
+
+    const { count, rows } = await StaffAttendance.findAndCountAll({
+      where,
+      order: [["date", "DESC"], ["createdAt", "DESC"]],
       include: [{ association: "group", attributes: ["id", "name", "lesson_start"] }],
+      limit,
+      offset,
+      distinct: true,
     });
+
+    return { data: rows, total: count, page, limit, totalPages: Math.ceil(count / limit) };
   }
 
   async getAllAttendances(options: {

@@ -99,9 +99,33 @@ export class StaffAttendanceController {
 
   @Get("my-attendances")
   @Roles(Role.TEACHER)
-  @ApiOperation({ summary: "Get my staff attendances" })
-  async getMyAttendances(@CurrentUser() user: any) {
-    return this.staffAttendanceService.getTeacherAttendances(user.userId);
+  @ApiOperation({ summary: "Get my staff attendances (paginated)" })
+  @ApiQuery({ name: "page", required: false, type: Number })
+  @ApiQuery({ name: "limit", required: false, type: Number })
+  @ApiQuery({ name: "status", required: false, enum: ["early", "on_time", "late", "excused"] })
+  @ApiQuery({ name: "type", required: false, enum: ["in", "out"] })
+  @ApiQuery({ name: "groupId", required: false, type: String })
+  @ApiQuery({ name: "startDate", required: false, type: String })
+  @ApiQuery({ name: "endDate", required: false, type: String })
+  async getMyAttendances(
+    @CurrentUser() user: any,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("status") status?: string,
+    @Query("type") type?: string,
+    @Query("groupId") groupId?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.staffAttendanceService.getTeacherAttendances(user.userId, {
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      status,
+      type,
+      groupId,
+      startDate,
+      endDate,
+    });
   }
 
   @Get()
